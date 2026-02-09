@@ -76,11 +76,11 @@ Legend:
 | Bayesian change-point detector (`changepoint`) | Adams & MacKay (2007) online Bayesian change-point detection — truncated run-length posterior with Beta-Bernoulli conjugate model, hazard function drift/shift classification (math #6) | DONE |
 | conformal risk controller (`conformal`) | Split conformal prediction (Vovk et al. 2005) for finite-sample coverage guarantees — sliding-window calibration, conformal p-values, EWMA coverage tracking, distribution-free miscoverage detection (math #27) | DONE |
 | pointer validator integration | runtime-math decisions affect bloom-miss/deep-check behavior and adaptive stage ordering | DONE |
-| allocator integration | runtime-math routing active at `malloc/free/realloc/calloc` ABI boundary | IN_PROGRESS |
+| allocator integration | runtime-math routing active across allocator ABI (`malloc`, `free`, `calloc`, `realloc`, `posix_memalign`, `memalign`, `aligned_alloc`) with exact check-order stage outcome feedback | DONE |
 | string/memory integration | runtime-math routing active for bootstrap `<string.h>` entrypoints (`mem*`, `strlen`, `strcmp`, `strcpy`, `strncpy`, `strcat`, `strncat`, `strchr`, `strrchr`, `strstr`, `strtok`, `strtok_r`) with exact stage-outcome feedback on `memcpy`, `memmove`, `memset`, `memcmp`, `memchr`, `memrchr`, `strlen`, `strcmp`, `strcpy`, `strncpy`, `strcat`, `strncat`, `strchr`, `strrchr`, `strstr`, `strtok`, `strtok_r` | IN_PROGRESS |
 | math/fenv integration | runtime-math routing active for bootstrap `<math.h>` entrypoints (`sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `exp`, `log`, `log10`, `pow`, `fabs`, `ceil`, `floor`, `round`, `fmod`, `erf`, `tgamma`, `lgamma`) | DONE |
 | pthread/futex integration | runtime-math routing for wait/lock/cancel edges | IN_PROGRESS |
-| resolver/NSS integration | runtime-math routing for retry/cache/poisoning decisions | IN_PROGRESS |
+| resolver/NSS integration | runtime-math routing active for bootstrap resolver ABI (`getaddrinfo`, `freeaddrinfo`, `getnameinfo`) with exact check-order stage outcomes; full NSS/cache/poisoning campaign still pending | IN_PROGRESS |
 
 ## Reverse Core Coverage Matrix
 

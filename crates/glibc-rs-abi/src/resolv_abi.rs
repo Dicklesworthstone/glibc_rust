@@ -14,14 +14,46 @@ use std::mem::size_of;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use std::ptr;
 
+use glibc_rs_membrane::check_oracle::CheckStage;
 use glibc_rs_membrane::heal::{HealingAction, global_healing_policy};
 use glibc_rs_membrane::runtime_math::{ApiFamily, MembraneAction};
 
+use crate::malloc_abi::known_remaining;
 use crate::runtime_policy;
 
 #[inline]
 fn repair_enabled(mode_heals: bool, action: MembraneAction) -> bool {
     mode_heals || matches!(action, MembraneAction::Repair(_))
+}
+
+#[inline]
+fn stage_index(ordering: &[CheckStage; 7], stage: CheckStage) -> usize {
+    ordering.iter().position(|s| *s == stage).unwrap_or(0)
+}
+
+#[inline]
+fn resolver_stage_context(addr1: usize, addr2: usize) -> (bool, bool, [CheckStage; 7]) {
+    let aligned = ((addr1 | addr2) & 0x7) == 0;
+    let recent_page = (addr1 != 0 && known_remaining(addr1).is_some())
+        || (addr2 != 0 && known_remaining(addr2).is_some());
+    let ordering = runtime_policy::check_ordering(ApiFamily::Resolver, aligned, recent_page);
+    (aligned, recent_page, ordering)
+}
+
+#[inline]
+fn record_resolver_stage_outcome(
+    ordering: &[CheckStage; 7],
+    aligned: bool,
+    recent_page: bool,
+    exit_stage: Option<usize>,
+) {
+    runtime_policy::note_check_order_outcome(
+        ApiFamily::Resolver,
+        aligned,
+        recent_page,
+        ordering,
+        exit_stage,
+    );
 }
 
 unsafe fn opt_cstr<'a>(ptr: *const c_char) -> Option<&'a CStr> {
@@ -171,7 +203,14 @@ pub unsafe extern "C" fn getaddrinfo(
     hints: *const libc::addrinfo,
     res: *mut *mut libc::addrinfo,
 ) -> c_int {
+    let (aligned, recent_page, ordering) = resolver_stage_context(node as usize, service as usize);
     if res.is_null() {
+        record_resolver_stage_outcome(
+            &ordering,
+            aligned,
+            recent_page,
+            Some(stage_index(&ordering, CheckStage::Null)),
+        );
         return libc::EAI_FAIL;
     }
     // SAFETY: output pointer is non-null and writable by contract.
@@ -186,6 +225,12 @@ pub unsafe extern "C" fn getaddrinfo(
         0,
     );
     if matches!(decision.action, MembraneAction::Deny) {
+        record_resolver_stage_outcome(
+            &ordering,
+            aligned,
+            recent_page,
+            Some(stage_index(&ordering, CheckStage::Arena)),
+        );
         runtime_policy::observe(ApiFamily::Resolver, decision.profile, 25, true);
         return libc::EAI_FAIL;
     }
@@ -205,6 +250,12 @@ pub unsafe extern "C" fn getaddrinfo(
     let port = match parse_port(service_cstr, repair) {
         Ok(port) => port,
         Err(err) => {
+            record_resolver_stage_outcome(
+                &ordering,
+                aligned,
+                recent_page,
+                Some(stage_index(&ordering, CheckStage::Bounds)),
+            );
             runtime_policy::observe(ApiFamily::Resolver, decision.profile, 25, true);
             return err;
         }
@@ -226,6 +277,12 @@ pub unsafe extern "C" fn getaddrinfo(
                 // SAFETY: allocation helper returns ownership pointer.
                 unsafe { build_addrinfo_v4(Ipv4Addr::LOCALHOST, port, hints_ref) }
             } else {
+                record_resolver_stage_outcome(
+                    &ordering,
+                    aligned,
+                    recent_page,
+                    Some(stage_index(&ordering, CheckStage::Bounds)),
+                );
                 runtime_policy::observe(ApiFamily::Resolver, decision.profile, 25, true);
                 return libc::EAI_NONAME;
             }
@@ -244,6 +301,7 @@ pub unsafe extern "C" fn getaddrinfo(
 
     // SAFETY: output pointer is non-null and writable.
     unsafe { *res = ai_ptr };
+    record_resolver_stage_outcome(&ordering, aligned, recent_page, None);
     runtime_policy::observe(ApiFamily::Resolver, decision.profile, 25, false);
     0
 }
@@ -251,8 +309,29 @@ pub unsafe extern "C" fn getaddrinfo(
 /// POSIX `freeaddrinfo`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn freeaddrinfo(mut res: *mut libc::addrinfo) {
+    let (aligned, recent_page, ordering) = resolver_stage_context(res as usize, 0);
     let (_, decision) =
         runtime_policy::decide(ApiFamily::Resolver, res as usize, 0, true, false, 0);
+    if matches!(decision.action, MembraneAction::Deny) {
+        record_resolver_stage_outcome(
+            &ordering,
+            aligned,
+            recent_page,
+            Some(stage_index(&ordering, CheckStage::Arena)),
+        );
+        runtime_policy::observe(ApiFamily::Resolver, decision.profile, 12, true);
+        return;
+    }
+    if res.is_null() {
+        record_resolver_stage_outcome(
+            &ordering,
+            aligned,
+            recent_page,
+            Some(stage_index(&ordering, CheckStage::Null)),
+        );
+        runtime_policy::observe(ApiFamily::Resolver, decision.profile, 12, false);
+        return;
+    }
     while !res.is_null() {
         // SAFETY: traversing list allocated by getaddrinfo-compatible producer.
         let next = unsafe { (*res).ai_next };
@@ -284,6 +363,7 @@ pub unsafe extern "C" fn freeaddrinfo(mut res: *mut libc::addrinfo) {
         unsafe { drop(Box::from_raw(res)) };
         res = next;
     }
+    record_resolver_stage_outcome(&ordering, aligned, recent_page, None);
     runtime_policy::observe(ApiFamily::Resolver, decision.profile, 12, false);
 }
 
@@ -298,7 +378,14 @@ pub unsafe extern "C" fn getnameinfo(
     servlen: libc::socklen_t,
     _flags: c_int,
 ) -> c_int {
+    let (aligned, recent_page, ordering) = resolver_stage_context(sa as usize, host as usize);
     if sa.is_null() {
+        record_resolver_stage_outcome(
+            &ordering,
+            aligned,
+            recent_page,
+            Some(stage_index(&ordering, CheckStage::Null)),
+        );
         return libc::EAI_FAIL;
     }
     let (mode, decision) = runtime_policy::decide(
@@ -310,6 +397,12 @@ pub unsafe extern "C" fn getnameinfo(
         0,
     );
     if matches!(decision.action, MembraneAction::Deny) {
+        record_resolver_stage_outcome(
+            &ordering,
+            aligned,
+            recent_page,
+            Some(stage_index(&ordering, CheckStage::Arena)),
+        );
         runtime_policy::observe(ApiFamily::Resolver, decision.profile, 20, true);
         return libc::EAI_FAIL;
     }
@@ -320,6 +413,12 @@ pub unsafe extern "C" fn getnameinfo(
     let (host_text, serv_text) = match family {
         libc::AF_INET => {
             if (salen as usize) < size_of::<libc::sockaddr_in>() {
+                record_resolver_stage_outcome(
+                    &ordering,
+                    aligned,
+                    recent_page,
+                    Some(stage_index(&ordering, CheckStage::Bounds)),
+                );
                 runtime_policy::observe(ApiFamily::Resolver, decision.profile, 20, true);
                 return libc::EAI_FAIL;
             }
@@ -331,6 +430,12 @@ pub unsafe extern "C" fn getnameinfo(
         }
         libc::AF_INET6 => {
             if (salen as usize) < size_of::<libc::sockaddr_in6>() {
+                record_resolver_stage_outcome(
+                    &ordering,
+                    aligned,
+                    recent_page,
+                    Some(stage_index(&ordering, CheckStage::Bounds)),
+                );
                 runtime_policy::observe(ApiFamily::Resolver, decision.profile, 20, true);
                 return libc::EAI_FAIL;
             }
@@ -341,6 +446,12 @@ pub unsafe extern "C" fn getnameinfo(
             (ip.to_string(), port.to_string())
         }
         _ => {
+            record_resolver_stage_outcome(
+                &ordering,
+                aligned,
+                recent_page,
+                Some(stage_index(&ordering, CheckStage::Bounds)),
+            );
             runtime_policy::observe(ApiFamily::Resolver, decision.profile, 20, true);
             return libc::EAI_FAMILY;
         }
@@ -351,6 +462,12 @@ pub unsafe extern "C" fn getnameinfo(
         match write_c_buffer(host, hostlen, &host_text, repair) {
             Ok(truncated) => truncated,
             Err(err) => {
+                record_resolver_stage_outcome(
+                    &ordering,
+                    aligned,
+                    recent_page,
+                    Some(stage_index(&ordering, CheckStage::Bounds)),
+                );
                 runtime_policy::observe(ApiFamily::Resolver, decision.profile, 20, true);
                 return err;
             }
@@ -361,6 +478,12 @@ pub unsafe extern "C" fn getnameinfo(
         match write_c_buffer(serv, servlen, &serv_text, repair) {
             Ok(truncated) => truncated,
             Err(err) => {
+                record_resolver_stage_outcome(
+                    &ordering,
+                    aligned,
+                    recent_page,
+                    Some(stage_index(&ordering, CheckStage::Bounds)),
+                );
                 runtime_policy::observe(ApiFamily::Resolver, decision.profile, 20, true);
                 return err;
             }
@@ -373,6 +496,7 @@ pub unsafe extern "C" fn getnameinfo(
         20,
         host_truncated || serv_truncated,
     );
+    record_resolver_stage_outcome(&ordering, aligned, recent_page, None);
     0
 }
 
