@@ -14,12 +14,16 @@
 pub mod bandit;
 pub mod barrier;
 pub mod cohomology;
+pub mod commitment_audit;
 pub mod control;
 pub mod cvar;
 pub mod design;
 pub mod eprocess;
+pub mod fusion;
+pub mod higher_topos;
 pub mod pareto;
 pub mod risk;
+pub mod sparse;
 
 use std::sync::atomic::{AtomicU8, AtomicU64, Ordering};
 
@@ -48,8 +52,10 @@ use self::control::PrimalDualController;
 use self::cvar::{DroCvarController, TailState};
 use self::design::{OptimalDesignController, Probe, ProbePlan};
 use self::eprocess::{AnytimeEProcessMonitor, SequentialState};
+use self::fusion::KernelFusionController;
 use self::pareto::ParetoController;
 use self::risk::ConformalRiskEngine;
+use self::sparse::{SparseRecoveryController, SparseState};
 
 const FAST_PATH_BUDGET_NS: u64 = 20;
 const FULL_PATH_BUDGET_NS: u64 = 200;
@@ -210,6 +216,22 @@ pub struct RuntimeKernelSnapshot {
     pub design_budget_ns: u64,
     /// Expected cost of selected probes.
     pub design_expected_cost_ns: u64,
+    /// Sparse-recovery latent support size.
+    pub sparse_support_size: u8,
+    /// Sparse-recovery L1 energy.
+    pub sparse_l1_energy: f64,
+    /// Sparse-recovery residual EWMA.
+    pub sparse_residual_ewma: f64,
+    /// Sparse-recovery critical detections.
+    pub sparse_critical_count: u64,
+    /// Robust fusion bonus currently applied to risk.
+    pub fusion_bonus_ppm: u32,
+    /// Fusion entropy (0..1000) over signal trust weights.
+    pub fusion_entropy_milli: u32,
+    /// Fusion weight-drift score in ppm.
+    pub fusion_drift_ppm: u32,
+    /// Dominant fused signal index.
+    pub fusion_dominant_signal: u8,
 }
 
 /// Online control kernel for strict/hardened runtime decisions.
@@ -236,6 +258,8 @@ pub struct RuntimeMathKernel {
     padic: Mutex<PadicValuationMonitor>,
     symplectic: Mutex<SymplecticReductionController>,
     design: Mutex<OptimalDesignController>,
+    sparse: Mutex<SparseRecoveryController>,
+    fusion: Mutex<KernelFusionController>,
     cached_risk_bonus_ppm: AtomicU64,
     cached_oracle_bias: [AtomicU8; ApiFamily::COUNT],
     cached_spectral_phase: AtomicU8,
@@ -254,6 +278,11 @@ pub struct RuntimeMathKernel {
     cached_design_budget_ns: AtomicU64,
     cached_design_expected_ns: AtomicU64,
     cached_design_selected: AtomicU8,
+    cached_sparse_state: AtomicU8,
+    cached_fusion_bonus_ppm: AtomicU64,
+    cached_fusion_entropy_milli: AtomicU64,
+    cached_fusion_drift_ppm: AtomicU64,
+    cached_fusion_dominant_signal: AtomicU8,
     decisions: AtomicU64,
 }
 
@@ -284,6 +313,8 @@ impl RuntimeMathKernel {
             padic: Mutex::new(PadicValuationMonitor::new()),
             symplectic: Mutex::new(SymplecticReductionController::new()),
             design: Mutex::new(OptimalDesignController::new()),
+            sparse: Mutex::new(SparseRecoveryController::new()),
+            fusion: Mutex::new(KernelFusionController::new()),
             cached_risk_bonus_ppm: AtomicU64::new(0),
             cached_oracle_bias: std::array::from_fn(|_| AtomicU8::new(1)),
             cached_spectral_phase: AtomicU8::new(0),
@@ -302,6 +333,11 @@ impl RuntimeMathKernel {
             cached_design_budget_ns: AtomicU64::new(0),
             cached_design_expected_ns: AtomicU64::new(0),
             cached_design_selected: AtomicU8::new(Probe::COUNT as u8),
+            cached_sparse_state: AtomicU8::new(0),
+            cached_fusion_bonus_ppm: AtomicU64::new(0),
+            cached_fusion_entropy_milli: AtomicU64::new(0),
+            cached_fusion_drift_ppm: AtomicU64::new(0),
+            cached_fusion_dominant_signal: AtomicU8::new(0),
             decisions: AtomicU64::new(0),
         }
     }
@@ -400,6 +436,16 @@ impl RuntimeMathKernel {
             2 => 50_000u32,  // NearBoundary — approaching capacity
             _ => 0u32,       // Calibrating/Admissible
         };
+        // Sparse-recovery root-cause concentration:
+        // focused high-energy support indicates a coherent fault source; critical
+        // indicates high-residual adversarial or unstable latent dynamics.
+        let sparse_bonus = match self.cached_sparse_state.load(Ordering::Relaxed) {
+            4 => 150_000u32, // Critical
+            3 => 70_000u32,  // Diffuse
+            2 => 40_000u32,  // Focused
+            _ => 0u32,       // Calibrating/Stable
+        };
+        let fusion_bonus = self.cached_fusion_bonus_ppm.load(Ordering::Relaxed) as u32;
         let pre_design_risk_ppm = base_risk_ppm
             .saturating_add(sampled_bonus)
             .saturating_add(cohomology_bonus)
@@ -415,6 +461,8 @@ impl RuntimeMathKernel {
             .saturating_add(mfg_bonus)
             .saturating_add(padic_bonus)
             .saturating_add(symplectic_bonus)
+            .saturating_add(sparse_bonus)
+            .saturating_add(fusion_bonus)
             .min(1_000_000);
 
         // D-optimal probe scheduling:
@@ -488,6 +536,9 @@ impl RuntimeMathKernel {
         if self.cached_design_selected.load(Ordering::Relaxed) <= 2
             && risk_upper_bound_ppm >= limits.full_validation_trigger_ppm / 2
         {
+            profile = ValidationProfile::Full;
+        }
+        if self.cached_sparse_state.load(Ordering::Relaxed) >= 4 {
             profile = ValidationProfile::Full;
         }
 
@@ -838,6 +889,88 @@ impl RuntimeMathKernel {
                 .store(sympl_code, Ordering::Relaxed);
         }
 
+        let mut anomaly_vec = [false; Probe::COUNT];
+        if let Some(flag) = spectral_anomaly {
+            anomaly_vec[Probe::Spectral as usize] = flag;
+        }
+        if let Some(flag) = rough_anomaly {
+            anomaly_vec[Probe::RoughPath as usize] = flag;
+        }
+        if let Some(flag) = persistence_anomaly {
+            anomaly_vec[Probe::Persistence as usize] = flag;
+        }
+        if let Some(flag) = anytime_anomaly {
+            anomaly_vec[Probe::Anytime as usize] = flag;
+        }
+        if let Some(flag) = cvar_anomaly {
+            anomaly_vec[Probe::Cvar as usize] = flag;
+        }
+        if let Some(flag) = bridge_anomaly {
+            anomaly_vec[Probe::Bridge as usize] = flag;
+        }
+        if let Some(flag) = ld_anomaly {
+            anomaly_vec[Probe::LargeDeviations as usize] = flag;
+        }
+        if let Some(flag) = hji_anomaly {
+            anomaly_vec[Probe::Hji as usize] = flag;
+        }
+        if let Some(flag) = mfg_anomaly {
+            anomaly_vec[Probe::MeanField as usize] = flag;
+        }
+        if let Some(flag) = padic_anomaly {
+            anomaly_vec[Probe::Padic as usize] = flag;
+        }
+        if let Some(flag) = symplectic_anomaly {
+            anomaly_vec[Probe::Symplectic as usize] = flag;
+        }
+
+        // Feed sparse-recovery latent controller with executed-probe anomalies.
+        {
+            let sparse_code = {
+                let mut sparse = self.sparse.lock();
+                sparse.observe(probe_mask, anomaly_vec, adverse);
+                match sparse.state() {
+                    SparseState::Calibrating => 0u8,
+                    SparseState::Stable => 1u8,
+                    SparseState::Focused => 2u8,
+                    SparseState::Diffuse => 3u8,
+                    SparseState::Critical => 4u8,
+                }
+            };
+            self.cached_sparse_state
+                .store(sparse_code, Ordering::Relaxed);
+        }
+
+        // Feed robust fusion controller from current anomaly severity vector.
+        {
+            let severity = [
+                self.cached_spectral_phase.load(Ordering::Relaxed), // 0..2
+                self.cached_signature_state.load(Ordering::Relaxed), // 0..2
+                self.cached_topological_state.load(Ordering::Relaxed), // 0..2
+                self.cached_anytime_state[usize::from(family as u8)].load(Ordering::Relaxed), // 0..3
+                self.cached_cvar_state[usize::from(family as u8)].load(Ordering::Relaxed), // 0..3
+                self.cached_bridge_state.load(Ordering::Relaxed),                          // 0..2
+                self.cached_ld_state[usize::from(family as u8)].load(Ordering::Relaxed),   // 0..3
+                self.cached_hji_state.load(Ordering::Relaxed),                             // 0..3
+                self.cached_mfg_state.load(Ordering::Relaxed),                             // 0..3
+                self.cached_padic_state.load(Ordering::Relaxed),                           // 0..3
+                self.cached_symplectic_state.load(Ordering::Relaxed),                      // 0..3
+                self.cached_sparse_state.load(Ordering::Relaxed),                          // 0..4
+            ];
+            let summary = {
+                let mut fusion = self.fusion.lock();
+                fusion.observe(severity, adverse, mode)
+            };
+            self.cached_fusion_bonus_ppm
+                .store(u64::from(summary.bonus_ppm), Ordering::Relaxed);
+            self.cached_fusion_entropy_milli
+                .store(u64::from(summary.entropy_milli), Ordering::Relaxed);
+            self.cached_fusion_drift_ppm
+                .store(u64::from(summary.drift_ppm), Ordering::Relaxed);
+            self.cached_fusion_dominant_signal
+                .store(summary.dominant_signal, Ordering::Relaxed);
+        }
+
         // Record executed probes into the design kernel for online information updates.
         {
             let mut design = self.design.lock();
@@ -941,6 +1074,7 @@ impl RuntimeMathKernel {
         let padic_summary = self.padic.lock().summary();
         let symplectic_summary = self.symplectic.lock().summary();
         let design_summary = self.design.lock().summary();
+        let sparse_summary = self.sparse.lock().summary();
         RuntimeKernelSnapshot {
             decisions: self.decisions.load(Ordering::Relaxed),
             consistency_faults: self.cohomology.fault_count(),
@@ -978,6 +1112,14 @@ impl RuntimeMathKernel {
             design_selected_probes: design_summary.selected_count,
             design_budget_ns: design_summary.budget_ns,
             design_expected_cost_ns: design_summary.expected_cost_ns,
+            sparse_support_size: sparse_summary.support_size,
+            sparse_l1_energy: sparse_summary.l1_energy,
+            sparse_residual_ewma: sparse_summary.residual_ewma,
+            sparse_critical_count: sparse_summary.critical_count,
+            fusion_bonus_ppm: self.cached_fusion_bonus_ppm.load(Ordering::Relaxed) as u32,
+            fusion_entropy_milli: self.cached_fusion_entropy_milli.load(Ordering::Relaxed) as u32,
+            fusion_drift_ppm: self.cached_fusion_drift_ppm.load(Ordering::Relaxed) as u32,
+            fusion_dominant_signal: self.cached_fusion_dominant_signal.load(Ordering::Relaxed),
         }
     }
 
