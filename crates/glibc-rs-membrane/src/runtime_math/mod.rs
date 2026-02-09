@@ -30,12 +30,14 @@ use crate::heal::HealingAction;
 use crate::hji_reachability::{HjiReachabilityController, ReachState};
 use crate::large_deviations::{LargeDeviationsMonitor, RateState};
 use crate::mean_field_game::{MeanFieldGameController, MfgState};
+use crate::padic_valuation::{PadicState, PadicValuationMonitor};
 use crate::persistence::{PersistenceDetector, TopologicalState};
 use crate::quarantine_controller::{QuarantineController, current_depth, publish_depth};
 use crate::risk_engine::{CallFamily, RiskDecision, RiskEngine};
 use crate::rough_path::{RoughPathMonitor, SignatureState};
 use crate::schrodinger_bridge::{BridgeState, SchrodingerBridgeController};
 use crate::spectral_monitor::{PhaseState, SpectralMonitor};
+use crate::symplectic_reduction::{ResourceType, SymplecticReductionController, SymplecticState};
 use crate::tropical_latency::{PipelinePath, TROPICAL_METRICS, TropicalLatencyCompositor};
 
 use self::bandit::ConstrainedBanditRouter;
@@ -62,10 +64,11 @@ pub enum ApiFamily {
     Resolver = 5,
     MathFenv = 6,
     Loader = 7,
+    Stdlib = 8,
 }
 
 impl ApiFamily {
-    pub const COUNT: usize = 8;
+    pub const COUNT: usize = 9;
 }
 
 /// Validation profile selected by the runtime controller.
@@ -189,6 +192,14 @@ pub struct RuntimeKernelSnapshot {
     pub mfg_mean_contention: f64,
     /// Mean-field game congestion collapse detections.
     pub mfg_congestion_count: u64,
+    /// p-adic ultrametric distance between current and baseline valuation profiles.
+    pub padic_ultrametric_distance: f64,
+    /// p-adic regime drift detection count.
+    pub padic_drift_count: u64,
+    /// Symplectic Hamiltonian energy (deadlock risk indicator, 0..N).
+    pub symplectic_energy: f64,
+    /// Symplectic admissibility violation count.
+    pub symplectic_violation_count: u64,
 }
 
 /// Online control kernel for strict/hardened runtime decisions.
@@ -212,6 +223,8 @@ pub struct RuntimeMathKernel {
     large_dev: Mutex<LargeDeviationsMonitor>,
     hji: Mutex<HjiReachabilityController>,
     mfg: Mutex<MeanFieldGameController>,
+    padic: Mutex<PadicValuationMonitor>,
+    symplectic: Mutex<SymplecticReductionController>,
     cached_risk_bonus_ppm: AtomicU64,
     cached_oracle_bias: [AtomicU8; ApiFamily::COUNT],
     cached_spectral_phase: AtomicU8,
@@ -223,6 +236,8 @@ pub struct RuntimeMathKernel {
     cached_ld_state: [AtomicU8; ApiFamily::COUNT],
     cached_hji_state: AtomicU8,
     cached_mfg_state: AtomicU8,
+    cached_padic_state: AtomicU8,
+    cached_symplectic_state: AtomicU8,
     decisions: AtomicU64,
 }
 
@@ -250,6 +265,8 @@ impl RuntimeMathKernel {
             large_dev: Mutex::new(LargeDeviationsMonitor::new()),
             hji: Mutex::new(HjiReachabilityController::new()),
             mfg: Mutex::new(MeanFieldGameController::new()),
+            padic: Mutex::new(PadicValuationMonitor::new()),
+            symplectic: Mutex::new(SymplecticReductionController::new()),
             cached_risk_bonus_ppm: AtomicU64::new(0),
             cached_oracle_bias: std::array::from_fn(|_| AtomicU8::new(1)),
             cached_spectral_phase: AtomicU8::new(0),
@@ -261,6 +278,8 @@ impl RuntimeMathKernel {
             cached_ld_state: std::array::from_fn(|_| AtomicU8::new(0)),
             cached_hji_state: AtomicU8::new(0),
             cached_mfg_state: AtomicU8::new(0),
+            cached_padic_state: AtomicU8::new(0),
+            cached_symplectic_state: AtomicU8::new(0),
             decisions: AtomicU64::new(0),
         }
     }
@@ -345,6 +364,20 @@ impl RuntimeMathKernel {
             2 => 40_000u32,  // Congested — above equilibrium
             _ => 0u32,       // Calibrating/Equilibrium
         };
+        // p-adic valuation: non-Archimedean regime drift in floating-point
+        // exponents. ExceptionalRegime means NaN/Inf/subnormal flood.
+        let padic_bonus = match self.cached_padic_state.load(Ordering::Relaxed) {
+            3 => 110_000u32, // ExceptionalRegime
+            2 => 45_000u32,  // DenormalDrift
+            _ => 0u32,       // Calibrating/Normal
+        };
+        // Symplectic reduction: resource lifecycle admissibility guard.
+        // Inadmissible means outside the conservation-law polytope.
+        let symplectic_bonus = match self.cached_symplectic_state.load(Ordering::Relaxed) {
+            3 => 120_000u32, // Inadmissible — outside polytope
+            2 => 50_000u32,  // NearBoundary — approaching capacity
+            _ => 0u32,       // Calibrating/Admissible
+        };
         let risk_upper_bound_ppm = base_risk_ppm
             .saturating_add(sampled_bonus)
             .saturating_add(cohomology_bonus)
@@ -358,6 +391,8 @@ impl RuntimeMathKernel {
             .saturating_add(ld_bonus)
             .saturating_add(hji_bonus)
             .saturating_add(mfg_bonus)
+            .saturating_add(padic_bonus)
+            .saturating_add(symplectic_bonus)
             .min(1_000_000);
 
         let limits = self.controller.limits(mode);
@@ -652,6 +687,52 @@ impl RuntimeMathKernel {
             self.cached_mfg_state.store(mfg_code, Ordering::Relaxed);
         }
 
+        // Feed p-adic valuation monitor with risk bound as a floating-point
+        // value. The 2-adic exponent structure of the risk metric reveals
+        // numerical regime transitions invisible to Archimedean analysis.
+        {
+            let risk_f64 = risk_bound_ppm as f64;
+            let padic_code = {
+                let mut padic = self.padic.lock();
+                padic.observe_f64(risk_f64);
+                match padic.state() {
+                    PadicState::Calibrating => 0u8,
+                    PadicState::Normal => 1u8,
+                    PadicState::DenormalDrift => 2u8,
+                    PadicState::ExceptionalRegime => 3u8,
+                }
+            };
+            self.cached_padic_state.store(padic_code, Ordering::Relaxed);
+        }
+
+        // Feed symplectic reduction controller with resource lifecycle events.
+        // Allocator family maps to SharedMemory acquire/release;
+        // Threading maps to Semaphore; others map to FileDescriptor.
+        {
+            let resource = match family {
+                ApiFamily::Allocator => ResourceType::SharedMemory,
+                ApiFamily::Threading => ResourceType::Semaphore,
+                ApiFamily::Resolver => ResourceType::MessageQueue,
+                _ => ResourceType::FileDescriptor,
+            };
+            let sympl_code = {
+                let mut sympl = self.symplectic.lock();
+                if adverse {
+                    sympl.acquire(resource);
+                } else {
+                    sympl.release(resource);
+                }
+                match sympl.state() {
+                    SymplecticState::Calibrating => 0u8,
+                    SymplecticState::Admissible => 1u8,
+                    SymplecticState::NearBoundary => 2u8,
+                    SymplecticState::Inadmissible => 3u8,
+                }
+            };
+            self.cached_symplectic_state
+                .store(sympl_code, Ordering::Relaxed);
+        }
+
         // Feed allocator frees into primal-dual quarantine controller.
         if matches!(family, ApiFamily::Allocator) {
             let mut quarantine = self.quarantine.lock();
@@ -714,6 +795,8 @@ impl RuntimeMathKernel {
         drop(ld);
         let hji_summary = self.hji.lock().summary();
         let mfg_summary = self.mfg.lock().summary();
+        let padic_summary = self.padic.lock().summary();
+        let symplectic_summary = self.symplectic.lock().summary();
         RuntimeKernelSnapshot {
             decisions: self.decisions.load(Ordering::Relaxed),
             consistency_faults: self.cohomology.fault_count(),
@@ -743,6 +826,10 @@ impl RuntimeMathKernel {
             hji_breached: hji_summary.state == ReachState::Breached,
             mfg_mean_contention: mfg_summary.mean_contention,
             mfg_congestion_count: mfg_summary.congestion_count,
+            padic_ultrametric_distance: padic_summary.ultrametric_distance,
+            padic_drift_count: padic_summary.drift_count,
+            symplectic_energy: symplectic_summary.hamiltonian_energy,
+            symplectic_violation_count: symplectic_summary.violation_count,
         }
     }
 
@@ -827,6 +914,7 @@ fn map_family(family: ApiFamily) -> CallFamily {
         ApiFamily::Resolver => CallFamily::Socket,
         ApiFamily::MathFenv => CallFamily::Other,
         ApiFamily::Loader => CallFamily::Other,
+        ApiFamily::Stdlib => CallFamily::String,
     }
 }
 

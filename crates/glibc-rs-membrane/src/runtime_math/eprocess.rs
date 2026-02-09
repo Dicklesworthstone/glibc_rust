@@ -187,6 +187,7 @@ fn all_families() -> [ApiFamily; ApiFamily::COUNT] {
         ApiFamily::Resolver,
         ApiFamily::MathFenv,
         ApiFamily::Loader,
+        ApiFamily::Stdlib,
     ]
 }
 

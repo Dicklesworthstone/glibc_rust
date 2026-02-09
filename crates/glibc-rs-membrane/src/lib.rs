@@ -34,6 +34,7 @@ pub mod large_deviations;
 pub mod lattice;
 pub mod mean_field_game;
 pub mod metrics;
+pub mod padic_valuation;
 pub mod page_oracle;
 pub mod persistence;
 pub mod ptr_validator;
@@ -43,6 +44,7 @@ pub mod rough_path;
 pub mod runtime_math;
 pub mod schrodinger_bridge;
 pub mod spectral_monitor;
+pub mod symplectic_reduction;
 pub mod tls_cache;
 pub mod tropical_latency;
 

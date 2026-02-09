@@ -38,6 +38,7 @@ const STRICT_REGRET_CAP_MILLI: [u64; ApiFamily::COUNT] = [
     200_000, // Resolver
     220_000, // MathFenv
     200_000, // Loader
+    200_000, // Stdlib
 ];
 const HARDENED_REGRET_CAP_MILLI: [u64; ApiFamily::COUNT] = [
     140_000, // PointerValidation
@@ -48,6 +49,7 @@ const HARDENED_REGRET_CAP_MILLI: [u64; ApiFamily::COUNT] = [
     110_000, // Resolver
     120_000, // MathFenv
     110_000, // Loader
+    110_000, // Stdlib
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
