@@ -1,18 +1,40 @@
 //! Floating-point utility functions.
-//! Implementation pending.
 
-pub fn fabs(_x: f64) -> f64 {
-    todo!()
+#[inline]
+pub fn fabs(x: f64) -> f64 {
+    x.abs()
 }
-pub fn ceil(_x: f64) -> f64 {
-    todo!()
+
+#[inline]
+pub fn ceil(x: f64) -> f64 {
+    x.ceil()
 }
-pub fn floor(_x: f64) -> f64 {
-    todo!()
+
+#[inline]
+pub fn floor(x: f64) -> f64 {
+    x.floor()
 }
-pub fn round(_x: f64) -> f64 {
-    todo!()
+
+#[inline]
+pub fn round(x: f64) -> f64 {
+    x.round()
 }
-pub fn fmod(_x: f64, _y: f64) -> f64 {
-    todo!()
+
+#[inline]
+pub fn fmod(x: f64, y: f64) -> f64 {
+    x % y
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn float_sanity() {
+        assert_eq!(fabs(-3.5), 3.5);
+        assert_eq!(ceil(2.1), 3.0);
+        assert_eq!(floor(2.9), 2.0);
+        assert_eq!(round(2.5), 3.0);
+        assert!((fmod(5.5, 2.0) - 1.5).abs() < 1e-12);
+    }
 }

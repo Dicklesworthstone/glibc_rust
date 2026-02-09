@@ -1,15 +1,34 @@
 //! Exponential and logarithmic functions.
-//! Implementation pending.
 
-pub fn exp(_x: f64) -> f64 {
-    todo!()
+#[inline]
+pub fn exp(x: f64) -> f64 {
+    x.exp()
 }
-pub fn log(_x: f64) -> f64 {
-    todo!()
+
+#[inline]
+pub fn log(x: f64) -> f64 {
+    x.ln()
 }
-pub fn log10(_x: f64) -> f64 {
-    todo!()
+
+#[inline]
+pub fn log10(x: f64) -> f64 {
+    x.log10()
 }
-pub fn pow(_base: f64, _exponent: f64) -> f64 {
-    todo!()
+
+#[inline]
+pub fn pow(base: f64, exponent: f64) -> f64 {
+    base.powf(exponent)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn exp_log_pow_sanity() {
+        assert!((exp(1.0) - std::f64::consts::E).abs() < 1e-12);
+        assert!((log(std::f64::consts::E) - 1.0).abs() < 1e-12);
+        assert!((log10(1000.0) - 3.0).abs() < 1e-12);
+        assert!((pow(9.0, 0.5) - 3.0).abs() < 1e-12);
+    }
 }
