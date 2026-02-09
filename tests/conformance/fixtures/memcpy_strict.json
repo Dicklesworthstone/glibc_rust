@@ -1,0 +1,43 @@
+{
+  "version": "v1",
+  "family": "string/memcpy",
+  "captured_at": "2026-02-08T00:00:00Z",
+  "cases": [
+    {
+      "name": "copy_full_8",
+      "function": "memcpy",
+      "spec_section": "POSIX.1-2017 memcpy",
+      "inputs": { "src": [65, 66, 67, 68, 69, 70, 71, 72], "dst_len": 8, "n": 8 },
+      "expected_output": "[65, 66, 67, 68, 69, 70, 71, 72]",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "copy_partial_4",
+      "function": "memcpy",
+      "spec_section": "POSIX.1-2017 memcpy",
+      "inputs": { "src": [65, 66, 67, 68, 69, 70, 71, 72], "dst_len": 8, "n": 4 },
+      "expected_output": "[65, 66, 67, 68, 0, 0, 0, 0]",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "copy_zero",
+      "function": "memcpy",
+      "spec_section": "POSIX.1-2017 memcpy",
+      "inputs": { "src": [65, 66, 67, 68], "dst_len": 4, "n": 0 },
+      "expected_output": "[0, 0, 0, 0]",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "copy_single_byte",
+      "function": "memcpy",
+      "spec_section": "POSIX.1-2017 memcpy",
+      "inputs": { "src": [42], "dst_len": 1, "n": 1 },
+      "expected_output": "[42]",
+      "expected_errno": 0,
+      "mode": "strict"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+[package]
+name = "glibc_rust"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+parking_lot = "0.12"
+thiserror = "2.0"
+
+[dev-dependencies]
+criterion = "0.5"
+libc = "0.2"
+
+[[bench]]
+name = "membrane_copy"
+harness = false

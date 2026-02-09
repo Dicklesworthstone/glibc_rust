@@ -1,0 +1,12 @@
+[package]
+name = "glibc-rs-membrane"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Transparent Safety Membrane for glibc_rust"
+
+[dependencies]
+parking_lot = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }

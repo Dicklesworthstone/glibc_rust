@@ -1,0 +1,28 @@
+GLIBC_2.2.5 {
+    global:
+        /* string/memory operations */
+        memcpy;
+        memmove;
+        memset;
+        memcmp;
+        memchr;
+        strlen;
+        strcmp;
+        strcpy;
+        strncpy;
+        strcat;
+        strncat;
+        strchr;
+        strrchr;
+        strstr;
+        strtok;
+
+        /* memory allocation */
+        malloc;
+        free;
+        calloc;
+        realloc;
+
+    local:
+        *;
+};

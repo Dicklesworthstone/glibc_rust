@@ -1,0 +1,33 @@
+[package]
+name = "glibc-rs-fuzz"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+glibc-rs-membrane = { path = "../glibc-rs-membrane" }
+glibc-rs-core = { path = "../glibc-rs-core" }
+
+[[bin]]
+name = "fuzz_string"
+path = "fuzz_targets/fuzz_string.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_malloc"
+path = "fuzz_targets/fuzz_malloc.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_membrane"
+path = "fuzz_targets/fuzz_membrane.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_printf"
+path = "fuzz_targets/fuzz_printf.rs"
+doc = false

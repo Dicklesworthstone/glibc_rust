@@ -1,0 +1,26 @@
+[package]
+name = "glibc-rs-harness"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Conformance testing harness for glibc_rust"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[features]
+default = ["asupersync-tooling"]
+asupersync-tooling = ["dep:asupersync-conformance"]
+frankentui-ui = ["dep:ftui-harness"]
+
+[dependencies]
+clap = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+asupersync-conformance = { workspace = true, optional = true }
+ftui-harness = { workspace = true, optional = true }
+
+[[bin]]
+name = "harness"
+path = "src/bin/harness.rs"

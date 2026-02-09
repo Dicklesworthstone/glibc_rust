@@ -1,0 +1,20 @@
+[package]
+name = "glibc-rs-abi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "ABI-compatible extern C boundary for glibc_rust (produces libc.so)"
+build = "build.rs"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[lints.rust]
+unsafe_code = "allow"
+
+[dependencies]
+glibc-rs-membrane = { workspace = true }
+glibc-rs-core = { workspace = true }
+
+[dev-dependencies]
+libc = { workspace = true }

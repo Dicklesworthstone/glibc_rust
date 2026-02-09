@@ -1,0 +1,419 @@
+//! Generational arena with quarantine queue for temporal safety.
+//!
+//! Every allocation gets a slot in the arena with a generation counter.
+//! When freed, the slot enters a quarantine queue rather than being
+//! immediately recycled. This ensures use-after-free is detected with
+//! probability 1 (generation mismatch).
+//!
+//! Thread-safe via sharded `parking_lot::Mutex`.
+
+#![allow(unsafe_code)]
+
+use parking_lot::Mutex;
+use std::collections::VecDeque;
+
+use crate::fingerprint::{AllocationFingerprint, CANARY_SIZE, FINGERPRINT_SIZE, TOTAL_OVERHEAD};
+use crate::lattice::SafetyState;
+
+/// Maximum quarantine queue size in bytes.
+const QUARANTINE_MAX_BYTES: usize = 64 * 1024 * 1024; // 64 MB
+
+/// Maximum quarantine queue entry count.
+const QUARANTINE_MAX_ENTRIES: usize = 65_536;
+
+/// Number of shards for arena locks (power of 2).
+const NUM_SHARDS: usize = 16;
+
+/// Metadata for a single allocation slot.
+#[derive(Debug, Clone, Copy)]
+pub struct ArenaSlot {
+    /// Base address of the full allocation (including fingerprint header).
+    pub raw_base: usize,
+    /// User-visible base address (after fingerprint header).
+    pub user_base: usize,
+    /// User-requested size.
+    pub user_size: usize,
+    /// Generation counter (monotonically increasing).
+    pub generation: u32,
+    /// Current safety state.
+    pub state: SafetyState,
+}
+
+/// Entry in the quarantine queue.
+#[derive(Debug, Clone, Copy)]
+struct QuarantineEntry {
+    user_base: usize,
+    raw_base: usize,
+    total_size: usize,
+}
+
+/// A single shard of the arena.
+struct ArenaShard {
+    slots: Vec<ArenaSlot>,
+    /// Map from user_base address to slot index.
+    addr_to_slot: std::collections::HashMap<usize, usize>,
+    /// Free slot indices for reuse.
+    free_list: Vec<usize>,
+    /// Quarantine queue for freed allocations.
+    quarantine: VecDeque<QuarantineEntry>,
+    /// Total bytes in quarantine.
+    quarantine_bytes: usize,
+}
+
+impl ArenaShard {
+    fn new() -> Self {
+        Self {
+            slots: Vec::new(),
+            addr_to_slot: std::collections::HashMap::new(),
+            free_list: Vec::new(),
+            quarantine: VecDeque::new(),
+            quarantine_bytes: 0,
+        }
+    }
+}
+
+/// Thread-safe generational allocation arena.
+pub struct AllocationArena {
+    shards: Box<[Mutex<ArenaShard>]>,
+    /// Global generation counter.
+    next_generation: std::sync::atomic::AtomicU32,
+}
+
+impl AllocationArena {
+    /// Create a new empty arena.
+    #[must_use]
+    pub fn new() -> Self {
+        let shards: Vec<Mutex<ArenaShard>> = (0..NUM_SHARDS)
+            .map(|_| Mutex::new(ArenaShard::new()))
+            .collect();
+        Self {
+            shards: shards.into_boxed_slice(),
+            next_generation: std::sync::atomic::AtomicU32::new(1),
+        }
+    }
+
+    /// Allocate memory with fingerprint header and canary.
+    ///
+    /// Returns the user-visible pointer (past the fingerprint header).
+    /// Returns None if the system allocator fails.
+    pub fn allocate(&self, user_size: usize) -> Option<*mut u8> {
+        let total_size = user_size.checked_add(TOTAL_OVERHEAD)?;
+        let generation = self
+            .next_generation
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
+        // Allocate raw memory via system allocator
+        let layout = std::alloc::Layout::from_size_align(total_size, 16).ok()?;
+        // SAFETY: Layout is valid (size > 0, alignment is 16).
+        let raw_ptr = unsafe { std::alloc::alloc(layout) };
+        if raw_ptr.is_null() {
+            return None;
+        }
+
+        let raw_base = raw_ptr as usize;
+        let user_base = raw_base + FINGERPRINT_SIZE;
+
+        // Write fingerprint header
+        let fp = AllocationFingerprint::compute(user_base, user_size as u32, generation);
+        let fp_bytes = fp.to_bytes();
+        // SAFETY: raw_ptr is valid for total_size bytes; first FINGERPRINT_SIZE bytes are header.
+        unsafe {
+            std::ptr::copy_nonoverlapping(fp_bytes.as_ptr(), raw_ptr, FINGERPRINT_SIZE);
+        }
+
+        // Write trailing canary
+        let canary = fp.canary();
+        let canary_bytes = canary.to_bytes();
+        // SAFETY: canary sits at raw_base + FINGERPRINT_SIZE + user_size.
+        unsafe {
+            let canary_ptr = raw_ptr.add(FINGERPRINT_SIZE + user_size);
+            std::ptr::copy_nonoverlapping(canary_bytes.as_ptr(), canary_ptr, CANARY_SIZE);
+        }
+
+        // Register in arena
+        let slot = ArenaSlot {
+            raw_base,
+            user_base,
+            user_size,
+            generation,
+            state: SafetyState::Valid,
+        };
+
+        let shard_idx = self.shard_for(user_base);
+        let mut shard = self.shards[shard_idx].lock();
+
+        let slot_idx = if let Some(free_idx) = shard.free_list.pop() {
+            shard.slots[free_idx] = slot;
+            free_idx
+        } else {
+            let idx = shard.slots.len();
+            shard.slots.push(slot);
+            idx
+        };
+        shard.addr_to_slot.insert(user_base, slot_idx);
+
+        Some(user_base as *mut u8)
+    }
+
+    /// Free a membrane-managed allocation.
+    ///
+    /// Returns the action taken.
+    pub fn free(&self, user_ptr: *mut u8) -> FreeResult {
+        let user_base = user_ptr as usize;
+        let shard_idx = self.shard_for(user_base);
+        let mut shard = self.shards[shard_idx].lock();
+
+        let Some(&slot_idx) = shard.addr_to_slot.get(&user_base) else {
+            return FreeResult::ForeignPointer;
+        };
+
+        let slot = &mut shard.slots[slot_idx];
+
+        match slot.state {
+            SafetyState::Freed | SafetyState::Quarantined => {
+                return FreeResult::DoubleFree;
+            }
+            SafetyState::Invalid => {
+                return FreeResult::InvalidPointer;
+            }
+            _ => {}
+        }
+
+        // Verify canary before freeing
+        let canary_ok = self.verify_canary_for_slot(slot);
+
+        // Move to quarantine
+        slot.state = SafetyState::Quarantined;
+        slot.generation = self
+            .next_generation
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
+        let total_size = slot.user_size + TOTAL_OVERHEAD;
+        let raw_base = slot.raw_base;
+
+        shard.quarantine.push_back(QuarantineEntry {
+            user_base,
+            raw_base,
+            total_size,
+        });
+        shard.quarantine_bytes += total_size;
+
+        // Drain quarantine if over limit
+        self.drain_quarantine(&mut shard);
+
+        if canary_ok {
+            FreeResult::Freed
+        } else {
+            FreeResult::FreedWithCanaryCorruption
+        }
+    }
+
+    /// Look up an allocation by user pointer address.
+    #[must_use]
+    pub fn lookup(&self, user_ptr: usize) -> Option<ArenaSlot> {
+        let shard_idx = self.shard_for(user_ptr);
+        let shard = self.shards[shard_idx].lock();
+
+        // Try exact match first
+        if let Some(&slot_idx) = shard.addr_to_slot.get(&user_ptr) {
+            return Some(shard.slots[slot_idx]);
+        }
+
+        // Try containing lookup (pointer into middle of allocation)
+        for slot in &shard.slots {
+            if slot.state.is_live() || slot.state == SafetyState::Quarantined {
+                let end = slot.user_base.saturating_add(slot.user_size);
+                if user_ptr >= slot.user_base && user_ptr < end {
+                    return Some(*slot);
+                }
+            }
+        }
+
+        None
+    }
+
+    /// Look up and return remaining bytes from the given address.
+    #[must_use]
+    pub fn remaining_from(&self, addr: usize) -> Option<(ArenaSlot, usize)> {
+        let slot = self.lookup(addr)?;
+        let end = slot.user_base.saturating_add(slot.user_size);
+        if addr >= slot.user_base && addr < end {
+            Some((slot, end - addr))
+        } else {
+            None
+        }
+    }
+
+    /// Check if an address belongs to any known allocation.
+    #[must_use]
+    pub fn contains(&self, addr: usize) -> bool {
+        self.lookup(addr).is_some()
+    }
+
+    fn shard_for(&self, addr: usize) -> usize {
+        // Use upper bits of address for shard selection to reduce contention
+        (addr >> 12) % NUM_SHARDS
+    }
+
+    fn verify_canary_for_slot(&self, slot: &ArenaSlot) -> bool {
+        let fp =
+            AllocationFingerprint::compute(slot.user_base, slot.user_size as u32, slot.generation);
+        let expected_canary = fp.canary();
+        let canary_addr = slot.raw_base + FINGERPRINT_SIZE + slot.user_size;
+
+        let mut actual = [0u8; CANARY_SIZE];
+        // SAFETY: canary_addr points to valid memory within the allocation's total size.
+        unsafe {
+            std::ptr::copy_nonoverlapping(
+                canary_addr as *const u8,
+                actual.as_mut_ptr(),
+                CANARY_SIZE,
+            );
+        }
+        expected_canary.verify(&actual)
+    }
+
+    fn drain_quarantine(&self, shard: &mut ArenaShard) {
+        while shard.quarantine_bytes > QUARANTINE_MAX_BYTES
+            || shard.quarantine.len() > QUARANTINE_MAX_ENTRIES
+        {
+            let Some(entry) = shard.quarantine.pop_front() else {
+                break;
+            };
+
+            // Mark slot as Freed (no longer quarantined)
+            if let Some(&slot_idx) = shard.addr_to_slot.get(&entry.user_base) {
+                shard.slots[slot_idx].state = SafetyState::Freed;
+                shard.addr_to_slot.remove(&entry.user_base);
+                shard.free_list.push(slot_idx);
+            }
+
+            // Actually release memory
+            let layout =
+                std::alloc::Layout::from_size_align(entry.total_size, 16).expect("valid layout");
+            // SAFETY: raw_base was allocated with this layout via std::alloc::alloc.
+            unsafe {
+                std::alloc::dealloc(entry.raw_base as *mut u8, layout);
+            }
+
+            shard.quarantine_bytes -= entry.total_size;
+        }
+    }
+}
+
+impl Default for AllocationArena {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Result of a free operation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FreeResult {
+    /// Successfully freed and quarantined.
+    Freed,
+    /// Freed but trailing canary was corrupted (buffer overflow detected).
+    FreedWithCanaryCorruption,
+    /// Pointer was already freed (double free).
+    DoubleFree,
+    /// Pointer is not known to the arena (foreign pointer).
+    ForeignPointer,
+    /// Pointer is in an invalid state.
+    InvalidPointer,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn allocate_and_free_cycle() {
+        let arena = AllocationArena::new();
+        let ptr = arena.allocate(256).expect("allocation should succeed");
+        assert!(!ptr.is_null());
+
+        // Write to the allocation
+        // SAFETY: ptr is valid for 256 bytes from allocate().
+        unsafe {
+            std::ptr::write_bytes(ptr, 0xAB, 256);
+        }
+
+        let result = arena.free(ptr);
+        assert_eq!(result, FreeResult::Freed);
+    }
+
+    #[test]
+    fn double_free_detected() {
+        let arena = AllocationArena::new();
+        let ptr = arena.allocate(64).expect("allocation should succeed");
+
+        let first = arena.free(ptr);
+        assert_eq!(first, FreeResult::Freed);
+
+        let second = arena.free(ptr);
+        assert_eq!(second, FreeResult::DoubleFree);
+    }
+
+    #[test]
+    fn foreign_pointer_detected() {
+        let arena = AllocationArena::new();
+        let local = 42u64;
+        let result = arena.free(std::ptr::addr_of!(local) as *mut u8);
+        assert_eq!(result, FreeResult::ForeignPointer);
+    }
+
+    #[test]
+    fn lookup_finds_allocation() {
+        let arena = AllocationArena::new();
+        let ptr = arena.allocate(128).expect("allocation should succeed");
+        let addr = ptr as usize;
+
+        let slot = arena.lookup(addr).expect("should find allocation");
+        assert_eq!(slot.user_base, addr);
+        assert_eq!(slot.user_size, 128);
+        assert_eq!(slot.state, SafetyState::Valid);
+    }
+
+    #[test]
+    fn lookup_into_middle_of_allocation() {
+        let arena = AllocationArena::new();
+        let ptr = arena.allocate(256).expect("allocation should succeed");
+        let addr = ptr as usize;
+
+        let (slot, remaining) = arena
+            .remaining_from(addr + 64)
+            .expect("should find containing allocation");
+        assert_eq!(slot.user_base, addr);
+        assert_eq!(remaining, 192);
+    }
+
+    #[test]
+    fn canary_corruption_detected() {
+        let arena = AllocationArena::new();
+        let ptr = arena.allocate(32).expect("allocation should succeed");
+
+        // Corrupt the canary by writing past the allocation
+        // SAFETY: We intentionally write past bounds to test canary detection.
+        unsafe {
+            let canary_ptr = ptr.add(32);
+            std::ptr::write_bytes(canary_ptr, 0xFF, CANARY_SIZE);
+        }
+
+        let result = arena.free(ptr);
+        assert_eq!(result, FreeResult::FreedWithCanaryCorruption);
+    }
+
+    #[test]
+    fn generation_increases() {
+        let arena = AllocationArena::new();
+        let p1 = arena.allocate(64).expect("alloc 1");
+        let p2 = arena.allocate(64).expect("alloc 2");
+
+        let s1 = arena.lookup(p1 as usize).unwrap();
+        let s2 = arena.lookup(p2 as usize).unwrap();
+        assert!(s2.generation > s1.generation);
+
+        arena.free(p1);
+        arena.free(p2);
+    }
+}

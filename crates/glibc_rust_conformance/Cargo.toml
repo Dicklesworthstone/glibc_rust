@@ -1,0 +1,20 @@
+[package]
+name = "glibc_rust_conformance"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = ["asupersync-tooling"]
+asupersync-tooling = ["dep:asupersync_conformance"]
+frankentui-ui = ["dep:ftui_harness"]
+
+[dependencies]
+clap = { version = "4.5", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+libc = "0.2"
+glibc_rust = { path = "../glibc_rust" }
+asupersync_conformance = { package = "asupersync-conformance", path = "/dp/asupersync/conformance", optional = true }
+ftui_harness = { package = "ftui-harness", path = "/dp/frankentui/crates/ftui-harness", optional = true }

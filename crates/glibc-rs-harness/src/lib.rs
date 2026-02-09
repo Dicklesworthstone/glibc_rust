@@ -1,0 +1,25 @@
+//! Conformance testing harness for glibc_rust.
+//!
+//! This crate provides:
+//! - Fixture capture: record host glibc behavior as JSON reference data
+//! - Fixture verify: compare our implementation against captured fixtures
+//! - Traceability: map tests to POSIX/C11 spec sections + TSM policy sections
+//! - Healing oracle: intentionally trigger unsafe conditions, verify healing
+//! - Report generation: human-readable + machine-readable conformance reports
+
+#![forbid(unsafe_code)]
+
+pub mod capture;
+pub mod diff;
+pub mod fixtures;
+pub mod healing_oracle;
+pub mod membrane_tests;
+pub mod report;
+pub mod runner;
+pub mod traceability;
+pub mod verify;
+
+pub use fixtures::{FixtureCase, FixtureSet};
+pub use report::ConformanceReport;
+pub use runner::TestRunner;
+pub use verify::VerificationResult;

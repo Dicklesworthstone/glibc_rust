@@ -1,0 +1,308 @@
+//! String operations: strlen, strcmp, strncmp, strcpy, strncpy, strcat, strncat,
+//! strchr, strrchr, strstr.
+//!
+//! These are safe Rust implementations operating on byte slices that represent
+//! NUL-terminated C strings. In this safe Rust model, strings are `&[u8]` slices
+//! where a NUL byte (`0x00`) marks the logical end of the string.
+
+/// Returns the length of a NUL-terminated byte string (not counting the NUL).
+///
+/// Equivalent to C `strlen`. Scans `s` for the first `0x00` byte and returns
+/// its index. If no NUL is found, returns the full slice length.
+pub fn strlen(s: &[u8]) -> usize {
+    s.iter().position(|&b| b == 0).unwrap_or(s.len())
+}
+
+/// Compares two NUL-terminated byte strings lexicographically.
+///
+/// Equivalent to C `strcmp`. Compares byte-by-byte until a difference is found
+/// or both strings reach a NUL terminator.
+///
+/// Returns a negative value if `s1 < s2`, zero if equal, positive if `s1 > s2`.
+pub fn strcmp(s1: &[u8], s2: &[u8]) -> i32 {
+    let mut i = 0;
+    loop {
+        let a = if i < s1.len() { s1[i] } else { 0 };
+        let b = if i < s2.len() { s2[i] } else { 0 };
+
+        if a != b {
+            return (a as i32) - (b as i32);
+        }
+        if a == 0 {
+            return 0;
+        }
+        i += 1;
+    }
+}
+
+/// Compares at most `n` bytes of two NUL-terminated byte strings.
+///
+/// Equivalent to C `strncmp`. Like [`strcmp`], but stops after `n` bytes.
+pub fn strncmp(s1: &[u8], s2: &[u8], n: usize) -> i32 {
+    for i in 0..n {
+        let a = if i < s1.len() { s1[i] } else { 0 };
+        let b = if i < s2.len() { s2[i] } else { 0 };
+
+        if a != b {
+            return (a as i32) - (b as i32);
+        }
+        if a == 0 {
+            return 0;
+        }
+    }
+    0
+}
+
+/// Copies a NUL-terminated string from `src` into `dest`.
+///
+/// Equivalent to C `strcpy`. Copies bytes from `src` until (and including)
+/// the NUL terminator. Returns the number of bytes copied (including the NUL).
+///
+/// # Panics
+///
+/// Panics if `dest` is too small to hold the source string plus NUL.
+pub fn strcpy(dest: &mut [u8], src: &[u8]) -> usize {
+    let src_len = strlen(src);
+    assert!(
+        dest.len() > src_len,
+        "strcpy: destination buffer too small ({} bytes for {} byte string + NUL)",
+        dest.len(),
+        src_len
+    );
+    dest[..src_len].copy_from_slice(&src[..src_len]);
+    dest[src_len] = 0;
+    src_len + 1
+}
+
+/// Copies at most `n` bytes from `src` into `dest`.
+///
+/// Equivalent to C `strncpy`. If `src` is shorter than `n`, the remainder of
+/// `dest` is filled with NUL bytes. If `src` is `n` or longer, `dest` will
+/// NOT be NUL-terminated.
+///
+/// Returns the number of bytes written to `dest` (always `min(n, dest.len())`).
+pub fn strncpy(dest: &mut [u8], src: &[u8], n: usize) -> usize {
+    let count = n.min(dest.len());
+    let src_len = strlen(src);
+    let copy_len = src_len.min(count);
+
+    dest[..copy_len].copy_from_slice(&src[..copy_len]);
+
+    // Pad remainder with NUL bytes.
+    for byte in &mut dest[copy_len..count] {
+        *byte = 0;
+    }
+
+    count
+}
+
+/// Appends `src` to the end of the NUL-terminated string in `dest`.
+///
+/// Equivalent to C `strcat`. Finds the NUL in `dest`, then copies `src`
+/// (up to and including its NUL) after it.
+///
+/// Returns the total length of the resulting string (not counting the NUL).
+///
+/// # Panics
+///
+/// Panics if `dest` is too small.
+pub fn strcat(dest: &mut [u8], src: &[u8]) -> usize {
+    let dest_len = strlen(dest);
+    let src_len = strlen(src);
+    let total = dest_len + src_len;
+    assert!(
+        dest.len() > total,
+        "strcat: destination buffer too small ({} bytes for {} byte result + NUL)",
+        dest.len(),
+        total,
+    );
+    dest[dest_len..dest_len + src_len].copy_from_slice(&src[..src_len]);
+    dest[total] = 0;
+    total
+}
+
+/// Appends at most `n` bytes from `src` to the NUL-terminated string in `dest`.
+///
+/// Equivalent to C `strncat`. Always NUL-terminates the result.
+///
+/// Returns the total length of the resulting string (not counting the NUL).
+///
+/// # Panics
+///
+/// Panics if `dest` is too small.
+pub fn strncat(dest: &mut [u8], src: &[u8], n: usize) -> usize {
+    let dest_len = strlen(dest);
+    let src_len = strlen(src).min(n);
+    let total = dest_len + src_len;
+    assert!(
+        dest.len() > total,
+        "strncat: destination buffer too small ({} bytes for {} byte result + NUL)",
+        dest.len(),
+        total,
+    );
+    dest[dest_len..dest_len + src_len].copy_from_slice(&src[..src_len]);
+    dest[total] = 0;
+    total
+}
+
+/// Locates the first occurrence of `c` in the NUL-terminated string `s`.
+///
+/// Equivalent to C `strchr`. Returns the index of the first byte equal to `c`,
+/// or `None` if not found before the NUL terminator. If `c` is `0`, returns
+/// the index of the NUL terminator.
+pub fn strchr(s: &[u8], c: u8) -> Option<usize> {
+    let len = strlen(s);
+    if c == 0 {
+        return Some(len);
+    }
+    s[..len].iter().position(|&b| b == c)
+}
+
+/// Locates the last occurrence of `c` in the NUL-terminated string `s`.
+///
+/// Equivalent to C `strrchr`. Returns the index of the last byte equal to `c`,
+/// or `None` if not found.
+pub fn strrchr(s: &[u8], c: u8) -> Option<usize> {
+    let len = strlen(s);
+    if c == 0 {
+        return Some(len);
+    }
+    s[..len].iter().rposition(|&b| b == c)
+}
+
+/// Finds the first occurrence of the NUL-terminated substring `needle` in
+/// the NUL-terminated string `haystack`.
+///
+/// Equivalent to C `strstr`. Returns the byte index where `needle` starts,
+/// or `None` if not found.
+pub fn strstr(haystack: &[u8], needle: &[u8]) -> Option<usize> {
+    let h_len = strlen(haystack);
+    let n_len = strlen(needle);
+
+    if n_len == 0 {
+        return Some(0);
+    }
+    if n_len > h_len {
+        return None;
+    }
+
+    let haystack = &haystack[..h_len];
+    let needle = &needle[..n_len];
+
+    haystack.windows(n_len).position(|window| window == needle)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_strlen_basic() {
+        assert_eq!(strlen(b"hello\0"), 5);
+        assert_eq!(strlen(b"\0"), 0);
+        assert_eq!(strlen(b"abc"), 3); // no NUL found
+    }
+
+    #[test]
+    fn test_strcmp_equal() {
+        assert_eq!(strcmp(b"abc\0", b"abc\0"), 0);
+    }
+
+    #[test]
+    fn test_strcmp_less() {
+        assert!(strcmp(b"abc\0", b"abd\0") < 0);
+    }
+
+    #[test]
+    fn test_strcmp_greater() {
+        assert!(strcmp(b"abd\0", b"abc\0") > 0);
+    }
+
+    #[test]
+    fn test_strcmp_prefix() {
+        assert!(strcmp(b"ab\0", b"abc\0") < 0);
+        assert!(strcmp(b"abc\0", b"ab\0") > 0);
+    }
+
+    #[test]
+    fn test_strncmp_basic() {
+        assert_eq!(strncmp(b"abcdef\0", b"abcxyz\0", 3), 0);
+        assert!(strncmp(b"abcdef\0", b"abcxyz\0", 4) < 0);
+    }
+
+    #[test]
+    fn test_strcpy_basic() {
+        let mut buf = [0u8; 10];
+        let n = strcpy(&mut buf, b"hello\0");
+        assert_eq!(n, 6);
+        assert_eq!(&buf[..6], b"hello\0");
+    }
+
+    #[test]
+    fn test_strncpy_basic() {
+        let mut buf = [0xFFu8; 10];
+        strncpy(&mut buf, b"hi\0", 5);
+        assert_eq!(&buf[..5], b"hi\0\0\0");
+    }
+
+    #[test]
+    fn test_strncpy_truncate() {
+        let mut buf = [0xFFu8; 3];
+        strncpy(&mut buf, b"hello\0", 3);
+        // Not NUL-terminated because src was longer than n.
+        assert_eq!(&buf, b"hel");
+    }
+
+    #[test]
+    fn test_strcat_basic() {
+        let mut buf = [0u8; 12];
+        strcpy(&mut buf, b"hello\0");
+        let total = strcat(&mut buf, b" world\0");
+        assert_eq!(total, 11);
+        assert_eq!(&buf[..12], b"hello world\0");
+    }
+
+    #[test]
+    fn test_strncat_basic() {
+        let mut buf = [0u8; 10];
+        strcpy(&mut buf, b"hi\0");
+        let total = strncat(&mut buf, b"there\0", 3);
+        assert_eq!(total, 5);
+        assert_eq!(&buf[..6], b"hithe\0");
+    }
+
+    #[test]
+    fn test_strchr_found() {
+        assert_eq!(strchr(b"hello\0", b'l'), Some(2));
+    }
+
+    #[test]
+    fn test_strchr_not_found() {
+        assert_eq!(strchr(b"hello\0", b'z'), None);
+    }
+
+    #[test]
+    fn test_strchr_nul() {
+        assert_eq!(strchr(b"hello\0", 0), Some(5));
+    }
+
+    #[test]
+    fn test_strrchr_found() {
+        assert_eq!(strrchr(b"hello\0", b'l'), Some(3));
+    }
+
+    #[test]
+    fn test_strstr_found() {
+        assert_eq!(strstr(b"hello world\0", b"world\0"), Some(6));
+    }
+
+    #[test]
+    fn test_strstr_not_found() {
+        assert_eq!(strstr(b"hello world\0", b"xyz\0"), None);
+    }
+
+    #[test]
+    fn test_strstr_empty_needle() {
+        assert_eq!(strstr(b"hello\0", b"\0"), Some(0));
+    }
+}

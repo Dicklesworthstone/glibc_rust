@@ -1,0 +1,7 @@
+/target/
+legacy_glibc_code/
+Cargo.lock
+*.swp
+*.swo
+*~
+.DS_Store
