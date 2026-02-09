@@ -13,6 +13,7 @@
 
 use crate::arena::{AllocationArena, ArenaSlot, FreeResult};
 use crate::bloom::PointerBloomFilter;
+use crate::check_oracle::CheckStage;
 use crate::config::safety_level;
 use crate::fingerprint::CANARY_SIZE;
 use crate::galois::PointerAbstraction;
@@ -120,118 +121,238 @@ impl ValidationPipeline {
             );
             return ValidationOutcome::Null;
         }
+        let aligned = addr & 0x7 == 0;
+        let recent_page = self.page_oracle.query(addr);
+        let raw_order =
+            self.runtime_math
+                .check_ordering(ApiFamily::PointerValidation, aligned, recent_page);
+        let ordering = Self::dependency_safe_order(raw_order);
 
-        // Stage 2: TLS cache lookup (~5ns)
-        let cached = with_tls_cache(|cache| cache.lookup(addr));
-        if let Some(cv) = cached {
-            MembraneMetrics::inc(&metrics.tls_cache_hits);
-            let abs = PointerAbstraction::validated(
-                addr,
-                cv.state,
-                cv.user_base,
-                cv.user_size
-                    .saturating_sub(addr.saturating_sub(cv.user_base)),
-                cv.generation,
+        let mut elapsed_ns = 1_u64;
+        let mut slot: Option<ArenaSlot> = None;
+        let mut bloom_negative = false;
+        let mut saw_fingerprint = false;
+        let mut saw_canary = false;
+
+        for (idx, stage) in ordering.iter().enumerate() {
+            match *stage {
+                CheckStage::Null => {}
+                CheckStage::TlsCache => {
+                    elapsed_ns =
+                        elapsed_ns.saturating_add(u64::from(CheckStage::TlsCache.cost_ns()));
+                    let cached = with_tls_cache(|cache| cache.lookup(addr));
+                    if let Some(cv) = cached {
+                        MembraneMetrics::inc(&metrics.tls_cache_hits);
+                        let abs = PointerAbstraction::validated(
+                            addr,
+                            cv.state,
+                            cv.user_base,
+                            cv.user_size
+                                .saturating_sub(addr.saturating_sub(cv.user_base)),
+                            cv.generation,
+                        );
+                        self.runtime_math.note_check_order_outcome(
+                            ApiFamily::PointerValidation,
+                            aligned,
+                            recent_page,
+                            &ordering,
+                            Some(idx),
+                        );
+                        self.runtime_math.observe_validation_result(
+                            ApiFamily::PointerValidation,
+                            ValidationProfile::Fast,
+                            elapsed_ns,
+                            false,
+                        );
+                        return ValidationOutcome::CachedValid(abs);
+                    }
+                    MembraneMetrics::inc(&metrics.tls_cache_misses);
+                }
+                CheckStage::Bloom => {
+                    if slot.is_some() {
+                        continue;
+                    }
+                    elapsed_ns = elapsed_ns.saturating_add(u64::from(CheckStage::Bloom.cost_ns()));
+                    if !self.bloom.might_contain(addr) {
+                        bloom_negative = true;
+                        MembraneMetrics::inc(&metrics.bloom_misses);
+
+                        let pre_decision = self
+                            .runtime_math
+                            .decide(mode, RuntimeContext::pointer_validation(addr, true));
+
+                        // Runtime-math selected fast path for foreign pointers.
+                        if !pre_decision.requires_full_validation() && !mode.heals_enabled() {
+                            self.runtime_math.note_check_order_outcome(
+                                ApiFamily::PointerValidation,
+                                aligned,
+                                recent_page,
+                                &ordering,
+                                Some(idx),
+                            );
+                            self.runtime_math.observe_validation_result(
+                                ApiFamily::PointerValidation,
+                                pre_decision.profile,
+                                elapsed_ns,
+                                false,
+                            );
+                            return ValidationOutcome::Foreign(PointerAbstraction::unknown(addr));
+                        }
+
+                        // Runtime-math full profile (or hardened) requires page-oracle cross-check.
+                        if !self.page_oracle.query(addr) {
+                            elapsed_ns = elapsed_ns.saturating_add(6);
+                            self.runtime_math.note_check_order_outcome(
+                                ApiFamily::PointerValidation,
+                                aligned,
+                                recent_page,
+                                &ordering,
+                                Some(idx),
+                            );
+                            self.runtime_math.observe_validation_result(
+                                ApiFamily::PointerValidation,
+                                pre_decision.profile,
+                                elapsed_ns,
+                                false,
+                            );
+                            return ValidationOutcome::Foreign(PointerAbstraction::unknown(addr));
+                        }
+                    } else {
+                        MembraneMetrics::inc(&metrics.bloom_hits);
+                    }
+                }
+                CheckStage::Arena => {
+                    if slot.is_some() {
+                        continue;
+                    }
+                    elapsed_ns = elapsed_ns.saturating_add(u64::from(CheckStage::Arena.cost_ns()));
+                    MembraneMetrics::inc(&metrics.arena_lookups);
+                    let Some(found) = self.arena.lookup(addr) else {
+                        self.runtime_math.note_check_order_outcome(
+                            ApiFamily::PointerValidation,
+                            aligned,
+                            recent_page,
+                            &ordering,
+                            Some(idx),
+                        );
+                        self.runtime_math.observe_validation_result(
+                            ApiFamily::PointerValidation,
+                            ValidationProfile::Fast,
+                            elapsed_ns,
+                            false,
+                        );
+                        return ValidationOutcome::Foreign(PointerAbstraction::unknown(addr));
+                    };
+                    if !found.state.is_live() {
+                        let abs = self.abstraction_from_slot(addr, &found);
+                        self.runtime_math.note_check_order_outcome(
+                            ApiFamily::PointerValidation,
+                            aligned,
+                            recent_page,
+                            &ordering,
+                            Some(idx),
+                        );
+                        self.runtime_math.observe_validation_result(
+                            ApiFamily::PointerValidation,
+                            ValidationProfile::Full,
+                            elapsed_ns,
+                            true,
+                        );
+                        return ValidationOutcome::TemporalViolation(abs);
+                    }
+                    slot = Some(found);
+                }
+                CheckStage::Fingerprint => {
+                    if slot.is_some() {
+                        elapsed_ns =
+                            elapsed_ns.saturating_add(u64::from(CheckStage::Fingerprint.cost_ns()));
+                        MembraneMetrics::inc(&metrics.fingerprint_passes);
+                        saw_fingerprint = true;
+                    }
+                }
+                CheckStage::Canary => {
+                    if slot.is_some() {
+                        elapsed_ns =
+                            elapsed_ns.saturating_add(u64::from(CheckStage::Canary.cost_ns()));
+                        MembraneMetrics::inc(&metrics.canary_passes);
+                        saw_canary = true;
+                    }
+                }
+                CheckStage::Bounds => {
+                    if slot.is_some() {
+                        elapsed_ns =
+                            elapsed_ns.saturating_add(u64::from(CheckStage::Bounds.cost_ns()));
+                    }
+                }
+            }
+        }
+
+        let Some(slot) = slot else {
+            self.runtime_math.note_check_order_outcome(
+                ApiFamily::PointerValidation,
+                aligned,
+                recent_page,
+                &ordering,
+                None,
             );
             self.runtime_math.observe_validation_result(
                 ApiFamily::PointerValidation,
                 ValidationProfile::Fast,
-                5,
-                false,
-            );
-            return ValidationOutcome::CachedValid(abs);
-        }
-        MembraneMetrics::inc(&metrics.tls_cache_misses);
-
-        // Stage 3: Bloom filter pre-check (~10ns)
-        if !self.bloom.might_contain(addr) {
-            MembraneMetrics::inc(&metrics.bloom_misses);
-
-            let pre_decision = self
-                .runtime_math
-                .decide(mode, RuntimeContext::pointer_validation(addr, true));
-
-            // Runtime-math selected fast path for foreign pointers.
-            if !pre_decision.requires_full_validation() && !mode.heals_enabled() {
-                self.runtime_math.observe_validation_result(
-                    ApiFamily::PointerValidation,
-                    pre_decision.profile,
-                    12,
-                    false,
-                );
-                return ValidationOutcome::Foreign(PointerAbstraction::unknown(addr));
-            }
-
-            // Runtime-math full profile (or hardened) requires a page-oracle cross-check.
-            if !self.page_oracle.query(addr) {
-                self.runtime_math.observe_validation_result(
-                    ApiFamily::PointerValidation,
-                    pre_decision.profile,
-                    18,
-                    false,
-                );
-                return ValidationOutcome::Foreign(PointerAbstraction::unknown(addr));
-            }
-        }
-        MembraneMetrics::inc(&metrics.bloom_hits);
-
-        // Stage 4: Arena lookup (~30ns)
-        MembraneMetrics::inc(&metrics.arena_lookups);
-        let Some(slot) = self.arena.lookup(addr) else {
-            self.runtime_math.observe_validation_result(
-                ApiFamily::PointerValidation,
-                ValidationProfile::Fast,
-                30,
+                elapsed_ns,
                 false,
             );
             return ValidationOutcome::Foreign(PointerAbstraction::unknown(addr));
         };
 
-        // Stage 5: Check temporal state
-        if !slot.state.is_live() {
-            let abs = self.abstraction_from_slot(addr, &slot);
-            self.runtime_math.observe_validation_result(
-                ApiFamily::PointerValidation,
-                ValidationProfile::Full,
-                40,
-                true,
-            );
-            return ValidationOutcome::TemporalViolation(abs);
-        }
-
-        let deep_decision = self
-            .runtime_math
-            .decide(mode, RuntimeContext::pointer_validation(addr, false));
+        let deep_decision = self.runtime_math.decide(
+            mode,
+            RuntimeContext::pointer_validation(addr, bloom_negative),
+        );
 
         // Runtime-math fast profile in strict mode skips deep integrity checks.
         if !deep_decision.requires_full_validation() && !mode.heals_enabled() {
             let abs = self.abstraction_from_slot(addr, &slot);
             self.cache_validation(addr, &slot);
+            self.runtime_math.note_check_order_outcome(
+                ApiFamily::PointerValidation,
+                aligned,
+                recent_page,
+                &ordering,
+                None,
+            );
             self.runtime_math.observe_validation_result(
                 ApiFamily::PointerValidation,
                 deep_decision.profile,
-                45,
+                elapsed_ns,
                 false,
             );
             return ValidationOutcome::Validated(abs);
         }
 
-        // Stage 6: Fingerprint verification (~20ns) — Full mode only
-        // (Fingerprint is checked during arena operations, not here redundantly)
-        MembraneMetrics::inc(&metrics.fingerprint_passes);
+        // If full path is required and these stages were delayed by ordering,
+        // force their accounting now so integrity checks remain complete.
+        if !saw_fingerprint {
+            elapsed_ns = elapsed_ns.saturating_add(u64::from(CheckStage::Fingerprint.cost_ns()));
+            MembraneMetrics::inc(&metrics.fingerprint_passes);
+        }
+        if !saw_canary {
+            elapsed_ns = elapsed_ns.saturating_add(u64::from(CheckStage::Canary.cost_ns()));
+            MembraneMetrics::inc(&metrics.canary_passes);
+        }
 
-        // Stage 7: Canary verification (~10ns) — Full mode only
-        // (Canary is checked during free; live allocations have intact canaries
-        //  unless there's an active overflow, which we detect on free)
-        MembraneMetrics::inc(&metrics.canary_passes);
-
-        // All checks passed
         let abs = self.abstraction_from_slot(addr, &slot);
         self.cache_validation(addr, &slot);
+        self.runtime_math.note_check_order_outcome(
+            ApiFamily::PointerValidation,
+            aligned,
+            recent_page,
+            &ordering,
+            None,
+        );
         self.runtime_math.observe_validation_result(
             ApiFamily::PointerValidation,
             deep_decision.profile,
-            70,
+            elapsed_ns,
             false,
         );
         ValidationOutcome::Validated(abs)
@@ -298,6 +419,45 @@ impl ValidationPipeline {
             );
         });
     }
+
+    fn dependency_safe_order(ordering: [CheckStage; 7]) -> [CheckStage; 7] {
+        let mut out = [CheckStage::Null; 7];
+        let mut n = 0_usize;
+
+        for stage in ordering.iter().copied() {
+            if matches!(stage, CheckStage::Null) {
+                out[n] = stage;
+                n += 1;
+                break;
+            }
+        }
+        if n == 0 {
+            out[n] = CheckStage::Null;
+            n += 1;
+        }
+
+        for stage in ordering.iter().copied() {
+            if matches!(
+                stage,
+                CheckStage::TlsCache | CheckStage::Bloom | CheckStage::Arena
+            ) {
+                out[n] = stage;
+                n += 1;
+            }
+        }
+        for stage in ordering.iter().copied() {
+            if matches!(
+                stage,
+                CheckStage::Fingerprint | CheckStage::Canary | CheckStage::Bounds
+            ) {
+                out[n] = stage;
+                n += 1;
+            }
+        }
+
+        debug_assert_eq!(n, 7);
+        out
+    }
 }
 
 impl Default for ValidationPipeline {
@@ -309,6 +469,7 @@ impl Default for ValidationPipeline {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::check_oracle::CheckStage;
     use crate::lattice::SafetyState;
 
     #[test]
@@ -377,5 +538,38 @@ mod tests {
         assert!(matches!(outcome, ValidationOutcome::CachedValid(_)));
 
         pipeline.arena.free(ptr);
+    }
+
+    #[test]
+    fn dependency_safe_order_delays_deep_checks_until_after_arena() {
+        let scrambled = [
+            CheckStage::Null,
+            CheckStage::Fingerprint,
+            CheckStage::Canary,
+            CheckStage::Bounds,
+            CheckStage::TlsCache,
+            CheckStage::Bloom,
+            CheckStage::Arena,
+        ];
+        let ordered = ValidationPipeline::dependency_safe_order(scrambled);
+        let arena_idx = ordered
+            .iter()
+            .position(|s| matches!(s, CheckStage::Arena))
+            .expect("arena in ordering");
+        let fingerprint_idx = ordered
+            .iter()
+            .position(|s| matches!(s, CheckStage::Fingerprint))
+            .expect("fingerprint in ordering");
+        let canary_idx = ordered
+            .iter()
+            .position(|s| matches!(s, CheckStage::Canary))
+            .expect("canary in ordering");
+        let bounds_idx = ordered
+            .iter()
+            .position(|s| matches!(s, CheckStage::Bounds))
+            .expect("bounds in ordering");
+        assert!(arena_idx < fingerprint_idx);
+        assert!(arena_idx < canary_idx);
+        assert!(arena_idx < bounds_idx);
     }
 }
