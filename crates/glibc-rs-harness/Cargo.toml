@@ -20,6 +20,7 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 asupersync-conformance = { workspace = true, optional = true }
 ftui-harness = { workspace = true, optional = true }
+glibc_rust_conformance = { path = "../glibc_rust_conformance" }
 
 [[bin]]
 name = "harness"

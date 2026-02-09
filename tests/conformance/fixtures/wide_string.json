@@ -1,0 +1,43 @@
+{
+  "version": "v1",
+  "family": "string/wide",
+  "captured_at": "2026-02-09T00:00:00Z",
+  "cases": [
+    {
+      "name": "wcslen_basic",
+      "function": "wcslen",
+      "spec_section": "ISO C wcslen",
+      "inputs": { "s": [65, 66, 67, 0] },
+      "expected_output": "3",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "wcscmp_equal",
+      "function": "wcscmp",
+      "spec_section": "ISO C wcscmp",
+      "inputs": { "s1": [65, 66, 0], "s2": [65, 66, 0] },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "wcscmp_less",
+      "function": "wcscmp",
+      "spec_section": "ISO C wcscmp",
+      "inputs": { "s1": [65, 0], "s2": [66, 0] },
+      "expected_output": "-1",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "wcscpy_basic",
+      "function": "wcscpy",
+      "spec_section": "ISO C wcscpy",
+      "inputs": { "src": [65, 66, 67, 0], "dst_len": 8 },
+      "expected_output": "[65, 66, 67, 0, 0, 0, 0, 0]",
+      "expected_errno": 0,
+      "mode": "strict"
+    }
+  ]
+}

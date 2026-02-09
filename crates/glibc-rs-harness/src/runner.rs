@@ -3,6 +3,7 @@
 use crate::fixtures::FixtureSet;
 use crate::verify::VerificationResult;
 use crate::{FixtureCase, diff};
+use glibc_rust_conformance::execute_fixture_case;
 
 /// Runs a fixture set and collects verification results.
 pub struct TestRunner {
@@ -50,71 +51,34 @@ fn mode_matches(active_mode: &str, case_mode: &str) -> bool {
 }
 
 fn execute_case(case: &FixtureCase) -> (String, Option<String>) {
-    let actual = match case.function.as_str() {
-        "memcpy" => simulate_memcpy(case),
-        "strlen" => simulate_strlen(case),
-        _ => format!("unsupported:{}", case.function),
-    };
-    let diff = if actual == case.expected_output {
-        None
-    } else {
-        Some(diff::render_diff(&case.expected_output, &actual))
-    };
-    (actual, diff)
-}
+    let execution = execute_fixture_case(&case.function, &case.inputs, &case.mode);
+    match execution {
+        Ok(run) => {
+            let mut notes = Vec::new();
+            if case.mode.eq_ignore_ascii_case("strict") && !run.host_parity {
+                notes.push(format!(
+                    "strict host parity mismatch: host={}, impl={}",
+                    run.host_output, run.impl_output
+                ));
+            }
+            if let Some(note) = run.note.clone() {
+                notes.push(note);
+            }
 
-fn simulate_memcpy(case: &FixtureCase) -> String {
-    let src = case
-        .inputs
-        .get("src")
-        .and_then(serde_json::Value::as_array)
-        .cloned()
-        .unwrap_or_default()
-        .into_iter()
-        .filter_map(|v| v.as_u64())
-        .map(|v| v as u8)
-        .collect::<Vec<u8>>();
-    let dst_len = case
-        .inputs
-        .get("dst_len")
-        .and_then(serde_json::Value::as_u64)
-        .unwrap_or(0) as usize;
-    let n = case
-        .inputs
-        .get("n")
-        .and_then(serde_json::Value::as_u64)
-        .unwrap_or(0) as usize;
-    let is_strict = case.mode.eq_ignore_ascii_case("strict");
+            let mut diff_out = None;
+            if run.impl_output != case.expected_output {
+                diff_out = Some(diff::render_diff(&case.expected_output, &run.impl_output));
+            } else if !notes.is_empty() {
+                diff_out = Some(notes.join("\n"));
+            }
 
-    // Strict mode preserves C UB semantics for overflow attempts.
-    if is_strict && n > dst_len {
-        return String::from("UB");
-    }
-
-    let mut dst = vec![0u8; dst_len];
-    let count = n.min(src.len()).min(dst.len());
-    if count > 0 {
-        dst[..count].copy_from_slice(&src[..count]);
-    }
-    format!("{dst:?}")
-}
-
-fn simulate_strlen(case: &FixtureCase) -> String {
-    let bytes = case
-        .inputs
-        .get("s")
-        .and_then(serde_json::Value::as_array)
-        .cloned()
-        .unwrap_or_default()
-        .into_iter()
-        .filter_map(|v| v.as_u64())
-        .map(|v| v as u8)
-        .collect::<Vec<u8>>();
-    let is_strict = case.mode.eq_ignore_ascii_case("strict");
-    match bytes.iter().position(|b| *b == 0) {
-        Some(len) => len.to_string(),
-        None if is_strict => String::from("UB"),
-        None => bytes.len().to_string(),
+            (run.impl_output, diff_out)
+        }
+        Err(err) => {
+            let actual = format!("unsupported:{err}");
+            let diff_out = Some(diff::render_diff(&case.expected_output, &actual));
+            (actual, diff_out)
+        }
     }
 }
 

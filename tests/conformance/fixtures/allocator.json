@@ -1,0 +1,52 @@
+{
+  "version": "v1",
+  "family": "allocator",
+  "captured_at": "2026-02-09T00:00:00Z",
+  "cases": [
+    {
+      "name": "malloc_basic",
+      "function": "malloc",
+      "spec_section": "POSIX malloc",
+      "inputs": { "size": 64 },
+      "expected_output": "ALLOCATED",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "malloc_zero",
+      "function": "malloc",
+      "spec_section": "POSIX malloc",
+      "inputs": { "size": 0 },
+      "expected_output": "ALLOCATED",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "calloc_basic",
+      "function": "calloc",
+      "spec_section": "POSIX calloc",
+      "inputs": { "nmemb": 4, "size": 16 },
+      "expected_output": "ALLOCATED",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "free_null",
+      "function": "free",
+      "spec_section": "POSIX free",
+      "inputs": { "ptr_val": 0 },
+      "expected_output": "OK",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "realloc_null_is_malloc",
+      "function": "realloc",
+      "spec_section": "POSIX realloc",
+      "inputs": { "ptr_val": 0, "size": 32 },
+      "expected_output": "ALLOCATED",
+      "expected_errno": 0,
+      "mode": "strict"
+    }
+  ]
+}

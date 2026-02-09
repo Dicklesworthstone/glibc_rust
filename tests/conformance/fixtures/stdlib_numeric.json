@@ -1,0 +1,70 @@
+{
+  "version": "v1",
+  "family": "stdlib/numeric",
+  "captured_at": "2026-02-09T00:00:00Z",
+  "cases": [
+    {
+      "name": "atoi_basic",
+      "function": "atoi",
+      "spec_section": "POSIX atoi",
+      "inputs": { "nptr": [49, 50, 51, 0] },
+      "expected_output": "123",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "atoi_negative",
+      "function": "atoi",
+      "spec_section": "POSIX atoi",
+      "inputs": { "nptr": [45, 52, 50, 0] },
+      "expected_output": "-42",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "atoi_whitespace",
+      "function": "atoi",
+      "spec_section": "POSIX atoi",
+      "inputs": { "nptr": [32, 32, 57, 57, 0] },
+      "expected_output": "99",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strtol_base10",
+      "function": "strtol",
+      "spec_section": "POSIX strtol",
+      "inputs": { "nptr": [49, 48, 48, 0], "base": 10 },
+      "expected_output": "100",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strtol_hex_auto",
+      "function": "strtol",
+      "spec_section": "POSIX strtol",
+      "inputs": { "nptr": [48, 120, 70, 70, 0], "base": 0 },
+      "expected_output": "255",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strtoul_basic",
+      "function": "strtoul",
+      "spec_section": "POSIX strtoul",
+      "inputs": { "nptr": [49, 50, 51, 0], "base": 10 },
+      "expected_output": "123",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strtoul_negative_wrap",
+      "function": "strtoul",
+      "spec_section": "POSIX strtoul",
+      "inputs": { "nptr": [45, 49, 0], "base": 10 },
+      "expected_output": "18446744073709551615",
+      "expected_errno": 0,
+      "mode": "strict"
+    }
+  ]
+}

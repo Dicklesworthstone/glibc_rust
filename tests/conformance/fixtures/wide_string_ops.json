@@ -1,0 +1,115 @@
+{
+  "version": "v1",
+  "family": "string/wide",
+  "captured_at": "2026-02-09T00:00:00Z",
+  "cases": [
+    {
+      "name": "strict_wcslen_basic",
+      "function": "wcslen",
+      "spec_section": "ISO C wcslen",
+      "inputs": { "s": [65, 66, 0] },
+      "expected_output": "2",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strict_wcslen_empty",
+      "function": "wcslen",
+      "spec_section": "ISO C wcslen",
+      "inputs": { "s": [0] },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strict_wcscpy_basic",
+      "function": "wcscpy",
+      "spec_section": "ISO C wcscpy",
+      "inputs": { "src": [65, 66, 0], "dst_len": 5 },
+      "expected_output": "[65, 66, 0, 0, 0]",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "hardened_wcscpy_overflow",
+      "function": "wcscpy",
+      "spec_section": "TSM hardened wcscpy",
+      "inputs": { "src": [65, 66, 67, 0], "dst_len": 2 },
+      "expected_output": "[65, 0]",
+      "expected_errno": 0,
+      "mode": "hardened"
+    },
+    {
+      "name": "strict_wcscmp_equal",
+      "function": "wcscmp",
+      "spec_section": "ISO C wcscmp",
+      "inputs": { "s1": [65, 66, 0], "s2": [65, 66, 0] },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strict_wcscmp_less",
+      "function": "wcscmp",
+      "spec_section": "ISO C wcscmp",
+      "inputs": { "s1": [65, 0], "s2": [66, 0] },
+      "expected_output": "-1",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strict_wcsncpy_basic",
+      "function": "wcsncpy",
+      "spec_section": "ISO C wcsncpy",
+      "inputs": { "src": [65, 66, 0], "dst_len": 5, "n": 2 },
+      "expected_output": "[65, 66, 0, 0, 0]",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+     {
+      "name": "strict_wcsncpy_pad",
+      "function": "wcsncpy",
+      "spec_section": "ISO C wcsncpy",
+      "inputs": { "src": [65, 0], "dst_len": 5, "n": 3 },
+      "expected_output": "[65, 0, 0, 0, 0]",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strict_wcscat_basic",
+      "function": "wcscat",
+      "spec_section": "ISO C wcscat",
+      "inputs": { "dst_init": [65, 0], "src": [66, 0], "dst_cap": 5 },
+      "expected_output": "[65, 66, 0, 0, 0]",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strict_wcschr_found",
+      "function": "wcschr",
+      "spec_section": "ISO C wcschr",
+      "inputs": { "s": [65, 66, 67, 0], "c": 66 },
+      "expected_output": "Some(1)",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strict_wcschr_not_found",
+      "function": "wcschr",
+      "spec_section": "ISO C wcschr",
+      "inputs": { "s": [65, 66, 67, 0], "c": 68 },
+      "expected_output": "None",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strict_wcsstr_found",
+      "function": "wcsstr",
+      "spec_section": "ISO C wcsstr",
+      "inputs": { "haystack": [65, 66, 67, 0], "needle": [66, 67, 0] },
+      "expected_output": "Some(1)",
+      "expected_errno": 0,
+      "mode": "strict"
+    }
+  ]
+}

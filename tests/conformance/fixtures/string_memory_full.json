@@ -1,0 +1,133 @@
+{
+  "version": "v1",
+  "family": "string/memory",
+  "captured_at": "2026-02-09T00:00:00Z",
+  "cases": [
+    {
+      "name": "memset_basic",
+      "function": "memset",
+      "spec_section": "POSIX memset",
+      "inputs": { "dst_len": 8, "c": 65, "n": 4 },
+      "expected_output": "[65, 65, 65, 65, 0, 0, 0, 0]",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "memcmp_equal",
+      "function": "memcmp",
+      "spec_section": "POSIX memcmp",
+      "inputs": { "s1": [65, 66, 67], "s2": [65, 66, 67], "n": 3 },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "memcmp_less",
+      "function": "memcmp",
+      "spec_section": "POSIX memcmp",
+      "inputs": { "s1": [65, 66, 67], "s2": [65, 66, 68], "n": 3 },
+      "expected_output": "-1",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "memchr_found",
+      "function": "memchr",
+      "spec_section": "POSIX memchr",
+      "inputs": { "s": [65, 66, 67, 0], "c": 66, "n": 4 },
+      "expected_output": "Some(1)",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "memrchr_found",
+      "function": "memrchr",
+      "spec_section": "GNU memrchr",
+      "inputs": { "s": [65, 66, 66, 67], "c": 66, "n": 4 },
+      "expected_output": "Some(2)",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strcmp_equal",
+      "function": "strcmp",
+      "spec_section": "POSIX strcmp",
+      "inputs": { "s1": [65, 66, 0], "s2": [65, 66, 0] },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strcmp_less",
+      "function": "strcmp",
+      "spec_section": "POSIX strcmp",
+      "inputs": { "s1": [65, 0], "s2": [66, 0] },
+      "expected_output": "-1",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strcpy_basic",
+      "function": "strcpy",
+      "spec_section": "POSIX strcpy",
+      "inputs": { "src": [65, 66, 67, 0], "dst_len": 8 },
+      "expected_output": "[65, 66, 67, 0, 0, 0, 0, 0]",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strncpy_basic",
+      "function": "strncpy",
+      "spec_section": "POSIX strncpy",
+      "inputs": { "src": [65, 66, 0], "dst_len": 5, "n": 4 },
+      "expected_output": "[65, 66, 0, 0, 0]",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strcat_basic",
+      "function": "strcat",
+      "spec_section": "POSIX strcat",
+      "inputs": { "dst_init": [65, 0, 0, 0], "src": [66, 67, 0], "dst_cap": 4 },
+      "expected_output": "[65, 66, 67, 0]",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strncat_basic",
+      "function": "strncat",
+      "spec_section": "POSIX strncat",
+      "inputs": { "dst_init": [65, 0, 0, 0, 0], "src": [66, 67, 68, 0], "n": 2, "dst_cap": 5 },
+      "expected_output": "[65, 66, 67, 0, 0]",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strchr_found",
+      "function": "strchr",
+      "spec_section": "POSIX strchr",
+      "inputs": { "s": [65, 66, 67, 0], "c": 66 },
+      "expected_output": "Some(1)",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strrchr_found",
+      "function": "strrchr",
+      "spec_section": "POSIX strrchr",
+      "inputs": { "s": [65, 66, 66, 0], "c": 66 },
+      "expected_output": "Some(2)",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strstr_found",
+      "function": "strstr",
+      "spec_section": "POSIX strstr",
+      "inputs": { "haystack": [65, 66, 67, 68, 0], "needle": [66, 67, 0] },
+      "expected_output": "Some(1)",
+      "expected_errno": 0,
+      "mode": "strict"
+    }
+  ]
+}

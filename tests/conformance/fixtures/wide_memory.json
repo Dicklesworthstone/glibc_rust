@@ -1,0 +1,61 @@
+{
+  "version": "v1",
+  "family": "string/wide_memory",
+  "captured_at": "2026-02-09T00:00:00Z",
+  "cases": [
+    {
+      "name": "wmemcpy_basic",
+      "function": "wmemcpy",
+      "spec_section": "ISO C wmemcpy",
+      "inputs": { "src": [1, 2, 3, 4], "dst_len": 4, "n": 4 },
+      "expected_output": "[1, 2, 3, 4]",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "wmemmove_basic",
+      "function": "wmemmove",
+      "spec_section": "ISO C wmemmove",
+      "inputs": { "src": [1, 2, 3, 4], "dst_len": 4, "n": 4 },
+      "expected_output": "[1, 2, 3, 4]",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "wmemset_basic",
+      "function": "wmemset",
+      "spec_section": "ISO C wmemset",
+      "inputs": { "dst_len": 4, "c": 42, "n": 4 },
+      "expected_output": "[42, 42, 42, 42]",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "wmemcmp_equal",
+      "function": "wmemcmp",
+      "spec_section": "ISO C wmemcmp",
+      "inputs": { "s1": [1, 2, 3], "s2": [1, 2, 3], "n": 3 },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "wmemcmp_less",
+      "function": "wmemcmp",
+      "spec_section": "ISO C wmemcmp",
+      "inputs": { "s1": [1, 2, 3], "s2": [1, 2, 4], "n": 3 },
+      "expected_output": "-1",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "wmemchr_found",
+      "function": "wmemchr",
+      "spec_section": "ISO C wmemchr",
+      "inputs": { "s": [1, 2, 3, 4], "c": 3, "n": 4 },
+      "expected_output": "Some(2)",
+      "expected_errno": 0,
+      "mode": "strict"
+    }
+  ]
+}

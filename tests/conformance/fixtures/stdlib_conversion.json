@@ -1,0 +1,70 @@
+{
+  "version": "v1",
+  "family": "stdlib/conversion",
+  "captured_at": "2026-02-09T12:00:00Z",
+  "cases": [
+    {
+      "name": "atoi_basic",
+      "function": "atoi",
+      "spec_section": "POSIX atoi",
+      "inputs": { "s": "42" },
+      "expected_output": "42",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "atoi_negative",
+      "function": "atoi",
+      "spec_section": "POSIX atoi",
+      "inputs": { "s": "-42" },
+      "expected_output": "-42",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "atoi_whitespace",
+      "function": "atoi",
+      "spec_section": "POSIX atoi",
+      "inputs": { "s": "   123" },
+      "expected_output": "123",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strtol_decimal",
+      "function": "strtol",
+      "spec_section": "POSIX strtol",
+      "inputs": { "s": "123", "base": 10 },
+      "expected_output": "123",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strtol_hex",
+      "function": "strtol",
+      "spec_section": "POSIX strtol",
+      "inputs": { "s": "0xFF", "base": 16 },
+      "expected_output": "255",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strtol_auto",
+      "function": "strtol",
+      "spec_section": "POSIX strtol",
+      "inputs": { "s": "010", "base": 0 },
+      "expected_output": "8",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strtol_overflow_max",
+      "function": "strtol",
+      "spec_section": "POSIX strtol",
+      "inputs": { "s": "9223372036854775808", "base": 10 },
+      "expected_output": "9223372036854775807",
+      "expected_errno": 34,
+      "mode": "strict"
+    }
+  ]
+}
