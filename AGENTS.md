@@ -166,6 +166,7 @@ Mandatory live modules in `glibc-rs-membrane/src/runtime_math/`:
 7. `design.rs` — runtime D-optimal probe scheduler under strict/hardened budget constraints.
 8. `sparse.rs` — online L1 sparse-recovery controller for latent fault-source concentration.
 9. `fusion.rs` — online robust signal-fusion controller over runtime math kernels.
+10. `equivariant.rs` — representation-stability/group-action symmetry monitor for cross-family semantic drift.
 
 Runtime decision law (per call):
 `mode + context + risk + budget + pareto + design + barrier + consistency -> Allow | FullValidate | Repair | Deny`.
@@ -176,6 +177,7 @@ Current live extensions:
 - `runtime_math/design.rs` — D-optimal heavy-probe selection with online identifiability tracking.
 - `runtime_math/sparse.rs` — compressed-sensing style latent root-cause recovery from probe anomalies.
 - `runtime_math/fusion.rs` — adaptive trust-weighted fusion bonus over heterogeneous anomaly signals.
+- `runtime_math/equivariant.rs` — cross-family equivariant transport drift detector with symmetry-breaking escalation.
 - `hji_reachability.rs` — HJI differential game safety certificates (math #15).
 - `mean_field_game.rs` — mean-field Nash equilibrium congestion controller (math #19).
 
@@ -231,6 +233,7 @@ Rules:
 - `runtime_math/design.rs` — D-optimal probe scheduling + identifiability control
 - `runtime_math/sparse.rs` — online sparse latent-cause recovery + concentration state
 - `runtime_math/fusion.rs` — robust weighted fusion + entropy/drift telemetry
+- `runtime_math/equivariant.rs` — representation-stability transport + symmetry-break detection
 - `risk_engine.rs` — conformal risk scoring per API family (sampled, feeds cached bonus)
 - `check_oracle.rs` — Thompson sampling contextual bandit for validation stage ordering
 - `quarantine_controller.rs` — primal-dual quarantine depth optimizer
@@ -244,6 +247,10 @@ Rules:
 - `mean_field_game.rs` — Mean-field game Nash equilibrium contention controller (math #19)
 - `runtime_math/padic_valuation.rs` — Non-Archimedean p-adic valuation error calculus for floating-point exceptional regimes (math #40)
 - `runtime_math/symplectic_reduction.rs` — GIT/symplectic reduction IPC admissibility and deadlock detection (math #39)
+- `runtime_math/higher_topos.rs` — Higher-topos descent diagnostics for locale/catalog coherence (math #42)
+- `runtime_math/commitment_audit.rs` — Commitment-algebra + martingale-audit tamper-evident session traces (math #44)
+- `runtime_math/changepoint.rs` — Bayesian online change-point detection (Adams & MacKay 2007) with Beta-Bernoulli conjugate model (math #6)
+- `runtime_math/conformal.rs` — Split conformal prediction risk controller (Vovk et al. 2005) with finite-sample coverage guarantees (math #27)
 
 ### glibc-rs-core (Safe Implementations)
 - `string/` — mem*, str*, wide string functions

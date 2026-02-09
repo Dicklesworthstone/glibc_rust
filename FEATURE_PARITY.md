@@ -29,6 +29,7 @@ Legend:
 | string ops | `strlen`, `strcmp`, `strncpy`, `strstr`, `strtok`, `strtok_r`, `strchr`, `strrchr`, `strcpy`, `strcat`, `strncat`, `strncmp` | DONE |
 | wide string ops | `wcslen`, `wcscpy`, `wcscmp`, `wcsncpy`, `wcscat`, `wcsncmp`, `wcschr`, `wcsrchr`, `wcsstr` | IN_PROGRESS |
 | wide memory ops | `wmemcpy`, `wmemmove`, `wmemset`, `wmemcmp`, `wmemchr` | DONE |
+| math ops | `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `exp`, `log`, `log10`, `pow`, `fabs`, `ceil`, `floor`, `round`, `fmod`, `erf`, `tgamma`, `lgamma` | DONE |
 | stdlib ops | `atoi`, `strtol`, `strtoul`, `exit`, `atexit`, `qsort`, `bsearch` | DONE |
 | allocator boundary | `malloc`, `free`, `realloc`, `calloc` | DONE |
 
@@ -38,6 +39,7 @@ Legend:
 |---|---|---|---|
 | memory ops | host-glibc differential parity | policy-validated clamp/truncate/deny | DONE |
 | string ops | host-glibc differential parity | termination-safe repair paths | DONE |
+| math ops | strict IEEE-style scalar behavior (no membrane rewrite) | non-finite sanitization only when repair action is selected | DONE |
 | allocator boundary | host-glibc parity for defined behavior | temporal/provenance repair policies | IN_PROGRESS |
 
 ## Runtime Math Kernel Matrix
@@ -45,7 +47,7 @@ Legend:
 | Runtime Kernel | Live Role | Status |
 |---|---|---|
 | `runtime_math::risk` | online risk upper bound per API family (`risk_upper_bound_ppm`) | IN_PROGRESS |
-| `runtime_math::bandit` | constrained `Fast` vs `Full` validation-depth routing | IN_PROGRESS |
+| `runtime_math::bandit` | constrained `Fast` vs `Full` validation-depth routing | DONE |
 | `runtime_math::control` | primal-dual runtime threshold tuning | DONE |
 | `runtime_math::pareto` | mode-aware latency/risk Pareto profile selection + cumulative regret tracking + per-family hard regret caps | IN_PROGRESS |
 | `runtime_math::barrier` | constant-time admissibility guard | DONE |
@@ -53,10 +55,11 @@ Legend:
 | `runtime_math::design` | D-optimal heavy-probe selection under strict/hardened budget with online identifiability tracking | DONE |
 | `runtime_math::sparse` | online L1 sparse-recovery latent-cause inference from executed-probe anomaly vectors, with focused/diffuse/critical state gating | DONE |
 | `runtime_math::fusion` | adaptive robust weighted fusion over heterogeneous kernel severities with online entropy/drift telemetry and fused risk bonus | DONE |
+| `runtime_math::equivariant` | representation-stability/group-action monitor for cross-family semantic drift with symmetry-breaking escalation and orbit telemetry | DONE |
 | `runtime_math::eprocess` | anytime-valid sequential testing (e-value alarms) per API family | DONE |
 | `runtime_math::cvar` | distributionally-robust CVaR tail-risk control with runtime alarm gating | DONE |
 | sampled conformal risk fusion (`risk_engine`) | sampled high-order conformal alarm/full-check signal feeds live risk bonus | DONE |
-| sampled stage-order oracle fusion (`check_oracle`) | sampled contextual ordering feeds cached runtime profile bias | DONE |
+| sampled stage-order oracle fusion (`check_oracle`) | contextual ordering executes on live pointer-validation stages with exact stage-exit feedback loop | DONE |
 | quarantine controller fusion (`quarantine_controller`) | allocator observations feed primal-dual quarantine depth publication | DONE |
 | tropical latency compositor (`tropical_latency`) | min-plus (tropical) algebra for provable worst-case pipeline latency bounds | DONE |
 | spectral phase monitor (`spectral_monitor`) | Marchenko-Pastur / Tracy-Widom random matrix theory phase transition detection | DONE |
@@ -68,9 +71,14 @@ Legend:
 | mean-field game contention controller (`mean_field_game`) | Lasry-Lions mean-field Nash equilibrium via Picard fixed-point — congestion collapse detection for validation resource contention (Lasry-Lions 2006, Huang-Malhamé-Caines 2006) | DONE |
 | p-adic valuation error calculus (`padic_valuation`) | Non-Archimedean p-adic valuation for floating-point exceptional regime control — detects denormal/overflow/NaN regimes via ultrametric distance (math #40) | DONE |
 | symplectic reduction IPC guard (`symplectic_reduction`) | GIT/symplectic reduction for System V IPC admissibility — moment-map deadlock detection + Marsden-Weinstein quotient stability (math #39) | DONE |
-| pointer validator integration | runtime-math decisions affect bloom-miss/deep-check behavior | DONE |
+| higher-topos descent controller (`higher_topos`) | Higher-categorical descent diagnostics for locale/catalog coherence — sheaf gluing axiom validation over locale fallback chains with EWMA violation tracking (math #42) | DONE |
+| commitment-audit controller (`commitment_audit`) | Commitment-algebra + martingale-audit for tamper-evident session/accounting traces — hash-chain commitments, replay ring buffer, anytime-valid sequential hypothesis test (math #44) | DONE |
+| Bayesian change-point detector (`changepoint`) | Adams & MacKay (2007) online Bayesian change-point detection — truncated run-length posterior with Beta-Bernoulli conjugate model, hazard function drift/shift classification (math #6) | DONE |
+| conformal risk controller (`conformal`) | Split conformal prediction (Vovk et al. 2005) for finite-sample coverage guarantees — sliding-window calibration, conformal p-values, EWMA coverage tracking, distribution-free miscoverage detection (math #27) | DONE |
+| pointer validator integration | runtime-math decisions affect bloom-miss/deep-check behavior and adaptive stage ordering | DONE |
 | allocator integration | runtime-math routing active at `malloc/free/realloc/calloc` ABI boundary | IN_PROGRESS |
-| string/memory integration | runtime-math routing active for bootstrap `<string.h>` entrypoints (`mem*`, `strlen`, `strcmp`, `strcpy`, `strncpy`, `strcat`, `strncat`, `strchr`, `strrchr`, `strstr`, `strtok`) | IN_PROGRESS |
+| string/memory integration | runtime-math routing active for bootstrap `<string.h>` entrypoints (`mem*`, `strlen`, `strcmp`, `strcpy`, `strncpy`, `strcat`, `strncat`, `strchr`, `strrchr`, `strstr`, `strtok`, `strtok_r`) with exact stage-outcome feedback on `memcpy`, `memmove`, `memset`, `memcmp`, `memchr`, `memrchr`, `strlen`, `strcmp`, `strcpy`, `strncpy`, `strcat`, `strncat`, `strchr`, `strrchr`, `strstr`, `strtok`, `strtok_r` | IN_PROGRESS |
+| math/fenv integration | runtime-math routing active for bootstrap `<math.h>` entrypoints (`sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `exp`, `log`, `log10`, `pow`, `fabs`, `ceil`, `floor`, `round`, `fmod`, `erf`, `tgamma`, `lgamma`) | DONE |
 | pthread/futex integration | runtime-math routing for wait/lock/cancel edges | IN_PROGRESS |
 | resolver/NSS integration | runtime-math routing for retry/cache/poisoning decisions | IN_PROGRESS |
 
@@ -213,8 +221,15 @@ Legend:
 19. D-optimal probe scheduler live — runtime selection of heavy monitors via information-gain-per-cost budgeting with identifiability feedback in hot-path decisioning (math item #41).
 20. Sparse latent-cause recovery live — runtime ISTA-based L1 controller infers concentrated vs diffuse fault sources from probe anomaly vectors and feeds strict/hardened risk escalation (math item #41 sparse recovery component).
 21. Robust fusion controller live — online multiplicative-weights fusion computes `fusion_bonus_ppm` from cross-kernel severities, reducing double-counted noise while accelerating coherent multi-signal escalation.
+22. Equivariant transport controller live — representation-stability/group-action canonicalization across API-family orbits detects cross-family symmetry breaking and escalates fractured runtime regimes (math item #43).
 21. P-adic valuation error calculus live — non-Archimedean ultrametric regime detection for floating-point exceptional paths (denormal/overflow/NaN), with p-adic distance metric and regime-indexed guard tables (math item #40).
 22. Symplectic reduction IPC guard live — GIT/symplectic moment-map admissibility for System V IPC resource requests, Marsden-Weinstein quotient deadlock detection, and stability certificates (math item #39).
+23. Core `<math.h>` scalar functions implemented in safe Rust core (`trig`, `exp/log`, `float`, `special`) with bootstrap tests; removed TODO panics on numeric hot path.
+24. ABI `<math.h>` entrypoints now runtime-math gated under `ApiFamily::MathFenv` with strict/hardened mode split and non-finite repair behavior wired into observation telemetry.
+23. Higher-topos descent controller live — higher-categorical sheaf gluing axiom validation over locale fallback chains, EWMA-tracked violation rate with Calibrating/Coherent/DescentViolation/Incoherent state machine (math item #42).
+24. Commitment-audit controller live — hash-chain commitments (SipHash), replay ring buffer (128 entries), supermartingale sequential hypothesis test with anytime-valid tamper detection for session/accounting traces (math item #44).
+25. Bayesian change-point detector live — Adams & MacKay (2007) online Bayesian change-point detection with truncated run-length posterior (256-horizon), Beta-Bernoulli conjugate model, geometric hazard function, drift/shift/stable classification (math item #6).
+26. Conformal risk controller live — split conformal prediction (Vovk et al. 2005) with sliding-window calibration (256 entries), conformal p-values, EWMA coverage tracking, distribution-free finite-sample miscoverage detection (math item #27).
 
 ## Update Policy
 
