@@ -16,6 +16,7 @@ pub mod barrier;
 pub mod cohomology;
 pub mod control;
 pub mod cvar;
+pub mod design;
 pub mod eprocess;
 pub mod pareto;
 pub mod risk;
@@ -45,6 +46,7 @@ use self::barrier::BarrierOracle;
 use self::cohomology::CohomologyMonitor;
 use self::control::PrimalDualController;
 use self::cvar::{DroCvarController, TailState};
+use self::design::{OptimalDesignController, Probe, ProbePlan};
 use self::eprocess::{AnytimeEProcessMonitor, SequentialState};
 use self::pareto::ParetoController;
 use self::risk::ConformalRiskEngine;
@@ -200,6 +202,14 @@ pub struct RuntimeKernelSnapshot {
     pub symplectic_energy: f64,
     /// Symplectic admissibility violation count.
     pub symplectic_violation_count: u64,
+    /// Design-kernel identifiability score (0..1e6).
+    pub design_identifiability_ppm: u32,
+    /// Number of heavy probes selected in the current budgeted plan.
+    pub design_selected_probes: u8,
+    /// Probe-budget assigned by mode/controller.
+    pub design_budget_ns: u64,
+    /// Expected cost of selected probes.
+    pub design_expected_cost_ns: u64,
 }
 
 /// Online control kernel for strict/hardened runtime decisions.
@@ -225,6 +235,7 @@ pub struct RuntimeMathKernel {
     mfg: Mutex<MeanFieldGameController>,
     padic: Mutex<PadicValuationMonitor>,
     symplectic: Mutex<SymplecticReductionController>,
+    design: Mutex<OptimalDesignController>,
     cached_risk_bonus_ppm: AtomicU64,
     cached_oracle_bias: [AtomicU8; ApiFamily::COUNT],
     cached_spectral_phase: AtomicU8,
@@ -238,6 +249,11 @@ pub struct RuntimeMathKernel {
     cached_mfg_state: AtomicU8,
     cached_padic_state: AtomicU8,
     cached_symplectic_state: AtomicU8,
+    cached_probe_mask: AtomicU64,
+    cached_design_ident_ppm: AtomicU64,
+    cached_design_budget_ns: AtomicU64,
+    cached_design_expected_ns: AtomicU64,
+    cached_design_selected: AtomicU8,
     decisions: AtomicU64,
 }
 
@@ -267,6 +283,7 @@ impl RuntimeMathKernel {
             mfg: Mutex::new(MeanFieldGameController::new()),
             padic: Mutex::new(PadicValuationMonitor::new()),
             symplectic: Mutex::new(SymplecticReductionController::new()),
+            design: Mutex::new(OptimalDesignController::new()),
             cached_risk_bonus_ppm: AtomicU64::new(0),
             cached_oracle_bias: std::array::from_fn(|_| AtomicU8::new(1)),
             cached_spectral_phase: AtomicU8::new(0),
@@ -280,6 +297,11 @@ impl RuntimeMathKernel {
             cached_mfg_state: AtomicU8::new(0),
             cached_padic_state: AtomicU8::new(0),
             cached_symplectic_state: AtomicU8::new(0),
+            cached_probe_mask: AtomicU64::new(u64::from(Probe::all_mask())),
+            cached_design_ident_ppm: AtomicU64::new(0),
+            cached_design_budget_ns: AtomicU64::new(0),
+            cached_design_expected_ns: AtomicU64::new(0),
+            cached_design_selected: AtomicU8::new(Probe::COUNT as u8),
             decisions: AtomicU64::new(0),
         }
     }
@@ -378,7 +400,7 @@ impl RuntimeMathKernel {
             2 => 50_000u32,  // NearBoundary — approaching capacity
             _ => 0u32,       // Calibrating/Admissible
         };
-        let risk_upper_bound_ppm = base_risk_ppm
+        let pre_design_risk_ppm = base_risk_ppm
             .saturating_add(sampled_bonus)
             .saturating_add(cohomology_bonus)
             .saturating_add(tropical_bonus)
@@ -393,6 +415,37 @@ impl RuntimeMathKernel {
             .saturating_add(mfg_bonus)
             .saturating_add(padic_bonus)
             .saturating_add(symplectic_bonus)
+            .min(1_000_000);
+
+        // D-optimal probe scheduling:
+        // choose heavy monitors under budget to maximize online identifiability.
+        let design_bonus = {
+            let adverse_hint = ctx.bloom_negative || (ctx.is_write && ctx.requested_bytes > 4096);
+            let mut design = self.design.lock();
+            let plan =
+                design.choose_plan(mode, pre_design_risk_ppm, adverse_hint, fast_over_budget);
+            let ident_ppm = design.identifiability_ppm();
+            self.cached_probe_mask
+                .store(u64::from(plan.mask), Ordering::Relaxed);
+            self.cached_design_ident_ppm
+                .store(u64::from(ident_ppm), Ordering::Relaxed);
+            self.cached_design_budget_ns
+                .store(plan.budget_ns, Ordering::Relaxed);
+            self.cached_design_expected_ns
+                .store(plan.expected_cost_ns, Ordering::Relaxed);
+            self.cached_design_selected
+                .store(plan.selected_count(), Ordering::Relaxed);
+            if ident_ppm < 150_000 {
+                95_000u32
+            } else if ident_ppm < 300_000 {
+                40_000u32
+            } else {
+                0u32
+            }
+        };
+
+        let risk_upper_bound_ppm = pre_design_risk_ppm
+            .saturating_add(design_bonus)
             .min(1_000_000);
 
         let limits = self.controller.limits(mode);
@@ -430,6 +483,11 @@ impl RuntimeMathKernel {
             profile = ValidationProfile::Full;
         }
         if consistency_faults > 0 && mode.heals_enabled() {
+            profile = ValidationProfile::Full;
+        }
+        if self.cached_design_selected.load(Ordering::Relaxed) <= 2
+            && risk_upper_bound_ppm >= limits.full_validation_trigger_ppm / 2
+        {
             profile = ValidationProfile::Full;
         }
 
@@ -498,6 +556,7 @@ impl RuntimeMathKernel {
         adverse: bool,
     ) {
         let mode = crate::config::safety_level();
+        let probe_mask = self.cached_probe_mask.load(Ordering::Relaxed) as u16;
         self.risk.observe(family, adverse);
         self.router
             .observe(family, profile, estimated_cost_ns, adverse);
@@ -511,6 +570,18 @@ impl RuntimeMathKernel {
             adverse,
             risk_bound_ppm,
         );
+
+        let mut spectral_anomaly = None;
+        let mut rough_anomaly = None;
+        let mut persistence_anomaly = None;
+        let mut anytime_anomaly = None;
+        let mut cvar_anomaly = None;
+        let mut bridge_anomaly = None;
+        let mut ld_anomaly = None;
+        let mut hji_anomaly = None;
+        let mut mfg_anomaly = None;
+        let mut padic_anomaly = None;
+        let mut symplectic_anomaly = None;
 
         // Feed tropical latency compositor with per-path observations.
         {
@@ -527,7 +598,7 @@ impl RuntimeMathKernel {
         }
 
         // Feed spectral monitor with multi-dimensional observation.
-        {
+        if ProbePlan::includes_mask(probe_mask, Probe::Spectral) {
             let contention = f64::from(
                 self.cached_oracle_bias[usize::from(family as u8)].load(Ordering::Relaxed),
             ) / 2.0;
@@ -537,19 +608,21 @@ impl RuntimeMathKernel {
             let mut spectral = self.spectral.lock();
             spectral.observe(risk_score, latency, contention, hit_rate);
             // Cache the phase state for the hot-path decision.
-            let phase_code = match spectral.phase() {
+            let phase = spectral.phase();
+            let phase_code = match phase {
                 PhaseState::Stationary => 0u8,
                 PhaseState::Transitioning => 1u8,
                 PhaseState::NewRegime => 2u8,
             };
             self.cached_spectral_phase
                 .store(phase_code, Ordering::Relaxed);
+            spectral_anomaly = Some(!matches!(phase, PhaseState::Stationary));
         }
 
-        // Feed rough-path signature monitor with the same 4D observation vector.
-        // The signature captures temporal ordering and all cross-moments — strictly
-        // more powerful than the spectral monitor's covariance-only view.
-        {
+        // Feed rough-path/persistence monitors with the same 4D observation vector.
+        let run_rough = ProbePlan::includes_mask(probe_mask, Probe::RoughPath);
+        let run_persistence = ProbePlan::includes_mask(probe_mask, Probe::Persistence);
+        if run_rough || run_persistence {
             let rp_risk = f64::from(risk_bound_ppm) / 1_000_000.0;
             let rp_latency = (estimated_cost_ns as f64).ln_1p();
             let rp_contention = f64::from(
@@ -557,36 +630,45 @@ impl RuntimeMathKernel {
             ) / 2.0;
             let rp_hit_rate = if adverse { 1.0 } else { 0.0 };
             let obs = [rp_risk, rp_latency, rp_contention, rp_hit_rate];
-            let sig_state_code = {
+            if run_rough {
                 let mut rp = self.rough_path.lock();
                 rp.observe(obs);
-                match rp.state() {
+                let state = rp.state();
+                let sig_state_code = match state {
                     SignatureState::Calibrating => 0u8,
                     SignatureState::Normal => 1u8,
                     SignatureState::Anomalous => 2u8,
-                }
-            };
-            let topo_state_code = {
+                };
+                rough_anomaly = Some(matches!(state, SignatureState::Anomalous));
+                self.cached_signature_state
+                    .store(sig_state_code, Ordering::Relaxed);
+            }
+            if run_persistence {
                 let mut pd = self.persistence.lock();
                 pd.observe(obs);
-                match pd.state() {
+                let state = pd.state();
+                let topo_state_code = match state {
                     TopologicalState::Calibrating => 0u8,
                     TopologicalState::Normal => 1u8,
                     TopologicalState::Anomalous => 2u8,
-                }
-            };
-            self.cached_signature_state
-                .store(sig_state_code, Ordering::Relaxed);
-            self.cached_topological_state
-                .store(topo_state_code, Ordering::Relaxed);
+                };
+                persistence_anomaly = Some(matches!(state, TopologicalState::Anomalous));
+                self.cached_topological_state
+                    .store(topo_state_code, Ordering::Relaxed);
+            }
         }
 
         // Feed anytime-valid sequential detector and cache state for hot path.
-        {
+        if ProbePlan::includes_mask(probe_mask, Probe::Anytime) {
             let state_code = {
                 let mon = self.anytime.lock();
                 mon.observe(family, adverse);
-                match mon.state(family) {
+                let state = mon.state(family);
+                anytime_anomaly = Some(matches!(
+                    state,
+                    SequentialState::Warning | SequentialState::Alarm
+                ));
+                match state {
                     SequentialState::Calibrating => 0u8,
                     SequentialState::Normal => 1u8,
                     SequentialState::Warning => 2u8,
@@ -598,11 +680,13 @@ impl RuntimeMathKernel {
         }
 
         // Feed robust CVaR tail controller and cache family state.
-        {
+        if ProbePlan::includes_mask(probe_mask, Probe::Cvar) {
             let state_code = {
                 let cvar = self.cvar.lock();
                 cvar.observe(family, profile, estimated_cost_ns);
-                match cvar.family_state(mode, family) {
+                let state = cvar.family_state(mode, family);
+                cvar_anomaly = Some(matches!(state, TailState::Warning | TailState::Alarm));
+                match state {
                     TailState::Calibrating => 0u8,
                     TailState::Normal => 1u8,
                     TailState::Warning => 2u8,
@@ -615,7 +699,7 @@ impl RuntimeMathKernel {
         // Feed Schrödinger bridge with inferred action index.
         // Maps (profile, adverse, mode) to the 4-action simplex:
         //   0 = Allow, 1 = FullValidate, 2 = Repair, 3 = Deny.
-        {
+        if ProbePlan::includes_mask(probe_mask, Probe::Bridge) {
             let action_idx = match (profile, adverse, mode.heals_enabled()) {
                 (ValidationProfile::Fast, false, _) => 0, // Allow
                 (ValidationProfile::Full, false, _) => 1, // FullValidate
@@ -625,7 +709,9 @@ impl RuntimeMathKernel {
             let bridge_code = {
                 let mut br = self.bridge.lock();
                 br.observe_action(action_idx);
-                match br.state() {
+                let state = br.state();
+                bridge_anomaly = Some(matches!(state, BridgeState::Transitioning));
+                match state {
                     BridgeState::Calibrating => 0u8,
                     BridgeState::Stable => 1u8,
                     BridgeState::Transitioning => 2u8,
@@ -638,12 +724,14 @@ impl RuntimeMathKernel {
         // Feed large-deviations monitor with per-family adverse indicator.
         // The Cramér rate function tracks how quickly the empirical adverse
         // frequency deviates from its baseline, giving exact exponential bounds.
-        {
+        if ProbePlan::includes_mask(probe_mask, Probe::LargeDeviations) {
             let fidx = usize::from(family as u8);
             let ld_code = {
                 let mut ld = self.large_dev.lock();
                 ld.observe(fidx, adverse);
-                match ld.state(fidx) {
+                let state = ld.state(fidx);
+                ld_anomaly = Some(matches!(state, RateState::Elevated | RateState::Critical));
+                match state {
                     RateState::Calibrating => 0u8,
                     RateState::Normal => 1u8,
                     RateState::Elevated => 2u8,
@@ -655,11 +743,16 @@ impl RuntimeMathKernel {
 
         // Feed HJI reachability controller with (risk, latency, adverse).
         // The pre-computed value function gives O(1) formal safety lookup.
-        {
+        if ProbePlan::includes_mask(probe_mask, Probe::Hji) {
             let hji_code = {
                 let mut hji = self.hji.lock();
                 hji.observe(risk_bound_ppm, estimated_cost_ns, adverse);
-                match hji.state() {
+                let state = hji.state();
+                hji_anomaly = Some(matches!(
+                    state,
+                    ReachState::Approaching | ReachState::Breached
+                ));
+                match state {
                     ReachState::Calibrating => 0u8,
                     ReachState::Safe => 1u8,
                     ReachState::Approaching => 2u8,
@@ -672,12 +765,14 @@ impl RuntimeMathKernel {
         // Feed mean-field game controller with contention proxy.
         // We use estimated_cost_ns as a contention signal: high validation
         // latency indicates resource contention across families.
-        {
+        if ProbePlan::includes_mask(probe_mask, Probe::MeanField) {
             let contention_hint = estimated_cost_ns.min(65535) as u16;
             let mfg_code = {
                 let mut mfg = self.mfg.lock();
                 mfg.observe(contention_hint);
-                match mfg.state() {
+                let state = mfg.state();
+                mfg_anomaly = Some(matches!(state, MfgState::Congested | MfgState::Collapsed));
+                match state {
                     MfgState::Calibrating => 0u8,
                     MfgState::Equilibrium => 1u8,
                     MfgState::Congested => 2u8,
@@ -690,12 +785,17 @@ impl RuntimeMathKernel {
         // Feed p-adic valuation monitor with risk bound as a floating-point
         // value. The 2-adic exponent structure of the risk metric reveals
         // numerical regime transitions invisible to Archimedean analysis.
-        {
+        if ProbePlan::includes_mask(probe_mask, Probe::Padic) {
             let risk_f64 = risk_bound_ppm as f64;
             let padic_code = {
                 let mut padic = self.padic.lock();
                 padic.observe_f64(risk_f64);
-                match padic.state() {
+                let state = padic.state();
+                padic_anomaly = Some(matches!(
+                    state,
+                    PadicState::DenormalDrift | PadicState::ExceptionalRegime
+                ));
+                match state {
                     PadicState::Calibrating => 0u8,
                     PadicState::Normal => 1u8,
                     PadicState::DenormalDrift => 2u8,
@@ -708,7 +808,7 @@ impl RuntimeMathKernel {
         // Feed symplectic reduction controller with resource lifecycle events.
         // Allocator family maps to SharedMemory acquire/release;
         // Threading maps to Semaphore; others map to FileDescriptor.
-        {
+        if ProbePlan::includes_mask(probe_mask, Probe::Symplectic) {
             let resource = match family {
                 ApiFamily::Allocator => ResourceType::SharedMemory,
                 ApiFamily::Threading => ResourceType::Semaphore,
@@ -722,7 +822,12 @@ impl RuntimeMathKernel {
                 } else {
                     sympl.release(resource);
                 }
-                match sympl.state() {
+                let state = sympl.state();
+                symplectic_anomaly = Some(matches!(
+                    state,
+                    SymplecticState::NearBoundary | SymplecticState::Inadmissible
+                ));
+                match state {
                     SymplecticState::Calibrating => 0u8,
                     SymplecticState::Admissible => 1u8,
                     SymplecticState::NearBoundary => 2u8,
@@ -731,6 +836,44 @@ impl RuntimeMathKernel {
             };
             self.cached_symplectic_state
                 .store(sympl_code, Ordering::Relaxed);
+        }
+
+        // Record executed probes into the design kernel for online information updates.
+        {
+            let mut design = self.design.lock();
+            if let Some(flag) = spectral_anomaly {
+                design.record_probe(Probe::Spectral, flag);
+            }
+            if let Some(flag) = rough_anomaly {
+                design.record_probe(Probe::RoughPath, flag);
+            }
+            if let Some(flag) = persistence_anomaly {
+                design.record_probe(Probe::Persistence, flag);
+            }
+            if let Some(flag) = anytime_anomaly {
+                design.record_probe(Probe::Anytime, flag);
+            }
+            if let Some(flag) = cvar_anomaly {
+                design.record_probe(Probe::Cvar, flag);
+            }
+            if let Some(flag) = bridge_anomaly {
+                design.record_probe(Probe::Bridge, flag);
+            }
+            if let Some(flag) = ld_anomaly {
+                design.record_probe(Probe::LargeDeviations, flag);
+            }
+            if let Some(flag) = hji_anomaly {
+                design.record_probe(Probe::Hji, flag);
+            }
+            if let Some(flag) = mfg_anomaly {
+                design.record_probe(Probe::MeanField, flag);
+            }
+            if let Some(flag) = padic_anomaly {
+                design.record_probe(Probe::Padic, flag);
+            }
+            if let Some(flag) = symplectic_anomaly {
+                design.record_probe(Probe::Symplectic, flag);
+            }
         }
 
         // Feed allocator frees into primal-dual quarantine controller.
@@ -797,6 +940,7 @@ impl RuntimeMathKernel {
         let mfg_summary = self.mfg.lock().summary();
         let padic_summary = self.padic.lock().summary();
         let symplectic_summary = self.symplectic.lock().summary();
+        let design_summary = self.design.lock().summary();
         RuntimeKernelSnapshot {
             decisions: self.decisions.load(Ordering::Relaxed),
             consistency_faults: self.cohomology.fault_count(),
@@ -830,6 +974,10 @@ impl RuntimeMathKernel {
             padic_drift_count: padic_summary.drift_count,
             symplectic_energy: symplectic_summary.hamiltonian_energy,
             symplectic_violation_count: symplectic_summary.violation_count,
+            design_identifiability_ppm: design_summary.identifiability_ppm,
+            design_selected_probes: design_summary.selected_count,
+            design_budget_ns: design_summary.budget_ns,
+            design_expected_cost_ns: design_summary.expected_cost_ns,
         }
     }
 
