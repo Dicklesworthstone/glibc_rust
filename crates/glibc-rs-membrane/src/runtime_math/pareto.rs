@@ -47,6 +47,9 @@ const STRICT_REGRET_CAP_MILLI: [u64; ApiFamily::COUNT] = [
     200_000, // Locale
     200_000, // Termios
     200_000, // Inet
+    200_000, // Process
+    200_000, // VirtualMemory
+    200_000, // Poll
 ];
 const HARDENED_REGRET_CAP_MILLI: [u64; ApiFamily::COUNT] = [
     140_000, // PointerValidation
@@ -66,6 +69,9 @@ const HARDENED_REGRET_CAP_MILLI: [u64; ApiFamily::COUNT] = [
     110_000, // Locale
     110_000, // Termios
     110_000, // Inet
+    110_000, // Process
+    110_000, // VirtualMemory
+    110_000, // Poll
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -347,7 +353,19 @@ const fn family_from_index(index: usize) -> ApiFamily {
         4 => ApiFamily::Threading,
         5 => ApiFamily::Resolver,
         6 => ApiFamily::MathFenv,
-        _ => ApiFamily::Loader,
+        7 => ApiFamily::Loader,
+        8 => ApiFamily::Stdlib,
+        9 => ApiFamily::Ctype,
+        10 => ApiFamily::Time,
+        11 => ApiFamily::Signal,
+        12 => ApiFamily::IoFd,
+        13 => ApiFamily::Socket,
+        14 => ApiFamily::Locale,
+        15 => ApiFamily::Termios,
+        16 => ApiFamily::Inet,
+        17 => ApiFamily::Process,
+        18 => ApiFamily::VirtualMemory,
+        _ => ApiFamily::Poll,
     }
 }
 

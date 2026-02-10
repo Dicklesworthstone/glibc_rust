@@ -152,6 +152,8 @@ fn orbit_of_family(family: ApiFamily) -> usize {
         }
         ApiFamily::MathFenv | ApiFamily::Time => 3, // numeric orbit
         ApiFamily::Locale | ApiFamily::Termios => 2, // io/locale orbit
+        ApiFamily::Process | ApiFamily::VirtualMemory => 1, // control/ordering orbit
+        ApiFamily::Poll => 2,                       // io orbit
     }
 }
 

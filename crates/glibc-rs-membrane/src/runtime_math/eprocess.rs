@@ -196,6 +196,9 @@ fn all_families() -> [ApiFamily; ApiFamily::COUNT] {
         ApiFamily::Locale,
         ApiFamily::Termios,
         ApiFamily::Inet,
+        ApiFamily::Process,
+        ApiFamily::VirtualMemory,
+        ApiFamily::Poll,
     ]
 }
 

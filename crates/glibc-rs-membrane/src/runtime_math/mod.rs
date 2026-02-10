@@ -32,6 +32,7 @@ pub mod fusion;
 pub mod grobner_normalizer;
 pub mod grothendieck_glue;
 pub mod higher_topos;
+pub mod hodge_decomposition;
 pub mod info_geometry;
 pub mod kernel_mmd;
 pub mod ktheory;
@@ -47,11 +48,13 @@ pub mod pac_bayes;
 pub mod pareto;
 pub mod pomdp_repair;
 pub mod provenance_info;
+pub mod rademacher_complexity;
 pub mod risk;
 pub mod serre_spectral;
 pub mod sos_invariant;
 pub mod sparse;
 pub mod stein_discrepancy;
+pub mod transfer_entropy;
 pub mod wasserstein_drift;
 
 use std::sync::atomic::{AtomicU8, AtomicU64, Ordering};
@@ -97,6 +100,7 @@ use self::grothendieck_glue::{
     CocycleObservation, DataSource, GlueState, GrothendieckGlueController, QueryFamily,
 };
 use self::higher_topos::{HigherToposController, ToposState};
+use self::hodge_decomposition::{HodgeDecompositionMonitor, HodgeState};
 use self::info_geometry::{GeometryState, InfoGeometryMonitor};
 use self::kernel_mmd::{KernelMmdMonitor, MmdState};
 use self::ktheory::{KTheoryController, KTheoryState};
@@ -112,6 +116,7 @@ use self::pac_bayes::{PacBayesMonitor, PacBayesState};
 use self::pareto::ParetoController;
 use self::pomdp_repair::{PomdpRepairController, PomdpState};
 use self::provenance_info::{ProvenanceInfoController, ProvenanceState};
+use self::rademacher_complexity::{RademacherComplexityMonitor, RademacherState};
 use self::risk::ConformalRiskEngine;
 use self::serre_spectral::{
     InvariantClass, LayerPair, SerreSpectralController, SpectralSequenceState,
@@ -119,6 +124,7 @@ use self::serre_spectral::{
 use self::sos_invariant::{SosInvariantController, SosState};
 use self::sparse::{SparseRecoveryController, SparseState};
 use self::stein_discrepancy::{SteinDiscrepancyMonitor, SteinState};
+use self::transfer_entropy::{TransferEntropyMonitor, TransferEntropyState};
 use self::wasserstein_drift::{DriftState, WassersteinDriftMonitor};
 
 const FAST_PATH_BUDGET_NS: u64 = 20;
@@ -145,10 +151,13 @@ pub enum ApiFamily {
     Locale = 14,
     Termios = 15,
     Inet = 16,
+    Process = 17,
+    VirtualMemory = 18,
+    Poll = 19,
 }
 
 impl ApiFamily {
-    pub const COUNT: usize = 17;
+    pub const COUNT: usize = 20;
 }
 
 /// Validation profile selected by the runtime controller.
@@ -222,17 +231,42 @@ impl RuntimeDecision {
     }
 }
 
+/// Stable schema version for [`RuntimeKernelSnapshot`].
+///
+/// Policy:
+/// - Additive-only changes are allowed without bumping the version.
+/// - Any rename/removal/semantic change requires bump + explicit migration plan
+///   for fixtures and harness diff tooling.
+pub const RUNTIME_KERNEL_SNAPSHOT_SCHEMA_VERSION: u32 = 1;
+
 /// Runtime state snapshot useful for tests/telemetry export.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct RuntimeKernelSnapshot {
+    /// Snapshot schema version (see `RUNTIME_KERNEL_SNAPSHOT_SCHEMA_VERSION`).
+    pub schema_version: u32,
+    /// Total number of `decide(...)` decisions produced by this kernel instance.
     pub decisions: u64,
+    /// Total overlap-consistency (cocycle) faults observed by the cohomology monitor.
     pub consistency_faults: u64,
+    /// Controller threshold: risk ppm at/above which full validation is forced.
+    ///
+    /// Units: ppm (0..=1_000_000).
     pub full_validation_trigger_ppm: u32,
+    /// Controller threshold: risk ppm at/above which repair actions are allowed/forced.
+    ///
+    /// Units: ppm (0..=1_000_000).
     pub repair_trigger_ppm: u32,
+    /// Sampled high-order risk bonus (ppm) currently applied from `risk_engine`.
     pub sampled_risk_bonus_ppm: u32,
+    /// Cumulative regret tracked by the Pareto controller.
+    ///
+    /// Units: milli-units (1e-3), monotone non-decreasing.
     pub pareto_cumulative_regret_milli: u64,
+    /// Number of times hard regret caps were enforced by Pareto routing.
     pub pareto_cap_enforcements: u64,
+    /// Number of API families whose Pareto regret budget is exhausted for the current mode.
     pub pareto_exhausted_families: u32,
+    /// Current published allocator quarantine depth (temporal-safety budget).
     pub quarantine_depth: usize,
     /// Tropical worst-case latency for the full pipeline path (ns).
     pub tropical_full_wcl_ns: u64,
@@ -434,6 +468,18 @@ pub struct RuntimeKernelSnapshot {
     pub lyapunov_exponent: f64,
     /// Lyapunov smoothed expansion ratio.
     pub lyapunov_expansion_ratio: f64,
+    /// Rademacher complexity estimate (0..∞, lower = better-regularized).
+    pub rademacher_complexity: f64,
+    /// Rademacher generalization gap bound (2R̂ + concentration).
+    pub rademacher_gen_gap_bound: f64,
+    /// Transfer entropy max pairwise TE (0..∞, higher = stronger causal coupling).
+    pub transfer_entropy_max_te: f64,
+    /// Transfer entropy mean pairwise TE.
+    pub transfer_entropy_mean_te: f64,
+    /// Hodge decomposition inconsistency ratio (0..1, 0 = coherent).
+    pub hodge_inconsistency_ratio: f64,
+    /// Hodge decomposition curl energy (squared cycle residual).
+    pub hodge_curl_energy: f64,
 }
 
 /// Online control kernel for strict/hardened runtime decisions.
@@ -493,6 +539,9 @@ pub struct RuntimeMathKernel {
     pac_bayes: Mutex<PacBayesMonitor>,
     stein: Mutex<SteinDiscrepancyMonitor>,
     lyapunov: Mutex<LyapunovStabilityMonitor>,
+    rademacher: Mutex<RademacherComplexityMonitor>,
+    transfer_entropy: Mutex<TransferEntropyMonitor>,
+    hodge: Mutex<HodgeDecompositionMonitor>,
     cached_risk_bonus_ppm: AtomicU64,
     cached_oracle_bias: [AtomicU8; ApiFamily::COUNT],
     cached_spectral_phase: AtomicU8,
@@ -549,6 +598,9 @@ pub struct RuntimeMathKernel {
     cached_pac_bayes_state: AtomicU8,
     cached_stein_state: AtomicU8,
     cached_lyapunov_state: AtomicU8,
+    cached_rademacher_state: AtomicU8,
+    cached_transfer_entropy_state: AtomicU8,
+    cached_hodge_state: AtomicU8,
     decisions: AtomicU64,
 }
 
@@ -612,6 +664,9 @@ impl RuntimeMathKernel {
             pac_bayes: Mutex::new(PacBayesMonitor::new()),
             stein: Mutex::new(SteinDiscrepancyMonitor::new()),
             lyapunov: Mutex::new(LyapunovStabilityMonitor::new()),
+            rademacher: Mutex::new(RademacherComplexityMonitor::new()),
+            transfer_entropy: Mutex::new(TransferEntropyMonitor::new()),
+            hodge: Mutex::new(HodgeDecompositionMonitor::new()),
             cached_risk_bonus_ppm: AtomicU64::new(0),
             cached_oracle_bias: std::array::from_fn(|_| AtomicU8::new(1)),
             cached_spectral_phase: AtomicU8::new(0),
@@ -668,6 +723,9 @@ impl RuntimeMathKernel {
             cached_pac_bayes_state: AtomicU8::new(0),
             cached_stein_state: AtomicU8::new(0),
             cached_lyapunov_state: AtomicU8::new(0),
+            cached_rademacher_state: AtomicU8::new(0),
+            cached_transfer_entropy_state: AtomicU8::new(0),
+            cached_hodge_state: AtomicU8::new(0),
             decisions: AtomicU64::new(0),
         }
     }
@@ -979,6 +1037,28 @@ impl RuntimeMathKernel {
             2 => 55_000u32,  // Marginal — near stability boundary
             _ => 0u32,       // Calibrating/Stable
         };
+        // Rademacher complexity: data-dependent ensemble capacity monitoring.
+        // Overfit means the ensemble can fit noise — predictions unreliable.
+        let rademacher_bonus = match self.cached_rademacher_state.load(Ordering::Relaxed) {
+            3 => 140_000u32, // Overfit — ensemble too expressive
+            2 => 50_000u32,  // Elevated — approaching capacity limit
+            _ => 0u32,       // Calibrating/Controlled
+        };
+        // Transfer entropy: directed causal information flow detection.
+        // CascadeRisk means strong directional dependencies between controllers.
+        let transfer_entropy_bonus =
+            match self.cached_transfer_entropy_state.load(Ordering::Relaxed) {
+                3 => 150_000u32, // CascadeRisk — strong causal coupling
+                2 => 50_000u32,  // CausalCoupling — moderate dependencies
+                _ => 0u32,       // Calibrating/Independent
+            };
+        // Hodge decomposition: cyclic inconsistency in controller ordering.
+        // Incoherent means the severity ordering is deeply cyclically inconsistent.
+        let hodge_bonus = match self.cached_hodge_state.load(Ordering::Relaxed) {
+            3 => 140_000u32, // Incoherent — deep cyclic inconsistency
+            2 => 50_000u32,  // Inconsistent — some cyclic structure
+            _ => 0u32,       // Calibrating/Coherent
+        };
         // Provenance info-theoretic: fingerprint entropy degradation signals
         // collision resistance loss in the allocation integrity subsystem.
         let provenance_bonus = match self.cached_provenance_state.load(Ordering::Relaxed) {
@@ -1048,6 +1128,9 @@ impl RuntimeMathKernel {
             .saturating_add(pac_bayes_bonus)
             .saturating_add(stein_bonus)
             .saturating_add(lyapunov_bonus)
+            .saturating_add(rademacher_bonus)
+            .saturating_add(transfer_entropy_bonus)
+            .saturating_add(hodge_bonus)
             .min(1_000_000);
 
         let ident_ppm = self.cached_design_ident_ppm.load(Ordering::Relaxed) as u32;
@@ -2396,10 +2479,60 @@ impl RuntimeMathKernel {
                 .store(lyap_code, Ordering::Relaxed);
         }
 
-        // Feed robust fusion controller from extended severity vector.
-        // Includes the 25 base controller signals plus 15 meta-controller states.
+        // Feed Rademacher complexity monitor.
+        // Tracks data-dependent ensemble capacity via random sign vectors.
         {
-            let mut severity = [0u8; 40];
+            let rad_code = {
+                let mut rm = self.rademacher.lock();
+                rm.observe_and_update(&base_severity);
+                match rm.state() {
+                    RademacherState::Calibrating => 0u8,
+                    RademacherState::Controlled => 1u8,
+                    RademacherState::Elevated => 2u8,
+                    RademacherState::Overfit => 3u8,
+                }
+            };
+            self.cached_rademacher_state
+                .store(rad_code, Ordering::Relaxed);
+        }
+
+        // Feed transfer entropy causal flow monitor.
+        // Tracks directed causal information flow between controllers.
+        {
+            let te_code = {
+                let mut te = self.transfer_entropy.lock();
+                te.observe_and_update(&base_severity);
+                match te.state() {
+                    TransferEntropyState::Calibrating => 0u8,
+                    TransferEntropyState::Independent => 1u8,
+                    TransferEntropyState::CausalCoupling => 2u8,
+                    TransferEntropyState::CascadeRisk => 3u8,
+                }
+            };
+            self.cached_transfer_entropy_state
+                .store(te_code, Ordering::Relaxed);
+        }
+
+        // Feed Hodge decomposition coherence monitor.
+        // Tracks cyclic inconsistencies in controller severity ordering.
+        {
+            let hodge_code = {
+                let mut hm = self.hodge.lock();
+                hm.observe_and_update(&base_severity);
+                match hm.state() {
+                    HodgeState::Calibrating => 0u8,
+                    HodgeState::Coherent => 1u8,
+                    HodgeState::Inconsistent => 2u8,
+                    HodgeState::Incoherent => 3u8,
+                }
+            };
+            self.cached_hodge_state.store(hodge_code, Ordering::Relaxed);
+        }
+
+        // Feed robust fusion controller from extended severity vector.
+        // Includes the 25 base controller signals plus 18 meta-controller states.
+        {
+            let mut severity = [0u8; 43];
             severity[..25].copy_from_slice(&base_severity);
             severity[25] = self.cached_atiyah_bott_state.load(Ordering::Relaxed); // 0..3
             severity[26] = self.cached_pomdp_state.load(Ordering::Relaxed); // 0..3
@@ -2418,6 +2551,9 @@ impl RuntimeMathKernel {
             severity[37] = self.cached_pac_bayes_state.load(Ordering::Relaxed); // 0..3
             severity[38] = self.cached_stein_state.load(Ordering::Relaxed); // 0..3
             severity[39] = self.cached_lyapunov_state.load(Ordering::Relaxed); // 0..3
+            severity[40] = self.cached_rademacher_state.load(Ordering::Relaxed); // 0..3
+            severity[41] = self.cached_transfer_entropy_state.load(Ordering::Relaxed); // 0..3
+            severity[42] = self.cached_hodge_state.load(Ordering::Relaxed); // 0..3
             let summary = {
                 let mut fusion = self.fusion.lock();
                 fusion.observe(severity, adverse, mode)
@@ -2582,10 +2718,14 @@ impl RuntimeMathKernel {
         let pac_bayes_summary = self.pac_bayes.lock().summary();
         let stein_summary = self.stein.lock().summary();
         let lyapunov_summary = self.lyapunov.lock().summary();
+        let rademacher_summary = self.rademacher.lock().summary();
+        let transfer_entropy_summary = self.transfer_entropy.lock().summary();
+        let hodge_summary = self.hodge.lock().summary();
         let microlocal_summary = self.microlocal.lock().summary();
         let serre_summary = self.serre.lock().summary();
         let clifford_summary = self.clifford.lock().summary();
         RuntimeKernelSnapshot {
+            schema_version: RUNTIME_KERNEL_SNAPSHOT_SCHEMA_VERSION,
             decisions: self.decisions.load(Ordering::Relaxed),
             consistency_faults: self.cohomology.fault_count(),
             full_validation_trigger_ppm: limits.full_validation_trigger_ppm,
@@ -2695,6 +2835,12 @@ impl RuntimeMathKernel {
             stein_max_score_deviation: stein_summary.max_score_deviation,
             lyapunov_exponent: lyapunov_summary.exponent,
             lyapunov_expansion_ratio: lyapunov_summary.expansion_ratio,
+            rademacher_complexity: rademacher_summary.complexity,
+            rademacher_gen_gap_bound: rademacher_summary.gen_gap_bound,
+            transfer_entropy_max_te: transfer_entropy_summary.max_te,
+            transfer_entropy_mean_te: transfer_entropy_summary.mean_te,
+            hodge_inconsistency_ratio: hodge_summary.inconsistency_ratio,
+            hodge_curl_energy: hodge_summary.curl_energy,
         }
     }
 
@@ -2787,6 +2933,9 @@ fn map_family(family: ApiFamily) -> CallFamily {
         ApiFamily::Socket | ApiFamily::Inet => CallFamily::Socket,
         ApiFamily::Locale => CallFamily::Other,
         ApiFamily::Termios => CallFamily::Stdio,
+        ApiFamily::Process => CallFamily::Other,
+        ApiFamily::VirtualMemory => CallFamily::Memory,
+        ApiFamily::Poll => CallFamily::Stdio,
     }
 }
 
@@ -2892,7 +3041,7 @@ mod tests {
         let snapshot_src = &snapshot_tail[..resample_fn_start];
 
         let struct_start = snapshot_src
-            .find("RuntimeKernelSnapshot {\n            decisions:")
+            .find("RuntimeKernelSnapshot {\n            schema_version:")
             .expect("snapshot must build RuntimeKernelSnapshot struct literal");
         let struct_literal = &snapshot_src[struct_start..];
         assert!(
@@ -3010,7 +3159,7 @@ mod tests {
         );
 
         let fusion_start = observe_src
-            .find("let mut severity = [0u8; 40];")
+            .find("let mut severity = [0u8; 43];")
             .expect("fusion severity buffer must exist");
         let fusion_tail = &observe_src[fusion_start..];
         let fusion_end = fusion_tail

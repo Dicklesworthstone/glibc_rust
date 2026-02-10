@@ -44,17 +44,19 @@
 //!
 //! ## Discrete Adaptation
 //!
-//! For our discrete state space {0,1,2,3}^N, we use a **softened**
-//! score function. The reference model p_ref is a product distribution
-//! where each controller independently has state probabilities derived
-//! from the calibration period. The score at state x_i is:
+//! For our discrete state space {0,1,2,3}^N, we build a **product
+//! reference model** where each controller independently has state
+//! probabilities derived from the calibration period. We then track
+//! the per-controller KL divergence D(current || reference) as the
+//! discrepancy measure:
 //!
 //! ```text
-//! s_i(x) ≈ log p_ref(x_i) - log p_ref(x_i - 1)  (discrete gradient)
+//! KSD²(q, p) ≈ (1/N) Σᵢ D_KL(q_i ‖ p_i)
 //! ```
 //!
-//! We compute the aggregate KSD² as a U-statistic over recent
-//! observation pairs, using the RBF kernel for cross-state comparison.
+//! where q_i is the live empirical distribution for controller i and
+//! p_i is the calibration-frozen reference. This vanishes when q = p
+//! and increases as the observation distribution drifts from reference.
 //!
 //! ## Why KSD Instead of MMD?
 //!
