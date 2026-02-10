@@ -79,6 +79,16 @@ declare -A SNAP_PREFIX=(
     [doob_decomposition]="doob_"
     [fano_bound]="fano_"
     [dobrushin_contraction]="dobrushin_"
+    [azuma_hoeffding]="azuma_"
+    [renewal_theory]="renewal_"
+    [lempel_ziv]="lz_"
+    [spectral_gap]="spectral_gap_"
+    [submodular_coverage]="submodular_"
+    [bifurcation_detector]="bifurcation_"
+    [entropy_rate]="entropy_rate_"
+    [ito_quadratic_variation]="ito_qv_"
+    [borel_cantelli]="borel_cantelli_"
+    [ornstein_uhlenbeck]="ou_"
 )
 
 # Hot-path modules (lock-free access in decide())
@@ -97,7 +107,11 @@ declare -A SNAP_EXEMPT=(
 
 # --- Extract snapshot struct ---
 TMPDIR=$(mktemp -d)
-trap 'rm -rf "$TMPDIR"' EXIT
+cleanup_tmpdir() {
+    # AGENTS.md forbids rm -rf. Remove only if empty; otherwise leave for inspection.
+    rmdir "$TMPDIR" 2>/dev/null || true
+}
+trap cleanup_tmpdir EXIT
 
 snap_start=$(grep -n 'pub struct RuntimeKernelSnapshot {$' "$MOD_RS" | head -1 | cut -d: -f1)
 snap_end=$(awk "NR>=$snap_start" "$MOD_RS" | grep -n '^}$' | head -1 | cut -d: -f1)

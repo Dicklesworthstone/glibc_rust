@@ -55,6 +55,13 @@ declare -A FIELD_MAP=(
     [atiyah_bott]="atiyah_bott"
     [operator_norm]="operator_norm"
     [info_geometry]="info_geometry"
+    [submodular_coverage]="submodular"
+    [bifurcation_detector]="bifurcation"
+    [entropy_rate]="entropy_rate"
+    [spectral_gap]="spectral_gap"
+    [ito_quadratic_variation]="ito_qv"
+    [borel_cantelli]="borel_cantelli"
+    [ornstein_uhlenbeck]="ornstein_uhlenbeck"
 )
 
 # Modules that are decision-time-only guards (no observation needed).
@@ -104,6 +111,13 @@ declare -A SNAP_PREFIX=(
     [transfer_entropy]="transfer_entropy"
     [lyapunov_stability]="lyapunov_"
     [stein_discrepancy]="stein_"
+    [spectral_gap]="spectral_gap_"
+    [submodular_coverage]="submodular_"
+    [bifurcation_detector]="bifurcation_"
+    [entropy_rate]="entropy_rate_"
+    [ito_quadratic_variation]="ito_qv_"
+    [borel_cantelli]="borel_cantelli_"
+    [ornstein_uhlenbeck]="ou_"
 )
 
 # --- Extract line ranges for key sections ---
@@ -115,12 +129,16 @@ snapshot_fn_range=$(grep -n 'pub fn snapshot.*RuntimeKernelSnapshot' "$MOD_RS" |
 
 # Write temp files for section searching (avoids massive variable piping)
 TMPDIR=$(mktemp -d)
-trap 'rm -rf "$TMPDIR"' EXIT
+cleanup_tmpdir() {
+    # AGENTS.md forbids rm -rf. Remove only if empty; otherwise leave for inspection.
+    rmdir "$TMPDIR" 2>/dev/null || true
+}
+trap cleanup_tmpdir EXIT
 
-sed -n "${struct_range},+350p" "$MOD_RS" > "$TMPDIR/struct.txt"
-sed -n "${snap_struct_range},+350p" "$MOD_RS" > "$TMPDIR/snap_struct.txt"
+sed -n "${struct_range},+500p" "$MOD_RS" > "$TMPDIR/struct.txt"
+sed -n "${snap_struct_range},+500p" "$MOD_RS" > "$TMPDIR/snap_struct.txt"
 if [[ -n "$observe_range" ]]; then
-    sed -n "${observe_range},$((observe_range + 1300))p" "$MOD_RS" > "$TMPDIR/observe.txt"
+    sed -n "${observe_range},$((observe_range + 1800))p" "$MOD_RS" > "$TMPDIR/observe.txt"
 else
     touch "$TMPDIR/observe.txt"
 fi
