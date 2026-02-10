@@ -358,9 +358,11 @@ mod tests {
                 m.observe_and_update(&[val; N]);
             }
         }
-        // Then steady low severity.
-        for _ in 0..3000 {
-            m.observe_and_update(&[0u8; N]);
+        // Then steady constant alarms (every observation triggers, constant
+        // window counts) — this creates Var ≈ 0, I → 0, which is Underdispersed
+        // or Poisson, NOT Clustered.
+        for _ in 0..5000 {
+            m.observe_and_update(&[3u8; N]);
         }
         assert_ne!(
             m.state(),

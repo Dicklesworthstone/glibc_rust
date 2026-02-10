@@ -425,6 +425,210 @@ fn derive_epoch_seed(epoch_id: u64) -> u64 {
     splitmix64(epoch_id ^ 0xD6E8_FEB8_6659_FD93)
 }
 
+// ── Repair Symbol Generation (v1) ──────────────────────────────
+//
+// This is the `bd-1es` deterministic XOR-only encoder used to produce cadence
+// repair symbols for offline decoding.
+//
+// Key constraints:
+// - Deterministic: schedule depends only on (epoch_seed, k_source, repair_esi).
+// - XOR-only: no GF(256) arithmetic, no Gaussian elimination in libc runtime.
+// - Small-degree bias: peeling-friendly (degree ~ geometric, capped).
+//
+// IMPORTANT: Generation is cadence-only (never on strict fast path). Integration
+// into runtime logging is handled by `bd-3ku`.
+
+/// v1 target decode slack (`K + slack_decode`).
+pub const SLACK_DECODE_V1: u16 = 2;
+
+/// v1 maximum repair-symbol degree (subset size).
+pub const REPAIR_MAX_DEGREE_V1: usize = 16;
+
+/// Deterministic repair schedule for a single repair symbol (v1).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RepairScheduleV1 {
+    degree: u16,
+    len: u8,
+    indices: [u16; REPAIR_MAX_DEGREE_V1],
+}
+
+impl RepairScheduleV1 {
+    #[must_use]
+    pub const fn degree(&self) -> u16 {
+        self.degree
+    }
+
+    #[must_use]
+    pub fn indices(&self) -> &[u16] {
+        &self.indices[..self.len as usize]
+    }
+}
+
+/// Derive the number of repair symbols `R` to generate for an epoch.
+///
+/// Spec (bd-1es / bd-3a9):
+/// - `R = max(slack_decode, ceil(K_source * overhead_percent / 100))`
+///
+/// If `k_source == 0`, returns 0 (no epoch).
+#[must_use]
+pub fn derive_repair_symbol_count_v1(k_source: u16, overhead_percent: u16) -> u16 {
+    if k_source == 0 {
+        return 0;
+    }
+    let k = k_source as u32;
+    let overhead = overhead_percent as u32;
+    let r_overhead = ceil_div_u32(k.saturating_mul(overhead), 100);
+    let r = r_overhead.max(SLACK_DECODE_V1 as u32);
+    u16::try_from(r).unwrap_or(u16::MAX)
+}
+
+/// Approximate maximum loss fraction tolerated beyond decode slack.
+///
+/// Spec (bd-1es):
+/// - `loss_fraction_max ≈ (R - slack_decode) / (K_source + R)`
+///
+/// Returned as ppm in `[0, 1_000_000]` for fixed-point stability.
+#[must_use]
+pub fn loss_fraction_max_ppm_v1(k_source: u16, r_repair: u16) -> u32 {
+    if k_source == 0 {
+        return 0;
+    }
+    let numer = (r_repair.saturating_sub(SLACK_DECODE_V1) as u64).saturating_mul(1_000_000);
+    let denom = (k_source as u64).saturating_add(r_repair as u64).max(1);
+    u32::try_from((numer / denom).min(1_000_000)).unwrap_or(1_000_000)
+}
+
+/// Derive a deterministic repair schedule (subset of `0..k_source`) for `repair_esi`.
+///
+/// Degree distribution (v1):
+/// - `degree = 1 + min(trailing_zeros(u), REPAIR_MAX_DEGREE_V1-1)` where `u` is PRNG output.
+/// - clamp to `k_source` (so indices are always distinct / valid)
+///
+/// Index selection:
+/// - propose index = `next_u64 % k_source`
+/// - resolve duplicates via deterministic linear probing (wrap-around)
+#[must_use]
+pub fn derive_repair_schedule_v1(
+    epoch_seed: u64,
+    k_source: u16,
+    repair_esi: u16,
+) -> RepairScheduleV1 {
+    if k_source == 0 {
+        return RepairScheduleV1 {
+            degree: 0,
+            len: 0,
+            indices: [0u16; REPAIR_MAX_DEGREE_V1],
+        };
+    }
+
+    let mut state =
+        epoch_seed ^ 0x52D2_EE1D_4B33_9D5Bu64 ^ ((repair_esi as u64) << 32) ^ (k_source as u64);
+
+    let u = splitmix64_next(&mut state);
+    let mut degree = 1u16 + (u.trailing_zeros() as u16).min((REPAIR_MAX_DEGREE_V1 - 1) as u16);
+    degree = degree.min(k_source);
+
+    let mut out = [0u16; REPAIR_MAX_DEGREE_V1];
+    let mut len: usize = 0;
+
+    while len < degree as usize {
+        let r = splitmix64_next(&mut state);
+        let mut idx = (r % (k_source as u64)) as u16;
+
+        // Resolve duplicates deterministically via linear probing.
+        let mut probes: u16 = 0;
+        while contains_u16(&out[..len], idx) && probes < k_source {
+            idx = idx.wrapping_add(1);
+            if idx >= k_source {
+                idx = 0;
+            }
+            probes = probes.wrapping_add(1);
+        }
+
+        // Fallback (should not trigger for degree<=k_source): pick first unused.
+        if probes >= k_source {
+            for cand in 0..k_source {
+                if !contains_u16(&out[..len], cand) {
+                    idx = cand;
+                    break;
+                }
+            }
+        }
+
+        out[len] = idx;
+        len += 1;
+    }
+
+    RepairScheduleV1 {
+        degree,
+        len: u8::try_from(len).unwrap_or(u8::MAX),
+        indices: out,
+    }
+}
+
+/// XOR-encode a single repair payload symbol for the given `repair_esi`.
+///
+/// The repair payload is the XOR of `degree` systematic payloads at indices given by
+/// `derive_repair_schedule_v1(epoch_seed, k_source, repair_esi)`.
+#[must_use]
+pub fn encode_xor_repair_payload_v1(
+    epoch_seed: u64,
+    source_payloads: &[[u8; EVIDENCE_SYMBOL_SIZE_T]],
+    repair_esi: u16,
+) -> [u8; EVIDENCE_SYMBOL_SIZE_T] {
+    let k_source = u16::try_from(source_payloads.len()).unwrap_or(u16::MAX);
+    if k_source == 0 {
+        return [0u8; EVIDENCE_SYMBOL_SIZE_T];
+    }
+    debug_assert!(
+        repair_esi >= k_source,
+        "repair_esi should start at k_source (systematic are 0..k_source-1)"
+    );
+
+    let sched = derive_repair_schedule_v1(epoch_seed, k_source, repair_esi);
+    let mut out = [0u8; EVIDENCE_SYMBOL_SIZE_T];
+    for &idx in sched.indices() {
+        let src = &source_payloads[idx as usize];
+        for i in 0..EVIDENCE_SYMBOL_SIZE_T {
+            out[i] ^= src[i];
+        }
+    }
+    out
+}
+
+/// Generate all repair payload symbols for an epoch (v1).
+///
+/// Returns `(esi, payload)` pairs where repair ESIs are `k_source..k_source+R-1`.
+#[must_use]
+pub fn generate_repair_payloads_v1(
+    epoch_seed: u64,
+    source_payloads: &[[u8; EVIDENCE_SYMBOL_SIZE_T]],
+    overhead_percent: u16,
+) -> Vec<(u16, [u8; EVIDENCE_SYMBOL_SIZE_T])> {
+    let k_source = u16::try_from(source_payloads.len()).unwrap_or(u16::MAX);
+    let r = derive_repair_symbol_count_v1(k_source, overhead_percent);
+    let mut out = Vec::with_capacity(r as usize);
+    for i in 0..r {
+        let esi = k_source.wrapping_add(i);
+        let payload = encode_xor_repair_payload_v1(epoch_seed, source_payloads, esi);
+        out.push((esi, payload));
+    }
+    out
+}
+
+#[inline]
+fn ceil_div_u32(numer: u32, denom: u32) -> u32 {
+    if denom == 0 {
+        return u32::MAX;
+    }
+    numer.saturating_add(denom.saturating_sub(1)) / denom
+}
+
+#[inline]
+fn contains_u16(hay: &[u16], needle: u16) -> bool {
+    hay.iter().any(|&v| v == needle)
+}
+
 /// A systematic evidence log with per-(mode,family) epoch state and a bounded ring buffer.
 ///
 /// Recording is cheap (no allocation). Epoch state uses small per-stream mutexes to keep
@@ -723,8 +927,13 @@ fn fmix64(mut k: u64) -> u64 {
 
 #[inline]
 fn splitmix64(mut x: u64) -> u64 {
-    x = x.wrapping_add(0x9E37_79B9_7F4A_7C15);
-    let mut z = x;
+    splitmix64_next(&mut x)
+}
+
+#[inline]
+fn splitmix64_next(state: &mut u64) -> u64 {
+    *state = state.wrapping_add(0x9E37_79B9_7F4A_7C15);
+    let mut z = *state;
     z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
     z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
     z ^ (z >> 31)
@@ -872,5 +1081,65 @@ mod tests {
         assert!(snap.len() <= CAP);
         // The latest seqno should be 10 (since we wrote 10 records).
         assert_eq!(snap.last().unwrap().seqno(), 10);
+    }
+
+    #[test]
+    fn derive_repair_symbol_count_matches_spec_examples() {
+        assert_eq!(derive_repair_symbol_count_v1(0, 10), 0);
+        assert_eq!(derive_repair_symbol_count_v1(1, 0), SLACK_DECODE_V1);
+        assert_eq!(derive_repair_symbol_count_v1(8, 10), SLACK_DECODE_V1);
+        assert_eq!(derive_repair_symbol_count_v1(20, 10), SLACK_DECODE_V1);
+        assert_eq!(derive_repair_symbol_count_v1(21, 10), 3);
+        assert_eq!(derive_repair_symbol_count_v1(256, 10), 26);
+    }
+
+    #[test]
+    fn loss_fraction_ppm_is_zero_when_r_equals_slack() {
+        let k = 256;
+        let r = SLACK_DECODE_V1;
+        assert_eq!(loss_fraction_max_ppm_v1(k, r), 0);
+    }
+
+    #[test]
+    fn repair_schedule_indices_are_in_range_and_unique() {
+        let epoch_seed = 0x0123_4567_89AB_CDEF;
+        let k_source = 32;
+        let repair_esi = k_source;
+        let sched = derive_repair_schedule_v1(epoch_seed, k_source, repair_esi);
+        assert!(sched.degree() >= 1);
+        assert!(sched.degree() as usize <= REPAIR_MAX_DEGREE_V1);
+        assert_eq!(sched.indices().len(), sched.degree() as usize);
+        for &idx in sched.indices() {
+            assert!(idx < k_source);
+        }
+        for (i, &a) in sched.indices().iter().enumerate() {
+            for &b in &sched.indices()[i + 1..] {
+                assert_ne!(a, b);
+            }
+        }
+    }
+
+    #[test]
+    fn xor_repair_payload_is_deterministic_and_matches_xor_of_selected_sources() {
+        let epoch_seed = 0x0F1E_2D3C_4B5A_6978;
+        const K: usize = 8;
+        let mut src = [[0u8; EVIDENCE_SYMBOL_SIZE_T]; K];
+        for (i, s) in src.iter_mut().enumerate() {
+            *s = [i as u8; EVIDENCE_SYMBOL_SIZE_T];
+        }
+
+        let k_source = u16::try_from(src.len()).unwrap();
+        let repair_esi = k_source;
+
+        let sched = derive_repair_schedule_v1(epoch_seed, k_source, repair_esi);
+        let expected_byte = sched
+            .indices()
+            .iter()
+            .fold(0u8, |acc, &idx| acc ^ (idx as u8));
+
+        let p1 = encode_xor_repair_payload_v1(epoch_seed, &src, repair_esi);
+        let p2 = encode_xor_repair_payload_v1(epoch_seed, &src, repair_esi);
+        assert_eq!(p1, p2);
+        assert!(p1.iter().all(|&b| b == expected_byte));
     }
 }

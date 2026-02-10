@@ -96,13 +96,16 @@ pub const fn valid_madvise(advice: i32) -> bool {
     )
 }
 
-/// Returns true if `flags` contains only recognized MS_* bits and does not
-/// combine MS_ASYNC and MS_SYNC (which is undefined).
+/// Returns true if `flags` contains only recognized MS_* bits, has exactly
+/// one of MS_ASYNC or MS_SYNC (required by POSIX), and does not combine both.
 #[must_use]
 pub const fn valid_msync_flags(flags: i32) -> bool {
     let known = (flags & !MS_MASK) == 0;
-    let not_both = !((flags & MS_ASYNC != 0) && (flags & MS_SYNC != 0));
-    known && not_both
+    let has_async = (flags & MS_ASYNC) != 0;
+    let has_sync = (flags & MS_SYNC) != 0;
+    // Exactly one of MS_ASYNC or MS_SYNC must be set.
+    let exactly_one = has_async ^ has_sync;
+    known && exactly_one
 }
 
 /// Returns true if the mmap length is non-zero.
@@ -222,6 +225,9 @@ mod tests {
         assert!(!valid_msync_flags(MS_ASYNC | MS_SYNC));
         // Unknown bits.
         assert!(!valid_msync_flags(0x100));
+        // Neither ASYNC nor SYNC: POSIX requires exactly one.
+        assert!(!valid_msync_flags(0));
+        assert!(!valid_msync_flags(MS_INVALIDATE));
     }
 
     #[test]

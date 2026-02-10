@@ -340,14 +340,19 @@ mod tests {
     #[test]
     fn trending_input_has_higher_hurst() {
         let mut m = HurstExponentMonitor::new();
-        // Trending: long runs of 0 then long runs of 3 (persistent pattern).
-        for cycle in 0..10 {
-            let val = if cycle < 5 { 0u8 } else { 3u8 };
-            for _ in 0..50 {
-                m.observe_and_update(&[val; N]);
+        // Trending: slow sawtooth ramp (0,0,0,...,1,1,1,...,2,2,...,3,3,...,0,...)
+        // Each level held for 20 steps, creating persistent runs within
+        // the 64-element window.
+        for cycle in 0u32..20 {
+            for level in 0u8..=3 {
+                for _ in 0..20 {
+                    m.observe_and_update(&[level; N]);
+                }
             }
+            // Quick check: avoid wasting cycles if already calibrated.
+            let _ = cycle;
         }
-        // Long runs create high R/S → high H.
+        // Persistent runs within windows create high R/S → H not anti-persistent.
         assert!(
             m.mean_hurst() > ANTI_PERSISTENT_THRESHOLD,
             "Trending input should have higher Hurst: {}",

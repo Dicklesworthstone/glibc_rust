@@ -90,6 +90,23 @@ Repair schedule:
 - XOR of a deterministic subset of source symbols
 - subset size distribution favors small degrees (peeling-decoder friendly)
 
+### Deterministic XOR Schedule (v1)
+
+This project’s v1 schedule is intentionally simpler than RFC6330 RaptorQ. It is:
+- XOR-only (bytewise XOR of selected systematic payload symbols)
+- deterministic and versioned (stable inputs -> stable outputs)
+- biased toward small degrees (peeling-friendly)
+
+Concrete v1 algorithm (implemented in `runtime_math/evidence.rs`):
+- Repair ESIs are `esi = K_source + i` for `i in 0..R`.
+- PRNG: `splitmix64_next` seeded from `(epoch_seed, esi, K_source)` with domain separation.
+- Degree:
+  - `degree = 1 + min(trailing_zeros(u), REPAIR_MAX_DEGREE_V1-1)` for PRNG output `u`
+  - clamped to `K_source`
+- Indices:
+  - propose `idx = next_u64 % K_source`
+  - resolve duplicates via deterministic linear probing (wrap-around)
+
 Encoding cost:
 - occurs only on cadence (e.g., every 256 decisions or epoch finalize)
 - bounded by `(R * avg_degree * T)` per epoch
@@ -147,4 +164,3 @@ Tooling may depend on `/dp/asupersync` and `/dp/frankentui`:
 - Harness will own decoding/proof generation and may iterate independently.
 - If later we want RFC6330 compatibility, we can version-bump the record format and
   introduce a different `codec_id` while keeping the same envelope.
-
