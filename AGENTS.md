@@ -245,8 +245,8 @@ Rules:
 - `large_deviations.rs` — Cramér rate-function rare-event monitor (math #22)
 - `hji_reachability.rs` — Hamilton-Jacobi-Isaacs differential game reachability controller (math #15)
 - `mean_field_game.rs` — Mean-field game Nash equilibrium contention controller (math #19)
-- `runtime_math/padic_valuation.rs` — Non-Archimedean p-adic valuation error calculus for floating-point exceptional regimes (math #40)
-- `runtime_math/symplectic_reduction.rs` — GIT/symplectic reduction IPC admissibility and deadlock detection (math #39)
+- `padic_valuation.rs` — Non-Archimedean p-adic valuation error calculus for floating-point exceptional regimes (math #40)
+- `symplectic_reduction.rs` — GIT/symplectic reduction IPC admissibility and deadlock detection (math #39)
 - `runtime_math/higher_topos.rs` — Higher-topos descent diagnostics for locale/catalog coherence (math #42)
 - `runtime_math/commitment_audit.rs` — Commitment-algebra + martingale-audit tamper-evident session traces (math #44)
 - `runtime_math/changepoint.rs` — Bayesian online change-point detection (Adams & MacKay 2007) with Beta-Bernoulli conjugate model (math #6)
@@ -269,6 +269,17 @@ Rules:
 - `runtime_math/provenance_info.rs` — Information-theoretic provenance tag monitor with Shannon/Rényi/min-entropy collision bounds (math #11)
 - `runtime_math/grobner_normalizer.rs` — Gröbner-basis constraint normalizer for confluent controller-state consistency verification (math #30)
 - `runtime_math/grothendieck_glue.rs` — Grothendieck site cocycle/descent/stackification coherence monitor for NSS/resolv/locale source gluing (math #33)
+- `runtime_math/clifford.rs` — Clifford algebra + Spin/Pin symmetry methods for SIMD/alignment/overlap kernel correctness monitoring (math #36)
+- `runtime_math/coupling.rs` — Probabilistic coupling + Azuma-Hoeffding concentration bounds for strict/hardened divergence certification (math #18)
+- `runtime_math/hodge_decomposition.rs` — Combinatorial Hodge decomposition for cyclic inconsistency detection in controller severity ordering
+- `runtime_math/loss_minimizer.rs` — Decision-theoretic loss minimization for hardened repair policy selection via proper scoring rules (math #4)
+- `runtime_math/lyapunov_stability.rs` — Maximal Lyapunov exponent estimation for chaotic/divergent controller ensemble dynamics detection
+- `runtime_math/microlocal.rs` — Kashiwara-Schapira microlocal sheaf propagation for signal/unwind fault-surface control (math #37)
+- `runtime_math/pac_bayes.rs` — PAC-Bayes generalization bound monitor for ensemble controller prediction error with finite-sample guarantees
+- `runtime_math/rademacher_complexity.rs` — Data-dependent Rademacher complexity bound for severity signal space capacity monitoring
+- `runtime_math/serre_spectral.rs` — Serre spectral sequence methods for cross-layer consistency defect detection between ABI/membrane/core (math #32)
+- `runtime_math/stein_discrepancy.rs` — Kernelized Stein Discrepancy for distribution-free goodness-of-fit testing of controller state deviation
+- `runtime_math/transfer_entropy.rs` — Directed information-theoretic causality detection between controllers via Schreiber's transfer entropy
 
 ### glibc-rs-core (Safe Implementations)
 - `string/` — mem*, str*, wide string functions
