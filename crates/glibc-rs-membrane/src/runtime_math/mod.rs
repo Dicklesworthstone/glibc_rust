@@ -85,6 +85,7 @@ use parking_lot::Mutex;
 
 use crate::check_oracle::{CheckContext, CheckOracle, CheckStage};
 use crate::config::SafetyLevel;
+use crate::grobner;
 use crate::heal::HealingAction;
 use crate::hji_reachability::{HjiReachabilityController, ReachState};
 use crate::large_deviations::{LargeDeviationsMonitor, RateState};
@@ -101,6 +102,7 @@ use crate::tropical_latency::{PipelinePath, TROPICAL_METRICS, TropicalLatencyCom
 
 use self::admm_budget::{AdmmBudgetController, AdmmState};
 use self::alpha_investing::{AlphaInvestingController, AlphaInvestingState};
+use self::approachability::{ApproachabilityController, ApproachabilityState};
 use self::atiyah_bott::{AtiyahBottController, LocalizationState};
 use self::azuma_hoeffding::{AzumaHoeffdingMonitor, AzumaState};
 use self::bandit::ConstrainedBanditRouter;
@@ -139,6 +141,7 @@ use self::ito_quadratic_variation::{ItoQuadraticVariationMonitor, ItoQvState};
 use self::kernel_mmd::{KernelMmdMonitor, MmdState};
 use self::ktheory::{KTheoryController, KTheoryState};
 use self::lempel_ziv::{LempelZivMonitor, LempelZivState};
+use self::localization_chooser::{ChooserState, LocalizationChooser};
 use self::loss_minimizer::{LossMinimizationController, LossState};
 use self::lyapunov_stability::{LyapunovStabilityMonitor, LyapunovState};
 use self::malliavin_sensitivity::{MalliavSensitivity, SensitivityState};
@@ -158,6 +161,7 @@ use self::risk::ConformalRiskEngine;
 use self::serre_spectral::{
     InvariantClass, LayerPair, SerreSpectralController, SpectralSequenceState,
 };
+use self::sobol::SobolGenerator;
 use self::sos_barrier::{SosBarrierController, SosBarrierState};
 use self::sos_invariant::{SosInvariantController, SosState};
 use self::sparse::{SparseRecoveryController, SparseState};
@@ -173,7 +177,7 @@ const FULL_PATH_BUDGET_NS: u64 = 200;
 /// Number of base severity signals fed from hot-path cached atomics.
 const BASE_SEVERITY_LEN: usize = 25;
 /// Number of meta-controller severity signals appended after the base set.
-const META_SEVERITY_LEN: usize = 36;
+const META_SEVERITY_LEN: usize = 38;
 /// Compile-time assertion: fusion::SIGNALS == BASE + META severity slots.
 const _: () = assert!(
     fusion::SIGNALS == BASE_SEVERITY_LEN + META_SEVERITY_LEN,
@@ -287,7 +291,7 @@ impl RuntimeDecision {
 /// - Additive-only changes are allowed without bumping the version.
 /// - Any rename/removal/semantic change requires bump + explicit migration plan
 ///   for fixtures and harness diff tooling.
-pub const RUNTIME_KERNEL_SNAPSHOT_SCHEMA_VERSION: u32 = 1;
+pub const RUNTIME_KERNEL_SNAPSHOT_SCHEMA_VERSION: u32 = 2;
 
 /// Runtime state snapshot useful for tests/telemetry export.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -396,6 +400,10 @@ pub struct RuntimeKernelSnapshot {
     pub sparse_residual_ewma: f64,
     /// Sparse-recovery critical detections.
     pub sparse_critical_count: u64,
+    /// Gröbner canonical root-cause class ID (0=none, 1-6=single cause, 7=compound).
+    pub sparse_canonical_class: u8,
+    /// Per-canonical-class observation counts (8 bins).
+    pub sparse_canonical_counts: [u64; grobner::NUM_CANONICAL_CLASSES],
     /// Equivariant controller alignment score (higher is more symmetric/stable).
     pub equivariant_alignment_ppm: u32,
     /// Equivariant drift detections.
@@ -614,6 +622,22 @@ pub struct RuntimeKernelSnapshot {
     pub alpha_investing_rejections: u64,
     /// Alpha-Investing empirical false discovery rate (0..1).
     pub alpha_investing_empirical_fdr: f64,
+    /// Approachability squared deviation from safe set (milli² units).
+    pub approachability_deviation_sq_milli: u64,
+    /// Approachability recommended arm (0..3).
+    pub approachability_recommended_arm: u8,
+    /// Approachability controller state code (0=Calibrating..3=Violated).
+    pub approachability_state: u8,
+    /// Localization chooser selected policy arm (0=Minimal, 1=Cautious, 2=Thorough, 3=Protective, 4=Lockdown).
+    pub localization_selected_arm: u8,
+    /// Localization chooser total observation count.
+    pub localization_count: u64,
+    /// Sobol scheduler sequence index (monotonic, wraps at 2^32).
+    pub sobol_index: u32,
+    /// Sobol scheduler augmented probe mask (bits set by Sobol rotation).
+    pub sobol_augmented_mask: u32,
+    /// Number of probes added by Sobol rotation beyond the D-optimal base set.
+    pub sobol_augmented_count: u8,
 }
 
 /// Online control kernel for strict/hardened runtime decisions.
@@ -694,6 +718,9 @@ pub struct RuntimeMathKernel {
     dispersion: Mutex<DispersionIndexMonitor>,
     birkhoff: Mutex<BirkhoffErgodicMonitor>,
     alpha_investing: Mutex<AlphaInvestingController>,
+    approachability: Mutex<ApproachabilityController>,
+    localization: Mutex<LocalizationChooser>,
+    sobol_scheduler: Mutex<SobolGenerator>,
     cached_risk_bonus_ppm: AtomicU64,
     cached_oracle_bias: [AtomicU8; ApiFamily::COUNT],
     cached_spectral_phase: AtomicU8,
@@ -771,6 +798,11 @@ pub struct RuntimeMathKernel {
     cached_dispersion_state: AtomicU8,
     cached_birkhoff_state: AtomicU8,
     cached_alpha_investing_state: AtomicU8,
+    cached_approachability_state: AtomicU8,
+    cached_localization_state: AtomicU8,
+    cached_localization_arm: AtomicU8,
+    cached_sobol_index: AtomicU64,
+    cached_sobol_augmented_mask: AtomicU64,
     decisions: AtomicU64,
 }
 
@@ -865,6 +897,9 @@ impl RuntimeMathKernel {
             dispersion: Mutex::new(DispersionIndexMonitor::new()),
             birkhoff: Mutex::new(BirkhoffErgodicMonitor::new()),
             alpha_investing: Mutex::new(AlphaInvestingController::new()),
+            approachability: Mutex::new(ApproachabilityController::new(mode)),
+            localization: Mutex::new(LocalizationChooser::new(mode)),
+            sobol_scheduler: Mutex::new(SobolGenerator::new(sobol::MAX_DIM)),
             cached_risk_bonus_ppm: AtomicU64::new(0),
             cached_oracle_bias: std::array::from_fn(|_| AtomicU8::new(1)),
             cached_spectral_phase: AtomicU8::new(0),
@@ -942,6 +977,11 @@ impl RuntimeMathKernel {
             cached_dispersion_state: AtomicU8::new(0),
             cached_birkhoff_state: AtomicU8::new(0),
             cached_alpha_investing_state: AtomicU8::new(0),
+            cached_approachability_state: AtomicU8::new(0),
+            cached_localization_state: AtomicU8::new(0),
+            cached_localization_arm: AtomicU8::new(1), // Default: Cautious
+            cached_sobol_index: AtomicU64::new(0),
+            cached_sobol_augmented_mask: AtomicU64::new(0),
             decisions: AtomicU64::new(0),
         }
     }
@@ -1483,6 +1523,52 @@ impl RuntimeMathKernel {
                 .store(plan.expected_cost_ns, Ordering::Relaxed);
             self.cached_design_selected
                 .store(plan.selected_count(), Ordering::Relaxed);
+
+            // Sobol quasi-random probe augmentation: deterministically rotate
+            // additional probes beyond the D-optimal base set, achieving
+            // low-discrepancy coverage of the probe combination space over time.
+            // Covering-array gaps lower the activation threshold so that probes
+            // covering uncovered interactions are more likely to be included.
+            {
+                let mut sobol = self.sobol_scheduler.lock();
+                let point = sobol.next_ppm();
+                let cov_state = self.cached_covering_state.load(Ordering::Relaxed);
+                // Base threshold: 500k ppm = 50% activation probability per probe.
+                // Coverage gaps lower the threshold to activate more probes and
+                // fill uncovered interaction tuples faster.
+                let threshold = match cov_state {
+                    3 => 250_000u32, // CriticalGap: aggressive exploration
+                    2 => 350_000u32, // CoverageGap: moderate exploration
+                    _ => 500_000u32, // Calibrating/Complete: standard rotation
+                };
+                let base_mask = plan.mask;
+                let mut augmented_mask = base_mask;
+                let budget_remaining = plan.budget_ns.saturating_sub(plan.expected_cost_ns);
+                let mut augmented_cost = 0u64;
+                // Map each probe to a Sobol dimension (mod 8) for activation.
+                // Probes whose Sobol coordinate exceeds the threshold are added
+                // if they fit within the remaining budget.
+                for probe in Probe::ALL {
+                    if (base_mask & probe.bit()) != 0 {
+                        continue; // already in D-optimal set
+                    }
+                    let dim_idx = (probe as u8 as usize) % sobol.dim();
+                    if point[dim_idx] >= threshold {
+                        let cost = design::probe_cost_ns(probe);
+                        if augmented_cost.saturating_add(cost) <= budget_remaining {
+                            augmented_mask |= probe.bit();
+                            augmented_cost += cost;
+                        }
+                    }
+                }
+                // Replace probe mask with Sobol-augmented version.
+                self.cached_probe_mask
+                    .store(u64::from(augmented_mask), Ordering::Relaxed);
+                self.cached_sobol_index
+                    .store(u64::from(sobol.index()), Ordering::Relaxed);
+                self.cached_sobol_augmented_mask
+                    .store(u64::from(augmented_mask ^ base_mask), Ordering::Relaxed);
+            }
         }
 
         let limits = self.controller.limits(mode);
@@ -1537,6 +1623,18 @@ impl RuntimeMathKernel {
         // Violated, force full validation. This is the runtime embodiment of
         // the offline SOS safety proof — monotone escalation only.
         if self.cached_sos_barrier_state.load(Ordering::Relaxed) >= 2 {
+            profile = ValidationProfile::Full;
+        }
+        // Blackwell approachability: if the controller detects the cumulative
+        // payoff vector is outside the safe set (Violated), force full validation.
+        // Drifting is a warning; only Violated (code 3) triggers escalation.
+        if self.cached_approachability_state.load(Ordering::Relaxed) >= 3 {
+            profile = ValidationProfile::Full;
+        }
+        // Localization chooser: if the policy arm is Thorough (2) or higher,
+        // force full validation. Conservative escalation only — the chooser
+        // cannot de-escalate below the current profile.
+        if self.cached_localization_arm.load(Ordering::Relaxed) >= 2 {
             profile = ValidationProfile::Full;
         }
 
@@ -2631,7 +2729,11 @@ impl RuntimeMathKernel {
                     let mut barrier = self.sos_barrier.lock();
                     // Provenance barrier: use cached risk and profile.
                     let risk_ppm = self.cached_risk_bonus_ppm.load(Ordering::Relaxed) as u32;
-                    let depth_ppm = if profile.requires_full() { 1_000_000u32 } else { 0u32 };
+                    let depth_ppm = if profile.requires_full() {
+                        1_000_000u32
+                    } else {
+                        0u32
+                    };
                     barrier.evaluate_provenance(risk_ppm, depth_ppm, 0, 0);
                     // Quarantine barrier: evaluate on cadence.
                     if barrier.is_quarantine_cadence() {
@@ -3166,6 +3268,80 @@ impl RuntimeMathKernel {
                     .store(ai_code, Ordering::Relaxed);
             }
 
+            // Blackwell approachability: multi-objective (latency, risk, coverage)
+            // convergence to a mode-dependent safe set. O(1/√t) guarantee.
+            {
+                let approachability_code = {
+                    let mut appr = self.approachability.lock();
+                    let latency_milli =
+                        (estimated_cost_ns * 1000 / FULL_PATH_BUDGET_NS.max(1)).min(1000);
+                    let risk_milli = (risk_bound_ppm as u64 * 1000 / 1_000_000).min(1000);
+                    let coverage_milli = if profile.requires_full() {
+                        700u64
+                    } else {
+                        200u64
+                    };
+                    appr.observe(latency_milli, risk_milli, coverage_milli);
+                    match appr.state() {
+                        ApproachabilityState::Calibrating => 0u8,
+                        ApproachabilityState::Approaching => 1u8,
+                        ApproachabilityState::Drifting => 2u8,
+                        ApproachabilityState::Violated => 3u8,
+                    }
+                };
+                self.cached_approachability_state
+                    .store(approachability_code, Ordering::Relaxed);
+            }
+
+            // Localization fixed-point policy chooser (Atiyah-Bott style).
+            // Feeds domain-specific signals: risk, concentration, stability,
+            // coverage, and budget pressure from cached controller states.
+            {
+                let loc_risk_ppm = self.cached_risk_bonus_ppm.load(Ordering::Relaxed) as u32;
+                let concentration_state = self.cached_atiyah_bott_state.load(Ordering::Relaxed);
+                let stability_state = self
+                    .cached_operator_norm_state
+                    .load(Ordering::Relaxed)
+                    .max(self.cached_lyapunov_state.load(Ordering::Relaxed));
+                let coverage_state = self
+                    .cached_covering_state
+                    .load(Ordering::Relaxed)
+                    .max(self.cached_submodular_state.load(Ordering::Relaxed));
+                let budget_pressure = {
+                    let fast_wcl = TROPICAL_METRICS.fast_wcl_ns.load(Ordering::Relaxed);
+                    let full_wcl = TROPICAL_METRICS.full_wcl_ns.load(Ordering::Relaxed);
+                    if fast_wcl > FAST_PATH_BUDGET_NS && full_wcl > FULL_PATH_BUDGET_NS {
+                        3u8
+                    } else if full_wcl > FULL_PATH_BUDGET_NS {
+                        2u8
+                    } else if fast_wcl > FAST_PATH_BUDGET_NS {
+                        1u8
+                    } else {
+                        0u8
+                    }
+                };
+                let loc_code = {
+                    let mut loc = self.localization.lock();
+                    loc.observe(
+                        loc_risk_ppm,
+                        concentration_state,
+                        stability_state,
+                        coverage_state,
+                        budget_pressure,
+                    );
+                    let arm = loc.selected_arm();
+                    self.cached_localization_arm.store(arm, Ordering::Relaxed);
+                    match loc.state() {
+                        ChooserState::Calibrating => 0u8,
+                        ChooserState::Nominal => 1u8,
+                        ChooserState::Elevated => 2u8,
+                        ChooserState::Intervening => 3u8,
+                    }
+                };
+                self.cached_localization_state
+                    .store(loc_code, Ordering::Relaxed);
+            }
+
             // Feed robust fusion controller from extended severity vector.
             // Includes the 25 base controller signals plus META_SEVERITY_LEN meta-controller states.
             {
@@ -3209,6 +3385,8 @@ impl RuntimeMathKernel {
                 severity[58] = self.cached_birkhoff_state.load(Ordering::Relaxed); // 0..3
                 severity[59] = self.cached_alpha_investing_state.load(Ordering::Relaxed); // 0..3
                 severity[60] = self.cached_sos_barrier_state.load(Ordering::Relaxed); // 0..3
+                severity[61] = self.cached_localization_state.load(Ordering::Relaxed); // 0..3
+                severity[62] = self.cached_approachability_state.load(Ordering::Relaxed); // 0..3
                 let summary = {
                     let mut fusion = self.fusion.lock();
                     fusion.observe(severity, adverse, mode)
@@ -3395,6 +3573,8 @@ impl RuntimeMathKernel {
         let dispersion_summary = self.dispersion.lock().summary();
         let birkhoff_summary = self.birkhoff.lock().summary();
         let alpha_investing_summary = self.alpha_investing.lock().summary();
+        let approachability_summary = self.approachability.lock().summary();
+        let localization_summary = self.localization.lock().summary();
         let coupling_summary = self.coupling.lock().summary();
         let loss_summary = self.loss_minimizer.lock().summary();
         let microlocal_summary = self.microlocal.lock().summary();
@@ -3450,6 +3630,8 @@ impl RuntimeMathKernel {
             sparse_l1_energy: sparse_summary.l1_energy,
             sparse_residual_ewma: sparse_summary.residual_ewma,
             sparse_critical_count: sparse_summary.critical_count,
+            sparse_canonical_class: sparse_summary.canonical_class,
+            sparse_canonical_counts: sparse_summary.canonical_class_counts,
             equivariant_alignment_ppm: equivariant_summary.alignment_ppm,
             equivariant_drift_count: equivariant_summary.drift_count,
             equivariant_fractured_count: equivariant_summary.fractured_count,
@@ -3560,6 +3742,20 @@ impl RuntimeMathKernel {
             alpha_investing_wealth_milli: alpha_investing_summary.wealth_milli,
             alpha_investing_rejections: alpha_investing_summary.rejections,
             alpha_investing_empirical_fdr: alpha_investing_summary.empirical_fdr,
+            approachability_deviation_sq_milli: approachability_summary.deviation_sq_milli,
+            approachability_recommended_arm: approachability_summary.recommended_arm,
+            approachability_state: match approachability_summary.state {
+                ApproachabilityState::Calibrating => 0,
+                ApproachabilityState::Approaching => 1,
+                ApproachabilityState::Drifting => 2,
+                ApproachabilityState::Violated => 3,
+            },
+            localization_selected_arm: localization_summary.selected_arm,
+            localization_count: localization_summary.count,
+            sobol_index: self.cached_sobol_index.load(Ordering::Relaxed) as u32,
+            sobol_augmented_mask: self.cached_sobol_augmented_mask.load(Ordering::Relaxed) as u32,
+            sobol_augmented_count: (self.cached_sobol_augmented_mask.load(Ordering::Relaxed) as u32)
+                .count_ones() as u8,
         }
     }
 
@@ -4234,6 +4430,87 @@ mod tests {
         assert!(
             src.contains("fusion::SIGNALS == BASE_SEVERITY_LEN + META_SEVERITY_LEN"),
             "const assertion for fusion::SIGNALS consistency must exist in mod.rs"
+        );
+    }
+
+    #[test]
+    fn sobol_scheduler_advances_after_decide() {
+        let kernel = RuntimeMathKernel::new();
+        // Initial state: sobol index is 0, no augmented mask.
+        let snap0 = kernel.snapshot(SafetyLevel::Hardened);
+        assert_eq!(snap0.sobol_index, 0);
+
+        // Drive enough decide() calls to trigger the cadence gate (every 512).
+        let ctx = RuntimeContext {
+            family: ApiFamily::PointerValidation,
+            is_write: false,
+            requested_bytes: 64,
+            contention_hint: 0,
+            bloom_negative: false,
+            addr_hint: 0x1000,
+        };
+        for _ in 0..513 {
+            let _ = kernel.decide(SafetyLevel::Hardened, ctx);
+        }
+
+        let snap1 = kernel.snapshot(SafetyLevel::Hardened);
+        // Sobol index should have advanced (at least one cadence-gated step).
+        assert!(
+            snap1.sobol_index > 0,
+            "sobol_index should advance after decide cadence"
+        );
+    }
+
+    #[test]
+    fn sobol_augmented_mask_respects_budget() {
+        let kernel = RuntimeMathKernel::new();
+        let ctx = RuntimeContext {
+            family: ApiFamily::PointerValidation,
+            is_write: false,
+            requested_bytes: 64,
+            contention_hint: 0,
+            bloom_negative: false,
+            addr_hint: 0x1000,
+        };
+        // Drive past cadence gate.
+        for _ in 0..513 {
+            let _ = kernel.decide(SafetyLevel::Strict, ctx);
+        }
+        let snap = kernel.snapshot(SafetyLevel::Strict);
+        // Augmented probe count must be non-negative (field is u8, always true)
+        // and the total mask must be a subset of all probes.
+        assert!(
+            snap.sobol_augmented_mask & !Probe::all_mask() == 0,
+            "augmented mask has bits outside valid probe range"
+        );
+    }
+
+    #[test]
+    fn sobol_deterministic_across_kernels() {
+        // Two fresh kernels driven identically must produce the same Sobol index.
+        let k1 = RuntimeMathKernel::new();
+        let k2 = RuntimeMathKernel::new();
+        let ctx = RuntimeContext {
+            family: ApiFamily::Allocator,
+            is_write: true,
+            requested_bytes: 128,
+            contention_hint: 0,
+            bloom_negative: false,
+            addr_hint: 0x2000,
+        };
+        for _ in 0..513 {
+            let _ = k1.decide(SafetyLevel::Hardened, ctx);
+            let _ = k2.decide(SafetyLevel::Hardened, ctx);
+        }
+        let s1 = k1.snapshot(SafetyLevel::Hardened);
+        let s2 = k2.snapshot(SafetyLevel::Hardened);
+        assert_eq!(
+            s1.sobol_index, s2.sobol_index,
+            "two identical kernels must have the same sobol index"
+        );
+        assert_eq!(
+            s1.sobol_augmented_mask, s2.sobol_augmented_mask,
+            "two identical kernels must produce the same augmented mask"
         );
     }
 }

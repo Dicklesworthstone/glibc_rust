@@ -6,6 +6,7 @@
 //! and feeds that classification into membrane policy decisions.
 
 use super::design::Probe;
+use crate::grobner;
 
 const LATENT_CAUSES: usize = 6;
 const ETA: f64 = 0.18;
@@ -31,6 +32,10 @@ pub struct SparseSummary {
     pub l1_energy: f64,
     pub residual_ewma: f64,
     pub critical_count: u64,
+    /// Canonical root-cause class ID (Gröbner-reduced support).
+    pub canonical_class: u8,
+    /// Per-canonical-class observation counts.
+    pub canonical_class_counts: [u64; grobner::NUM_CANONICAL_CLASSES],
 }
 
 /// Online sparse-recovery controller.
@@ -40,6 +45,8 @@ pub struct SparseRecoveryController {
     observations: u64,
     critical_count: u64,
     state: SparseState,
+    canonical_class: u8,
+    canonical_class_counts: [u64; grobner::NUM_CANONICAL_CLASSES],
 }
 
 impl SparseRecoveryController {
@@ -51,6 +58,8 @@ impl SparseRecoveryController {
             observations: 0,
             critical_count: 0,
             state: SparseState::Calibrating,
+            canonical_class: grobner::CANONICAL_CLASS_NONE,
+            canonical_class_counts: [0u64; grobner::NUM_CANONICAL_CLASSES],
         }
     }
 
@@ -99,11 +108,24 @@ impl SparseRecoveryController {
         if matches!(self.state, SparseState::Critical) {
             self.critical_count = self.critical_count.saturating_add(1);
         }
+
+        // Compute canonical root-cause class via Gröbner reduction.
+        let active = support_active(&self.x);
+        self.canonical_class = grobner::canonical_class_from_support(&active);
+        let idx = usize::from(self.canonical_class);
+        if idx < self.canonical_class_counts.len() {
+            self.canonical_class_counts[idx] = self.canonical_class_counts[idx].saturating_add(1);
+        }
     }
 
     #[must_use]
     pub fn state(&self) -> SparseState {
         self.state
+    }
+
+    #[must_use]
+    pub fn canonical_class(&self) -> u8 {
+        self.canonical_class
     }
 
     #[must_use]
@@ -114,6 +136,8 @@ impl SparseRecoveryController {
             l1_energy: l1_energy(&self.x),
             residual_ewma: self.residual_ewma,
             critical_count: self.critical_count,
+            canonical_class: self.canonical_class,
+            canonical_class_counts: self.canonical_class_counts,
         }
     }
 }
@@ -138,6 +162,14 @@ fn soft_threshold(z: f64, lambda: f64) -> f64 {
 
 fn support_size(x: &[f64; LATENT_CAUSES]) -> u8 {
     x.iter().filter(|&&v| v > SUPPORT_EPS).count() as u8
+}
+
+fn support_active(x: &[f64; LATENT_CAUSES]) -> [bool; LATENT_CAUSES] {
+    let mut active = [false; LATENT_CAUSES];
+    for (a, &v) in active.iter_mut().zip(x.iter()) {
+        *a = v > SUPPORT_EPS;
+    }
+    active
 }
 
 fn l1_energy(x: &[f64; LATENT_CAUSES]) -> f64 {

@@ -6,7 +6,7 @@
 
 use crate::config::SafetyLevel;
 
-pub const SIGNALS: usize = 61;
+pub const SIGNALS: usize = 63;
 const ETA: f64 = 0.14;
 const UNIFORM_MIX: f64 = 0.02;
 const MAX_BONUS_PPM: u32 = 280_000;

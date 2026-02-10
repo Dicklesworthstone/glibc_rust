@@ -152,6 +152,40 @@ impl Default for HealingPolicy {
     }
 }
 
+/// Recommended default healing action for a Gröbner canonical root-cause class.
+///
+/// This maps the reduced root-cause classification from sparse recovery into
+/// a deterministic healing suggestion. The mapping is advisory — callers may
+/// override based on mode/context. No unsafe semantic changes are made.
+#[must_use]
+pub fn recommended_healing_for_canonical_class(class_id: u8) -> HealingAction {
+    use crate::grobner;
+
+    match class_id {
+        grobner::CANONICAL_CLASS_NONE => HealingAction::None,
+        // Temporal/provenance faults: stale data → safe defaults.
+        grobner::CANONICAL_CLASS_TEMPORAL => HealingAction::ReturnSafeDefault,
+        // Congestion: resource pressure → clamp sizes to relieve load.
+        grobner::CANONICAL_CLASS_CONGESTION => HealingAction::ClampSize {
+            requested: 0,
+            clamped: 0,
+        },
+        // Topological complexity: complex paths → upgrade to safe variant.
+        grobner::CANONICAL_CLASS_TOPOLOGICAL => HealingAction::UpgradeToSafeVariant,
+        // Regime shift: transitional state → safe defaults until stable.
+        grobner::CANONICAL_CLASS_REGIME => HealingAction::ReturnSafeDefault,
+        // Numeric exceptional: floating-point edge cases → clamp values.
+        grobner::CANONICAL_CLASS_NUMERIC => HealingAction::ClampSize {
+            requested: 0,
+            clamped: 0,
+        },
+        // Resource admissibility: constraints → upgrade to safe variant.
+        grobner::CANONICAL_CLASS_ADMISSIBILITY => HealingAction::UpgradeToSafeVariant,
+        // Compound (multiple irreducible causes): conservative safe default.
+        _ => HealingAction::ReturnSafeDefault,
+    }
+}
+
 /// Global healing policy instance.
 static GLOBAL_POLICY: HealingPolicy = HealingPolicy::new();
 
