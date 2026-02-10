@@ -12,6 +12,12 @@ BASELINE_FILE="${BASELINE_FILE:-scripts/perf_baseline.json}"
 # Tighten locally by setting GLIBC_RUST_PERF_MAX_REGRESSION_PCT.
 MAX_REGRESSION_PCT="${GLIBC_RUST_PERF_MAX_REGRESSION_PCT:-15}"
 ALLOW_TARGET_VIOLATION="${GLIBC_RUST_PERF_ALLOW_TARGET_VIOLATION:-1}"
+# If the machine is heavily oversubscribed, nanosecond-scale regressions become
+# dominated by scheduler noise. Default: skip perf gating under extreme load.
+SKIP_OVERLOADED="${GLIBC_RUST_PERF_SKIP_OVERLOADED:-1}"
+MAX_LOAD_FACTOR="${GLIBC_RUST_PERF_MAX_LOAD_FACTOR:-0.85}"
+# Optional: run the per-kernel suite (can be enabled once baseline entries exist).
+ENABLE_KERNEL_SUITE="${GLIBC_RUST_PERF_ENABLE_KERNEL_SUITE:-0}"
 
 if [[ ! -f "${BASELINE_FILE}" ]]; then
   echo "perf_gate: missing baseline file: ${BASELINE_FILE}" >&2
@@ -21,6 +27,34 @@ fi
 if ! command -v jq >/dev/null 2>&1; then
   echo "perf_gate: jq is required" >&2
   exit 2
+fi
+
+should_skip_overloaded() {
+  if [[ "${SKIP_OVERLOADED}" != "1" || ! -r /proc/loadavg ]]; then
+    return 1
+  fi
+  if ! command -v nproc >/dev/null 2>&1; then
+    return 1
+  fi
+
+  local load1 cpus threshold overloaded
+  load1="$(awk '{print $1}' /proc/loadavg)"
+  cpus="$(nproc)"
+  threshold="$(awk -v c="${cpus}" -v f="${MAX_LOAD_FACTOR}" 'BEGIN { printf "%.2f", c*f }')"
+  overloaded="$(awk -v l="${load1}" -v t="${threshold}" 'BEGIN { print (l > t) ? 1 : 0 }')"
+
+  if [[ "${overloaded}" == "1" ]]; then
+    echo "perf_gate: SKIP (system overloaded) load1=${load1} cpus=${cpus} threshold=${threshold}"
+    echo "perf_gate: top CPU processes:"
+    ps -eo pid,user,comm,%cpu,etime --sort=-%cpu | head -n 10 || true
+    return 0
+  fi
+
+  return 1
+}
+
+if should_skip_overloaded; then
+  exit 0
 fi
 
 extract_p50() {
@@ -71,10 +105,14 @@ check_metric() {
 
 run_mode() {
   local mode="$1"
-  local out_rt out_mem
+  local out_rt out_mem out_kernels
 
   echo ""
   echo "=== perf_gate: mode=${mode} ==="
+
+  if should_skip_overloaded; then
+    return 0
+  fi
 
   # Pin if supported by bench binaries (best-effort).
   out_rt="$(
@@ -88,6 +126,16 @@ run_mode() {
       cargo bench -p glibc-rs-bench --bench membrane_bench 2>/dev/null \
       | rg '^MEMBRANE_BENCH ' || true
   )"
+
+  if [[ "${ENABLE_KERNEL_SUITE}" == "1" ]]; then
+    out_kernels="$(
+      GLIBC_RUST_BENCH_PIN=1 GLIBC_RUST_MODE="$mode" \
+        cargo bench -p glibc-rs-bench --bench runtime_math_kernels_bench 2>/dev/null \
+        | rg '^RUNTIME_MATH_KERNEL_BENCH ' || true
+    )"
+  else
+    out_kernels=""
+  fi
 
   if [[ -z "${out_rt}" ]]; then
     echo "perf_gate: failed to collect RUNTIME_MATH_BENCH lines for mode=${mode}" >&2
@@ -155,6 +203,14 @@ run_mode() {
     return 2
   fi
 
+  if [[ "${ENABLE_KERNEL_SUITE}" == "1" ]]; then
+    if [[ -z "${out_kernels}" ]]; then
+      echo "perf_gate: kernel suite enabled but no RUNTIME_MATH_KERNEL_BENCH lines collected for mode=${mode}" >&2
+      return 1
+    fi
+    echo "perf_gate: kernel suite collected (mode=${mode}) lines=$(printf \"%s\\n\" \"${out_kernels}\" | wc -l | tr -d ' ')"
+  fi
+
   return 0
 }
 
@@ -162,6 +218,8 @@ echo "=== perf_gate ==="
 echo "baseline=${BASELINE_FILE}"
 echo "max_regression_pct=${MAX_REGRESSION_PCT}"
 echo "allow_target_violation=${ALLOW_TARGET_VIOLATION}"
+echo "skip_overloaded=${SKIP_OVERLOADED} max_load_factor=${MAX_LOAD_FACTOR}"
+echo "enable_kernel_suite=${ENABLE_KERNEL_SUITE}"
 
 run_mode strict
 run_mode hardened

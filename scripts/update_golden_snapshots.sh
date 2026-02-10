@@ -2,7 +2,8 @@
 # Regenerate committed golden runtime_math snapshot fixtures + sha256sums.
 #
 # This is the intentional-update path when kernel snapshot behavior changes
-# and you have an isomorphism proof for the change.
+# and you have an isomorphism proof for the change (see:
+# scripts/POLICY_CHANGE_ISOMORPHISM_PROOF_TEMPLATE.md).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -31,4 +32,3 @@ echo ""
 echo "update_golden_snapshots: updated:"
 echo "- ${SNAPSHOT_FILE}"
 echo "- ${SHA_FILE}"
-

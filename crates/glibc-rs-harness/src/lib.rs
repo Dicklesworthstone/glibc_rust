@@ -15,6 +15,7 @@ pub mod capture;
 pub mod diff;
 pub mod fixtures;
 pub mod healing_oracle;
+pub mod kernel_regression_report;
 pub mod kernel_snapshot;
 pub mod membrane_tests;
 pub mod report;

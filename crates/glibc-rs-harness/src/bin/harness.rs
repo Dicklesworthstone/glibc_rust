@@ -1,6 +1,7 @@
 //! CLI entrypoint for glibc_rust conformance harness.
 
 use std::path::PathBuf;
+use std::process::Command as ProcCommand;
 
 use clap::{Parser, Subcommand};
 
@@ -89,6 +90,56 @@ enum Command {
         /// Render width for the UI table (only when `frankentui-ui` is enabled).
         #[arg(long, default_value_t = 120)]
         width: u16,
+    },
+    /// Generate a strict-vs-hardened regression report for runtime_math (runs two subprocesses).
+    KernelRegressionReport {
+        /// Output report path (markdown). If omitted, prints to stdout.
+        #[arg(long)]
+        output: Option<PathBuf>,
+        /// Root seed (decimal or 0x...).
+        #[arg(long, default_value = "0xDEAD_BEEF")]
+        seed: String,
+        /// Number of decision steps to run for kernel evolution.
+        #[arg(long, default_value_t = 256)]
+        steps: u32,
+        /// Microbench warmup iterations.
+        #[arg(long, default_value_t = 10_000)]
+        warmup_iters: u64,
+        /// Microbench sample count.
+        #[arg(long, default_value_t = 25)]
+        samples: usize,
+        /// Microbench iterations per sample.
+        #[arg(long, default_value_t = 50_000)]
+        iters: u64,
+        /// Snapshot trend stride (steps between Pareto points).
+        #[arg(long, default_value_t = 32)]
+        trend_stride: u32,
+    },
+    /// Internal: emit per-mode JSON metrics for the regression report.
+    ///
+    /// This is a separate command because GLIBC_RUST_MODE is process-immutable.
+    KernelRegressionMode {
+        /// Expected mode (`strict` or `hardened`) for cross-checking env config.
+        #[arg(long)]
+        mode: String,
+        /// Root seed (decimal or 0x...).
+        #[arg(long, default_value = "0xDEAD_BEEF")]
+        seed: String,
+        /// Number of decision steps to run for kernel evolution.
+        #[arg(long, default_value_t = 256)]
+        steps: u32,
+        /// Microbench warmup iterations.
+        #[arg(long, default_value_t = 10_000)]
+        warmup_iters: u64,
+        /// Microbench sample count.
+        #[arg(long, default_value_t = 25)]
+        samples: usize,
+        /// Microbench iterations per sample.
+        #[arg(long, default_value_t = 50_000)]
+        iters: u64,
+        /// Snapshot trend stride (steps between Pareto points).
+        #[arg(long, default_value_t = 32)]
+        trend_stride: u32,
     },
 }
 
@@ -294,9 +345,137 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             print!("{out}");
         }
+        Command::KernelRegressionReport {
+            output,
+            seed,
+            steps,
+            warmup_iters,
+            samples,
+            iters,
+            trend_stride,
+        } => {
+            // NOTE: mode is process-immutable (cached from env). To avoid cross-contamination,
+            // spawn two subprocesses with different GLIBC_RUST_MODE values.
+            let exe = std::env::current_exe()?;
+            let seed_num = parse_seed(&seed)?;
+            let cfg = KernelRegressionCliConfig {
+                seed: seed_num,
+                steps,
+                warmup_iters,
+                samples,
+                iters,
+                trend_stride,
+            };
+
+            let strict = run_kernel_mode_subprocess(&exe, "strict", cfg)?;
+            let hardened = run_kernel_mode_subprocess(&exe, "hardened", cfg)?;
+
+            let report = glibc_rs_harness::kernel_regression_report::KernelRegressionReport {
+                strict,
+                hardened,
+            };
+            let md =
+                glibc_rs_harness::kernel_regression_report::render_regression_markdown(&report);
+            let json = serde_json::to_string_pretty(&report)?;
+
+            if let Some(path) = output {
+                if let Some(parent) = path.parent() {
+                    std::fs::create_dir_all(parent)?;
+                }
+                std::fs::write(&path, md)?;
+                std::fs::write(path.with_extension("json"), json)?;
+            } else {
+                print!("{md}");
+            }
+        }
+        Command::KernelRegressionMode {
+            mode,
+            seed,
+            steps,
+            warmup_iters,
+            samples,
+            iters,
+            trend_stride,
+        } => {
+            use glibc_rs_membrane::config::SafetyLevel;
+
+            let expected = match mode.to_ascii_lowercase().as_str() {
+                "strict" => SafetyLevel::Strict,
+                "hardened" => SafetyLevel::Hardened,
+                other => {
+                    return Err(
+                        format!("Unsupported mode '{other}', expected strict|hardened").into(),
+                    );
+                }
+            };
+            let seed_num = parse_seed(&seed)?;
+
+            let cfg = glibc_rs_harness::kernel_regression_report::ModeRunConfig {
+                seed: seed_num,
+                steps,
+                microbench: glibc_rs_harness::kernel_regression_report::MicrobenchConfig {
+                    warmup_iters,
+                    sample_count: samples,
+                    sample_iters: iters,
+                },
+                trend_stride,
+            };
+
+            let metrics =
+                glibc_rs_harness::kernel_regression_report::collect_mode_metrics(expected, cfg)
+                    .map_err(|e| format!("kernel regression mode run failed: {e}"))?;
+
+            let body = serde_json::to_string_pretty(&metrics)?;
+            print!("{body}");
+        }
     }
 
     Ok(())
+}
+
+#[derive(Debug, Clone, Copy)]
+struct KernelRegressionCliConfig {
+    seed: u64,
+    steps: u32,
+    warmup_iters: u64,
+    samples: usize,
+    iters: u64,
+    trend_stride: u32,
+}
+
+fn run_kernel_mode_subprocess(
+    exe: &std::path::Path,
+    mode: &str,
+    cfg: KernelRegressionCliConfig,
+) -> Result<glibc_rs_harness::kernel_regression_report::KernelModeMetrics, Box<dyn std::error::Error>>
+{
+    let output = ProcCommand::new(exe)
+        .arg("kernel-regression-mode")
+        .arg("--mode")
+        .arg(mode)
+        .arg("--seed")
+        .arg(format!("0x{:X}", cfg.seed))
+        .arg("--steps")
+        .arg(cfg.steps.to_string())
+        .arg("--warmup-iters")
+        .arg(cfg.warmup_iters.to_string())
+        .arg("--samples")
+        .arg(cfg.samples.to_string())
+        .arg("--iters")
+        .arg(cfg.iters.to_string())
+        .arg("--trend-stride")
+        .arg(cfg.trend_stride.to_string())
+        .env("GLIBC_RUST_MODE", mode)
+        .output()?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("kernel-regression-mode failed for mode={mode}: {stderr}").into());
+    }
+
+    let metrics: glibc_rs_harness::kernel_regression_report::KernelModeMetrics =
+        serde_json::from_slice(&output.stdout)?;
+    Ok(metrics)
 }
 
 fn parse_seed(raw: &str) -> Result<u64, Box<dyn std::error::Error>> {
