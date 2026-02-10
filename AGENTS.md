@@ -297,6 +297,8 @@ Rules:
 - `runtime_math/renewal_theory.rs` — Renewal theory monitor for inter-arrival dynamics
 - `runtime_math/spectral_gap.rs` — Spectral gap mixing-time monitor (lambda_2)
 - `runtime_math/submodular_coverage.rs` — Submodular validation stage coverage monitor
+- `runtime_math/alpha_investing.rs` — Alpha-Investing FDR controller for sequential false-discovery control over monitor alarm ensemble (Foster & Stine 2008)
+- `runtime_math/approachability.rs` — Blackwell approachability controller (multi-objective safe-set convergence for routing decisions)
 
 ### glibc-rs-core (Safe Implementations)
 - `string/` — mem*, str*, wide string functions
