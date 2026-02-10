@@ -140,3 +140,11 @@ This document defines the stable schema for `RuntimeKernelSnapshot` as emitted b
 | `coupling_certification_margin` | `f64` | dimensionless | finite f64 (no NaN/Inf) | Coupling certification margin (`threshold - bound`); positive indicates certified. |
 | `loss_recommended_action` | `u8` | enum | 0..3 | Loss-minimizer recommended action (0=allow, 1=full-validate, 2=repair, 3=deny). |
 | `loss_cost_explosion_count` | `u64` | count | >=0 | Loss-minimizer cost explosion detection count. |
+| `spectral_gap_max_eigenvalue` | `f64` | dimensionless | 0..1 | Spectral gap max |λ₂| across controllers (0..1, lower = faster mixing). |
+| `spectral_gap_mean_eigenvalue` | `f64` | dimensionless | 0..1 | Spectral gap mean |λ₂| across controllers (0..1). |
+| `submodular_coverage_ratio` | `f64` | dimensionless | 0..1 | Submodular coverage ratio under budget (0..1, higher = better). |
+| `submodular_selected_stages` | `u8` | count | 0..8 | Submodular selected stage count under budget. |
+| `bifurcation_max_sensitivity` | `f64` | dimensionless | 0..1 | Bifurcation max lag-1 autocorrelation across controllers (0..1). |
+| `bifurcation_mean_sensitivity` | `f64` | dimensionless | 0..1 | Bifurcation mean lag-1 autocorrelation across controllers (0..1). |
+| `entropy_rate_bits` | `f64` | bits | 0..log₂K | Shannon entropy rate of severity process (bits). |
+| `entropy_rate_ratio` | `f64` | dimensionless | 0..1 | Normalized entropy rate ratio (0=deterministic, 1=IID uniform). |
