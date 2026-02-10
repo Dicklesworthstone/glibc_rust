@@ -25,6 +25,16 @@ cargo test --all-targets
 echo "PASS"
 echo ""
 
+echo "--- module inventory drift check ---"
+scripts/check_module_inventory.sh
+echo "PASS"
+echo ""
+
+echo "--- snapshot gate (runtime_math golden) ---"
+scripts/snapshot_gate.sh
+echo "PASS"
+echo ""
+
 echo "--- perf gate (runtime_math + membrane) ---"
 scripts/perf_gate.sh
 echo "PASS"
