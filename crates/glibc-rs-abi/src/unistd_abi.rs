@@ -1,20 +1,25 @@
-//! ABI layer for selected `<unistd.h>` functions.
+//! ABI layer for `<unistd.h>` functions.
 //!
-//! Bootstrap scope:
-//! - `read`
-//! - `write`
-//! - `close`
-//! - `getpid`
-//! - `isatty`
+//! Covers POSIX I/O (read/write/close/lseek), file metadata (stat/fstat/lstat/access),
+//! directory navigation (getcwd/chdir), process identity (getpid/getppid/getuid/...),
+//! link operations (link/symlink/readlink/unlink/rmdir), and sync (fsync/fdatasync).
 
-use std::ffi::{c_int, c_void};
+use std::ffi::{c_char, c_int, c_void};
 use std::os::raw::c_long;
 
+use glibc_rs_core::errno;
+use glibc_rs_core::unistd as unistd_core;
 use glibc_rs_membrane::heal::{HealingAction, global_healing_policy};
 use glibc_rs_membrane::runtime_math::{ApiFamily, MembraneAction};
 
 use crate::malloc_abi::known_remaining;
 use crate::runtime_policy;
+
+#[inline]
+unsafe fn set_abi_errno(val: c_int) {
+    let p = unsafe { super::errno_abi::__errno_location() };
+    unsafe { *p = val };
+}
 
 fn maybe_clamp_io_len(requested: usize, addr: usize, enable_repair: bool) -> (usize, bool) {
     if !enable_repair || requested == 0 || addr == 0 {
@@ -195,4 +200,352 @@ pub unsafe extern "C" fn isatty(fd: c_int) -> c_int {
     };
     runtime_policy::observe(ApiFamily::Stdio, decision.profile, 6, rc != 0);
     if rc == 0 { 1 } else { 0 }
+}
+
+// ---------------------------------------------------------------------------
+// lseek
+// ---------------------------------------------------------------------------
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn lseek(fd: c_int, offset: i64, whence: c_int) -> i64 {
+    let (mode, decision) = runtime_policy::decide(ApiFamily::IoFd, fd as usize, 0, false, true, 0);
+    if matches!(decision.action, MembraneAction::Deny) {
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+
+    if !unistd_core::valid_whence(whence) {
+        if mode.heals_enabled() {
+            // default to SEEK_SET in hardened mode
+            let rc = unsafe { libc::lseek(fd, offset, unistd_core::SEEK_SET) };
+            runtime_policy::observe(ApiFamily::IoFd, decision.profile, 8, rc == -1);
+            return rc;
+        }
+        unsafe { set_abi_errno(errno::EINVAL) };
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+
+    let rc = unsafe { libc::lseek(fd, offset, whence) };
+    let adverse = rc == -1;
+    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 8, adverse);
+    rc
+}
+
+// ---------------------------------------------------------------------------
+// stat / fstat / lstat
+// ---------------------------------------------------------------------------
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn stat(path: *const c_char, buf: *mut libc::stat) -> c_int {
+    let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, path as usize, 0, false, true, 0);
+    if matches!(decision.action, MembraneAction::Deny) {
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+
+    if path.is_null() || buf.is_null() {
+        unsafe { set_abi_errno(errno::EFAULT) };
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+
+    let rc = unsafe { libc::stat(path, buf) };
+    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 15, rc != 0);
+    rc
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn fstat(fd: c_int, buf: *mut libc::stat) -> c_int {
+    let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, fd as usize, 0, false, true, 0);
+    if matches!(decision.action, MembraneAction::Deny) {
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+
+    if buf.is_null() {
+        unsafe { set_abi_errno(errno::EFAULT) };
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+
+    let rc = unsafe { libc::fstat(fd, buf) };
+    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, rc != 0);
+    rc
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn lstat(path: *const c_char, buf: *mut libc::stat) -> c_int {
+    let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, path as usize, 0, false, true, 0);
+    if matches!(decision.action, MembraneAction::Deny) {
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+
+    if path.is_null() || buf.is_null() {
+        unsafe { set_abi_errno(errno::EFAULT) };
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+
+    let rc = unsafe { libc::lstat(path, buf) };
+    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 15, rc != 0);
+    rc
+}
+
+// ---------------------------------------------------------------------------
+// access
+// ---------------------------------------------------------------------------
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn access(path: *const c_char, amode: c_int) -> c_int {
+    let (mode, decision) =
+        runtime_policy::decide(ApiFamily::IoFd, path as usize, 0, false, true, 0);
+    if matches!(decision.action, MembraneAction::Deny) {
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+
+    if path.is_null() {
+        unsafe { set_abi_errno(errno::EFAULT) };
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+
+    if !unistd_core::valid_access_mode(amode) {
+        if mode.heals_enabled() {
+            // default to F_OK (existence check) in hardened mode
+            let rc = unsafe { libc::access(path, unistd_core::F_OK) };
+            runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, rc != 0);
+            return rc;
+        }
+        unsafe { set_abi_errno(errno::EINVAL) };
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+
+    let rc = unsafe { libc::access(path, amode) };
+    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, rc != 0);
+    rc
+}
+
+// ---------------------------------------------------------------------------
+// getcwd
+// ---------------------------------------------------------------------------
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn getcwd(buf: *mut c_char, size: usize) -> *mut c_char {
+    let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, buf as usize, size, true, true, 0);
+    if matches!(decision.action, MembraneAction::Deny) {
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return std::ptr::null_mut();
+    }
+
+    if buf.is_null() || size == 0 {
+        unsafe { set_abi_errno(errno::EINVAL) };
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return std::ptr::null_mut();
+    }
+
+    let rc = unsafe { libc::getcwd(buf, size) };
+    let adverse = rc.is_null();
+    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 15, adverse);
+    rc
+}
+
+// ---------------------------------------------------------------------------
+// chdir / fchdir
+// ---------------------------------------------------------------------------
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn chdir(path: *const c_char) -> c_int {
+    let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, path as usize, 0, false, true, 0);
+    if matches!(decision.action, MembraneAction::Deny) {
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+
+    if path.is_null() {
+        unsafe { set_abi_errno(errno::EFAULT) };
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+
+    let rc = unsafe { libc::chdir(path) };
+    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, rc != 0);
+    rc
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn fchdir(fd: c_int) -> c_int {
+    let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, fd as usize, 0, false, true, 0);
+    if matches!(decision.action, MembraneAction::Deny) {
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+    let rc = unsafe { libc::fchdir(fd) };
+    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, rc != 0);
+    rc
+}
+
+// ---------------------------------------------------------------------------
+// Process identity: getppid, getuid, geteuid, getgid, getegid
+// ---------------------------------------------------------------------------
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn getppid() -> libc::pid_t {
+    unsafe { libc::getppid() }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn getuid() -> libc::uid_t {
+    unsafe { libc::getuid() }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn geteuid() -> libc::uid_t {
+    unsafe { libc::geteuid() }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn getgid() -> libc::gid_t {
+    unsafe { libc::getgid() }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn getegid() -> libc::gid_t {
+    unsafe { libc::getegid() }
+}
+
+// ---------------------------------------------------------------------------
+// Link operations: unlink, rmdir, link, symlink, readlink
+// ---------------------------------------------------------------------------
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn unlink(path: *const c_char) -> c_int {
+    let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, path as usize, 0, true, true, 0);
+    if matches!(decision.action, MembraneAction::Deny) {
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+    if path.is_null() {
+        unsafe { set_abi_errno(errno::EFAULT) };
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+    let rc = unsafe { libc::unlink(path) };
+    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, rc != 0);
+    rc
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn rmdir(path: *const c_char) -> c_int {
+    let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, path as usize, 0, true, true, 0);
+    if matches!(decision.action, MembraneAction::Deny) {
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+    if path.is_null() {
+        unsafe { set_abi_errno(errno::EFAULT) };
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+    let rc = unsafe { libc::rmdir(path) };
+    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, rc != 0);
+    rc
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn link(oldpath: *const c_char, newpath: *const c_char) -> c_int {
+    let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, oldpath as usize, 0, true, true, 0);
+    if matches!(decision.action, MembraneAction::Deny) {
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+    if oldpath.is_null() || newpath.is_null() {
+        unsafe { set_abi_errno(errno::EFAULT) };
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+    let rc = unsafe { libc::link(oldpath, newpath) };
+    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 12, rc != 0);
+    rc
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn symlink(target: *const c_char, linkpath: *const c_char) -> c_int {
+    let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, target as usize, 0, true, true, 0);
+    if matches!(decision.action, MembraneAction::Deny) {
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+    if target.is_null() || linkpath.is_null() {
+        unsafe { set_abi_errno(errno::EFAULT) };
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+    let rc = unsafe { libc::symlink(target, linkpath) };
+    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 12, rc != 0);
+    rc
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn readlink(path: *const c_char, buf: *mut c_char, bufsiz: usize) -> isize {
+    let (_, decision) =
+        runtime_policy::decide(ApiFamily::IoFd, path as usize, bufsiz, false, true, 0);
+    if matches!(decision.action, MembraneAction::Deny) {
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+    if path.is_null() || buf.is_null() {
+        unsafe { set_abi_errno(errno::EFAULT) };
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+    let rc = unsafe { libc::readlink(path, buf, bufsiz) };
+    let adverse = rc < 0;
+    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 12, adverse);
+    rc
+}
+
+// ---------------------------------------------------------------------------
+// Sync: fsync, fdatasync
+// ---------------------------------------------------------------------------
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn fsync(fd: c_int) -> c_int {
+    let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, fd as usize, 0, true, true, 0);
+    if matches!(decision.action, MembraneAction::Deny) {
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+    let rc = unsafe { libc::fsync(fd) };
+    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 15, rc != 0);
+    rc
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn fdatasync(fd: c_int) -> c_int {
+    let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, fd as usize, 0, true, true, 0);
+    if matches!(decision.action, MembraneAction::Deny) {
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
+        return -1;
+    }
+    let rc = unsafe { libc::fdatasync(fd) };
+    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 15, rc != 0);
+    rc
+}
+
+// ---------------------------------------------------------------------------
+// sleep / usleep
+// ---------------------------------------------------------------------------
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn sleep(seconds: u32) -> u32 {
+    unsafe { libc::sleep(seconds) }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn usleep(usec: u32) -> c_int {
+    unsafe { libc::usleep(usec) }
 }

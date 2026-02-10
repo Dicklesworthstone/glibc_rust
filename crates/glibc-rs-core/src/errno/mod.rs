@@ -43,6 +43,24 @@ pub const EMLINK: i32 = 31;
 pub const EPIPE: i32 = 32;
 pub const EDOM: i32 = 33;
 pub const ERANGE: i32 = 34;
+pub const ENOSYS: i32 = 38;
+pub const ENOTEMPTY: i32 = 39;
+pub const ELOOP: i32 = 40;
+pub const ENAMETOOLONG: i32 = 36;
+pub const EOVERFLOW: i32 = 75;
+pub const EAFNOSUPPORT: i32 = 97;
+pub const EADDRINUSE: i32 = 98;
+pub const EADDRNOTAVAIL: i32 = 99;
+pub const ENETUNREACH: i32 = 101;
+pub const ECONNABORTED: i32 = 103;
+pub const ECONNRESET: i32 = 104;
+pub const ENOBUFS: i32 = 105;
+pub const EISCONN: i32 = 106;
+pub const ENOTCONN: i32 = 107;
+pub const ETIMEDOUT: i32 = 110;
+pub const ECONNREFUSED: i32 = 111;
+pub const EALREADY: i32 = 114;
+pub const EINPROGRESS: i32 = 115;
 
 /// Returns the current thread-local errno value.
 ///

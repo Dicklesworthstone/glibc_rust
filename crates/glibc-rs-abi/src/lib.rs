@@ -40,27 +40,39 @@ pub mod string_abi;
 #[cfg(not(test))]
 pub mod wchar_abi;
 
-// Stub ABI modules (Phase 2+ - pending implementation)
+// Phase 2 ABI modules — pure Rust delegates (safe in test mode)
 pub mod ctype_abi;
-pub mod dirent_abi;
-pub mod dlfcn_abi;
 pub mod errno_abi;
-pub mod iconv_abi;
-pub mod inet_abi;
-pub mod io_abi;
-pub mod locale_abi;
 pub mod math_abi;
+
+// Phase 2+ ABI modules — call libc syscalls, gated to prevent symbol recursion in tests
+#[cfg(not(test))]
+pub mod dirent_abi;
+#[cfg(not(test))]
+pub mod dlfcn_abi;
+pub mod iconv_abi;
+#[cfg(not(test))]
+pub mod inet_abi;
+#[cfg(not(test))]
+pub mod io_abi;
+#[cfg(not(test))]
+pub mod locale_abi;
 #[cfg(not(test))]
 pub mod pthread_abi;
 #[cfg(not(test))]
 pub mod resolv_abi;
+#[cfg(not(test))]
 pub mod resource_abi;
 pub mod setjmp_abi;
+#[cfg(not(test))]
 pub mod signal_abi;
+#[cfg(not(test))]
 pub mod socket_abi;
 #[cfg(not(test))]
 pub mod stdio_abi;
+#[cfg(not(test))]
 pub mod termios_abi;
+#[cfg(not(test))]
 pub mod time_abi;
 #[cfg(not(test))]
 pub mod unistd_abi;

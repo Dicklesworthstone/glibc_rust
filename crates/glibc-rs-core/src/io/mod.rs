@@ -1,6 +1,7 @@
-//! Low-level I/O operations.
+//! Low-level I/O — validators and constants.
 //!
-//! Implements POSIX I/O functions for file descriptor manipulation.
+//! Implements POSIX I/O pure-logic helpers. Actual syscall invocations
+//! (`dup`, `pipe`, `fcntl`, etc.) live in the ABI crate.
 
 /// `fcntl` command constants.
 pub const F_DUPFD: i32 = 0;
@@ -8,32 +9,52 @@ pub const F_GETFD: i32 = 1;
 pub const F_SETFD: i32 = 2;
 pub const F_GETFL: i32 = 3;
 pub const F_SETFL: i32 = 4;
+pub const F_DUPFD_CLOEXEC: i32 = 1030;
 
-/// Duplicates a file descriptor.
-///
-/// Equivalent to C `dup`. Returns the new file descriptor, or -1 on error.
-pub fn dup(_oldfd: i32) -> i32 {
-    todo!("POSIX dup: implementation pending")
+/// File descriptor flag constants.
+pub const FD_CLOEXEC: i32 = 1;
+
+/// Open flags used by multiple subsystems.
+pub const O_NONBLOCK: i32 = 2048;
+pub const O_CLOEXEC: i32 = 0x80000;
+
+/// Returns `true` if `fd` is a plausibly valid file descriptor (non-negative).
+#[inline]
+pub fn valid_fd(fd: i32) -> bool {
+    fd >= 0
 }
 
-/// Duplicates a file descriptor to a specific target.
-///
-/// Equivalent to C `dup2`. Returns `newfd` on success, or -1 on error.
-pub fn dup2(_oldfd: i32, _newfd: i32) -> i32 {
-    todo!("POSIX dup2: implementation pending")
+/// Returns `true` if `cmd` is a known `fcntl` command.
+#[inline]
+pub fn valid_fcntl_cmd(cmd: i32) -> bool {
+    matches!(
+        cmd,
+        F_DUPFD | F_GETFD | F_SETFD | F_GETFL | F_SETFL | F_DUPFD_CLOEXEC
+    )
 }
 
-/// Creates a unidirectional data channel (pipe).
-///
-/// Equivalent to C `pipe`. Returns `(read_fd, write_fd)` on success.
-pub fn pipe() -> Result<(i32, i32), i32> {
-    todo!("POSIX pipe: implementation pending")
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-/// Manipulates file descriptor properties.
-///
-/// Equivalent to C `fcntl`. Behavior depends on `cmd`.
-/// Returns a value dependent on the command, or -1 on error.
-pub fn fcntl(_fd: i32, _cmd: i32, _arg: i64) -> i32 {
-    todo!("POSIX fcntl: implementation pending")
+    #[test]
+    fn test_valid_fd() {
+        assert!(valid_fd(0));
+        assert!(valid_fd(1));
+        assert!(valid_fd(1024));
+        assert!(!valid_fd(-1));
+        assert!(!valid_fd(i32::MIN));
+    }
+
+    #[test]
+    fn test_valid_fcntl_cmd() {
+        assert!(valid_fcntl_cmd(F_DUPFD));
+        assert!(valid_fcntl_cmd(F_GETFD));
+        assert!(valid_fcntl_cmd(F_SETFD));
+        assert!(valid_fcntl_cmd(F_GETFL));
+        assert!(valid_fcntl_cmd(F_SETFL));
+        assert!(valid_fcntl_cmd(F_DUPFD_CLOEXEC));
+        assert!(!valid_fcntl_cmd(-1));
+        assert!(!valid_fcntl_cmd(999));
+    }
 }
