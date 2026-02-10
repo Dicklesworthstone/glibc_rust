@@ -32,6 +32,13 @@ Legend:
 | math ops | `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `exp`, `log`, `log10`, `pow`, `fabs`, `ceil`, `floor`, `round`, `fmod`, `erf`, `tgamma`, `lgamma` | DONE |
 | stdlib ops | `atoi`, `strtol`, `strtoul`, `exit`, `atexit`, `qsort`, `bsearch` | DONE |
 | allocator boundary | `malloc`, `free`, `realloc`, `calloc` | DONE |
+| ctype ops | `isalpha`, `isdigit`, `isalnum`, `isspace`, `isupper`, `islower`, `isprint`, `ispunct`, `isxdigit`, `toupper`, `tolower` | DONE |
+| errno | `__errno_location` (thread-local), constants (`ENOSYS`, `EOVERFLOW`, `ETIMEDOUT`) | DONE |
+| time ops | `time`, `clock_gettime`, `clock`, `localtime_r` | DONE |
+| signal ops | `signal`, `raise`, `kill`, `sigaction` | DONE |
+| io ops | `dup`, `dup2`, `pipe`, `fcntl` | DONE |
+| resource ops | `getrlimit`, `setrlimit` | DONE |
+| dirent ops | `opendir`, `readdir`, `closedir` | DONE |
 
 ## Mode-Specific Parity Matrix
 
@@ -75,6 +82,15 @@ Legend:
 | commitment-audit controller (`commitment_audit`) | Commitment-algebra + martingale-audit for tamper-evident session/accounting traces — hash-chain commitments, replay ring buffer, anytime-valid sequential hypothesis test (math #44) | DONE |
 | Bayesian change-point detector (`changepoint`) | Adams & MacKay (2007) online Bayesian change-point detection — truncated run-length posterior with Beta-Bernoulli conjugate model, hazard function drift/shift classification (math #6) | DONE |
 | conformal risk controller (`conformal`) | Split conformal prediction (Vovk et al. 2005) for finite-sample coverage guarantees — sliding-window calibration, conformal p-values, EWMA coverage tracking, distribution-free miscoverage detection (math #27) | DONE |
+| ADMM budget allocator (`admm_budget`) | ADMM operator-splitting for online risk/latency/coverage budget optimization — O(n log n) simplex projection, primal-dual convergence tracking, shadow price telemetry (math #26) | DONE |
+| spectral-sequence obstruction detector (`obstruction_detector`) | d² ≈ 0 cross-layer consistency defect detection — 12 tracked controller pairs, Frobenius norm obstruction scoring, covariance break tracking (math #28) | DONE |
+| operator-norm spectral radius monitor (`operator_norm`) | Online power iteration spectral radius estimation — amplification ratio tracking with directional coherence weighting for ensemble dynamics stability | DONE |
+| Malliavin sensitivity controller (`malliavin_sensitivity`) | Discrete Malliavin calculus decision-boundary fragility detection — two-timescale Clark-Ocone variance decomposition, per-controller weighted sensitivity scoring | DONE |
+| information geometry monitor (`info_geometry`) | Fisher-Rao geodesic distance on categorical manifold of controller states — Bhattacharyya angle, per-controller divergence profiles, structural regime shift detection (Amari 1985) | DONE |
+| matrix concentration monitor (`matrix_concentration`) | Matrix Bernstein inequality (Tropp 2012) finite-sample spectral bounds on ensemble covariance — anytime-valid confidence sets, Gershgorin spectral deviation estimation | DONE |
+| nerve complex monitor (`nerve_complex`) | Čech nerve theorem correlation coherence — Betti number (β₀ connected components, β₁ 1-cycles) tracking on controller correlation graph, union-find component counting, Euler characteristic cycle detection | DONE |
+| Wasserstein drift monitor (`wasserstein_drift`) | 1-Wasserstein (Earth Mover's) distance on severity histograms — closed-form CDF difference computation, ordinal metric awareness (severity magnitude), per-controller drift profiling (Kantorovich-Rubinstein 1958) | DONE |
+| kernel MMD monitor (`kernel_mmd`) | Maximum Mean Discrepancy (Gretton et al. 2012) with RBF kernel — RKHS embedding, mean-embedding approximation with variance correction, distribution-free two-sample testing for joint distributional shifts | DONE |
 | pointer validator integration | runtime-math decisions affect bloom-miss/deep-check behavior and adaptive stage ordering | DONE |
 | allocator integration | runtime-math routing active across allocator ABI (`malloc`, `free`, `calloc`, `realloc`, `posix_memalign`, `memalign`, `aligned_alloc`) with exact check-order stage outcome feedback | DONE |
 | string/memory integration | runtime-math routing active for bootstrap `<string.h>` entrypoints (`mem*`, `strlen`, `strcmp`, `strcpy`, `strncpy`, `strcat`, `strncat`, `strchr`, `strrchr`, `strstr`, `strtok`, `strtok_r`) with exact stage-outcome feedback on `memcpy`, `memmove`, `memset`, `memcmp`, `memchr`, `memrchr`, `strlen`, `strcmp`, `strcpy`, `strncpy`, `strcat`, `strncat`, `strchr`, `strrchr`, `strstr`, `strtok`, `strtok_r` | IN_PROGRESS |

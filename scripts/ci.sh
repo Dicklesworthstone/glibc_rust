@@ -25,4 +25,9 @@ cargo test --all-targets
 echo "PASS"
 echo ""
 
+echo "--- perf gate (runtime_math + membrane) ---"
+scripts/perf_gate.sh
+echo "PASS"
+echo ""
+
 echo "=== All gates passed ==="

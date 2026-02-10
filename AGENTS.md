@@ -260,6 +260,12 @@ Rules:
 - `runtime_math/admm_budget.rs` — ADMM operator-splitting budget allocator for online risk/latency/coverage budget optimization (math #26)
 - `runtime_math/obstruction_detector.rs` — Spectral-sequence obstruction detector for cross-layer consistency defect detection (math #28)
 - `runtime_math/operator_norm.rs` — Operator-norm spectral radius stability monitor for ensemble dynamics instability detection
+- `runtime_math/malliavin_sensitivity.rs` — Discrete Malliavin calculus sensitivity controller for decision-boundary fragility detection
+- `runtime_math/info_geometry.rs` — Fisher-Rao geodesic distance monitor for structural regime shift detection on the state manifold
+- `runtime_math/matrix_concentration.rs` — Matrix Bernstein inequality (Tropp 2012) finite-sample spectral bounds for covariance structural change detection
+- `runtime_math/nerve_complex.rs` — Čech nerve theorem correlation coherence monitor with Betti number (β₀/β₁) tracking for multi-signal fragmentation detection
+- `runtime_math/wasserstein_drift.rs` — 1-Wasserstein (Earth Mover's) distance on severity histograms for metric-aware distributional shift detection
+- `runtime_math/kernel_mmd.rs` — Maximum Mean Discrepancy (Gretton et al. 2012) with RBF kernel for distribution-free two-sample testing
 - `runtime_math/provenance_info.rs` — Information-theoretic provenance tag monitor with Shannon/Rényi/min-entropy collision bounds (math #11)
 - `runtime_math/grobner_normalizer.rs` — Gröbner-basis constraint normalizer for confluent controller-state consistency verification (math #30)
 - `runtime_math/grothendieck_glue.rs` — Grothendieck site cocycle/descent/stackification coherence monitor for NSS/resolv/locale source gluing (math #33)
