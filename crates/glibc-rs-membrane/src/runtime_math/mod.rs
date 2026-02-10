@@ -1835,8 +1835,9 @@ impl RuntimeMathKernel {
         {
             let fingerprint_byte = (u64::from(risk_bound_ppm)
                 ^ estimated_cost_ns
-                ^ (u64::from(family as u8) << 8)
-                ^ (u64::from(profile as u8) << 16)) as u8;
+                ^ u64::from(family as u8).wrapping_mul(0x9e)
+                ^ u64::from(profile as u8).wrapping_mul(0x6d))
+                as u8;
             let prov_code = {
                 let mut prov = self.provenance.lock();
                 prov.observe_bytes(&[fingerprint_byte]);

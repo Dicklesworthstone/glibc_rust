@@ -180,24 +180,35 @@ impl AdmmBudgetController {
         // (allocate more budget where cost is highest).
         let z_prev = self.consensus;
 
-        for i in 0..NUM_OBJECTIVES {
-            // Gradient: cost drives budget up; dual + penalty drive toward consensus.
-            let gradient = -costs[i] + self.dual[i] + RHO * (self.primal[i] - self.consensus[i]);
-            self.primal[i] = (self.primal[i] - step * gradient).clamp(0.0, 1.0);
+        for ((p, &c), (&d, &z)) in self
+            .primal
+            .iter_mut()
+            .zip(costs.iter())
+            .zip(self.dual.iter().zip(self.consensus.iter()))
+        {
+            let gradient = -c + d + RHO * (*p - z);
+            *p = (*p - step * gradient).clamp(0.0, 1.0);
         }
 
         // === z-update (consensus) ===
         // Project the average of (primal + dual/ρ) onto the budget simplex.
-        let mut avg = [0.0; NUM_OBJECTIVES];
-        for i in 0..NUM_OBJECTIVES {
-            avg[i] = self.primal[i] + self.dual[i] / RHO;
-        }
+        let avg: [f64; NUM_OBJECTIVES] = {
+            let mut a = [0.0; NUM_OBJECTIVES];
+            for (av, (&p, &d)) in a.iter_mut().zip(self.primal.iter().zip(self.dual.iter())) {
+                *av = p + d / RHO;
+            }
+            a
+        };
         self.consensus = Self::project_simplex(&avg, BUDGET_CAP);
 
         // === y-update (dual ascent) ===
         // Dual variables track constraint violations.
-        for i in 0..NUM_OBJECTIVES {
-            self.dual[i] += RHO * (self.primal[i] - self.consensus[i]);
+        for (d, (&p, &z)) in self
+            .dual
+            .iter_mut()
+            .zip(self.primal.iter().zip(self.consensus.iter()))
+        {
+            *d += RHO * (p - z);
         }
 
         // Compute primal and dual residuals.
@@ -225,8 +236,8 @@ impl AdmmBudgetController {
     fn project_simplex(v: &[f64; NUM_OBJECTIVES], cap: f64) -> [f64; NUM_OBJECTIVES] {
         // If already feasible, clamp negatives and return.
         let mut result = [0.0; NUM_OBJECTIVES];
-        for i in 0..NUM_OBJECTIVES {
-            result[i] = v[i].max(0.0);
+        for (r, &vi) in result.iter_mut().zip(v.iter()) {
+            *r = vi.max(0.0);
         }
 
         let sum: f64 = result.iter().sum();
@@ -248,8 +259,8 @@ impl AdmmBudgetController {
             }
         }
 
-        for i in 0..NUM_OBJECTIVES {
-            result[i] = (result[i] - threshold).max(0.0);
+        for r in &mut result {
+            *r = (*r - threshold).max(0.0);
         }
 
         result
@@ -257,11 +268,14 @@ impl AdmmBudgetController {
 
     /// L2 norm of the difference between two vectors.
     fn l2_norm_diff(a: &[f64; NUM_OBJECTIVES], b: &[f64; NUM_OBJECTIVES]) -> f64 {
-        let mut sum_sq = 0.0;
-        for i in 0..NUM_OBJECTIVES {
-            let d = a[i] - b[i];
-            sum_sq += d * d;
-        }
+        let sum_sq: f64 = a
+            .iter()
+            .zip(b.iter())
+            .map(|(&ai, &bi)| {
+                let d = ai - bi;
+                d * d
+            })
+            .sum();
         sum_sq.sqrt()
     }
 

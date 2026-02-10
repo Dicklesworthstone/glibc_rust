@@ -164,8 +164,8 @@ impl OperatorNormMonitor {
         // Convert to f64.
         let vals: [f64; NUM_SIGNALS] = {
             let mut v = [0.0; NUM_SIGNALS];
-            for (i, &s) in severity.iter().enumerate() {
-                v[i] = f64::from(s);
+            for (vi, &s) in v.iter_mut().zip(severity.iter()) {
+                *vi = f64::from(s);
             }
             v
         };
@@ -176,16 +176,16 @@ impl OperatorNormMonitor {
         } else {
             EWMA_ALPHA
         };
-        for i in 0..NUM_SIGNALS {
-            self.mean[i] += alpha * (vals[i] - self.mean[i]);
+        for (m, &v) in self.mean.iter_mut().zip(vals.iter()) {
+            *m += alpha * (v - *m);
         }
 
         // Compute current deviation from mean.
         let mut deviation = [0.0; NUM_SIGNALS];
         let mut norm_sq = 0.0;
-        for i in 0..NUM_SIGNALS {
-            deviation[i] = vals[i] - self.mean[i];
-            norm_sq += deviation[i] * deviation[i];
+        for (d, (&v, &m)) in deviation.iter_mut().zip(vals.iter().zip(self.mean.iter())) {
+            *d = v - m;
+            norm_sq += *d * *d;
         }
         let norm = norm_sq.sqrt();
         self.current_norm = norm;
@@ -196,10 +196,11 @@ impl OperatorNormMonitor {
             let rho = norm / self.prev_norm;
 
             // Directional coherence: cosine similarity between successive deviations.
-            let mut dot = 0.0;
-            for i in 0..NUM_SIGNALS {
-                dot += deviation[i] * self.prev_deviation[i];
-            }
+            let dot: f64 = deviation
+                .iter()
+                .zip(self.prev_deviation.iter())
+                .map(|(&d, &pd)| d * pd)
+                .sum();
             let coherence = (dot / (norm * self.prev_norm)).clamp(-1.0, 1.0).abs();
 
             // Weight the spectral radius by directional coherence.

@@ -257,6 +257,9 @@ Rules:
 - `runtime_math/atiyah_bott.rs` — Atiyah-Bott fixed-point localization meta-controller for hot-path anomaly concentration detection (math #35)
 - `runtime_math/pomdp_repair.rs` — Constrained POMDP repair policy controller with Bayesian belief tracking and Bellman value iteration (math #8)
 - `runtime_math/sos_invariant.rs` — Sum-of-squares polynomial invariant runtime guard for cross-controller coherence verification (math #21)
+- `runtime_math/admm_budget.rs` — ADMM operator-splitting budget allocator for online risk/latency/coverage budget optimization (math #26)
+- `runtime_math/obstruction_detector.rs` — Spectral-sequence obstruction detector for cross-layer consistency defect detection (math #28)
+- `runtime_math/operator_norm.rs` — Operator-norm spectral radius stability monitor for ensemble dynamics instability detection
 - `runtime_math/provenance_info.rs` — Information-theoretic provenance tag monitor with Shannon/Rényi/min-entropy collision bounds (math #11)
 - `runtime_math/grobner_normalizer.rs` — Gröbner-basis constraint normalizer for confluent controller-state consistency verification (math #30)
 - `runtime_math/grothendieck_glue.rs` — Grothendieck site cocycle/descent/stackification coherence monitor for NSS/resolv/locale source gluing (math #33)

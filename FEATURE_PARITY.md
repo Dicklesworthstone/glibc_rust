@@ -138,9 +138,9 @@ Legend:
 | launch-pattern engine | `spawn/exec`, `glob/fnmatch/regex`, env/path | launch DAG proofs + complexity bounds + interaction campaign evidence | PLANNED |
 | secure-bootstrap policy engine | `csu`, `elf`, secure mode, diagnostics | noninterference proofs + calibrated admission-risk reports | PLANNED |
 | conformal-calibration engine | cross-surface strict/hardened decision layer | finite-sample calibrated decision sets + validity monitors | PLANNED |
-| topological-obstruction engine | cross-layer interaction complexes | obstruction witnesses + persistent defect signatures | PLANNED |
+| topological-obstruction engine | cross-layer interaction complexes | obstruction witnesses + persistent defect signatures | IN_PROGRESS |
 | algebraic-normalization engine | policy/parser/dispatch compositions | canonical normal forms + certificate-carrying rewrites | PLANNED |
-| noncommutative-concurrency risk engine | `nptl`, allocator/thread hot paths | contention-spectrum bounds + operator-stability controls | PLANNED |
+| noncommutative-concurrency risk engine | `nptl`, allocator/thread hot paths | contention-spectrum bounds + operator-stability controls | IN_PROGRESS |
 | Serre-invariant transport engine | cross-layer subsystem towers | spectral-page witnesses + extension-obstruction diagnostics | PLANNED |
 | Grothendieck-coherence engine | cross-layer runtime + ABI/ISA compatibility glue | site/topos reconciliation + descent/stackification certificates | PLANNED |
 | families-index engine | cross-variant compatibility transport | index-zero ledgers + incompatibility localization traces | IN_PROGRESS |
@@ -174,7 +174,7 @@ Legend:
 | topological anomaly detection | persistent-homology summaries + detection benchmarks | IN_PROGRESS |
 | rough-signature feature stability | perturbation-stability reports + model-input audits | IN_PROGRESS |
 | tropical latency composition | min-plus envelope proofs + end-to-end bound reports | IN_PROGRESS |
-| online optimizer convergence | primal-dual/ADMM convergence diagnostics + rollback logs | PLANNED |
+| online optimizer convergence | primal-dual/ADMM convergence diagnostics + rollback logs | IN_PROGRESS |
 | coalgebraic stream bisimulation | minimized stream-machine proofs + protocol replay logs | PLANNED |
 | Krohn-Rhodes codec factorization | automata decomposition artifacts + equivalence checks | PLANNED |
 | hybrid temporal reachability | reachable-set artifacts + DST/leap edge replay audits | PLANNED |
@@ -186,7 +186,7 @@ Legend:
 | launch-pattern complexity guarantees | symbolic automata bounds + adversarial fixture audits | PLANNED |
 | secure-mode noninterference | relational proof notes + leak-budget test reports | PLANNED |
 | conformal decision validity | coverage/risk-control reports + calibration replay logs | PLANNED |
-| spectral-sequence obstruction convergence | obstruction diagnostics + localized witness traces | PLANNED |
+| spectral-sequence obstruction convergence | obstruction diagnostics + localized witness traces | IN_PROGRESS |
 | algebraic normal-form uniqueness | canonicalization proofs + rewrite certificate ledgers | PLANNED |
 | noncommutative contention stability | random-matrix/free-probability tail reports + stress replays | IN_PROGRESS |
 | arithmetic compatibility integrity | invariant ledgers + drift/fracture threshold audits | PLANNED |
