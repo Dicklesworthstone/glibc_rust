@@ -1,52 +1,70 @@
 //! POSIX reader-writer lock operations.
 //!
-//! Implements pthread rwlock functions for shared/exclusive locking.
+//! Implements pthread rwlock constants and validators.
+//! Actual locking is performed via libc syscalls at the ABI layer;
+//! this module provides the safe-Rust validation logic.
 
-/// Opaque reader-writer lock type.
-#[derive(Debug, Default)]
-pub struct PthreadRwlock {
-    _private: (),
+// ---------------------------------------------------------------------------
+// Rwlock kind constants
+// ---------------------------------------------------------------------------
+
+/// Default rwlock — writer preference is implementation-defined.
+pub const PTHREAD_RWLOCK_DEFAULT_NP: i32 = 0;
+/// Prefer readers — writers may starve.
+pub const PTHREAD_RWLOCK_PREFER_READER_NP: i32 = 0;
+/// Prefer writers — readers may starve.
+pub const PTHREAD_RWLOCK_PREFER_WRITER_NP: i32 = 1;
+/// Prefer writers, non-recursive — prevents writer starvation.
+pub const PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP: i32 = 2;
+
+// ---------------------------------------------------------------------------
+// Validators
+// ---------------------------------------------------------------------------
+
+/// Returns true if `kind` is a recognized rwlock preference.
+#[must_use]
+pub const fn valid_rwlock_kind(kind: i32) -> bool {
+    matches!(kind, 0..=2)
 }
 
-/// Reader-writer lock attribute type.
-#[derive(Debug, Default)]
-pub struct PthreadRwlockAttr {
-    _private: (),
+/// Sanitize rwlock kind: if unknown, default to DEFAULT (0).
+#[must_use]
+pub const fn sanitize_rwlock_kind(kind: i32) -> i32 {
+    if valid_rwlock_kind(kind) {
+        kind
+    } else {
+        PTHREAD_RWLOCK_DEFAULT_NP
+    }
 }
 
-/// Initializes a reader-writer lock.
-///
-/// Equivalent to C `pthread_rwlock_init`. Returns 0 on success.
-pub fn pthread_rwlock_init(_rwlock: &mut PthreadRwlock, _attr: Option<&PthreadRwlockAttr>) -> i32 {
-    todo!("POSIX pthread_rwlock_init: implementation pending")
-}
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
 
-/// Destroys a reader-writer lock.
-///
-/// Equivalent to C `pthread_rwlock_destroy`. Returns 0 on success.
-pub fn pthread_rwlock_destroy(_rwlock: &mut PthreadRwlock) -> i32 {
-    todo!("POSIX pthread_rwlock_destroy: implementation pending")
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-/// Acquires a read lock (shared access).
-///
-/// Equivalent to C `pthread_rwlock_rdlock`. Multiple readers can hold
-/// the lock simultaneously. Returns 0 on success.
-pub fn pthread_rwlock_rdlock(_rwlock: &mut PthreadRwlock) -> i32 {
-    todo!("POSIX pthread_rwlock_rdlock: implementation pending")
-}
+    #[test]
+    fn rwlock_kind_constants() {
+        assert_eq!(PTHREAD_RWLOCK_DEFAULT_NP, 0);
+        assert_eq!(PTHREAD_RWLOCK_PREFER_READER_NP, 0);
+        assert_eq!(PTHREAD_RWLOCK_PREFER_WRITER_NP, 1);
+        assert_eq!(PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP, 2);
+    }
 
-/// Acquires a write lock (exclusive access).
-///
-/// Equivalent to C `pthread_rwlock_wrlock`. Blocks until all readers
-/// and other writers release the lock. Returns 0 on success.
-pub fn pthread_rwlock_wrlock(_rwlock: &mut PthreadRwlock) -> i32 {
-    todo!("POSIX pthread_rwlock_wrlock: implementation pending")
-}
+    #[test]
+    fn valid_rwlock_kind_check() {
+        assert!(valid_rwlock_kind(0));
+        assert!(valid_rwlock_kind(1));
+        assert!(valid_rwlock_kind(2));
+        assert!(!valid_rwlock_kind(3));
+        assert!(!valid_rwlock_kind(-1));
+    }
 
-/// Releases a read or write lock.
-///
-/// Equivalent to C `pthread_rwlock_unlock`. Returns 0 on success.
-pub fn pthread_rwlock_unlock(_rwlock: &mut PthreadRwlock) -> i32 {
-    todo!("POSIX pthread_rwlock_unlock: implementation pending")
+    #[test]
+    fn sanitize_rwlock_kind_check() {
+        assert_eq!(sanitize_rwlock_kind(1), 1);
+        assert_eq!(sanitize_rwlock_kind(99), PTHREAD_RWLOCK_DEFAULT_NP);
+    }
 }

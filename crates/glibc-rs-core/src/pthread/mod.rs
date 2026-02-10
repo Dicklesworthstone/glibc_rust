@@ -1,7 +1,8 @@
 //! POSIX threads.
 //!
-//! Implements `<pthread.h>` functions for thread management, mutexes,
-//! condition variables, reader-writer locks, and thread-local storage.
+//! Implements `<pthread.h>` constants and validators for thread management,
+//! mutexes, condition variables, reader-writer locks, and thread-local storage.
+//! Actual synchronization primitives delegate to libc at the ABI layer.
 
 pub mod cond;
 pub mod mutex;
@@ -9,10 +10,13 @@ pub mod rwlock;
 pub mod thread;
 pub mod tls;
 
-pub use cond::{pthread_cond_broadcast, pthread_cond_signal, pthread_cond_wait};
+pub use cond::{PTHREAD_COND_CLOCK_MONOTONIC, PTHREAD_COND_CLOCK_REALTIME};
 pub use mutex::{
-    pthread_mutex_destroy, pthread_mutex_init, pthread_mutex_lock, pthread_mutex_unlock,
+    PTHREAD_MUTEX_DEFAULT, PTHREAD_MUTEX_ERRORCHECK, PTHREAD_MUTEX_NORMAL, PTHREAD_MUTEX_RECURSIVE,
 };
-pub use rwlock::{pthread_rwlock_rdlock, pthread_rwlock_unlock, pthread_rwlock_wrlock};
+pub use rwlock::{
+    PTHREAD_RWLOCK_DEFAULT_NP, PTHREAD_RWLOCK_PREFER_READER_NP,
+    PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP, PTHREAD_RWLOCK_PREFER_WRITER_NP,
+};
 pub use thread::{pthread_create, pthread_detach, pthread_join};
 pub use tls::{pthread_getspecific, pthread_key_create, pthread_setspecific};
