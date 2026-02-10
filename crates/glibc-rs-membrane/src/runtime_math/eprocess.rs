@@ -188,6 +188,14 @@ fn all_families() -> [ApiFamily; ApiFamily::COUNT] {
         ApiFamily::MathFenv,
         ApiFamily::Loader,
         ApiFamily::Stdlib,
+        ApiFamily::Ctype,
+        ApiFamily::Time,
+        ApiFamily::Signal,
+        ApiFamily::IoFd,
+        ApiFamily::Socket,
+        ApiFamily::Locale,
+        ApiFamily::Termios,
+        ApiFamily::Inet,
     ]
 }
 

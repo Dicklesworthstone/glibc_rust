@@ -32,11 +32,18 @@ pub mod fusion;
 pub mod grobner_normalizer;
 pub mod grothendieck_glue;
 pub mod higher_topos;
+pub mod info_geometry;
+pub mod kernel_mmd;
 pub mod ktheory;
 pub mod loss_minimizer;
+pub mod lyapunov_stability;
+pub mod malliavin_sensitivity;
+pub mod matrix_concentration;
 pub mod microlocal;
+pub mod nerve_complex;
 pub mod obstruction_detector;
 pub mod operator_norm;
+pub mod pac_bayes;
 pub mod pareto;
 pub mod pomdp_repair;
 pub mod provenance_info;
@@ -44,6 +51,8 @@ pub mod risk;
 pub mod serre_spectral;
 pub mod sos_invariant;
 pub mod sparse;
+pub mod stein_discrepancy;
+pub mod wasserstein_drift;
 
 use std::sync::atomic::{AtomicU8, AtomicU64, Ordering};
 
@@ -88,11 +97,18 @@ use self::grothendieck_glue::{
     CocycleObservation, DataSource, GlueState, GrothendieckGlueController, QueryFamily,
 };
 use self::higher_topos::{HigherToposController, ToposState};
+use self::info_geometry::{GeometryState, InfoGeometryMonitor};
+use self::kernel_mmd::{KernelMmdMonitor, MmdState};
 use self::ktheory::{KTheoryController, KTheoryState};
 use self::loss_minimizer::{LossMinimizationController, LossState};
+use self::lyapunov_stability::{LyapunovStabilityMonitor, LyapunovState};
+use self::malliavin_sensitivity::{MalliavSensitivity, SensitivityState};
+use self::matrix_concentration::{ConcentrationState, MatrixConcentrationMonitor};
 use self::microlocal::{MicrolocalController, MicrolocalState, Stratum};
+use self::nerve_complex::{NerveComplexMonitor, NerveState};
 use self::obstruction_detector::{ObstructionDetector, ObstructionState};
 use self::operator_norm::{OperatorNormMonitor, StabilityState};
+use self::pac_bayes::{PacBayesMonitor, PacBayesState};
 use self::pareto::ParetoController;
 use self::pomdp_repair::{PomdpRepairController, PomdpState};
 use self::provenance_info::{ProvenanceInfoController, ProvenanceState};
@@ -102,6 +118,8 @@ use self::serre_spectral::{
 };
 use self::sos_invariant::{SosInvariantController, SosState};
 use self::sparse::{SparseRecoveryController, SparseState};
+use self::stein_discrepancy::{SteinDiscrepancyMonitor, SteinState};
+use self::wasserstein_drift::{DriftState, WassersteinDriftMonitor};
 
 const FAST_PATH_BUDGET_NS: u64 = 20;
 const FULL_PATH_BUDGET_NS: u64 = 200;
@@ -119,10 +137,18 @@ pub enum ApiFamily {
     MathFenv = 6,
     Loader = 7,
     Stdlib = 8,
+    Ctype = 9,
+    Time = 10,
+    Signal = 11,
+    IoFd = 12,
+    Socket = 13,
+    Locale = 14,
+    Termios = 15,
+    Inet = 16,
 }
 
 impl ApiFamily {
-    pub const COUNT: usize = 9;
+    pub const COUNT: usize = 17;
 }
 
 /// Validation profile selected by the runtime controller.
@@ -370,6 +396,44 @@ pub struct RuntimeKernelSnapshot {
     pub grothendieck_violation_rate: f64,
     /// Grothendieck stackification fault detection count.
     pub grothendieck_stack_fault_count: u64,
+    /// Malliavin sensitivity norm (0..∞, higher = more fragile).
+    pub malliavin_sensitivity_norm: f64,
+    /// Malliavin fragility index (innovation-to-total variance ratio, 0..1).
+    pub malliavin_fragility_index: f64,
+    /// Information geometry aggregate geodesic distance from baseline (0..∞).
+    pub info_geo_geodesic_distance: f64,
+    /// Information geometry max single-controller Fisher-Rao distance.
+    pub info_geo_max_controller_distance: f64,
+    /// Matrix concentration spectral deviation from baseline covariance.
+    pub matrix_conc_spectral_deviation: f64,
+    /// Matrix concentration Bernstein confidence bound.
+    pub matrix_conc_bernstein_bound: f64,
+    /// Nerve complex β₀ (connected components, 1 = cohesive).
+    pub nerve_betti_0: u32,
+    /// Nerve complex β₁ (1-cycles in correlation graph).
+    pub nerve_betti_1: u32,
+    /// Wasserstein drift aggregate distance from baseline (0..3).
+    pub wasserstein_aggregate_distance: f64,
+    /// Wasserstein drift max single-controller distance.
+    pub wasserstein_max_controller_distance: f64,
+    /// Kernel MMD² estimate (0..2, higher = more discrepant).
+    pub mmd_squared: f64,
+    /// Kernel MMD mean shift norm (Euclidean distance of means).
+    pub mmd_mean_shift_norm: f64,
+    /// PAC-Bayes generalization bound (0..1, lower = tighter).
+    pub pac_bayes_bound: f64,
+    /// PAC-Bayes KL divergence from posterior to prior.
+    pub pac_bayes_kl_divergence: f64,
+    /// PAC-Bayes weighted empirical error rate.
+    pub pac_bayes_empirical_error: f64,
+    /// Stein discrepancy KSD² estimate (0..∞).
+    pub stein_ksd_squared: f64,
+    /// Stein discrepancy max per-controller score deviation.
+    pub stein_max_score_deviation: f64,
+    /// Lyapunov stability exponent estimate (negative = stable).
+    pub lyapunov_exponent: f64,
+    /// Lyapunov smoothed expansion ratio.
+    pub lyapunov_expansion_ratio: f64,
 }
 
 /// Online control kernel for strict/hardened runtime decisions.
@@ -420,6 +484,15 @@ pub struct RuntimeMathKernel {
     provenance: Mutex<ProvenanceInfoController>,
     grobner: Mutex<GrobnerNormalizerController>,
     grothendieck: Mutex<GrothendieckGlueController>,
+    info_geometry: Mutex<InfoGeometryMonitor>,
+    kernel_mmd: Mutex<KernelMmdMonitor>,
+    malliavin: Mutex<MalliavSensitivity>,
+    matrix_concentration: Mutex<MatrixConcentrationMonitor>,
+    nerve_complex: Mutex<NerveComplexMonitor>,
+    wasserstein: Mutex<WassersteinDriftMonitor>,
+    pac_bayes: Mutex<PacBayesMonitor>,
+    stein: Mutex<SteinDiscrepancyMonitor>,
+    lyapunov: Mutex<LyapunovStabilityMonitor>,
     cached_risk_bonus_ppm: AtomicU64,
     cached_oracle_bias: [AtomicU8; ApiFamily::COUNT],
     cached_spectral_phase: AtomicU8,
@@ -467,6 +540,15 @@ pub struct RuntimeMathKernel {
     cached_provenance_state: AtomicU8,
     cached_grobner_state: AtomicU8,
     cached_grothendieck_state: AtomicU8,
+    cached_info_geometry_state: AtomicU8,
+    cached_kernel_mmd_state: AtomicU8,
+    cached_malliavin_state: AtomicU8,
+    cached_matrix_concentration_state: AtomicU8,
+    cached_nerve_state: AtomicU8,
+    cached_wasserstein_state: AtomicU8,
+    cached_pac_bayes_state: AtomicU8,
+    cached_stein_state: AtomicU8,
+    cached_lyapunov_state: AtomicU8,
     decisions: AtomicU64,
 }
 
@@ -521,6 +603,15 @@ impl RuntimeMathKernel {
             provenance: Mutex::new(ProvenanceInfoController::new()),
             grobner: Mutex::new(GrobnerNormalizerController::new()),
             grothendieck: Mutex::new(GrothendieckGlueController::new()),
+            info_geometry: Mutex::new(InfoGeometryMonitor::new()),
+            kernel_mmd: Mutex::new(KernelMmdMonitor::new()),
+            malliavin: Mutex::new(MalliavSensitivity::new()),
+            matrix_concentration: Mutex::new(MatrixConcentrationMonitor::new()),
+            nerve_complex: Mutex::new(NerveComplexMonitor::new()),
+            wasserstein: Mutex::new(WassersteinDriftMonitor::new()),
+            pac_bayes: Mutex::new(PacBayesMonitor::new()),
+            stein: Mutex::new(SteinDiscrepancyMonitor::new()),
+            lyapunov: Mutex::new(LyapunovStabilityMonitor::new()),
             cached_risk_bonus_ppm: AtomicU64::new(0),
             cached_oracle_bias: std::array::from_fn(|_| AtomicU8::new(1)),
             cached_spectral_phase: AtomicU8::new(0),
@@ -568,6 +659,15 @@ impl RuntimeMathKernel {
             cached_provenance_state: AtomicU8::new(0),
             cached_grobner_state: AtomicU8::new(0),
             cached_grothendieck_state: AtomicU8::new(0),
+            cached_info_geometry_state: AtomicU8::new(0),
+            cached_kernel_mmd_state: AtomicU8::new(0),
+            cached_malliavin_state: AtomicU8::new(0),
+            cached_matrix_concentration_state: AtomicU8::new(0),
+            cached_nerve_state: AtomicU8::new(0),
+            cached_wasserstein_state: AtomicU8::new(0),
+            cached_pac_bayes_state: AtomicU8::new(0),
+            cached_stein_state: AtomicU8::new(0),
+            cached_lyapunov_state: AtomicU8::new(0),
             decisions: AtomicU64::new(0),
         }
     }
@@ -813,6 +913,72 @@ impl RuntimeMathKernel {
             2 => 55_000u32,  // Marginal — near stability boundary
             _ => 0u32,       // Calibrating/Contractive
         };
+        // Malliavin sensitivity: fragile configuration near decision boundary.
+        // Fragile means small perturbations could flip the safety decision.
+        let malliavin_bonus = match self.cached_malliavin_state.load(Ordering::Relaxed) {
+            3 => 140_000u32, // Fragile — dominated by unpredictable perturbations
+            2 => 50_000u32,  // Sensitive — near decision boundary
+            _ => 0u32,       // Calibrating/Robust
+        };
+        // Information geometry: Fisher-Rao geodesic distance on state manifold.
+        // StructuralBreak means the shape of the ensemble distribution shifted.
+        let info_geo_bonus = match self.cached_info_geometry_state.load(Ordering::Relaxed) {
+            3 => 150_000u32, // StructuralBreak — distributional shape change
+            2 => 55_000u32,  // Drifting — gradual regime drift
+            _ => 0u32,       // Calibrating/Stationary
+        };
+        // Matrix concentration: Bernstein bound violation on covariance.
+        // BoundViolation means statistically significant structural change.
+        let matrix_conc_bonus = match self
+            .cached_matrix_concentration_state
+            .load(Ordering::Relaxed)
+        {
+            3 => 160_000u32, // BoundViolation — covariance change significant
+            2 => 50_000u32,  // BoundaryApproach — approaching bound
+            _ => 0u32,       // Calibrating/WithinBound
+        };
+        // Nerve complex: Čech nerve correlation coherence. Fragmented means
+        // controllers have decorrelated into disjoint behavior clusters.
+        let nerve_bonus = match self.cached_nerve_state.load(Ordering::Relaxed) {
+            3 => 140_000u32, // Fragmented — severe decorrelation
+            2 => 50_000u32,  // Weakening — partial decorrelation
+            _ => 0u32,       // Calibrating/Cohesive
+        };
+        // Wasserstein drift: Earth Mover's distance on severity histograms.
+        // Displaced means the metric distance to baseline is large.
+        let wasserstein_bonus = match self.cached_wasserstein_state.load(Ordering::Relaxed) {
+            3 => 150_000u32, // Displaced — large metric shift
+            2 => 55_000u32,  // Transporting — moderate drift
+            _ => 0u32,       // Calibrating/Stable
+        };
+        // Kernel MMD: distribution-free two-sample test in RKHS.
+        // Anomalous means arbitrary distributional shift detected.
+        let mmd_bonus = match self.cached_kernel_mmd_state.load(Ordering::Relaxed) {
+            3 => 160_000u32, // Anomalous — significant discrepancy
+            2 => 50_000u32,  // Drifting — moderate distributional shift
+            _ => 0u32,       // Calibrating/Conforming
+        };
+        // PAC-Bayes generalization bound: trust monitoring for the ensemble.
+        // Unreliable means the bound is too loose to trust ensemble decisions.
+        let pac_bayes_bonus = match self.cached_pac_bayes_state.load(Ordering::Relaxed) {
+            3 => 140_000u32, // Unreliable — ensemble cannot be trusted
+            2 => 50_000u32,  // Uncertain — bound loosening
+            _ => 0u32,       // Calibrating/Tight
+        };
+        // Stein discrepancy: goodness-of-fit vs reference model.
+        // Rejected means strong evidence the system has left the reference regime.
+        let stein_bonus = match self.cached_stein_state.load(Ordering::Relaxed) {
+            3 => 150_000u32, // Rejected — model misspecification
+            2 => 55_000u32,  // Deviant — moderate deviation
+            _ => 0u32,       // Calibrating/Consistent
+        };
+        // Lyapunov stability: trajectory-level divergence detection.
+        // Chaotic means perturbations are growing exponentially.
+        let lyapunov_bonus = match self.cached_lyapunov_state.load(Ordering::Relaxed) {
+            3 => 160_000u32, // Chaotic — exponential divergence
+            2 => 55_000u32,  // Marginal — near stability boundary
+            _ => 0u32,       // Calibrating/Stable
+        };
         // Provenance info-theoretic: fingerprint entropy degradation signals
         // collision resistance loss in the allocation integrity subsystem.
         let provenance_bonus = match self.cached_provenance_state.load(Ordering::Relaxed) {
@@ -873,11 +1039,40 @@ impl RuntimeMathKernel {
             .saturating_add(provenance_bonus)
             .saturating_add(grobner_bonus)
             .saturating_add(grothendieck_bonus)
+            .saturating_add(malliavin_bonus)
+            .saturating_add(info_geo_bonus)
+            .saturating_add(matrix_conc_bonus)
+            .saturating_add(nerve_bonus)
+            .saturating_add(wasserstein_bonus)
+            .saturating_add(mmd_bonus)
+            .saturating_add(pac_bayes_bonus)
+            .saturating_add(stein_bonus)
+            .saturating_add(lyapunov_bonus)
+            .min(1_000_000);
+
+        let ident_ppm = self.cached_design_ident_ppm.load(Ordering::Relaxed) as u32;
+        let design_bonus = {
+            if ident_ppm < 150_000 {
+                95_000u32
+            } else if ident_ppm < 300_000 {
+                40_000u32
+            } else {
+                0u32
+            }
+        };
+
+        let risk_upper_bound_ppm = pre_design_risk_ppm
+            .saturating_add(design_bonus)
             .min(1_000_000);
 
         // D-optimal probe scheduling:
         // choose heavy monitors under budget to maximize online identifiability.
-        let design_bonus = {
+        //
+        // IMPORTANT: Strict decide() is a hot path; it must not execute heavy
+        // floating-point or linear-algebra work per-call. We update the design
+        // plan on a cadence and cache its outputs in atomics.
+        if self.cached_design_budget_ns.load(Ordering::Relaxed) == 0 || sequence.is_multiple_of(256)
+        {
             let adverse_hint = ctx.bloom_negative || (ctx.is_write && ctx.requested_bytes > 4096);
             let mut design = self.design.lock();
             let plan =
@@ -893,18 +1088,7 @@ impl RuntimeMathKernel {
                 .store(plan.expected_cost_ns, Ordering::Relaxed);
             self.cached_design_selected
                 .store(plan.selected_count(), Ordering::Relaxed);
-            if ident_ppm < 150_000 {
-                95_000u32
-            } else if ident_ppm < 300_000 {
-                40_000u32
-            } else {
-                0u32
-            }
-        };
-
-        let risk_upper_bound_ppm = pre_design_risk_ppm
-            .saturating_add(design_bonus)
-            .min(1_000_000);
+        }
 
         let limits = self.controller.limits(mode);
         let mut profile =
@@ -2061,10 +2245,161 @@ impl RuntimeMathKernel {
                 .store(on_code, Ordering::Relaxed);
         }
 
-        // Feed robust fusion controller from extended severity vector.
-        // Includes the 25 base controller signals plus 6 meta-controller states.
+        // Feed Malliavin sensitivity meta-controller.
+        // Tracks sensitivity of aggregate safety decision to per-controller perturbations.
         {
-            let mut severity = [0u8; 31];
+            let malliavin_code = {
+                let mut m = self.malliavin.lock();
+                m.observe_and_update(&base_severity);
+                match m.state() {
+                    SensitivityState::Calibrating => 0u8,
+                    SensitivityState::Robust => 1u8,
+                    SensitivityState::Sensitive => 2u8,
+                    SensitivityState::Fragile => 3u8,
+                }
+            };
+            self.cached_malliavin_state
+                .store(malliavin_code, Ordering::Relaxed);
+        }
+
+        // Feed information geometry meta-controller.
+        // Tracks Fisher-Rao geodesic distance from baseline state distribution.
+        {
+            let geo_code = {
+                let mut g = self.info_geometry.lock();
+                g.observe_and_update(&base_severity);
+                match g.state() {
+                    GeometryState::Calibrating => 0u8,
+                    GeometryState::Stationary => 1u8,
+                    GeometryState::Drifting => 2u8,
+                    GeometryState::StructuralBreak => 3u8,
+                }
+            };
+            self.cached_info_geometry_state
+                .store(geo_code, Ordering::Relaxed);
+        }
+
+        // Feed matrix concentration meta-controller.
+        // Tracks Matrix Bernstein bound on ensemble covariance spectral deviation.
+        {
+            let conc_code = {
+                let mut c = self.matrix_concentration.lock();
+                c.observe_and_update(&base_severity);
+                match c.state() {
+                    ConcentrationState::Calibrating => 0u8,
+                    ConcentrationState::WithinBound => 1u8,
+                    ConcentrationState::BoundaryApproach => 2u8,
+                    ConcentrationState::BoundViolation => 3u8,
+                }
+            };
+            self.cached_matrix_concentration_state
+                .store(conc_code, Ordering::Relaxed);
+        }
+
+        // Feed nerve complex meta-controller.
+        // Tracks correlation coherence via Čech nerve Betti numbers.
+        {
+            let nerve_code = {
+                let mut nc = self.nerve_complex.lock();
+                nc.observe_and_update(&base_severity);
+                match nc.state() {
+                    NerveState::Calibrating => 0u8,
+                    NerveState::Cohesive => 1u8,
+                    NerveState::Weakening => 2u8,
+                    NerveState::Fragmented => 3u8,
+                }
+            };
+            self.cached_nerve_state.store(nerve_code, Ordering::Relaxed);
+        }
+
+        // Feed Wasserstein drift meta-controller.
+        // Tracks Earth Mover's distance on per-controller severity histograms.
+        {
+            let wass_code = {
+                let mut w = self.wasserstein.lock();
+                w.observe_and_update(&base_severity);
+                match w.state() {
+                    DriftState::Calibrating => 0u8,
+                    DriftState::Stable => 1u8,
+                    DriftState::Transporting => 2u8,
+                    DriftState::Displaced => 3u8,
+                }
+            };
+            self.cached_wasserstein_state
+                .store(wass_code, Ordering::Relaxed);
+        }
+
+        // Feed kernel MMD meta-controller.
+        // Tracks Maximum Mean Discrepancy in RKHS for joint distributional shifts.
+        {
+            let mmd_code = {
+                let mut km = self.kernel_mmd.lock();
+                km.observe_and_update(&base_severity);
+                match km.state() {
+                    MmdState::Calibrating => 0u8,
+                    MmdState::Conforming => 1u8,
+                    MmdState::Drifting => 2u8,
+                    MmdState::Anomalous => 3u8,
+                }
+            };
+            self.cached_kernel_mmd_state
+                .store(mmd_code, Ordering::Relaxed);
+        }
+
+        // Feed PAC-Bayes generalization bound monitor.
+        // Tracks ensemble trust via finite-sample PAC-Bayes bounds.
+        {
+            let pb_code = {
+                let mut pb = self.pac_bayes.lock();
+                pb.observe(&base_severity, adverse);
+                match pb.state() {
+                    PacBayesState::Calibrating => 0u8,
+                    PacBayesState::Tight => 1u8,
+                    PacBayesState::Uncertain => 2u8,
+                    PacBayesState::Unreliable => 3u8,
+                }
+            };
+            self.cached_pac_bayes_state
+                .store(pb_code, Ordering::Relaxed);
+        }
+
+        // Feed Stein discrepancy goodness-of-fit monitor.
+        // Tracks KSD² deviation from calibrated reference model.
+        {
+            let stein_code = {
+                let mut sd = self.stein.lock();
+                sd.observe_and_update(&base_severity);
+                match sd.state() {
+                    SteinState::Calibrating => 0u8,
+                    SteinState::Consistent => 1u8,
+                    SteinState::Deviant => 2u8,
+                    SteinState::Rejected => 3u8,
+                }
+            };
+            self.cached_stein_state.store(stein_code, Ordering::Relaxed);
+        }
+
+        // Feed Lyapunov stability exponent monitor.
+        // Tracks trajectory-level divergence for chaotic dynamics detection.
+        {
+            let lyap_code = {
+                let mut lm = self.lyapunov.lock();
+                lm.observe_and_update(&base_severity);
+                match lm.state() {
+                    LyapunovState::Calibrating => 0u8,
+                    LyapunovState::Stable => 1u8,
+                    LyapunovState::Marginal => 2u8,
+                    LyapunovState::Chaotic => 3u8,
+                }
+            };
+            self.cached_lyapunov_state
+                .store(lyap_code, Ordering::Relaxed);
+        }
+
+        // Feed robust fusion controller from extended severity vector.
+        // Includes the 25 base controller signals plus 15 meta-controller states.
+        {
+            let mut severity = [0u8; 40];
             severity[..25].copy_from_slice(&base_severity);
             severity[25] = self.cached_atiyah_bott_state.load(Ordering::Relaxed); // 0..3
             severity[26] = self.cached_pomdp_state.load(Ordering::Relaxed); // 0..3
@@ -2072,6 +2407,17 @@ impl RuntimeMathKernel {
             severity[28] = self.cached_admm_state.load(Ordering::Relaxed); // 0..3
             severity[29] = self.cached_obstruction_state.load(Ordering::Relaxed); // 0..3
             severity[30] = self.cached_operator_norm_state.load(Ordering::Relaxed); // 0..3
+            severity[31] = self.cached_malliavin_state.load(Ordering::Relaxed); // 0..3
+            severity[32] = self.cached_info_geometry_state.load(Ordering::Relaxed); // 0..3
+            severity[33] = self
+                .cached_matrix_concentration_state
+                .load(Ordering::Relaxed); // 0..3
+            severity[34] = self.cached_nerve_state.load(Ordering::Relaxed); // 0..3
+            severity[35] = self.cached_wasserstein_state.load(Ordering::Relaxed); // 0..3
+            severity[36] = self.cached_kernel_mmd_state.load(Ordering::Relaxed); // 0..3
+            severity[37] = self.cached_pac_bayes_state.load(Ordering::Relaxed); // 0..3
+            severity[38] = self.cached_stein_state.load(Ordering::Relaxed); // 0..3
+            severity[39] = self.cached_lyapunov_state.load(Ordering::Relaxed); // 0..3
             let summary = {
                 let mut fusion = self.fusion.lock();
                 fusion.observe(severity, adverse, mode)
@@ -2227,6 +2573,15 @@ impl RuntimeMathKernel {
         let provenance_snapshot = self.provenance.lock().snapshot();
         let grobner_snapshot = self.grobner.lock().snapshot();
         let grothendieck_snapshot = self.grothendieck.lock().snapshot();
+        let malliavin_summary = self.malliavin.lock().summary();
+        let info_geo_summary = self.info_geometry.lock().summary();
+        let matrix_conc_summary = self.matrix_concentration.lock().summary();
+        let nerve_summary = self.nerve_complex.lock().summary();
+        let wasserstein_summary = self.wasserstein.lock().summary();
+        let mmd_summary = self.kernel_mmd.lock().summary();
+        let pac_bayes_summary = self.pac_bayes.lock().summary();
+        let stein_summary = self.stein.lock().summary();
+        let lyapunov_summary = self.lyapunov.lock().summary();
         let microlocal_summary = self.microlocal.lock().summary();
         let serre_summary = self.serre.lock().summary();
         let clifford_summary = self.clifford.lock().summary();
@@ -2321,6 +2676,25 @@ impl RuntimeMathKernel {
             grobner_fault_count: grobner_snapshot.fault_count,
             grothendieck_violation_rate: grothendieck_snapshot.global_violation_rate,
             grothendieck_stack_fault_count: grothendieck_snapshot.stack_fault_count,
+            malliavin_sensitivity_norm: malliavin_summary.sensitivity_norm,
+            malliavin_fragility_index: malliavin_summary.fragility_index,
+            info_geo_geodesic_distance: info_geo_summary.geodesic_distance,
+            info_geo_max_controller_distance: info_geo_summary.max_controller_distance,
+            matrix_conc_spectral_deviation: matrix_conc_summary.spectral_deviation,
+            matrix_conc_bernstein_bound: matrix_conc_summary.bernstein_bound,
+            nerve_betti_0: nerve_summary.betti_0,
+            nerve_betti_1: nerve_summary.betti_1,
+            wasserstein_aggregate_distance: wasserstein_summary.aggregate_distance,
+            wasserstein_max_controller_distance: wasserstein_summary.max_controller_distance,
+            mmd_squared: mmd_summary.mmd_squared,
+            mmd_mean_shift_norm: mmd_summary.mean_shift_norm,
+            pac_bayes_bound: pac_bayes_summary.bound,
+            pac_bayes_kl_divergence: pac_bayes_summary.kl_divergence,
+            pac_bayes_empirical_error: pac_bayes_summary.empirical_error,
+            stein_ksd_squared: stein_summary.ksd_squared,
+            stein_max_score_deviation: stein_summary.max_score_deviation,
+            lyapunov_exponent: lyapunov_summary.exponent,
+            lyapunov_expansion_ratio: lyapunov_summary.expansion_ratio,
         }
     }
 
@@ -2406,6 +2780,13 @@ fn map_family(family: ApiFamily) -> CallFamily {
         ApiFamily::MathFenv => CallFamily::Other,
         ApiFamily::Loader => CallFamily::Other,
         ApiFamily::Stdlib => CallFamily::String,
+        ApiFamily::Ctype => CallFamily::String,
+        ApiFamily::Time => CallFamily::Other,
+        ApiFamily::Signal => CallFamily::Other,
+        ApiFamily::IoFd => CallFamily::Stdio,
+        ApiFamily::Socket | ApiFamily::Inet => CallFamily::Socket,
+        ApiFamily::Locale => CallFamily::Other,
+        ApiFamily::Termios => CallFamily::Stdio,
     }
 }
 
@@ -2547,6 +2928,12 @@ mod tests {
             "let provenance_snapshot = self.provenance.lock().snapshot();",
             "let grobner_snapshot = self.grobner.lock().snapshot();",
             "let grothendieck_snapshot = self.grothendieck.lock().snapshot();",
+            "let malliavin_summary = self.malliavin.lock().summary();",
+            "let info_geo_summary = self.info_geometry.lock().summary();",
+            "let matrix_conc_summary = self.matrix_concentration.lock().summary();",
+            "let nerve_summary = self.nerve_complex.lock().summary();",
+            "let wasserstein_summary = self.wasserstein.lock().summary();",
+            "let mmd_summary = self.kernel_mmd.lock().summary();",
             "let microlocal_summary = self.microlocal.lock().summary();",
             "let serre_summary = self.serre.lock().summary();",
             "let clifford_summary = self.clifford.lock().summary();",
@@ -2623,7 +3010,7 @@ mod tests {
         );
 
         let fusion_start = observe_src
-            .find("let mut severity = [0u8; 31];")
+            .find("let mut severity = [0u8; 40];")
             .expect("fusion severity buffer must exist");
         let fusion_tail = &observe_src[fusion_start..];
         let fusion_end = fusion_tail
@@ -2695,10 +3082,14 @@ mod tests {
             )
             .expect("decide must exist");
         let decide_tail = &src[decide_start..];
-        let pre_design_start = decide_tail
+        let decide_end = decide_tail
+            .find("/// Return the current contextual check ordering for a given family/context.")
+            .expect("decide end marker must exist");
+        let decide_src = &decide_tail[..decide_end];
+        let pre_design_start = decide_src
             .find("let base_risk_ppm = self.risk.upper_bound_ppm(ctx.family);")
             .expect("base risk aggregation start must exist");
-        let pre_design_tail = &decide_tail[pre_design_start..];
+        let pre_design_tail = &decide_src[pre_design_start..];
         let pre_design_end = pre_design_tail
             .find("let design_bonus = {")
             .expect("design bonus block must exist");

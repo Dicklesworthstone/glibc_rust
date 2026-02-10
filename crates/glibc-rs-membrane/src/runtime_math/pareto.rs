@@ -39,6 +39,14 @@ const STRICT_REGRET_CAP_MILLI: [u64; ApiFamily::COUNT] = [
     220_000, // MathFenv
     200_000, // Loader
     200_000, // Stdlib
+    220_000, // Ctype
+    200_000, // Time
+    200_000, // Signal
+    200_000, // IoFd
+    200_000, // Socket
+    200_000, // Locale
+    200_000, // Termios
+    200_000, // Inet
 ];
 const HARDENED_REGRET_CAP_MILLI: [u64; ApiFamily::COUNT] = [
     140_000, // PointerValidation
@@ -50,6 +58,14 @@ const HARDENED_REGRET_CAP_MILLI: [u64; ApiFamily::COUNT] = [
     120_000, // MathFenv
     110_000, // Loader
     110_000, // Stdlib
+    120_000, // Ctype
+    110_000, // Time
+    110_000, // Signal
+    110_000, // IoFd
+    110_000, // Socket
+    110_000, // Locale
+    110_000, // Termios
+    110_000, // Inet
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

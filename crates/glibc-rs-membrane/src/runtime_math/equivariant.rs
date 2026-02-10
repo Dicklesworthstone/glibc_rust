@@ -140,10 +140,18 @@ fn orbit_of_family(family: ApiFamily) -> usize {
         ApiFamily::PointerValidation
         | ApiFamily::Allocator
         | ApiFamily::StringMemory
-        | ApiFamily::Stdlib => 0, // memory/value-transform orbit
-        ApiFamily::Threading | ApiFamily::Loader => 1, // control/ordering orbit
-        ApiFamily::Stdio | ApiFamily::Resolver => 2,   // io/network orbit
-        ApiFamily::MathFenv => 3,                      // numeric orbit
+        | ApiFamily::Stdlib
+        | ApiFamily::Ctype => 0, // memory/value-transform orbit
+        ApiFamily::Threading | ApiFamily::Loader | ApiFamily::Signal => 1, // control/ordering orbit
+        ApiFamily::Stdio
+        | ApiFamily::Resolver
+        | ApiFamily::IoFd
+        | ApiFamily::Socket
+        | ApiFamily::Inet => {
+            2 // io/network orbit
+        }
+        ApiFamily::MathFenv | ApiFamily::Time => 3, // numeric orbit
+        ApiFamily::Locale | ApiFamily::Termios => 2, // io/locale orbit
     }
 }
 
