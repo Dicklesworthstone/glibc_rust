@@ -51,7 +51,7 @@
 //!
 //! Per controller, we maintain a sliding window of W observations and
 //! compute the R/S statistic every SAMPLE_INTERVAL steps. The Hurst
-//! exponent is estimated as H = log₂(R/S) / log₂(W).
+//! exponent is estimated as H = ln(R/S) / ln(W).
 //!
 //! EWMA smoothing ensures stability across noisy estimates.
 //!
@@ -343,14 +343,12 @@ mod tests {
         // Trending: slow sawtooth ramp (0,0,0,...,1,1,1,...,2,2,...,3,3,...,0,...)
         // Each level held for 20 steps, creating persistent runs within
         // the 64-element window.
-        for cycle in 0u32..20 {
+        for _cycle in 0u32..20 {
             for level in 0u8..=3 {
                 for _ in 0..20 {
                     m.observe_and_update(&[level; N]);
                 }
             }
-            // Quick check: avoid wasting cycles if already calibrated.
-            let _ = cycle;
         }
         // Persistent runs within windows create high R/S → H not anti-persistent.
         assert!(

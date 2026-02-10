@@ -12,6 +12,7 @@
 //! stays offline; online code only executes compact control kernels.
 
 pub mod admm_budget;
+pub mod alpha_investing;
 pub mod atiyah_bott;
 pub mod azuma_hoeffding;
 pub mod bandit;
@@ -95,6 +96,7 @@ use crate::symplectic_reduction::{ResourceType, SymplecticReductionController, S
 use crate::tropical_latency::{PipelinePath, TROPICAL_METRICS, TropicalLatencyCompositor};
 
 use self::admm_budget::{AdmmBudgetController, AdmmState};
+use self::alpha_investing::{AlphaInvestingController, AlphaInvestingState};
 use self::atiyah_bott::{AtiyahBottController, LocalizationState};
 use self::azuma_hoeffding::{AzumaHoeffdingMonitor, AzumaState};
 use self::bandit::ConstrainedBanditRouter;
@@ -166,7 +168,7 @@ const FULL_PATH_BUDGET_NS: u64 = 200;
 /// Number of base severity signals fed from hot-path cached atomics.
 const BASE_SEVERITY_LEN: usize = 25;
 /// Number of meta-controller severity signals appended after the base set.
-const META_SEVERITY_LEN: usize = 34;
+const META_SEVERITY_LEN: usize = 35;
 /// Compile-time assertion: fusion::SIGNALS == BASE + META severity slots.
 const _: () = assert!(
     fusion::SIGNALS == BASE_SEVERITY_LEN + META_SEVERITY_LEN,
@@ -595,6 +597,12 @@ pub struct RuntimeKernelSnapshot {
     pub entropy_rate_bits: f64,
     /// Normalized entropy rate ratio (0..1, 0=deterministic, 1=IID uniform).
     pub entropy_rate_ratio: f64,
+    /// Alpha-Investing current wealth (milli-units, 0 = depleted).
+    pub alpha_investing_wealth_milli: u64,
+    /// Alpha-Investing total accepted discoveries.
+    pub alpha_investing_rejections: u64,
+    /// Alpha-Investing empirical false discovery rate (0..1).
+    pub alpha_investing_empirical_fdr: f64,
 }
 
 /// Online control kernel for strict/hardened runtime decisions.
@@ -673,6 +681,7 @@ pub struct RuntimeMathKernel {
     hurst: Mutex<HurstExponentMonitor>,
     dispersion: Mutex<DispersionIndexMonitor>,
     birkhoff: Mutex<BirkhoffErgodicMonitor>,
+    alpha_investing: Mutex<AlphaInvestingController>,
     cached_risk_bonus_ppm: AtomicU64,
     cached_oracle_bias: [AtomicU8; ApiFamily::COUNT],
     cached_spectral_phase: AtomicU8,
@@ -748,6 +757,7 @@ pub struct RuntimeMathKernel {
     cached_hurst_state: AtomicU8,
     cached_dispersion_state: AtomicU8,
     cached_birkhoff_state: AtomicU8,
+    cached_alpha_investing_state: AtomicU8,
     decisions: AtomicU64,
 }
 
@@ -840,6 +850,7 @@ impl RuntimeMathKernel {
             hurst: Mutex::new(HurstExponentMonitor::new()),
             dispersion: Mutex::new(DispersionIndexMonitor::new()),
             birkhoff: Mutex::new(BirkhoffErgodicMonitor::new()),
+            alpha_investing: Mutex::new(AlphaInvestingController::new()),
             cached_risk_bonus_ppm: AtomicU64::new(0),
             cached_oracle_bias: std::array::from_fn(|_| AtomicU8::new(1)),
             cached_spectral_phase: AtomicU8::new(0),
@@ -915,6 +926,7 @@ impl RuntimeMathKernel {
             cached_hurst_state: AtomicU8::new(0),
             cached_dispersion_state: AtomicU8::new(0),
             cached_birkhoff_state: AtomicU8::new(0),
+            cached_alpha_investing_state: AtomicU8::new(0),
             decisions: AtomicU64::new(0),
         }
     }
@@ -923,7 +935,7 @@ impl RuntimeMathKernel {
     #[must_use]
     pub fn decide(&self, mode: SafetyLevel, ctx: RuntimeContext) -> RuntimeDecision {
         let sequence = self.decisions.fetch_add(1, Ordering::Relaxed) + 1;
-        if sequence.is_multiple_of(64) {
+        if sequence.is_multiple_of(128) {
             self.resample_high_order_kernels(mode, ctx);
         }
 
@@ -1439,7 +1451,7 @@ impl RuntimeMathKernel {
         // IMPORTANT: Strict decide() is a hot path; it must not execute heavy
         // floating-point or linear-algebra work per-call. We update the design
         // plan on a cadence and cache its outputs in atomics.
-        if self.cached_design_budget_ns.load(Ordering::Relaxed) == 0 || sequence.is_multiple_of(256)
+        if self.cached_design_budget_ns.load(Ordering::Relaxed) == 0 || sequence.is_multiple_of(512)
         {
             let adverse_hint = ctx.bloom_negative || (ctx.is_write && ctx.requested_bytes > 4096);
             let mut design = self.design.lock();
@@ -1652,18 +1664,29 @@ impl RuntimeMathKernel {
         let mut coupling_anomaly = None;
 
         // Feed tropical latency compositor with per-path observations.
-        {
+        let observe_seq = {
             let path = match profile {
                 ValidationProfile::Fast => PipelinePath::FastExit,
                 ValidationProfile::Full => PipelinePath::Full,
             };
             let mut tropical = self.tropical.lock();
             tropical.observe_path(path, estimated_cost_ns);
+            let observe_seq = tropical.total_observations();
             // Publish metrics every 256 observations.
-            if tropical.total_observations().is_multiple_of(256) {
+            if observe_seq.is_multiple_of(256) {
                 TROPICAL_METRICS.publish(&tropical);
             }
-        }
+            observe_seq
+        };
+
+        // Cadence-gate the expensive meta-controller cascade (PAC-Bayes, fusion, etc.).
+        // The core probe set is still selected by the design kernel via `probe_mask`.
+        let meta_interval = match mode {
+            SafetyLevel::Strict => 8u64,
+            SafetyLevel::Hardened => 8u64,
+            SafetyLevel::Off => 16u64,
+        };
+        let run_meta = observe_seq.is_multiple_of(meta_interval);
 
         // Feed spectral monitor with multi-dimensional observation.
         if ProbePlan::includes_mask(probe_mask, Probe::Spectral) {
@@ -2076,1062 +2099,1082 @@ impl RuntimeMathKernel {
             self.cached_coupling_state.store(cp_code, Ordering::Relaxed);
         }
 
-        // Feed microlocal sheaf controller with stratum transition proxy.
-        // Signal-heavy families (Threading, Resolver) map to SignalBoundary;
-        // StringMemory maps to LongjmpBoundary (longjmp crosses cleanup);
-        // others map to NormalFlow.
-        {
-            let from = Stratum::NormalFlow;
-            let to = match family {
-                ApiFamily::Threading => Stratum::SignalBoundary,
-                ApiFamily::Resolver => Stratum::SignalBoundary,
-                ApiFamily::StringMemory if adverse => Stratum::LongjmpBoundary,
-                _ => Stratum::NormalFlow,
-            };
-            let mc_code = {
-                let mut mc = self.microlocal.lock();
-                mc.observe_and_update(from, to, adverse);
-                match mc.state() {
-                    MicrolocalState::Calibrating => 0u8,
-                    MicrolocalState::Propagating => 1u8,
-                    MicrolocalState::FaultBoundary => 2u8,
-                    MicrolocalState::SingularSupport => 3u8,
-                }
-            };
-            self.cached_microlocal_state
-                .store(mc_code, Ordering::Relaxed);
-        }
-
-        // Feed Serre spectral sequence controller with cross-layer lifting proxy.
-        // We map (family, adverse) to a layer-pair and invariant-class observation:
-        // ABI→Membrane for Allocator/StringMemory; Membrane→Core for others.
-        {
-            let layer_pair = match family {
-                ApiFamily::Allocator | ApiFamily::StringMemory => LayerPair::AbiToMembrane,
-                ApiFamily::Threading | ApiFamily::Resolver => LayerPair::AbiToCore,
-                _ => LayerPair::MembraneToCore,
-            };
-            let inv_class = match family {
-                ApiFamily::Allocator => InvariantClass::ResourceLifecycle,
-                ApiFamily::StringMemory => InvariantClass::ReturnSemantics,
-                ApiFamily::Threading => InvariantClass::SideEffectOrder,
-                _ => InvariantClass::ErrorRecovery,
-            };
-            let serre_code = {
-                let mut serre = self.serre.lock();
-                serre.observe_and_update(layer_pair, inv_class, !adverse);
-                match serre.state() {
-                    SpectralSequenceState::Calibrating => 0u8,
-                    SpectralSequenceState::Converged => 1u8,
-                    SpectralSequenceState::LiftingFailure => 2u8,
-                    SpectralSequenceState::Collapsed => 3u8,
-                }
-            };
-            self.cached_serre_state.store(serre_code, Ordering::Relaxed);
-        }
-
-        // Feed Clifford controller with alignment observation proxy.
-        // Source/destination alignment inferred from addr_hint and requested_bytes.
-        {
-            let obs = AlignmentObservation {
-                src_alignment: AlignmentRegime::classify(estimated_cost_ns as usize & 0xFF),
-                dst_alignment: AlignmentRegime::classify(risk_bound_ppm as usize & 0xFF),
-                overlap_fraction: if adverse { 0.5 } else { 0.0 },
-                length_regime: (estimated_cost_ns as f64).clamp(0.0, 200.0) / 200.0,
-            };
-            let cliff_code = {
-                let mut cliff = self.clifford.lock();
-                cliff.observe_and_update(obs);
-                match cliff.state() {
-                    CliffordState::Calibrating => 0u8,
-                    CliffordState::Aligned => 1u8,
-                    CliffordState::MisalignmentDrift => 2u8,
-                    CliffordState::OverlapViolation => 3u8,
-                }
-            };
-            self.cached_clifford_state
-                .store(cliff_code, Ordering::Relaxed);
-        }
-
-        // Feed K-theory transport controller with behavioral contract coordinates.
-        // Encodes: (normalized_latency, adverse, profile_depth, risk_level).
-        {
-            let norm_latency = (estimated_cost_ns as f64).clamp(0.0, 200.0) / 200.0;
-            let adverse_f = if adverse { 1.0 } else { 0.0 };
-            let prof_depth = if matches!(profile, ValidationProfile::Full) {
-                1.0
-            } else {
-                0.0
-            };
-            let risk_level = f64::from(risk_bound_ppm) / 1_000_000.0;
-            let coords = [norm_latency, adverse_f, prof_depth, risk_level];
-            let kt_code = {
-                let mut kt = self.ktheory.lock();
-                kt.observe_and_update(family as usize, coords);
-                match kt.state() {
-                    KTheoryState::Calibrating => 0u8,
-                    KTheoryState::Compatible => 1u8,
-                    KTheoryState::Drift => 2u8,
-                    KTheoryState::Fractured => 3u8,
-                }
-            };
-            self.cached_ktheory_state.store(kt_code, Ordering::Relaxed);
-        }
-
-        // Feed covering-array matroid conformance scheduler.
-        // Binary parameters: family_high, mode_hardened, profile_full, adverse,
-        // contention_high, aligned.
-        {
-            let family_high = if (family as u8) >= 4 { 1u8 } else { 0u8 };
-            let mode_hard = if mode.heals_enabled() { 1u8 } else { 0u8 };
-            let prof_full = if matches!(profile, ValidationProfile::Full) {
-                1u8
-            } else {
-                0u8
-            };
-            let adverse_b = if adverse { 1u8 } else { 0u8 };
-            let contention_high = if estimated_cost_ns > 100 { 1u8 } else { 0u8 };
-            let aligned = if estimated_cost_ns <= 16 && !adverse {
-                1u8
-            } else {
-                0u8
-            };
-            let params = [
-                family_high,
-                mode_hard,
-                prof_full,
-                adverse_b,
-                contention_high,
-                aligned,
-            ];
-            let cov_code = {
-                let mut cov = self.covering.lock();
-                cov.observe_and_update(params);
-                match cov.state() {
-                    CoverageState::Calibrating => 0u8,
-                    CoverageState::Complete => 1u8,
-                    CoverageState::CoverageGap => 2u8,
-                    CoverageState::CriticalGap => 3u8,
-                }
-            };
-            self.cached_covering_state
-                .store(cov_code, Ordering::Relaxed);
-        }
-
-        // Feed derived t-structure bootstrap ordering controller.
-        // We map family to a stage index (families are loosely ordered by
-        // initialization dependency depth) and check predecessors via risk.
-        {
-            let stage_idx = (family as usize).min(7);
-            let predecessors_complete = !adverse && risk_bound_ppm < 200_000;
-            let ts_code = {
-                let mut ts = self.tstructure.lock();
-                ts.observe_and_update(stage_idx, predecessors_complete);
-                match ts.state() {
-                    TStructureState::Calibrating => 0u8,
-                    TStructureState::WellOrdered => 1u8,
-                    TStructureState::Disorder => 2u8,
-                    TStructureState::OrthogonalityViolation => 3u8,
-                }
-            };
-            self.cached_tstructure_state
-                .store(ts_code, Ordering::Relaxed);
-        }
-
-        // Feed POMDP repair policy controller.
-        // Infer approximate action code from profile, mode, and risk.
-        {
-            let action_code = if risk_bound_ppm >= 500_000 {
-                if mode.heals_enabled() { 2u8 } else { 3u8 } // Repair / Deny
-            } else if profile.requires_full() || risk_bound_ppm >= 200_000 {
-                1u8 // FullValidate
-            } else if mode.heals_enabled() && risk_bound_ppm >= 100_000 {
-                2u8 // Repair
-            } else {
-                0u8 // Allow
-            };
-            let pomdp_code = {
-                let mut p = self.pomdp.lock();
-                p.observe_and_update(risk_bound_ppm, action_code, adverse);
-                match p.state() {
-                    PomdpState::Calibrating => 0u8,
-                    PomdpState::Optimal => 1u8,
-                    PomdpState::SuboptimalPolicy => 2u8,
-                    PomdpState::PolicyDivergence => 3u8,
-                }
-            };
-            self.cached_pomdp_state.store(pomdp_code, Ordering::Relaxed);
-        }
-
-        // Feed ADMM budget allocator with risk/latency/coverage signals.
-        {
-            let risk_cost = (risk_bound_ppm as f64 / 1_000_000.0).clamp(0.0, 1.0);
-            let latency_fraction = (estimated_cost_ns as f64 / 200.0).clamp(0.0, 1.0);
-            let coverage_gap = if profile.requires_full() { 0.1 } else { 0.4 };
-            let admm_code = {
-                let mut admm = self.admm.lock();
-                admm.observe_and_update(risk_cost, latency_fraction, coverage_gap);
-                match admm.state() {
-                    AdmmState::Calibrating => 0u8,
-                    AdmmState::Converged => 1u8,
-                    AdmmState::DualDrift => 2u8,
-                    AdmmState::ConstraintViolation => 3u8,
-                }
-            };
-            self.cached_admm_state.store(admm_code, Ordering::Relaxed);
-        }
-
-        let mut anomaly_vec = [false; Probe::COUNT];
-        if let Some(flag) = spectral_anomaly {
-            anomaly_vec[Probe::Spectral as usize] = flag;
-        }
-        if let Some(flag) = rough_anomaly {
-            anomaly_vec[Probe::RoughPath as usize] = flag;
-        }
-        if let Some(flag) = persistence_anomaly {
-            anomaly_vec[Probe::Persistence as usize] = flag;
-        }
-        if let Some(flag) = anytime_anomaly {
-            anomaly_vec[Probe::Anytime as usize] = flag;
-        }
-        if let Some(flag) = cvar_anomaly {
-            anomaly_vec[Probe::Cvar as usize] = flag;
-        }
-        if let Some(flag) = bridge_anomaly {
-            anomaly_vec[Probe::Bridge as usize] = flag;
-        }
-        if let Some(flag) = ld_anomaly {
-            anomaly_vec[Probe::LargeDeviations as usize] = flag;
-        }
-        if let Some(flag) = hji_anomaly {
-            anomaly_vec[Probe::Hji as usize] = flag;
-        }
-        if let Some(flag) = mfg_anomaly {
-            anomaly_vec[Probe::MeanField as usize] = flag;
-        }
-        if let Some(flag) = padic_anomaly {
-            anomaly_vec[Probe::Padic as usize] = flag;
-        }
-        if let Some(flag) = symplectic_anomaly {
-            anomaly_vec[Probe::Symplectic as usize] = flag;
-        }
-        if let Some(flag) = topos_anomaly {
-            anomaly_vec[Probe::HigherTopos as usize] = flag;
-        }
-        if let Some(flag) = audit_anomaly {
-            anomaly_vec[Probe::CommitmentAudit as usize] = flag;
-        }
-        if let Some(flag) = changepoint_anomaly {
-            anomaly_vec[Probe::Changepoint as usize] = flag;
-        }
-        if let Some(flag) = conformal_anomaly {
-            anomaly_vec[Probe::Conformal as usize] = flag;
-        }
-        if let Some(flag) = loss_minimizer_anomaly {
-            anomaly_vec[Probe::LossMinimizer as usize] = flag;
-        }
-        if let Some(flag) = coupling_anomaly {
-            anomaly_vec[Probe::Coupling as usize] = flag;
-        }
-
-        // Feed sparse-recovery latent controller with executed-probe anomalies.
-        {
-            let sparse_code = {
-                let mut sparse = self.sparse.lock();
-                sparse.observe(probe_mask, anomaly_vec, adverse);
-                match sparse.state() {
-                    SparseState::Calibrating => 0u8,
-                    SparseState::Stable => 1u8,
-                    SparseState::Focused => 2u8,
-                    SparseState::Diffuse => 3u8,
-                    SparseState::Critical => 4u8,
-                }
-            };
-            self.cached_sparse_state
-                .store(sparse_code, Ordering::Relaxed);
-        }
-
-        // Feed equivariant transport controller (always-on, O(1)):
-        // tracks cross-family symmetry breaking under mode/profile actions.
-        let _equivariant_anomaly = {
-            let (eq_code, eq_summary) = {
-                let mut eq = self.equivariant.lock();
-                eq.observe(
-                    family,
-                    mode,
-                    profile,
-                    estimated_cost_ns,
-                    adverse,
-                    risk_bound_ppm,
-                );
-                let summary = eq.summary();
-                let code = match summary.state {
-                    EquivariantState::Calibrating => 0u8,
-                    EquivariantState::Aligned => 1u8,
-                    EquivariantState::Drift => 2u8,
-                    EquivariantState::Fractured => 3u8,
+        if run_meta {
+            // Feed microlocal sheaf controller with stratum transition proxy.
+            // Signal-heavy families (Threading, Resolver) map to SignalBoundary;
+            // StringMemory maps to LongjmpBoundary (longjmp crosses cleanup);
+            // others map to NormalFlow.
+            {
+                let from = Stratum::NormalFlow;
+                let to = match family {
+                    ApiFamily::Threading => Stratum::SignalBoundary,
+                    ApiFamily::Resolver => Stratum::SignalBoundary,
+                    ApiFamily::StringMemory if adverse => Stratum::LongjmpBoundary,
+                    _ => Stratum::NormalFlow,
                 };
-                (code, summary)
-            };
-            self.cached_equivariant_state
-                .store(eq_code, Ordering::Relaxed);
-            self.cached_equivariant_alignment_ppm
-                .store(u64::from(eq_summary.alignment_ppm), Ordering::Relaxed);
-            self.cached_equivariant_orbit
-                .store(eq_summary.dominant_orbit, Ordering::Relaxed);
-            eq_code >= 2
-        };
-
-        // Feed information-theoretic provenance controller with a compact byte
-        // derived from call context, risk, and latency.
-        {
-            let fingerprint_byte = (u64::from(risk_bound_ppm)
-                ^ estimated_cost_ns
-                ^ u64::from(family as u8).wrapping_mul(0x9e)
-                ^ u64::from(profile as u8).wrapping_mul(0x6d))
-                as u8;
-            let prov_code = {
-                let mut prov = self.provenance.lock();
-                prov.observe_bytes(&[fingerprint_byte]);
-                match prov.state() {
-                    ProvenanceState::Calibrating => 0u8,
-                    ProvenanceState::Secure => 1u8,
-                    ProvenanceState::EntropyDrift => 2u8,
-                    ProvenanceState::CollisionRisk => 3u8,
-                }
-            };
-            self.cached_provenance_state
-                .store(prov_code, Ordering::Relaxed);
-        }
-
-        // Feed Grothendieck glue controller with local-to-global coherence
-        // observations mapped from API family + adverse outcome.
-        {
-            let (query_family, source_i, source_j, is_stack_check) = match family {
-                ApiFamily::Resolver => (
-                    QueryFamily::Hostname,
-                    DataSource::Files,
-                    DataSource::Dns,
-                    false,
-                ),
-                ApiFamily::Threading => (
-                    QueryFamily::UserGroup,
-                    DataSource::Cache,
-                    DataSource::Files,
-                    false,
-                ),
-                ApiFamily::StringMemory => (
-                    QueryFamily::EncodingLookup,
-                    DataSource::IconvTables,
-                    DataSource::Fallback,
-                    true,
-                ),
-                ApiFamily::Stdlib => (
-                    QueryFamily::LocaleResolution,
-                    DataSource::LocaleFiles,
-                    DataSource::Fallback,
-                    true,
-                ),
-                ApiFamily::MathFenv => (
-                    QueryFamily::Transliteration,
-                    DataSource::LocaleFiles,
-                    DataSource::IconvTables,
-                    true,
-                ),
-                _ => (
-                    QueryFamily::Service,
-                    DataSource::Files,
-                    DataSource::Cache,
-                    false,
-                ),
-            };
-            let glue_code = {
-                let mut glue = self.grothendieck.lock();
-                let obs = CocycleObservation {
-                    family: query_family,
-                    source_i,
-                    source_j,
-                    compatible: !adverse,
-                    is_stack_check,
+                let mc_code = {
+                    let mut mc = self.microlocal.lock();
+                    mc.observe_and_update(from, to, adverse);
+                    match mc.state() {
+                        MicrolocalState::Calibrating => 0u8,
+                        MicrolocalState::Propagating => 1u8,
+                        MicrolocalState::FaultBoundary => 2u8,
+                        MicrolocalState::SingularSupport => 3u8,
+                    }
                 };
-                glue.observe_cocycle(&obs);
-                match glue.state() {
-                    GlueState::Calibrating => 0u8,
-                    GlueState::Coherent => 1u8,
-                    GlueState::DescentFailure => 2u8,
-                    GlueState::StackificationFault => 3u8,
-                }
-            };
-            self.cached_grothendieck_state
-                .store(glue_code, Ordering::Relaxed);
-        }
+                self.cached_microlocal_state
+                    .store(mc_code, Ordering::Relaxed);
+            }
 
-        // Feed Grobner normalizer with the constrained 16-variable controller
-        // severity vector used for canonical consistency checks.
-        {
-            let risk_state = if risk_bound_ppm >= 500_000 {
-                3u8
-            } else if risk_bound_ppm >= 200_000 {
-                2u8
-            } else if risk_bound_ppm >= 50_000 {
-                1u8
-            } else {
-                0u8
+            // Feed Serre spectral sequence controller with cross-layer lifting proxy.
+            // We map (family, adverse) to a layer-pair and invariant-class observation:
+            // ABI→Membrane for Allocator/StringMemory; Membrane→Core for others.
+            {
+                let layer_pair = match family {
+                    ApiFamily::Allocator | ApiFamily::StringMemory => LayerPair::AbiToMembrane,
+                    ApiFamily::Threading | ApiFamily::Resolver => LayerPair::AbiToCore,
+                    _ => LayerPair::MembraneToCore,
+                };
+                let inv_class = match family {
+                    ApiFamily::Allocator => InvariantClass::ResourceLifecycle,
+                    ApiFamily::StringMemory => InvariantClass::ReturnSemantics,
+                    ApiFamily::Threading => InvariantClass::SideEffectOrder,
+                    _ => InvariantClass::ErrorRecovery,
+                };
+                let serre_code = {
+                    let mut serre = self.serre.lock();
+                    serre.observe_and_update(layer_pair, inv_class, !adverse);
+                    match serre.state() {
+                        SpectralSequenceState::Calibrating => 0u8,
+                        SpectralSequenceState::Converged => 1u8,
+                        SpectralSequenceState::LiftingFailure => 2u8,
+                        SpectralSequenceState::Collapsed => 3u8,
+                    }
+                };
+                self.cached_serre_state.store(serre_code, Ordering::Relaxed);
+            }
+
+            // Feed Clifford controller with alignment observation proxy.
+            // Source/destination alignment inferred from addr_hint and requested_bytes.
+            {
+                let obs = AlignmentObservation {
+                    src_alignment: AlignmentRegime::classify(estimated_cost_ns as usize & 0xFF),
+                    dst_alignment: AlignmentRegime::classify(risk_bound_ppm as usize & 0xFF),
+                    overlap_fraction: if adverse { 0.5 } else { 0.0 },
+                    length_regime: (estimated_cost_ns as f64).clamp(0.0, 200.0) / 200.0,
+                };
+                let cliff_code = {
+                    let mut cliff = self.clifford.lock();
+                    cliff.observe_and_update(obs);
+                    match cliff.state() {
+                        CliffordState::Calibrating => 0u8,
+                        CliffordState::Aligned => 1u8,
+                        CliffordState::MisalignmentDrift => 2u8,
+                        CliffordState::OverlapViolation => 3u8,
+                    }
+                };
+                self.cached_clifford_state
+                    .store(cliff_code, Ordering::Relaxed);
+            }
+
+            // Feed K-theory transport controller with behavioral contract coordinates.
+            // Encodes: (normalized_latency, adverse, profile_depth, risk_level).
+            {
+                let norm_latency = (estimated_cost_ns as f64).clamp(0.0, 200.0) / 200.0;
+                let adverse_f = if adverse { 1.0 } else { 0.0 };
+                let prof_depth = if matches!(profile, ValidationProfile::Full) {
+                    1.0
+                } else {
+                    0.0
+                };
+                let risk_level = f64::from(risk_bound_ppm) / 1_000_000.0;
+                let coords = [norm_latency, adverse_f, prof_depth, risk_level];
+                let kt_code = {
+                    let mut kt = self.ktheory.lock();
+                    kt.observe_and_update(family as usize, coords);
+                    match kt.state() {
+                        KTheoryState::Calibrating => 0u8,
+                        KTheoryState::Compatible => 1u8,
+                        KTheoryState::Drift => 2u8,
+                        KTheoryState::Fractured => 3u8,
+                    }
+                };
+                self.cached_ktheory_state.store(kt_code, Ordering::Relaxed);
+            }
+
+            // Feed covering-array matroid conformance scheduler.
+            // Binary parameters: family_high, mode_hardened, profile_full, adverse,
+            // contention_high, aligned.
+            {
+                let family_high = if (family as u8) >= 4 { 1u8 } else { 0u8 };
+                let mode_hard = if mode.heals_enabled() { 1u8 } else { 0u8 };
+                let prof_full = if matches!(profile, ValidationProfile::Full) {
+                    1u8
+                } else {
+                    0u8
+                };
+                let adverse_b = if adverse { 1u8 } else { 0u8 };
+                let contention_high = if estimated_cost_ns > 100 { 1u8 } else { 0u8 };
+                let aligned = if estimated_cost_ns <= 16 && !adverse {
+                    1u8
+                } else {
+                    0u8
+                };
+                let params = [
+                    family_high,
+                    mode_hard,
+                    prof_full,
+                    adverse_b,
+                    contention_high,
+                    aligned,
+                ];
+                let cov_code = {
+                    let mut cov = self.covering.lock();
+                    cov.observe_and_update(params);
+                    match cov.state() {
+                        CoverageState::Calibrating => 0u8,
+                        CoverageState::Complete => 1u8,
+                        CoverageState::CoverageGap => 2u8,
+                        CoverageState::CriticalGap => 3u8,
+                    }
+                };
+                self.cached_covering_state
+                    .store(cov_code, Ordering::Relaxed);
+            }
+
+            // Feed derived t-structure bootstrap ordering controller.
+            // We map family to a stage index (families are loosely ordered by
+            // initialization dependency depth) and check predecessors via risk.
+            {
+                let stage_idx = (family as usize).min(7);
+                let predecessors_complete = !adverse && risk_bound_ppm < 200_000;
+                let ts_code = {
+                    let mut ts = self.tstructure.lock();
+                    ts.observe_and_update(stage_idx, predecessors_complete);
+                    match ts.state() {
+                        TStructureState::Calibrating => 0u8,
+                        TStructureState::WellOrdered => 1u8,
+                        TStructureState::Disorder => 2u8,
+                        TStructureState::OrthogonalityViolation => 3u8,
+                    }
+                };
+                self.cached_tstructure_state
+                    .store(ts_code, Ordering::Relaxed);
+            }
+
+            // Feed POMDP repair policy controller.
+            // Infer approximate action code from profile, mode, and risk.
+            {
+                let action_code = if risk_bound_ppm >= 500_000 {
+                    if mode.heals_enabled() { 2u8 } else { 3u8 } // Repair / Deny
+                } else if profile.requires_full() || risk_bound_ppm >= 200_000 {
+                    1u8 // FullValidate
+                } else if mode.heals_enabled() && risk_bound_ppm >= 100_000 {
+                    2u8 // Repair
+                } else {
+                    0u8 // Allow
+                };
+                let pomdp_code = {
+                    let mut p = self.pomdp.lock();
+                    p.observe_and_update(risk_bound_ppm, action_code, adverse);
+                    match p.state() {
+                        PomdpState::Calibrating => 0u8,
+                        PomdpState::Optimal => 1u8,
+                        PomdpState::SuboptimalPolicy => 2u8,
+                        PomdpState::PolicyDivergence => 3u8,
+                    }
+                };
+                self.cached_pomdp_state.store(pomdp_code, Ordering::Relaxed);
+            }
+
+            // Feed ADMM budget allocator with risk/latency/coverage signals.
+            {
+                let risk_cost = (risk_bound_ppm as f64 / 1_000_000.0).clamp(0.0, 1.0);
+                let latency_fraction = (estimated_cost_ns as f64 / 200.0).clamp(0.0, 1.0);
+                let coverage_gap = if profile.requires_full() { 0.1 } else { 0.4 };
+                let admm_code = {
+                    let mut admm = self.admm.lock();
+                    admm.observe_and_update(risk_cost, latency_fraction, coverage_gap);
+                    match admm.state() {
+                        AdmmState::Calibrating => 0u8,
+                        AdmmState::Converged => 1u8,
+                        AdmmState::DualDrift => 2u8,
+                        AdmmState::ConstraintViolation => 3u8,
+                    }
+                };
+                self.cached_admm_state.store(admm_code, Ordering::Relaxed);
+            }
+
+            let mut anomaly_vec = [false; Probe::COUNT];
+            if let Some(flag) = spectral_anomaly {
+                anomaly_vec[Probe::Spectral as usize] = flag;
+            }
+            if let Some(flag) = rough_anomaly {
+                anomaly_vec[Probe::RoughPath as usize] = flag;
+            }
+            if let Some(flag) = persistence_anomaly {
+                anomaly_vec[Probe::Persistence as usize] = flag;
+            }
+            if let Some(flag) = anytime_anomaly {
+                anomaly_vec[Probe::Anytime as usize] = flag;
+            }
+            if let Some(flag) = cvar_anomaly {
+                anomaly_vec[Probe::Cvar as usize] = flag;
+            }
+            if let Some(flag) = bridge_anomaly {
+                anomaly_vec[Probe::Bridge as usize] = flag;
+            }
+            if let Some(flag) = ld_anomaly {
+                anomaly_vec[Probe::LargeDeviations as usize] = flag;
+            }
+            if let Some(flag) = hji_anomaly {
+                anomaly_vec[Probe::Hji as usize] = flag;
+            }
+            if let Some(flag) = mfg_anomaly {
+                anomaly_vec[Probe::MeanField as usize] = flag;
+            }
+            if let Some(flag) = padic_anomaly {
+                anomaly_vec[Probe::Padic as usize] = flag;
+            }
+            if let Some(flag) = symplectic_anomaly {
+                anomaly_vec[Probe::Symplectic as usize] = flag;
+            }
+            if let Some(flag) = topos_anomaly {
+                anomaly_vec[Probe::HigherTopos as usize] = flag;
+            }
+            if let Some(flag) = audit_anomaly {
+                anomaly_vec[Probe::CommitmentAudit as usize] = flag;
+            }
+            if let Some(flag) = changepoint_anomaly {
+                anomaly_vec[Probe::Changepoint as usize] = flag;
+            }
+            if let Some(flag) = conformal_anomaly {
+                anomaly_vec[Probe::Conformal as usize] = flag;
+            }
+            if let Some(flag) = loss_minimizer_anomaly {
+                anomaly_vec[Probe::LossMinimizer as usize] = flag;
+            }
+            if let Some(flag) = coupling_anomaly {
+                anomaly_vec[Probe::Coupling as usize] = flag;
+            }
+
+            // Feed sparse-recovery latent controller with executed-probe anomalies.
+            {
+                let sparse_code = {
+                    let mut sparse = self.sparse.lock();
+                    sparse.observe(probe_mask, anomaly_vec, adverse);
+                    match sparse.state() {
+                        SparseState::Calibrating => 0u8,
+                        SparseState::Stable => 1u8,
+                        SparseState::Focused => 2u8,
+                        SparseState::Diffuse => 3u8,
+                        SparseState::Critical => 4u8,
+                    }
+                };
+                self.cached_sparse_state
+                    .store(sparse_code, Ordering::Relaxed);
+            }
+
+            // Feed equivariant transport controller (always-on, O(1)):
+            // tracks cross-family symmetry breaking under mode/profile actions.
+            let _equivariant_anomaly = {
+                let (eq_code, eq_summary) = {
+                    let mut eq = self.equivariant.lock();
+                    eq.observe(
+                        family,
+                        mode,
+                        profile,
+                        estimated_cost_ns,
+                        adverse,
+                        risk_bound_ppm,
+                    );
+                    let summary = eq.summary();
+                    let code = match summary.state {
+                        EquivariantState::Calibrating => 0u8,
+                        EquivariantState::Aligned => 1u8,
+                        EquivariantState::Drift => 2u8,
+                        EquivariantState::Fractured => 3u8,
+                    };
+                    (code, summary)
+                };
+                self.cached_equivariant_state
+                    .store(eq_code, Ordering::Relaxed);
+                self.cached_equivariant_alignment_ppm
+                    .store(u64::from(eq_summary.alignment_ppm), Ordering::Relaxed);
+                self.cached_equivariant_orbit
+                    .store(eq_summary.dominant_orbit, Ordering::Relaxed);
+                eq_code >= 2
             };
-            let state_vec = [
-                risk_state,                                                   // 0 risk
-                self.cached_bridge_state.load(Ordering::Relaxed).min(3),      // 1 bridge
-                self.cached_changepoint_state.load(Ordering::Relaxed).min(3), // 2 changepoint
-                self.cached_hji_state.load(Ordering::Relaxed).min(3),         // 3 hji
-                self.cached_anytime_state[usize::from(family as u8)] // 4 eprocess/padic
-                    .load(Ordering::Relaxed)
-                    .max(self.cached_padic_state.load(Ordering::Relaxed))
-                    .min(3),
-                self.cached_cvar_state[usize::from(family as u8)] // 5 cvar
-                    .load(Ordering::Relaxed)
-                    .min(3),
-                self.cached_coupling_state.load(Ordering::Relaxed).min(3), // 6 coupling
-                self.cached_mfg_state.load(Ordering::Relaxed).min(3),      // 7 mfg
-                self.cached_equivariant_state.load(Ordering::Relaxed).min(3), // 8 equivariant
-                self.cached_microlocal_state.load(Ordering::Relaxed).min(3), // 9 microlocal
-                self.cached_ktheory_state.load(Ordering::Relaxed).min(3),  // 10 ktheory
-                self.cached_serre_state.load(Ordering::Relaxed).min(3),    // 11 serre
-                self.cached_tstructure_state.load(Ordering::Relaxed).min(3), // 12 tstructure
-                self.cached_clifford_state.load(Ordering::Relaxed).min(3), // 13 clifford
-                self.cached_topos_state.load(Ordering::Relaxed).min(3),    // 14 topos
-                self.cached_audit_state.load(Ordering::Relaxed).min(3),    // 15 audit
+
+            // Feed information-theoretic provenance controller with a compact byte
+            // derived from call context, risk, and latency.
+            {
+                let fingerprint_byte = (u64::from(risk_bound_ppm)
+                    ^ estimated_cost_ns
+                    ^ u64::from(family as u8).wrapping_mul(0x9e)
+                    ^ u64::from(profile as u8).wrapping_mul(0x6d))
+                    as u8;
+                let prov_code = {
+                    let mut prov = self.provenance.lock();
+                    prov.observe_bytes(&[fingerprint_byte]);
+                    match prov.state() {
+                        ProvenanceState::Calibrating => 0u8,
+                        ProvenanceState::Secure => 1u8,
+                        ProvenanceState::EntropyDrift => 2u8,
+                        ProvenanceState::CollisionRisk => 3u8,
+                    }
+                };
+                self.cached_provenance_state
+                    .store(prov_code, Ordering::Relaxed);
+            }
+
+            // Feed Grothendieck glue controller with local-to-global coherence
+            // observations mapped from API family + adverse outcome.
+            {
+                let (query_family, source_i, source_j, is_stack_check) = match family {
+                    ApiFamily::Resolver => (
+                        QueryFamily::Hostname,
+                        DataSource::Files,
+                        DataSource::Dns,
+                        false,
+                    ),
+                    ApiFamily::Threading => (
+                        QueryFamily::UserGroup,
+                        DataSource::Cache,
+                        DataSource::Files,
+                        false,
+                    ),
+                    ApiFamily::StringMemory => (
+                        QueryFamily::EncodingLookup,
+                        DataSource::IconvTables,
+                        DataSource::Fallback,
+                        true,
+                    ),
+                    ApiFamily::Stdlib => (
+                        QueryFamily::LocaleResolution,
+                        DataSource::LocaleFiles,
+                        DataSource::Fallback,
+                        true,
+                    ),
+                    ApiFamily::MathFenv => (
+                        QueryFamily::Transliteration,
+                        DataSource::LocaleFiles,
+                        DataSource::IconvTables,
+                        true,
+                    ),
+                    _ => (
+                        QueryFamily::Service,
+                        DataSource::Files,
+                        DataSource::Cache,
+                        false,
+                    ),
+                };
+                let glue_code = {
+                    let mut glue = self.grothendieck.lock();
+                    let obs = CocycleObservation {
+                        family: query_family,
+                        source_i,
+                        source_j,
+                        compatible: !adverse,
+                        is_stack_check,
+                    };
+                    glue.observe_cocycle(&obs);
+                    match glue.state() {
+                        GlueState::Calibrating => 0u8,
+                        GlueState::Coherent => 1u8,
+                        GlueState::DescentFailure => 2u8,
+                        GlueState::StackificationFault => 3u8,
+                    }
+                };
+                self.cached_grothendieck_state
+                    .store(glue_code, Ordering::Relaxed);
+            }
+
+            // Feed Grobner normalizer with the constrained 16-variable controller
+            // severity vector used for canonical consistency checks.
+            {
+                let risk_state = if risk_bound_ppm >= 500_000 {
+                    3u8
+                } else if risk_bound_ppm >= 200_000 {
+                    2u8
+                } else if risk_bound_ppm >= 50_000 {
+                    1u8
+                } else {
+                    0u8
+                };
+                let state_vec = [
+                    risk_state,                                                   // 0 risk
+                    self.cached_bridge_state.load(Ordering::Relaxed).min(3),      // 1 bridge
+                    self.cached_changepoint_state.load(Ordering::Relaxed).min(3), // 2 changepoint
+                    self.cached_hji_state.load(Ordering::Relaxed).min(3),         // 3 hji
+                    self.cached_anytime_state[usize::from(family as u8)] // 4 eprocess/padic
+                        .load(Ordering::Relaxed)
+                        .max(self.cached_padic_state.load(Ordering::Relaxed))
+                        .min(3),
+                    self.cached_cvar_state[usize::from(family as u8)] // 5 cvar
+                        .load(Ordering::Relaxed)
+                        .min(3),
+                    self.cached_coupling_state.load(Ordering::Relaxed).min(3), // 6 coupling
+                    self.cached_mfg_state.load(Ordering::Relaxed).min(3),      // 7 mfg
+                    self.cached_equivariant_state.load(Ordering::Relaxed).min(3), // 8 equivariant
+                    self.cached_microlocal_state.load(Ordering::Relaxed).min(3), // 9 microlocal
+                    self.cached_ktheory_state.load(Ordering::Relaxed).min(3),  // 10 ktheory
+                    self.cached_serre_state.load(Ordering::Relaxed).min(3),    // 11 serre
+                    self.cached_tstructure_state.load(Ordering::Relaxed).min(3), // 12 tstructure
+                    self.cached_clifford_state.load(Ordering::Relaxed).min(3), // 13 clifford
+                    self.cached_topos_state.load(Ordering::Relaxed).min(3),    // 14 topos
+                    self.cached_audit_state.load(Ordering::Relaxed).min(3),    // 15 audit
+                ];
+                let grobner_code = {
+                    let mut grobner = self.grobner.lock();
+                    grobner.check_state_vector(&state_vec);
+                    match grobner.state() {
+                        GrobnerState::Calibrating => 0u8,
+                        GrobnerState::Consistent => 1u8,
+                        GrobnerState::MinorInconsistency => 2u8,
+                        GrobnerState::StructuralFault => 3u8,
+                    }
+                };
+                self.cached_grobner_state
+                    .store(grobner_code, Ordering::Relaxed);
+            }
+
+            // Build base 25-element severity vector from cached controller states.
+            // This is consumed by Atiyah-Bott (localization), SOS (invariant guard),
+            // and the robust fusion controller.
+            let base_severity: [u8; BASE_SEVERITY_LEN] = [
+                self.cached_spectral_phase.load(Ordering::Relaxed), // 0..2
+                self.cached_signature_state.load(Ordering::Relaxed), // 0..2
+                self.cached_topological_state.load(Ordering::Relaxed), // 0..2
+                self.cached_anytime_state[usize::from(family as u8)].load(Ordering::Relaxed), // 0..3
+                self.cached_cvar_state[usize::from(family as u8)].load(Ordering::Relaxed), // 0..3
+                self.cached_bridge_state.load(Ordering::Relaxed),                          // 0..2
+                self.cached_ld_state[usize::from(family as u8)].load(Ordering::Relaxed),   // 0..3
+                self.cached_hji_state.load(Ordering::Relaxed),                             // 0..3
+                self.cached_mfg_state.load(Ordering::Relaxed),                             // 0..3
+                self.cached_padic_state.load(Ordering::Relaxed),                           // 0..3
+                self.cached_symplectic_state.load(Ordering::Relaxed),                      // 0..3
+                self.cached_sparse_state.load(Ordering::Relaxed),                          // 0..4
+                self.cached_equivariant_state.load(Ordering::Relaxed),                     // 0..3
+                self.cached_topos_state.load(Ordering::Relaxed),                           // 0..3
+                self.cached_audit_state.load(Ordering::Relaxed),                           // 0..3
+                self.cached_changepoint_state.load(Ordering::Relaxed),                     // 0..3
+                self.cached_conformal_state.load(Ordering::Relaxed),                       // 0..3
+                self.cached_loss_minimizer_state.load(Ordering::Relaxed),                  // 0..4
+                self.cached_coupling_state.load(Ordering::Relaxed),                        // 0..4
+                self.cached_microlocal_state.load(Ordering::Relaxed),                      // 0..3
+                self.cached_serre_state.load(Ordering::Relaxed),                           // 0..3
+                self.cached_clifford_state.load(Ordering::Relaxed),                        // 0..3
+                self.cached_ktheory_state.load(Ordering::Relaxed),                         // 0..3
+                self.cached_covering_state.load(Ordering::Relaxed),                        // 0..3
+                self.cached_tstructure_state.load(Ordering::Relaxed),                      // 0..3
             ];
-            let grobner_code = {
-                let mut grobner = self.grobner.lock();
-                grobner.check_state_vector(&state_vec);
-                match grobner.state() {
-                    GrobnerState::Calibrating => 0u8,
-                    GrobnerState::Consistent => 1u8,
-                    GrobnerState::MinorInconsistency => 2u8,
-                    GrobnerState::StructuralFault => 3u8,
-                }
-            };
-            self.cached_grobner_state
-                .store(grobner_code, Ordering::Relaxed);
-        }
 
-        // Build base 25-element severity vector from cached controller states.
-        // This is consumed by Atiyah-Bott (localization), SOS (invariant guard),
-        // and the robust fusion controller.
-        let base_severity: [u8; BASE_SEVERITY_LEN] = [
-            self.cached_spectral_phase.load(Ordering::Relaxed), // 0..2
-            self.cached_signature_state.load(Ordering::Relaxed), // 0..2
-            self.cached_topological_state.load(Ordering::Relaxed), // 0..2
-            self.cached_anytime_state[usize::from(family as u8)].load(Ordering::Relaxed), // 0..3
-            self.cached_cvar_state[usize::from(family as u8)].load(Ordering::Relaxed), // 0..3
-            self.cached_bridge_state.load(Ordering::Relaxed),   // 0..2
-            self.cached_ld_state[usize::from(family as u8)].load(Ordering::Relaxed), // 0..3
-            self.cached_hji_state.load(Ordering::Relaxed),      // 0..3
-            self.cached_mfg_state.load(Ordering::Relaxed),      // 0..3
-            self.cached_padic_state.load(Ordering::Relaxed),    // 0..3
-            self.cached_symplectic_state.load(Ordering::Relaxed), // 0..3
-            self.cached_sparse_state.load(Ordering::Relaxed),   // 0..4
-            self.cached_equivariant_state.load(Ordering::Relaxed), // 0..3
-            self.cached_topos_state.load(Ordering::Relaxed),    // 0..3
-            self.cached_audit_state.load(Ordering::Relaxed),    // 0..3
-            self.cached_changepoint_state.load(Ordering::Relaxed), // 0..3
-            self.cached_conformal_state.load(Ordering::Relaxed), // 0..3
-            self.cached_loss_minimizer_state.load(Ordering::Relaxed), // 0..4
-            self.cached_coupling_state.load(Ordering::Relaxed), // 0..4
-            self.cached_microlocal_state.load(Ordering::Relaxed), // 0..3
-            self.cached_serre_state.load(Ordering::Relaxed),    // 0..3
-            self.cached_clifford_state.load(Ordering::Relaxed), // 0..3
-            self.cached_ktheory_state.load(Ordering::Relaxed),  // 0..3
-            self.cached_covering_state.load(Ordering::Relaxed), // 0..3
-            self.cached_tstructure_state.load(Ordering::Relaxed), // 0..3
-        ];
+            // Feed Atiyah-Bott fixed-point localization meta-controller.
+            // Tracks concentration of anomaly signal across the base controller set.
+            {
+                let ab_code = {
+                    let mut ab = self.atiyah_bott.lock();
+                    ab.observe_and_update(&base_severity);
+                    match ab.state() {
+                        LocalizationState::Calibrating => 0u8,
+                        LocalizationState::Distributed => 1u8,
+                        LocalizationState::Localized => 2u8,
+                        LocalizationState::ConcentratedAnomaly => 3u8,
+                    }
+                };
+                self.cached_atiyah_bott_state
+                    .store(ab_code, Ordering::Relaxed);
+            }
 
-        // Feed Atiyah-Bott fixed-point localization meta-controller.
-        // Tracks concentration of anomaly signal across the base controller set.
-        {
-            let ab_code = {
-                let mut ab = self.atiyah_bott.lock();
-                ab.observe_and_update(&base_severity);
-                match ab.state() {
-                    LocalizationState::Calibrating => 0u8,
-                    LocalizationState::Distributed => 1u8,
-                    LocalizationState::Localized => 2u8,
-                    LocalizationState::ConcentratedAnomaly => 3u8,
-                }
-            };
-            self.cached_atiyah_bott_state
-                .store(ab_code, Ordering::Relaxed);
-        }
+            // Feed SOS polynomial invariant meta-controller.
+            // Checks cross-controller quadratic coherence invariants.
+            {
+                let sos_code = {
+                    let mut sos = self.sos.lock();
+                    sos.observe_and_update(&base_severity);
+                    match sos.state() {
+                        SosState::Calibrating => 0u8,
+                        SosState::InvariantSatisfied => 1u8,
+                        SosState::InvariantStressed => 2u8,
+                        SosState::InvariantViolated => 3u8,
+                    }
+                };
+                self.cached_sos_state.store(sos_code, Ordering::Relaxed);
+            }
 
-        // Feed SOS polynomial invariant meta-controller.
-        // Checks cross-controller quadratic coherence invariants.
-        {
-            let sos_code = {
-                let mut sos = self.sos.lock();
-                sos.observe_and_update(&base_severity);
-                match sos.state() {
-                    SosState::Calibrating => 0u8,
-                    SosState::InvariantSatisfied => 1u8,
-                    SosState::InvariantStressed => 2u8,
-                    SosState::InvariantViolated => 3u8,
-                }
-            };
-            self.cached_sos_state.store(sos_code, Ordering::Relaxed);
-        }
+            // Feed spectral-sequence obstruction detector.
+            // Tracks d² ≈ 0 (exactness) across tracked controller pairs.
+            {
+                let obs_code = {
+                    let mut obs = self.obstruction.lock();
+                    obs.observe_and_update(&base_severity);
+                    match obs.state() {
+                        ObstructionState::Calibrating => 0u8,
+                        ObstructionState::Exact => 1u8,
+                        ObstructionState::MinorObstruction => 2u8,
+                        ObstructionState::CriticalObstruction => 3u8,
+                    }
+                };
+                self.cached_obstruction_state
+                    .store(obs_code, Ordering::Relaxed);
+            }
 
-        // Feed spectral-sequence obstruction detector.
-        // Tracks d² ≈ 0 (exactness) across tracked controller pairs.
-        {
-            let obs_code = {
-                let mut obs = self.obstruction.lock();
-                obs.observe_and_update(&base_severity);
-                match obs.state() {
-                    ObstructionState::Calibrating => 0u8,
-                    ObstructionState::Exact => 1u8,
-                    ObstructionState::MinorObstruction => 2u8,
-                    ObstructionState::CriticalObstruction => 3u8,
-                }
-            };
-            self.cached_obstruction_state
-                .store(obs_code, Ordering::Relaxed);
-        }
+            // Feed operator-norm spectral radius stability monitor.
+            // Tracks ensemble dynamics amplification via online power iteration.
+            {
+                let on_code = {
+                    let mut on = self.operator_norm.lock();
+                    on.observe_and_update(&base_severity);
+                    match on.state() {
+                        StabilityState::Calibrating => 0u8,
+                        StabilityState::Contractive => 1u8,
+                        StabilityState::Marginal => 2u8,
+                        StabilityState::Unstable => 3u8,
+                    }
+                };
+                self.cached_operator_norm_state
+                    .store(on_code, Ordering::Relaxed);
+            }
 
-        // Feed operator-norm spectral radius stability monitor.
-        // Tracks ensemble dynamics amplification via online power iteration.
-        {
-            let on_code = {
-                let mut on = self.operator_norm.lock();
-                on.observe_and_update(&base_severity);
-                match on.state() {
-                    StabilityState::Calibrating => 0u8,
-                    StabilityState::Contractive => 1u8,
-                    StabilityState::Marginal => 2u8,
-                    StabilityState::Unstable => 3u8,
-                }
-            };
-            self.cached_operator_norm_state
-                .store(on_code, Ordering::Relaxed);
-        }
+            // Feed Malliavin sensitivity meta-controller.
+            // Tracks sensitivity of aggregate safety decision to per-controller perturbations.
+            {
+                let malliavin_code = {
+                    let mut m = self.malliavin.lock();
+                    m.observe_and_update(&base_severity);
+                    match m.state() {
+                        SensitivityState::Calibrating => 0u8,
+                        SensitivityState::Robust => 1u8,
+                        SensitivityState::Sensitive => 2u8,
+                        SensitivityState::Fragile => 3u8,
+                    }
+                };
+                self.cached_malliavin_state
+                    .store(malliavin_code, Ordering::Relaxed);
+            }
 
-        // Feed Malliavin sensitivity meta-controller.
-        // Tracks sensitivity of aggregate safety decision to per-controller perturbations.
-        {
-            let malliavin_code = {
-                let mut m = self.malliavin.lock();
-                m.observe_and_update(&base_severity);
-                match m.state() {
-                    SensitivityState::Calibrating => 0u8,
-                    SensitivityState::Robust => 1u8,
-                    SensitivityState::Sensitive => 2u8,
-                    SensitivityState::Fragile => 3u8,
-                }
-            };
-            self.cached_malliavin_state
-                .store(malliavin_code, Ordering::Relaxed);
-        }
+            // Feed information geometry meta-controller.
+            // Tracks Fisher-Rao geodesic distance from baseline state distribution.
+            {
+                let geo_code = {
+                    let mut g = self.info_geometry.lock();
+                    g.observe_and_update(&base_severity);
+                    match g.state() {
+                        GeometryState::Calibrating => 0u8,
+                        GeometryState::Stationary => 1u8,
+                        GeometryState::Drifting => 2u8,
+                        GeometryState::StructuralBreak => 3u8,
+                    }
+                };
+                self.cached_info_geometry_state
+                    .store(geo_code, Ordering::Relaxed);
+            }
 
-        // Feed information geometry meta-controller.
-        // Tracks Fisher-Rao geodesic distance from baseline state distribution.
-        {
-            let geo_code = {
-                let mut g = self.info_geometry.lock();
-                g.observe_and_update(&base_severity);
-                match g.state() {
-                    GeometryState::Calibrating => 0u8,
-                    GeometryState::Stationary => 1u8,
-                    GeometryState::Drifting => 2u8,
-                    GeometryState::StructuralBreak => 3u8,
-                }
-            };
-            self.cached_info_geometry_state
-                .store(geo_code, Ordering::Relaxed);
-        }
+            // Feed matrix concentration meta-controller.
+            // Tracks Matrix Bernstein bound on ensemble covariance spectral deviation.
+            {
+                let conc_code = {
+                    let mut c = self.matrix_concentration.lock();
+                    c.observe_and_update(&base_severity);
+                    match c.state() {
+                        ConcentrationState::Calibrating => 0u8,
+                        ConcentrationState::WithinBound => 1u8,
+                        ConcentrationState::BoundaryApproach => 2u8,
+                        ConcentrationState::BoundViolation => 3u8,
+                    }
+                };
+                self.cached_matrix_concentration_state
+                    .store(conc_code, Ordering::Relaxed);
+            }
 
-        // Feed matrix concentration meta-controller.
-        // Tracks Matrix Bernstein bound on ensemble covariance spectral deviation.
-        {
-            let conc_code = {
-                let mut c = self.matrix_concentration.lock();
-                c.observe_and_update(&base_severity);
-                match c.state() {
-                    ConcentrationState::Calibrating => 0u8,
-                    ConcentrationState::WithinBound => 1u8,
-                    ConcentrationState::BoundaryApproach => 2u8,
-                    ConcentrationState::BoundViolation => 3u8,
-                }
-            };
-            self.cached_matrix_concentration_state
-                .store(conc_code, Ordering::Relaxed);
-        }
+            // Feed nerve complex meta-controller.
+            // Tracks correlation coherence via Čech nerve Betti numbers.
+            {
+                let nerve_code = {
+                    let mut nc = self.nerve_complex.lock();
+                    nc.observe_and_update(&base_severity);
+                    match nc.state() {
+                        NerveState::Calibrating => 0u8,
+                        NerveState::Cohesive => 1u8,
+                        NerveState::Weakening => 2u8,
+                        NerveState::Fragmented => 3u8,
+                    }
+                };
+                self.cached_nerve_state.store(nerve_code, Ordering::Relaxed);
+            }
 
-        // Feed nerve complex meta-controller.
-        // Tracks correlation coherence via Čech nerve Betti numbers.
-        {
-            let nerve_code = {
-                let mut nc = self.nerve_complex.lock();
-                nc.observe_and_update(&base_severity);
-                match nc.state() {
-                    NerveState::Calibrating => 0u8,
-                    NerveState::Cohesive => 1u8,
-                    NerveState::Weakening => 2u8,
-                    NerveState::Fragmented => 3u8,
-                }
-            };
-            self.cached_nerve_state.store(nerve_code, Ordering::Relaxed);
-        }
+            // Feed Wasserstein drift meta-controller.
+            // Tracks Earth Mover's distance on per-controller severity histograms.
+            {
+                let wass_code = {
+                    let mut w = self.wasserstein.lock();
+                    w.observe_and_update(&base_severity);
+                    match w.state() {
+                        DriftState::Calibrating => 0u8,
+                        DriftState::Stable => 1u8,
+                        DriftState::Transporting => 2u8,
+                        DriftState::Displaced => 3u8,
+                    }
+                };
+                self.cached_wasserstein_state
+                    .store(wass_code, Ordering::Relaxed);
+            }
 
-        // Feed Wasserstein drift meta-controller.
-        // Tracks Earth Mover's distance on per-controller severity histograms.
-        {
-            let wass_code = {
-                let mut w = self.wasserstein.lock();
-                w.observe_and_update(&base_severity);
-                match w.state() {
-                    DriftState::Calibrating => 0u8,
-                    DriftState::Stable => 1u8,
-                    DriftState::Transporting => 2u8,
-                    DriftState::Displaced => 3u8,
-                }
-            };
-            self.cached_wasserstein_state
-                .store(wass_code, Ordering::Relaxed);
-        }
+            // Feed kernel MMD meta-controller.
+            // Tracks Maximum Mean Discrepancy in RKHS for joint distributional shifts.
+            {
+                let mmd_code = {
+                    let mut km = self.kernel_mmd.lock();
+                    km.observe_and_update(&base_severity);
+                    match km.state() {
+                        MmdState::Calibrating => 0u8,
+                        MmdState::Conforming => 1u8,
+                        MmdState::Drifting => 2u8,
+                        MmdState::Anomalous => 3u8,
+                    }
+                };
+                self.cached_kernel_mmd_state
+                    .store(mmd_code, Ordering::Relaxed);
+            }
 
-        // Feed kernel MMD meta-controller.
-        // Tracks Maximum Mean Discrepancy in RKHS for joint distributional shifts.
-        {
-            let mmd_code = {
-                let mut km = self.kernel_mmd.lock();
-                km.observe_and_update(&base_severity);
-                match km.state() {
-                    MmdState::Calibrating => 0u8,
-                    MmdState::Conforming => 1u8,
-                    MmdState::Drifting => 2u8,
-                    MmdState::Anomalous => 3u8,
-                }
-            };
-            self.cached_kernel_mmd_state
-                .store(mmd_code, Ordering::Relaxed);
-        }
+            // Feed PAC-Bayes generalization bound monitor.
+            // Tracks ensemble trust via finite-sample PAC-Bayes bounds.
+            {
+                let pb_code = {
+                    let mut pb = self.pac_bayes.lock();
+                    pb.observe(&base_severity, adverse);
+                    match pb.state() {
+                        PacBayesState::Calibrating => 0u8,
+                        PacBayesState::Tight => 1u8,
+                        PacBayesState::Uncertain => 2u8,
+                        PacBayesState::Unreliable => 3u8,
+                    }
+                };
+                self.cached_pac_bayes_state
+                    .store(pb_code, Ordering::Relaxed);
+            }
 
-        // Feed PAC-Bayes generalization bound monitor.
-        // Tracks ensemble trust via finite-sample PAC-Bayes bounds.
-        {
-            let pb_code = {
-                let mut pb = self.pac_bayes.lock();
-                pb.observe(&base_severity, adverse);
-                match pb.state() {
-                    PacBayesState::Calibrating => 0u8,
-                    PacBayesState::Tight => 1u8,
-                    PacBayesState::Uncertain => 2u8,
-                    PacBayesState::Unreliable => 3u8,
-                }
-            };
-            self.cached_pac_bayes_state
-                .store(pb_code, Ordering::Relaxed);
-        }
+            // Feed Stein discrepancy goodness-of-fit monitor.
+            // Tracks KSD² deviation from calibrated reference model.
+            {
+                let stein_code = {
+                    let mut sd = self.stein.lock();
+                    sd.observe_and_update(&base_severity);
+                    match sd.state() {
+                        SteinState::Calibrating => 0u8,
+                        SteinState::Consistent => 1u8,
+                        SteinState::Deviant => 2u8,
+                        SteinState::Rejected => 3u8,
+                    }
+                };
+                self.cached_stein_state.store(stein_code, Ordering::Relaxed);
+            }
 
-        // Feed Stein discrepancy goodness-of-fit monitor.
-        // Tracks KSD² deviation from calibrated reference model.
-        {
-            let stein_code = {
-                let mut sd = self.stein.lock();
-                sd.observe_and_update(&base_severity);
-                match sd.state() {
-                    SteinState::Calibrating => 0u8,
-                    SteinState::Consistent => 1u8,
-                    SteinState::Deviant => 2u8,
-                    SteinState::Rejected => 3u8,
-                }
-            };
-            self.cached_stein_state.store(stein_code, Ordering::Relaxed);
-        }
+            // Feed Lyapunov stability exponent monitor.
+            // Tracks trajectory-level divergence for chaotic dynamics detection.
+            {
+                let lyap_code = {
+                    let mut lm = self.lyapunov.lock();
+                    lm.observe_and_update(&base_severity);
+                    match lm.state() {
+                        LyapunovState::Calibrating => 0u8,
+                        LyapunovState::Stable => 1u8,
+                        LyapunovState::Marginal => 2u8,
+                        LyapunovState::Chaotic => 3u8,
+                    }
+                };
+                self.cached_lyapunov_state
+                    .store(lyap_code, Ordering::Relaxed);
+            }
 
-        // Feed Lyapunov stability exponent monitor.
-        // Tracks trajectory-level divergence for chaotic dynamics detection.
-        {
-            let lyap_code = {
-                let mut lm = self.lyapunov.lock();
-                lm.observe_and_update(&base_severity);
-                match lm.state() {
-                    LyapunovState::Calibrating => 0u8,
-                    LyapunovState::Stable => 1u8,
-                    LyapunovState::Marginal => 2u8,
-                    LyapunovState::Chaotic => 3u8,
-                }
-            };
-            self.cached_lyapunov_state
-                .store(lyap_code, Ordering::Relaxed);
-        }
+            // Feed Rademacher complexity monitor.
+            // Tracks data-dependent ensemble capacity via random sign vectors.
+            {
+                let rad_code = {
+                    let mut rm = self.rademacher.lock();
+                    rm.observe_and_update(&base_severity);
+                    match rm.state() {
+                        RademacherState::Calibrating => 0u8,
+                        RademacherState::Controlled => 1u8,
+                        RademacherState::Elevated => 2u8,
+                        RademacherState::Overfit => 3u8,
+                    }
+                };
+                self.cached_rademacher_state
+                    .store(rad_code, Ordering::Relaxed);
+            }
 
-        // Feed Rademacher complexity monitor.
-        // Tracks data-dependent ensemble capacity via random sign vectors.
-        {
-            let rad_code = {
-                let mut rm = self.rademacher.lock();
-                rm.observe_and_update(&base_severity);
-                match rm.state() {
-                    RademacherState::Calibrating => 0u8,
-                    RademacherState::Controlled => 1u8,
-                    RademacherState::Elevated => 2u8,
-                    RademacherState::Overfit => 3u8,
-                }
-            };
-            self.cached_rademacher_state
-                .store(rad_code, Ordering::Relaxed);
-        }
+            // Feed transfer entropy causal flow monitor.
+            // Tracks directed causal information flow between controllers.
+            {
+                let te_code = {
+                    let mut te = self.transfer_entropy.lock();
+                    te.observe_and_update(&base_severity);
+                    match te.state() {
+                        TransferEntropyState::Calibrating => 0u8,
+                        TransferEntropyState::Independent => 1u8,
+                        TransferEntropyState::CausalCoupling => 2u8,
+                        TransferEntropyState::CascadeRisk => 3u8,
+                    }
+                };
+                self.cached_transfer_entropy_state
+                    .store(te_code, Ordering::Relaxed);
+            }
 
-        // Feed transfer entropy causal flow monitor.
-        // Tracks directed causal information flow between controllers.
-        {
-            let te_code = {
-                let mut te = self.transfer_entropy.lock();
-                te.observe_and_update(&base_severity);
-                match te.state() {
-                    TransferEntropyState::Calibrating => 0u8,
-                    TransferEntropyState::Independent => 1u8,
-                    TransferEntropyState::CausalCoupling => 2u8,
-                    TransferEntropyState::CascadeRisk => 3u8,
-                }
-            };
-            self.cached_transfer_entropy_state
-                .store(te_code, Ordering::Relaxed);
-        }
+            // Feed Hodge decomposition coherence monitor.
+            // Tracks cyclic inconsistencies in controller severity ordering.
+            {
+                let hodge_code = {
+                    let mut hm = self.hodge.lock();
+                    hm.observe_and_update(&base_severity);
+                    match hm.state() {
+                        HodgeState::Calibrating => 0u8,
+                        HodgeState::Coherent => 1u8,
+                        HodgeState::Inconsistent => 2u8,
+                        HodgeState::Incoherent => 3u8,
+                    }
+                };
+                self.cached_hodge_state.store(hodge_code, Ordering::Relaxed);
+            }
 
-        // Feed Hodge decomposition coherence monitor.
-        // Tracks cyclic inconsistencies in controller severity ordering.
-        {
-            let hodge_code = {
-                let mut hm = self.hodge.lock();
-                hm.observe_and_update(&base_severity);
-                match hm.state() {
-                    HodgeState::Calibrating => 0u8,
-                    HodgeState::Coherent => 1u8,
-                    HodgeState::Inconsistent => 2u8,
-                    HodgeState::Incoherent => 3u8,
-                }
-            };
-            self.cached_hodge_state.store(hodge_code, Ordering::Relaxed);
-        }
+            // Feed Doob decomposition martingale monitor.
+            // Tracks systematic (non-random) drift in the severity process.
+            {
+                let doob_code = {
+                    let mut dm = self.doob.lock();
+                    dm.observe_and_update(&base_severity);
+                    match dm.state() {
+                        DoobState::Calibrating => 0u8,
+                        DoobState::Stationary => 1u8,
+                        DoobState::Drifting => 2u8,
+                        DoobState::Runaway => 3u8,
+                    }
+                };
+                self.cached_doob_state.store(doob_code, Ordering::Relaxed);
+            }
 
-        // Feed Doob decomposition martingale monitor.
-        // Tracks systematic (non-random) drift in the severity process.
-        {
-            let doob_code = {
-                let mut dm = self.doob.lock();
-                dm.observe_and_update(&base_severity);
-                match dm.state() {
-                    DoobState::Calibrating => 0u8,
-                    DoobState::Stationary => 1u8,
-                    DoobState::Drifting => 2u8,
-                    DoobState::Runaway => 3u8,
-                }
-            };
-            self.cached_doob_state.store(doob_code, Ordering::Relaxed);
-        }
+            // Feed Fano mutual information bound monitor.
+            // Tracks information-theoretic error lower bound on severity prediction.
+            {
+                let fano_code = {
+                    let mut fm = self.fano.lock();
+                    fm.observe_and_update(&base_severity);
+                    match fm.state() {
+                        FanoState::Calibrating => 0u8,
+                        FanoState::Predictable => 1u8,
+                        FanoState::Uncertain => 2u8,
+                        FanoState::Opaque => 3u8,
+                    }
+                };
+                self.cached_fano_state.store(fano_code, Ordering::Relaxed);
+            }
 
-        // Feed Fano mutual information bound monitor.
-        // Tracks information-theoretic error lower bound on severity prediction.
-        {
-            let fano_code = {
-                let mut fm = self.fano.lock();
-                fm.observe_and_update(&base_severity);
-                match fm.state() {
-                    FanoState::Calibrating => 0u8,
-                    FanoState::Predictable => 1u8,
-                    FanoState::Uncertain => 2u8,
-                    FanoState::Opaque => 3u8,
-                }
-            };
-            self.cached_fano_state.store(fano_code, Ordering::Relaxed);
-        }
+            // Feed Dobrushin contraction coefficient monitor.
+            // Tracks Markov chain mixing/ergodicity of the severity process.
+            {
+                let dob_code = {
+                    let mut dc = self.dobrushin.lock();
+                    dc.observe_and_update(&base_severity);
+                    match dc.state() {
+                        DobrushinState::Calibrating => 0u8,
+                        DobrushinState::Ergodic => 1u8,
+                        DobrushinState::SlowMixing => 2u8,
+                        DobrushinState::NonMixing => 3u8,
+                    }
+                };
+                self.cached_dobrushin_state
+                    .store(dob_code, Ordering::Relaxed);
+            }
 
-        // Feed Dobrushin contraction coefficient monitor.
-        // Tracks Markov chain mixing/ergodicity of the severity process.
-        {
-            let dob_code = {
-                let mut dc = self.dobrushin.lock();
-                dc.observe_and_update(&base_severity);
-                match dc.state() {
-                    DobrushinState::Calibrating => 0u8,
-                    DobrushinState::Ergodic => 1u8,
-                    DobrushinState::SlowMixing => 2u8,
-                    DobrushinState::NonMixing => 3u8,
-                }
-            };
-            self.cached_dobrushin_state
-                .store(dob_code, Ordering::Relaxed);
-        }
+            // Feed Azuma-Hoeffding concentration monitor.
+            // Tracks whether severity noise exceeds bounded-difference bounds.
+            {
+                let azuma_code = {
+                    let mut az = self.azuma.lock();
+                    az.observe_and_update(&base_severity);
+                    match az.state() {
+                        AzumaState::Calibrating => 0u8,
+                        AzumaState::Concentrated => 1u8,
+                        AzumaState::Diffuse => 2u8,
+                        AzumaState::Explosive => 3u8,
+                    }
+                };
+                self.cached_azuma_state.store(azuma_code, Ordering::Relaxed);
+            }
 
-        // Feed Azuma-Hoeffding concentration monitor.
-        // Tracks whether severity noise exceeds bounded-difference bounds.
-        {
-            let azuma_code = {
-                let mut az = self.azuma.lock();
-                az.observe_and_update(&base_severity);
-                match az.state() {
-                    AzumaState::Calibrating => 0u8,
-                    AzumaState::Concentrated => 1u8,
-                    AzumaState::Diffuse => 2u8,
-                    AzumaState::Explosive => 3u8,
-                }
-            };
-            self.cached_azuma_state.store(azuma_code, Ordering::Relaxed);
-        }
+            // Feed renewal theory monitor.
+            // Tracks inter-arrival times of severity recovery events.
+            {
+                let renewal_code = {
+                    let mut rn = self.renewal.lock();
+                    rn.observe_and_update(&base_severity);
+                    match rn.state() {
+                        RenewalState::Calibrating => 0u8,
+                        RenewalState::Renewing => 1u8,
+                        RenewalState::Aging => 2u8,
+                        RenewalState::Stale => 3u8,
+                    }
+                };
+                self.cached_renewal_state
+                    .store(renewal_code, Ordering::Relaxed);
+            }
 
-        // Feed renewal theory monitor.
-        // Tracks inter-arrival times of severity recovery events.
-        {
-            let renewal_code = {
-                let mut rn = self.renewal.lock();
-                rn.observe_and_update(&base_severity);
-                match rn.state() {
-                    RenewalState::Calibrating => 0u8,
-                    RenewalState::Renewing => 1u8,
-                    RenewalState::Aging => 2u8,
-                    RenewalState::Stale => 3u8,
-                }
-            };
-            self.cached_renewal_state
-                .store(renewal_code, Ordering::Relaxed);
-        }
+            // Feed Lempel-Ziv complexity monitor.
+            // Tracks algorithmic complexity of severity sequence.
+            {
+                let lz_code = {
+                    let mut lz = self.lempel_ziv.lock();
+                    lz.observe_and_update(&base_severity);
+                    match lz.state() {
+                        LempelZivState::Calibrating => 0u8,
+                        LempelZivState::Structured => 1u8,
+                        LempelZivState::Repetitive => 2u8,
+                        LempelZivState::Entropic => 3u8,
+                    }
+                };
+                self.cached_lz_state.store(lz_code, Ordering::Relaxed);
+            }
 
-        // Feed Lempel-Ziv complexity monitor.
-        // Tracks algorithmic complexity of severity sequence.
-        {
-            let lz_code = {
-                let mut lz = self.lempel_ziv.lock();
-                lz.observe_and_update(&base_severity);
-                match lz.state() {
-                    LempelZivState::Calibrating => 0u8,
-                    LempelZivState::Structured => 1u8,
-                    LempelZivState::Repetitive => 2u8,
-                    LempelZivState::Entropic => 3u8,
-                }
-            };
-            self.cached_lz_state.store(lz_code, Ordering::Relaxed);
-        }
+            // Feed spectral gap mixing time monitor.
+            // Tracks Markov chain spectral gap and mixing time bounds.
+            {
+                let sg_code = {
+                    let mut sg = self.spectral_gap.lock();
+                    sg.observe_and_update(&base_severity);
+                    match sg.state() {
+                        SpectralGapState::Calibrating => 0u8,
+                        SpectralGapState::RapidMixing => 1u8,
+                        SpectralGapState::SlowMixing => 2u8,
+                        SpectralGapState::Metastable => 3u8,
+                    }
+                };
+                self.cached_spectral_gap_state
+                    .store(sg_code, Ordering::Relaxed);
+            }
 
-        // Feed spectral gap mixing time monitor.
-        // Tracks Markov chain spectral gap and mixing time bounds.
-        {
-            let sg_code = {
-                let mut sg = self.spectral_gap.lock();
-                sg.observe_and_update(&base_severity);
-                match sg.state() {
-                    SpectralGapState::Calibrating => 0u8,
-                    SpectralGapState::RapidMixing => 1u8,
-                    SpectralGapState::SlowMixing => 2u8,
-                    SpectralGapState::Metastable => 3u8,
-                }
-            };
-            self.cached_spectral_gap_state
-                .store(sg_code, Ordering::Relaxed);
-        }
+            // Feed submodular coverage monitor.
+            // Tracks validation stage coverage ratio under budget constraints.
+            {
+                let sub_code = {
+                    let mut sc = self.submodular.lock();
+                    sc.observe_and_update(&base_severity);
+                    match sc.state() {
+                        SubmodularState::Calibrating => 0u8,
+                        SubmodularState::Sufficient => 1u8,
+                        SubmodularState::Marginal => 2u8,
+                        SubmodularState::Insufficient => 3u8,
+                    }
+                };
+                self.cached_submodular_state
+                    .store(sub_code, Ordering::Relaxed);
+            }
 
-        // Feed submodular coverage monitor.
-        // Tracks validation stage coverage ratio under budget constraints.
-        {
-            let sub_code = {
-                let mut sc = self.submodular.lock();
-                sc.observe_and_update(&base_severity);
-                match sc.state() {
-                    SubmodularState::Calibrating => 0u8,
-                    SubmodularState::Sufficient => 1u8,
-                    SubmodularState::Marginal => 2u8,
-                    SubmodularState::Insufficient => 3u8,
-                }
-            };
-            self.cached_submodular_state
-                .store(sub_code, Ordering::Relaxed);
-        }
+            // Feed bifurcation proximity detector.
+            // Tracks critical slowing down via lag-1 autocorrelation.
+            {
+                let bif_code = {
+                    let mut bd = self.bifurcation.lock();
+                    bd.observe_and_update(&base_severity);
+                    match bd.state() {
+                        BifurcationState::Calibrating => 0u8,
+                        BifurcationState::Stable => 1u8,
+                        BifurcationState::Approaching => 2u8,
+                        BifurcationState::Critical => 3u8,
+                    }
+                };
+                self.cached_bifurcation_state
+                    .store(bif_code, Ordering::Relaxed);
+            }
 
-        // Feed bifurcation proximity detector.
-        // Tracks critical slowing down via lag-1 autocorrelation.
-        {
-            let bif_code = {
-                let mut bd = self.bifurcation.lock();
-                bd.observe_and_update(&base_severity);
-                match bd.state() {
-                    BifurcationState::Calibrating => 0u8,
-                    BifurcationState::Stable => 1u8,
-                    BifurcationState::Approaching => 2u8,
-                    BifurcationState::Critical => 3u8,
-                }
-            };
-            self.cached_bifurcation_state
-                .store(bif_code, Ordering::Relaxed);
-        }
+            // Feed entropy rate complexity monitor.
+            // Tracks Shannon entropy rate of the severity process.
+            {
+                let er_code = {
+                    let mut er = self.entropy_rate.lock();
+                    er.observe_and_update(&base_severity);
+                    match er.state() {
+                        EntropyRateState::Calibrating => 0u8,
+                        EntropyRateState::LowComplexity => 1u8,
+                        EntropyRateState::ModerateComplexity => 2u8,
+                        EntropyRateState::HighComplexity => 3u8,
+                    }
+                };
+                self.cached_entropy_rate_state
+                    .store(er_code, Ordering::Relaxed);
+            }
 
-        // Feed entropy rate complexity monitor.
-        // Tracks Shannon entropy rate of the severity process.
-        {
-            let er_code = {
-                let mut er = self.entropy_rate.lock();
-                er.observe_and_update(&base_severity);
-                match er.state() {
-                    EntropyRateState::Calibrating => 0u8,
-                    EntropyRateState::LowComplexity => 1u8,
-                    EntropyRateState::ModerateComplexity => 2u8,
-                    EntropyRateState::HighComplexity => 3u8,
-                }
-            };
-            self.cached_entropy_rate_state
-                .store(er_code, Ordering::Relaxed);
-        }
+            // Feed Ito quadratic variation monitor.
+            // Tracks realized volatility of the severity martingale component.
+            {
+                let ito_code = {
+                    let mut ito = self.ito_qv.lock();
+                    ito.observe_and_update(&base_severity);
+                    match ito.state() {
+                        ItoQvState::Calibrating => 0u8,
+                        ItoQvState::Stable => 1u8,
+                        ItoQvState::Frozen => 2u8,
+                        ItoQvState::Volatile => 3u8,
+                    }
+                };
+                self.cached_ito_qv_state.store(ito_code, Ordering::Relaxed);
+            }
 
-        // Feed Ito quadratic variation monitor.
-        // Tracks realized volatility of the severity martingale component.
-        {
-            let ito_code = {
-                let mut ito = self.ito_qv.lock();
-                ito.observe_and_update(&base_severity);
-                match ito.state() {
-                    ItoQvState::Calibrating => 0u8,
-                    ItoQvState::Stable => 1u8,
-                    ItoQvState::Frozen => 2u8,
-                    ItoQvState::Volatile => 3u8,
-                }
-            };
-            self.cached_ito_qv_state.store(ito_code, Ordering::Relaxed);
-        }
+            // Feed Borel-Cantelli recurrence monitor.
+            // Classifies whether severity exceedances are transient or recurrent.
+            {
+                let bc_code = {
+                    let mut bc = self.borel_cantelli.lock();
+                    bc.observe_and_update(&base_severity);
+                    match bc.state() {
+                        BorelCantelliState::Calibrating => 0u8,
+                        BorelCantelliState::Transient => 1u8,
+                        BorelCantelliState::Recurrent => 2u8,
+                        BorelCantelliState::Absorbing => 3u8,
+                    }
+                };
+                self.cached_borel_cantelli_state
+                    .store(bc_code, Ordering::Relaxed);
+            }
 
-        // Feed Borel-Cantelli recurrence monitor.
-        // Classifies whether severity exceedances are transient or recurrent.
-        {
-            let bc_code = {
-                let mut bc = self.borel_cantelli.lock();
-                bc.observe_and_update(&base_severity);
-                match bc.state() {
-                    BorelCantelliState::Calibrating => 0u8,
-                    BorelCantelliState::Transient => 1u8,
-                    BorelCantelliState::Recurrent => 2u8,
-                    BorelCantelliState::Absorbing => 3u8,
-                }
-            };
-            self.cached_borel_cantelli_state
-                .store(bc_code, Ordering::Relaxed);
-        }
+            // Feed Ornstein-Uhlenbeck mean reversion monitor.
+            // Estimates mean-reversion speed θ of the severity process.
+            {
+                let ou_code = {
+                    let mut ou = self.ornstein_uhlenbeck.lock();
+                    ou.observe_and_update(&base_severity);
+                    match ou.state() {
+                        OuState::Calibrating => 0u8,
+                        OuState::Stable => 1u8,
+                        OuState::Diffusing => 2u8,
+                        OuState::Explosive => 3u8,
+                    }
+                };
+                self.cached_ou_state.store(ou_code, Ordering::Relaxed);
+            }
 
-        // Feed Ornstein-Uhlenbeck mean reversion monitor.
-        // Estimates mean-reversion speed θ of the severity process.
-        {
-            let ou_code = {
-                let mut ou = self.ornstein_uhlenbeck.lock();
-                ou.observe_and_update(&base_severity);
-                match ou.state() {
-                    OuState::Calibrating => 0u8,
-                    OuState::Stable => 1u8,
-                    OuState::Diffusing => 2u8,
-                    OuState::Explosive => 3u8,
-                }
-            };
-            self.cached_ou_state.store(ou_code, Ordering::Relaxed);
-        }
+            // Feed Hurst exponent R/S analysis monitor.
+            // Detects long-range dependence in severity sequences.
+            {
+                let hurst_code = {
+                    let mut h = self.hurst.lock();
+                    h.observe_and_update(&base_severity);
+                    match h.state() {
+                        HurstState::Calibrating => 0u8,
+                        HurstState::Independent => 1u8,
+                        HurstState::Persistent => 2u8,
+                        HurstState::AntiPersistent => 3u8,
+                    }
+                };
+                self.cached_hurst_state.store(hurst_code, Ordering::Relaxed);
+            }
 
-        // Feed Hurst exponent R/S analysis monitor.
-        // Detects long-range dependence in severity sequences.
-        {
-            let hurst_code = {
-                let mut h = self.hurst.lock();
-                h.observe_and_update(&base_severity);
-                match h.state() {
-                    HurstState::Calibrating => 0u8,
-                    HurstState::Independent => 1u8,
-                    HurstState::Persistent => 2u8,
-                    HurstState::AntiPersistent => 3u8,
-                }
-            };
-            self.cached_hurst_state.store(hurst_code, Ordering::Relaxed);
-        }
+            // Feed index of dispersion alarm clustering monitor.
+            // Detects whether alarms are independent, clustered, or regular.
+            {
+                let disp_code = {
+                    let mut d = self.dispersion.lock();
+                    d.observe_and_update(&base_severity);
+                    match d.state() {
+                        DispersionState::Calibrating => 0u8,
+                        DispersionState::Poisson => 1u8,
+                        DispersionState::Clustered => 2u8,
+                        DispersionState::Underdispersed => 3u8,
+                    }
+                };
+                self.cached_dispersion_state
+                    .store(disp_code, Ordering::Relaxed);
+            }
 
-        // Feed index of dispersion alarm clustering monitor.
-        // Detects whether alarms are independent, clustered, or regular.
-        {
-            let disp_code = {
-                let mut d = self.dispersion.lock();
-                d.observe_and_update(&base_severity);
-                match d.state() {
-                    DispersionState::Calibrating => 0u8,
-                    DispersionState::Poisson => 1u8,
-                    DispersionState::Clustered => 2u8,
-                    DispersionState::Underdispersed => 3u8,
-                }
-            };
-            self.cached_dispersion_state
-                .store(disp_code, Ordering::Relaxed);
-        }
+            // Feed Birkhoff ergodic convergence monitor.
+            // Tracks whether time-average of severity converges to ensemble average.
+            {
+                let birk_code = {
+                    let mut b = self.birkhoff.lock();
+                    b.observe_and_update(&base_severity);
+                    match b.state() {
+                        ErgodicState::Calibrating => 0u8,
+                        ErgodicState::Ergodic => 1u8,
+                        ErgodicState::SlowConvergence => 2u8,
+                        ErgodicState::NonErgodic => 3u8,
+                    }
+                };
+                self.cached_birkhoff_state
+                    .store(birk_code, Ordering::Relaxed);
+            }
 
-        // Feed Birkhoff ergodic convergence monitor.
-        // Tracks whether time-average of severity converges to ensemble average.
-        {
-            let birk_code = {
-                let mut b = self.birkhoff.lock();
-                b.observe_and_update(&base_severity);
-                match b.state() {
-                    ErgodicState::Calibrating => 0u8,
-                    ErgodicState::Ergodic => 1u8,
-                    ErgodicState::SlowConvergence => 2u8,
-                    ErgodicState::NonErgodic => 3u8,
-                }
-            };
-            self.cached_birkhoff_state
-                .store(birk_code, Ordering::Relaxed);
-        }
+            // Alpha-Investing FDR controller: sequential false-discovery control
+            // over the monitor alarm ensemble.
+            {
+                let ai_code = {
+                    let mut ai = self.alpha_investing.lock();
+                    ai.observe_and_update(&base_severity);
+                    match ai.state() {
+                        AlphaInvestingState::Calibrating => 0u8,
+                        AlphaInvestingState::Normal => 1u8,
+                        AlphaInvestingState::Generous => 2u8,
+                        AlphaInvestingState::Depleted => 3u8,
+                    }
+                };
+                self.cached_alpha_investing_state
+                    .store(ai_code, Ordering::Relaxed);
+            }
 
-        // Feed robust fusion controller from extended severity vector.
-        // Includes the 25 base controller signals plus META_SEVERITY_LEN meta-controller states.
-        {
-            let mut severity = [0u8; fusion::SIGNALS];
-            severity[..BASE_SEVERITY_LEN].copy_from_slice(&base_severity);
-            severity[25] = self.cached_atiyah_bott_state.load(Ordering::Relaxed); // 0..3
-            severity[26] = self.cached_pomdp_state.load(Ordering::Relaxed); // 0..3
-            severity[27] = self.cached_sos_state.load(Ordering::Relaxed); // 0..3
-            severity[28] = self.cached_admm_state.load(Ordering::Relaxed); // 0..3
-            severity[29] = self.cached_obstruction_state.load(Ordering::Relaxed); // 0..3
-            severity[30] = self.cached_operator_norm_state.load(Ordering::Relaxed); // 0..3
-            severity[31] = self.cached_malliavin_state.load(Ordering::Relaxed); // 0..3
-            severity[32] = self.cached_info_geometry_state.load(Ordering::Relaxed); // 0..3
-            severity[33] = self
-                .cached_matrix_concentration_state
-                .load(Ordering::Relaxed); // 0..3
-            severity[34] = self.cached_nerve_state.load(Ordering::Relaxed); // 0..3
-            severity[35] = self.cached_wasserstein_state.load(Ordering::Relaxed); // 0..3
-            severity[36] = self.cached_kernel_mmd_state.load(Ordering::Relaxed); // 0..3
-            severity[37] = self.cached_pac_bayes_state.load(Ordering::Relaxed); // 0..3
-            severity[38] = self.cached_stein_state.load(Ordering::Relaxed); // 0..3
-            severity[39] = self.cached_lyapunov_state.load(Ordering::Relaxed); // 0..3
-            severity[40] = self.cached_rademacher_state.load(Ordering::Relaxed); // 0..3
-            severity[41] = self.cached_transfer_entropy_state.load(Ordering::Relaxed); // 0..3
-            severity[42] = self.cached_hodge_state.load(Ordering::Relaxed); // 0..3
-            severity[43] = self.cached_doob_state.load(Ordering::Relaxed); // 0..3
-            severity[44] = self.cached_fano_state.load(Ordering::Relaxed); // 0..3
-            severity[45] = self.cached_dobrushin_state.load(Ordering::Relaxed); // 0..3
-            severity[46] = self.cached_azuma_state.load(Ordering::Relaxed); // 0..3
-            severity[47] = self.cached_renewal_state.load(Ordering::Relaxed); // 0..3
-            severity[48] = self.cached_lz_state.load(Ordering::Relaxed); // 0..3
-            severity[49] = self.cached_spectral_gap_state.load(Ordering::Relaxed); // 0..3
-            severity[50] = self.cached_submodular_state.load(Ordering::Relaxed); // 0..3
-            severity[51] = self.cached_bifurcation_state.load(Ordering::Relaxed); // 0..3
-            severity[52] = self.cached_entropy_rate_state.load(Ordering::Relaxed); // 0..3
-            severity[53] = self.cached_ito_qv_state.load(Ordering::Relaxed); // 0..3
-            severity[54] = self.cached_borel_cantelli_state.load(Ordering::Relaxed); // 0..3
-            severity[55] = self.cached_ou_state.load(Ordering::Relaxed); // 0..3
-            severity[56] = self.cached_hurst_state.load(Ordering::Relaxed); // 0..3
-            severity[57] = self.cached_dispersion_state.load(Ordering::Relaxed); // 0..3
-            severity[58] = self.cached_birkhoff_state.load(Ordering::Relaxed); // 0..3
-            let summary = {
-                let mut fusion = self.fusion.lock();
-                fusion.observe(severity, adverse, mode)
-            };
-            self.cached_fusion_bonus_ppm
-                .store(u64::from(summary.bonus_ppm), Ordering::Relaxed);
-            self.cached_fusion_entropy_milli
-                .store(u64::from(summary.entropy_milli), Ordering::Relaxed);
-            self.cached_fusion_drift_ppm
-                .store(u64::from(summary.drift_ppm), Ordering::Relaxed);
-            self.cached_fusion_dominant_signal
-                .store(summary.dominant_signal, Ordering::Relaxed);
+            // Feed robust fusion controller from extended severity vector.
+            // Includes the 25 base controller signals plus META_SEVERITY_LEN meta-controller states.
+            {
+                let mut severity = [0u8; fusion::SIGNALS];
+                severity[..BASE_SEVERITY_LEN].copy_from_slice(&base_severity);
+                severity[25] = self.cached_atiyah_bott_state.load(Ordering::Relaxed); // 0..3
+                severity[26] = self.cached_pomdp_state.load(Ordering::Relaxed); // 0..3
+                severity[27] = self.cached_sos_state.load(Ordering::Relaxed); // 0..3
+                severity[28] = self.cached_admm_state.load(Ordering::Relaxed); // 0..3
+                severity[29] = self.cached_obstruction_state.load(Ordering::Relaxed); // 0..3
+                severity[30] = self.cached_operator_norm_state.load(Ordering::Relaxed); // 0..3
+                severity[31] = self.cached_malliavin_state.load(Ordering::Relaxed); // 0..3
+                severity[32] = self.cached_info_geometry_state.load(Ordering::Relaxed); // 0..3
+                severity[33] = self
+                    .cached_matrix_concentration_state
+                    .load(Ordering::Relaxed); // 0..3
+                severity[34] = self.cached_nerve_state.load(Ordering::Relaxed); // 0..3
+                severity[35] = self.cached_wasserstein_state.load(Ordering::Relaxed); // 0..3
+                severity[36] = self.cached_kernel_mmd_state.load(Ordering::Relaxed); // 0..3
+                severity[37] = self.cached_pac_bayes_state.load(Ordering::Relaxed); // 0..3
+                severity[38] = self.cached_stein_state.load(Ordering::Relaxed); // 0..3
+                severity[39] = self.cached_lyapunov_state.load(Ordering::Relaxed); // 0..3
+                severity[40] = self.cached_rademacher_state.load(Ordering::Relaxed); // 0..3
+                severity[41] = self.cached_transfer_entropy_state.load(Ordering::Relaxed); // 0..3
+                severity[42] = self.cached_hodge_state.load(Ordering::Relaxed); // 0..3
+                severity[43] = self.cached_doob_state.load(Ordering::Relaxed); // 0..3
+                severity[44] = self.cached_fano_state.load(Ordering::Relaxed); // 0..3
+                severity[45] = self.cached_dobrushin_state.load(Ordering::Relaxed); // 0..3
+                severity[46] = self.cached_azuma_state.load(Ordering::Relaxed); // 0..3
+                severity[47] = self.cached_renewal_state.load(Ordering::Relaxed); // 0..3
+                severity[48] = self.cached_lz_state.load(Ordering::Relaxed); // 0..3
+                severity[49] = self.cached_spectral_gap_state.load(Ordering::Relaxed); // 0..3
+                severity[50] = self.cached_submodular_state.load(Ordering::Relaxed); // 0..3
+                severity[51] = self.cached_bifurcation_state.load(Ordering::Relaxed); // 0..3
+                severity[52] = self.cached_entropy_rate_state.load(Ordering::Relaxed); // 0..3
+                severity[53] = self.cached_ito_qv_state.load(Ordering::Relaxed); // 0..3
+                severity[54] = self.cached_borel_cantelli_state.load(Ordering::Relaxed); // 0..3
+                severity[55] = self.cached_ou_state.load(Ordering::Relaxed); // 0..3
+                severity[56] = self.cached_hurst_state.load(Ordering::Relaxed); // 0..3
+                severity[57] = self.cached_dispersion_state.load(Ordering::Relaxed); // 0..3
+                severity[58] = self.cached_birkhoff_state.load(Ordering::Relaxed); // 0..3
+                severity[59] = self.cached_alpha_investing_state.load(Ordering::Relaxed); // 0..3
+                let summary = {
+                    let mut fusion = self.fusion.lock();
+                    fusion.observe(severity, adverse, mode)
+                };
+                self.cached_fusion_bonus_ppm
+                    .store(u64::from(summary.bonus_ppm), Ordering::Relaxed);
+                self.cached_fusion_entropy_milli
+                    .store(u64::from(summary.entropy_milli), Ordering::Relaxed);
+                self.cached_fusion_drift_ppm
+                    .store(u64::from(summary.drift_ppm), Ordering::Relaxed);
+                self.cached_fusion_dominant_signal
+                    .store(summary.dominant_signal, Ordering::Relaxed);
+            }
         }
 
         // Record executed probes into the design kernel for online information updates.
@@ -3303,6 +3346,7 @@ impl RuntimeMathKernel {
         let hurst_summary = self.hurst.lock().summary();
         let dispersion_summary = self.dispersion.lock().summary();
         let birkhoff_summary = self.birkhoff.lock().summary();
+        let alpha_investing_summary = self.alpha_investing.lock().summary();
         let coupling_summary = self.coupling.lock().summary();
         let loss_summary = self.loss_minimizer.lock().summary();
         let microlocal_summary = self.microlocal.lock().summary();
@@ -3461,6 +3505,9 @@ impl RuntimeMathKernel {
             bifurcation_mean_sensitivity: bifurcation_summary.mean_sensitivity,
             entropy_rate_bits: entropy_rate_summary.entropy_rate_bits,
             entropy_rate_ratio: entropy_rate_summary.entropy_rate_ratio,
+            alpha_investing_wealth_milli: alpha_investing_summary.wealth_milli,
+            alpha_investing_rejections: alpha_investing_summary.rejections,
+            alpha_investing_empirical_fdr: alpha_investing_summary.empirical_fdr,
         }
     }
 
