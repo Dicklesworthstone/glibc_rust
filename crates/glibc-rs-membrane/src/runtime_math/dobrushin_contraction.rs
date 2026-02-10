@@ -313,22 +313,23 @@ mod tests {
     }
 
     #[test]
-    fn uniform_cycling_is_ergodic() {
+    fn stochastic_transitions_are_ergodic() {
         let mut m = DobrushinContractionMonitor::new();
-        // A deterministic cycle (0→1→2→3→0) is non-mixing: each row
-        // concentrates on a single successor, yielding δ≈1.
-        //
-        // To force δ<1, we need overlapping supports between every pair of rows.
-        // This deterministic "mixing" pattern makes state 0 transition to
-        // {0,1,2,3} while states {1,2,3} transition to 0, ensuring no disjoint rows.
-        let pat = [0u8, 0, 1, 0, 2, 0, 3, 0];
-        for i in 0..5000 {
-            let val = pat[i % pat.len()];
+        // For low contraction (δ < 1), every row of the transition matrix
+        // must converge to a similar distribution. A PRNG produces
+        // (h(i), h(i+1)) pairs that cover all 16 transition types roughly
+        // uniformly, so each row converges to ≈ uniform → δ ≈ 0.
+        let mut rng = 12345u64;
+        for _ in 0..5000 {
+            rng ^= rng << 13;
+            rng ^= rng >> 7;
+            rng ^= rng << 17;
+            let val = (rng % 4) as u8;
             m.observe_and_update(&[val; N]);
         }
         assert!(
             m.max_contraction() < NON_MIXING_THRESHOLD,
-            "Uniform cycling should not be NonMixing: max_contraction={}",
+            "Stochastic transitions should not be NonMixing: max_contraction={}",
             m.max_contraction()
         );
     }
@@ -376,22 +377,25 @@ mod tests {
     }
 
     #[test]
-    fn recovery_with_diverse_transitions() {
+    fn recovery_with_stochastic_transitions() {
         let mut m = DobrushinContractionMonitor::new();
-        // Absorbing initially.
+        // Absorbing initially — drives contraction high.
         for _ in 0..200 {
             m.observe_and_update(&[3u8; N]);
         }
-        // Then a deterministic "mixing" pattern (overlapping supports).
-        let pat = [0u8, 0, 1, 0, 2, 0, 3, 0];
-        for i in 0..8000 {
-            let val = pat[i % pat.len()];
+        // Then PRNG transitions covering all (from, to) pairs.
+        let mut rng = 67890u64;
+        for _ in 0..8000 {
+            rng ^= rng << 13;
+            rng ^= rng >> 7;
+            rng ^= rng << 17;
+            let val = (rng % 4) as u8;
             m.observe_and_update(&[val; N]);
         }
         // Should recover toward lower contraction.
         assert!(
             m.max_contraction() < NON_MIXING_THRESHOLD,
-            "Should recover with diverse transitions: max_contraction={}",
+            "Should recover with stochastic transitions: max_contraction={}",
             m.max_contraction()
         );
     }

@@ -181,13 +181,7 @@ impl DoobDecompositionMonitor {
         };
 
         if self.count > 1 {
-            // Doob predictable component is the cumulative drift `A_n`.
-            //
-            // For oscillatory-but-stationary processes (e.g., 0→3→0→3),
-            // the *increments* are large but cancel, so `A_n` stays bounded
-            // and |A_n|/n → 0. We therefore track a normalized cumulative
-            // magnitude, not the mean |increment| per step.
-            let mut abs_drift_sum = 0.0_f64;
+            let mut step_drift_sum = 0.0_f64;
 
             for (i, (&prev_s, &cur_s)) in self.prev_severity.iter().zip(severity.iter()).enumerate()
             {
@@ -204,13 +198,12 @@ impl DoobDecompositionMonitor {
                 let expected = self.conditional_expectation(i, from);
                 let increment = expected - from as f64;
                 self.drift[i] += increment;
-                abs_drift_sum += self.drift[i].abs();
+                step_drift_sum += increment.abs();
             }
 
-            // Normalized cumulative drift magnitude: mean(|A_n|)/n.
-            let n = self.count as f64;
-            let drift_norm = abs_drift_sum / (N as f64 * n.max(1.0));
-            self.drift_rate += alpha * (drift_norm - self.drift_rate);
+            // Smoothed drift rate: average |ΔA| per controller per step.
+            let step_rate = step_drift_sum / N as f64;
+            self.drift_rate += alpha * (step_rate - self.drift_rate);
         }
 
         self.prev_severity = *severity;
