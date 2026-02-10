@@ -11,7 +11,14 @@ unsafe_code = "forbid"
 [features]
 default = ["asupersync-tooling"]
 asupersync-tooling = ["dep:asupersync-conformance"]
-frankentui-ui = ["dep:ftui-harness"]
+frankentui-ui = [
+  "dep:ftui-harness",
+  "dep:ftui-core",
+  "dep:ftui-layout",
+  "dep:ftui-render",
+  "dep:ftui-style",
+  "dep:ftui-widgets",
+]
 
 [dependencies]
 clap = { workspace = true }
@@ -20,6 +27,12 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 asupersync-conformance = { workspace = true, optional = true }
 ftui-harness = { workspace = true, optional = true }
+ftui-core = { path = "/dp/frankentui/crates/ftui-core", optional = true }
+ftui-layout = { path = "/dp/frankentui/crates/ftui-layout", optional = true }
+ftui-render = { path = "/dp/frankentui/crates/ftui-render", optional = true }
+ftui-style = { path = "/dp/frankentui/crates/ftui-style", optional = true }
+ftui-widgets = { path = "/dp/frankentui/crates/ftui-widgets", optional = true }
+glibc-rs-membrane = { workspace = true }
 glibc_rust_conformance = { path = "../glibc_rust_conformance" }
 
 [[bin]]

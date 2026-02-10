@@ -9,13 +9,17 @@
 
 #![forbid(unsafe_code)]
 
+#[cfg(feature = "asupersync-tooling")]
+pub mod asupersync_orchestrator;
 pub mod capture;
 pub mod diff;
 pub mod fixtures;
 pub mod healing_oracle;
+pub mod kernel_snapshot;
 pub mod membrane_tests;
 pub mod report;
 pub mod runner;
+pub mod snapshot_diff;
 pub mod traceability;
 pub mod verify;
 

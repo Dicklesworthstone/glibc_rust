@@ -30,9 +30,14 @@ impl TestRunner {
             .iter()
             .filter(|case| mode_matches(&self.mode, &case.mode))
             .map(|case| {
-                let (actual, diff) = execute_case(case);
+                let (actual, diff) = execute_case(case, &self.mode);
+                let case_name = if case.mode.eq_ignore_ascii_case("both") {
+                    format!("{} [{}]", case.name, self.mode)
+                } else {
+                    case.name.clone()
+                };
                 VerificationResult {
-                    case_name: case.name.clone(),
+                    case_name,
                     spec_section: case.spec_section.clone(),
                     passed: actual == case.expected_output,
                     expected: case.expected_output.clone(),
@@ -50,12 +55,13 @@ fn mode_matches(active_mode: &str, case_mode: &str) -> bool {
     case == active || case == "both"
 }
 
-fn execute_case(case: &FixtureCase) -> (String, Option<String>) {
-    let execution = execute_fixture_case(&case.function, &case.inputs, &case.mode);
+fn execute_case(case: &FixtureCase, active_mode: &str) -> (String, Option<String>) {
+    // Fixture cases with mode=both should execute under the runner's active mode.
+    let execution = execute_fixture_case(&case.function, &case.inputs, active_mode);
     match execution {
         Ok(run) => {
             let mut notes = Vec::new();
-            if case.mode.eq_ignore_ascii_case("strict") && !run.host_parity {
+            if active_mode.eq_ignore_ascii_case("strict") && !run.host_parity {
                 notes.push(format!(
                     "strict host parity mismatch: host={}, impl={}",
                     run.host_output, run.impl_output
@@ -125,6 +131,31 @@ mod tests {
         let hardened = TestRunner::new("smoke", "hardened").run(&fixture);
         assert_eq!(hardened.len(), 1);
         assert!(hardened[0].passed);
+    }
+
+    #[test]
+    fn both_mode_fixture_executes_under_active_mode() {
+        let fixture = FixtureSet::from_json(
+            r#"{
+                "version":"v1",
+                "family":"string/strlen",
+                "captured_at":"2026-02-09T00:00:00Z",
+                "cases":[
+                    {"name":"len_both","function":"strlen","spec_section":"POSIX strlen","inputs":{"s":[65,0]},"expected_output":"1","expected_errno":0,"mode":"both"}
+                ]
+            }"#,
+        )
+        .expect("valid fixture json");
+
+        let strict = TestRunner::new("both", "strict").run(&fixture);
+        assert_eq!(strict.len(), 1);
+        assert!(strict[0].passed);
+        assert_eq!(strict[0].case_name, "len_both [strict]");
+
+        let hardened = TestRunner::new("both", "hardened").run(&fixture);
+        assert_eq!(hardened.len(), 1);
+        assert!(hardened[0].passed);
+        assert_eq!(hardened[0].case_name, "len_both [hardened]");
     }
 
     #[test]
