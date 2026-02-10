@@ -84,6 +84,12 @@ const ALPHA: f64 = 0.03;
 /// Warmup observations.
 const WARMUP: u32 = 40;
 
+/// Cadence for the expensive stationary-distribution entropy-rate computation.
+///
+/// Rationale: `controller_entropy_rate()` runs a power method + log2 and is too
+/// costly to execute on every observation in strict mode hot paths.
+const SAMPLE_INTERVAL: u32 = 16;
+
 /// Entropy rate ratio threshold for `ModerateComplexity`.
 const MODERATE_THRESHOLD: f64 = 0.40;
 
@@ -227,9 +233,7 @@ impl EntropyRateMonitor {
         };
 
         if self.count > 1 {
-            // Update transition matrices and compute per-controller entropy rate.
-            let mut h_sum = 0.0_f64;
-
+            // Always update transition matrices (cheap).
             for (i, (&prev_s, &cur_s)) in self.prev_severity.iter().zip(severity.iter()).enumerate()
             {
                 let from = (prev_s as usize).min(K - 1);
@@ -240,21 +244,26 @@ impl EntropyRateMonitor {
                     let target = if s == to { 1.0 } else { 0.0 };
                     self.transitions[i][from][s] += alpha * (target - self.transitions[i][from][s]);
                 }
-
-                h_sum += self.controller_entropy_rate(i);
             }
 
-            let mean_h = h_sum / N as f64;
-            let log2_k = (K as f64).log2();
-            let ratio = if log2_k > 1e-12 {
-                (mean_h / log2_k).clamp(0.0, 1.0)
-            } else {
-                0.0
-            };
+            // Heavy part is cadence-only.
+            if self.count.is_multiple_of(SAMPLE_INTERVAL) {
+                let mut h_sum = 0.0_f64;
+                for i in 0..N {
+                    h_sum += self.controller_entropy_rate(i);
+                }
+                let mean_h = h_sum / N as f64;
+                let log2_k = (K as f64).log2();
+                let ratio = if log2_k > 1e-12 {
+                    (mean_h / log2_k).clamp(0.0, 1.0)
+                } else {
+                    0.0
+                };
 
-            // EWMA smooth the aggregate entropy rate.
-            self.entropy_rate_bits += alpha * (mean_h - self.entropy_rate_bits);
-            self.entropy_rate_ratio += alpha * (ratio - self.entropy_rate_ratio);
+                // EWMA smooth the aggregate entropy rate.
+                self.entropy_rate_bits += alpha * (mean_h - self.entropy_rate_bits);
+                self.entropy_rate_ratio += alpha * (ratio - self.entropy_rate_ratio);
+            }
         }
 
         self.prev_severity = *severity;

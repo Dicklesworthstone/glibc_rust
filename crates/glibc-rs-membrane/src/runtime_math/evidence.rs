@@ -626,7 +626,7 @@ fn ceil_div_u32(numer: u32, denom: u32) -> u32 {
 
 #[inline]
 fn contains_u16(hay: &[u16], needle: u16) -> bool {
-    hay.iter().any(|&v| v == needle)
+    hay.contains(&needle)
 }
 
 /// A systematic evidence log with per-(mode,family) epoch state and a bounded ring buffer.
@@ -1141,5 +1141,22 @@ mod tests {
         let p2 = encode_xor_repair_payload_v1(epoch_seed, &src, repair_esi);
         assert_eq!(p1, p2);
         assert!(p1.iter().all(|&b| b == expected_byte));
+    }
+
+    #[test]
+    fn repair_schedule_v1_test_vector_seed_0x0123_k8_esi8() {
+        let epoch_seed = 0x0123_4567_89AB_CDEF;
+        let k_source = 8;
+        let repair_esi = 8;
+        let sched = derive_repair_schedule_v1(epoch_seed, k_source, repair_esi);
+        assert_eq!(sched.degree(), 2);
+        assert_eq!(sched.indices(), &[4, 5]);
+
+        let mut src = [[0u8; EVIDENCE_SYMBOL_SIZE_T]; 8];
+        for (i, s) in src.iter_mut().enumerate() {
+            *s = [i as u8; EVIDENCE_SYMBOL_SIZE_T];
+        }
+        let payload = encode_xor_repair_payload_v1(epoch_seed, &src, repair_esi);
+        assert!(payload.iter().all(|&b| b == (4u8 ^ 5u8)));
     }
 }
