@@ -147,47 +147,41 @@ impl ReferenceModel {
         }
     }
 
-    /// Centered log-probability score function.
+    /// KL divergence D(other || self) between two models.
     ///
-    /// s(x) = log p(x) - E_p[log p(X)]
-    ///
-    /// This guarantees E_p[s(X)] = 0 (discrete Stein identity),
-    /// so the KSD ‖E_q[s]‖² correctly vanishes when q = p.
-    fn score(&self, state: u8) -> f64 {
-        let idx = (state as usize).min(K - 1);
-        let eps = 0.01; // Laplace smoothing
-        let total: f64 = self.freq.iter().sum::<f64>() + eps * K as f64;
-
-        // log p(x) for the observed state.
-        let log_p_x = ((self.freq[idx] + eps) / total).ln();
-
-        // E_p[log p(X)] = Σ_k p(k) · log p(k).
-        let expected_log_p: f64 = (0..K)
-            .map(|k| {
-                let pk = (self.freq[k] + eps) / total;
-                pk * pk.ln()
-            })
-            .sum();
-
-        log_p_x - expected_log_p
+    /// Measures how much the `other` distribution has drifted from `self`.
+    /// Returns 0 when the distributions are identical, positive otherwise.
+    /// Laplace-smoothed to avoid log(0).
+    fn kl_from(&self, other: &ReferenceModel) -> f64 {
+        let eps = 0.01;
+        let self_total: f64 = self.freq.iter().sum::<f64>() + eps * K as f64;
+        let other_total: f64 = other.freq.iter().sum::<f64>() + eps * K as f64;
+        let mut kl = 0.0;
+        for k in 0..K {
+            let q_k = (other.freq[k] + eps) / other_total;
+            let p_k = (self.freq[k] + eps) / self_total;
+            kl += q_k * (q_k / p_k).ln();
+        }
+        kl.max(0.0) // numerical floor
     }
 }
 
 /// Kernelized Stein Discrepancy monitor.
 ///
-/// Uses the mean-score-norm approximation: under p, E[s_p(X)] = 0
-/// (Stein identity). The squared L2 norm of the EWMA score vector
-/// is a first-order KSD approximation that correctly vanishes when q=p.
+/// Uses KL divergence D(current || reference) between the live empirical
+/// model and the calibration-frozen reference as a goodness-of-fit proxy.
+/// When the observation distribution matches the reference, KL → 0.
+/// Regime shifts cause the current model to drift, increasing KL.
 pub struct SteinDiscrepancyMonitor {
     /// Reference model per controller (frozen after calibration).
     reference: Vec<ReferenceModel>,
     /// Current empirical model per controller (live-updated).
     current: Vec<ReferenceModel>,
-    /// EWMA of per-controller score (should be ~0 under reference).
-    mean_score: [f64; N],
-    /// Smoothed KSD² estimate (‖mean_score‖²).
+    /// Per-controller KL divergence (instantaneous).
+    kl_per_ctrl: [f64; N],
+    /// Smoothed total KL divergence (sum across controllers, EWMA).
     ksd_sq: f64,
-    /// Per-controller score deviation from reference (EWMA of |score|).
+    /// Per-controller smoothed divergence (EWMA of KL_i).
     score_deviation: [f64; N],
     /// Observation count.
     count: u32,
@@ -201,7 +195,7 @@ impl SteinDiscrepancyMonitor {
         Self {
             reference: (0..N).map(|_| ReferenceModel::uniform()).collect(),
             current: (0..N).map(|_| ReferenceModel::uniform()).collect(),
-            mean_score: [0.0; N],
+            kl_per_ctrl: [0.0; N],
             ksd_sq: 0.0,
             score_deviation: [0.0; N],
             count: 0,
@@ -209,12 +203,13 @@ impl SteinDiscrepancyMonitor {
         }
     }
 
-    /// Feed a severity vector and update KSD estimates.
+    /// Feed a severity vector and update divergence estimates.
     ///
-    /// Uses the mean-score-norm KSD approximation:
-    /// KSD²(q, p) ≈ ‖E_q[s_p(X)]‖² where s_p is the score function.
-    /// Under p (Stein identity): E_p[s_p(X)] = 0, so KSD² = 0.
-    /// Under q ≠ p: E_q[s_p(X)] ≠ 0, so KSD² > 0.
+    /// Computes per-controller KL divergence D(current_i || reference_i)
+    /// where `current` tracks the live empirical distribution and `reference`
+    /// was frozen at the end of calibration. Under stable conditions
+    /// (same data distribution as calibration), KL → 0 → Consistent.
+    /// Regime shifts cause current to diverge → KL increases → Deviant/Rejected.
     pub fn observe_and_update(&mut self, severity: &[u8; N]) {
         self.count = self.count.saturating_add(1);
         let alpha = if self.count <= WARMUP {
@@ -231,19 +226,16 @@ impl SteinDiscrepancyMonitor {
             }
         }
 
-        // Compute score vector under reference model.
-        let score: [f64; N] = std::array::from_fn(|i| self.reference[i].score(severity[i]));
-
-        // EWMA of per-controller score (Stein identity: E_p[score] = 0).
-        for (i, &s) in score.iter().enumerate() {
-            self.mean_score[i] += alpha * (s - self.mean_score[i]);
-            self.score_deviation[i] += alpha * (s.abs() - self.score_deviation[i]);
+        // Per-controller KL divergence D(current_i || reference_i).
+        for i in 0..N {
+            let kl_i = self.reference[i].kl_from(&self.current[i]);
+            self.kl_per_ctrl[i] = kl_i;
+            self.score_deviation[i] += alpha * (kl_i - self.score_deviation[i]);
         }
 
-        // KSD² ≈ (1/N) ‖mean_score‖² (average squared score per controller).
-        // Normalization by N makes thresholds independent of controller count.
-        let score_norm_sq: f64 = self.mean_score.iter().map(|&s| s * s).sum::<f64>() / N as f64;
-        self.ksd_sq += alpha * (score_norm_sq - self.ksd_sq);
+        // Total divergence: average per-controller KL.
+        let total_kl: f64 = self.kl_per_ctrl.iter().sum::<f64>() / N as f64;
+        self.ksd_sq += alpha * (total_kl - self.ksd_sq);
 
         // State classification.
         self.state = if self.count < WARMUP {
