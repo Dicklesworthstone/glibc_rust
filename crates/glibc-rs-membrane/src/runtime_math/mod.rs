@@ -11,6 +11,8 @@
 //! The runtime path remains deterministic and low overhead. Heavy synthesis
 //! stays offline; online code only executes compact control kernels.
 
+pub mod admm_budget;
+pub mod atiyah_bott;
 pub mod bandit;
 pub mod barrier;
 pub mod changepoint;
@@ -20,17 +22,27 @@ pub mod commitment_audit;
 pub mod conformal;
 pub mod control;
 pub mod coupling;
+pub mod covering_array;
 pub mod cvar;
+pub mod derived_tstructure;
 pub mod design;
 pub mod eprocess;
 pub mod equivariant;
 pub mod fusion;
+pub mod grobner_normalizer;
+pub mod grothendieck_glue;
 pub mod higher_topos;
+pub mod ktheory;
 pub mod loss_minimizer;
 pub mod microlocal;
+pub mod obstruction_detector;
+pub mod operator_norm;
 pub mod pareto;
+pub mod pomdp_repair;
+pub mod provenance_info;
 pub mod risk;
 pub mod serre_spectral;
+pub mod sos_invariant;
 pub mod sparse;
 
 use std::sync::atomic::{AtomicU8, AtomicU64, Ordering};
@@ -53,6 +65,8 @@ use crate::spectral_monitor::{PhaseState, SpectralMonitor};
 use crate::symplectic_reduction::{ResourceType, SymplecticReductionController, SymplecticState};
 use crate::tropical_latency::{PipelinePath, TROPICAL_METRICS, TropicalLatencyCompositor};
 
+use self::admm_budget::{AdmmBudgetController, AdmmState};
+use self::atiyah_bott::{AtiyahBottController, LocalizationState};
 use self::bandit::ConstrainedBanditRouter;
 use self::barrier::BarrierOracle;
 use self::changepoint::{ChangepointController, ChangepointState};
@@ -62,19 +76,31 @@ use self::commitment_audit::{AuditState, CommitmentAuditController};
 use self::conformal::{ConformalRiskController, ConformalState};
 use self::control::PrimalDualController;
 use self::coupling::{CouplingController, CouplingState};
+use self::covering_array::{CoverageState, CoveringArrayController};
 use self::cvar::{DroCvarController, TailState};
+use self::derived_tstructure::{TStructureController, TStructureState};
 use self::design::{OptimalDesignController, Probe, ProbePlan};
 use self::eprocess::{AnytimeEProcessMonitor, SequentialState};
 use self::equivariant::{EquivariantState, EquivariantTransportController};
 use self::fusion::KernelFusionController;
+use self::grobner_normalizer::{GrobnerNormalizerController, GrobnerState};
+use self::grothendieck_glue::{
+    CocycleObservation, DataSource, GlueState, GrothendieckGlueController, QueryFamily,
+};
 use self::higher_topos::{HigherToposController, ToposState};
+use self::ktheory::{KTheoryController, KTheoryState};
 use self::loss_minimizer::{LossMinimizationController, LossState};
 use self::microlocal::{MicrolocalController, MicrolocalState, Stratum};
+use self::obstruction_detector::{ObstructionDetector, ObstructionState};
+use self::operator_norm::{OperatorNormMonitor, StabilityState};
 use self::pareto::ParetoController;
+use self::pomdp_repair::{PomdpRepairController, PomdpState};
+use self::provenance_info::{ProvenanceInfoController, ProvenanceState};
 use self::risk::ConformalRiskEngine;
 use self::serre_spectral::{
     InvariantClass, LayerPair, SerreSpectralController, SpectralSequenceState,
 };
+use self::sos_invariant::{SosInvariantController, SosState};
 use self::sparse::{SparseRecoveryController, SparseState};
 
 const FAST_PATH_BUDGET_NS: u64 = 20;
@@ -294,6 +320,56 @@ pub struct RuntimeKernelSnapshot {
     pub clifford_parity_imbalance: f64,
     /// Clifford overlap violation count.
     pub clifford_violation_count: u64,
+    /// K-theory maximum transport distance across ABI families.
+    pub ktheory_max_transport_distance: f64,
+    /// K-theory ABI fracture detection count.
+    pub ktheory_fracture_count: u64,
+    /// Covering-array conformance coverage fraction (0..1).
+    pub covering_coverage_fraction: f64,
+    /// Covering-array coverage gap detection count.
+    pub covering_gap_count: u64,
+    /// Derived t-structure maximum ordering violation rate.
+    pub tstructure_max_violation_rate: f64,
+    /// Derived t-structure orthogonality violation count.
+    pub tstructure_violation_count: u64,
+    /// Atiyah-Bott localization Euler weight.
+    pub atiyah_bott_euler_weight: f64,
+    /// Atiyah-Bott concentrated anomaly detection count.
+    pub atiyah_bott_concentration_count: u64,
+    /// POMDP repair optimality gap (0..1+).
+    pub pomdp_optimality_gap: f64,
+    /// POMDP policy divergence detection count.
+    pub pomdp_divergence_count: u64,
+    /// SOS invariant maximum stress fraction.
+    pub sos_max_stress: f64,
+    /// SOS invariant violation event count.
+    pub sos_violation_count: u64,
+    /// ADMM primal-dual gap (0..∞, lower is better).
+    pub admm_primal_dual_gap: f64,
+    /// ADMM constraint violation count.
+    pub admm_violation_count: u64,
+    /// Spectral-sequence obstruction norm (0..∞).
+    pub obstruction_norm: f64,
+    /// Critical obstruction detection count.
+    pub obstruction_critical_count: u64,
+    /// Operator-norm spectral radius estimate.
+    pub operator_norm_spectral_radius: f64,
+    /// Operator-norm instability detection count.
+    pub operator_norm_instability_count: u64,
+    /// Provenance Shannon entropy per byte (0..8, ideal = 8.0).
+    pub provenance_shannon_entropy: f64,
+    /// Provenance Rényi H₂ collision entropy per byte (0..8).
+    pub provenance_renyi_h2: f64,
+    /// Provenance collision risk detection count.
+    pub provenance_collision_count: u64,
+    /// Grobner constraint violation rate (EWMA, 0..1).
+    pub grobner_violation_rate: f64,
+    /// Grobner structural fault detection count.
+    pub grobner_fault_count: u64,
+    /// Grothendieck glue global cocycle violation rate (EWMA, 0..1).
+    pub grothendieck_violation_rate: f64,
+    /// Grothendieck stackification fault detection count.
+    pub grothendieck_stack_fault_count: u64,
 }
 
 /// Online control kernel for strict/hardened runtime decisions.
@@ -332,6 +408,18 @@ pub struct RuntimeMathKernel {
     microlocal: Mutex<MicrolocalController>,
     serre: Mutex<SerreSpectralController>,
     clifford: Mutex<CliffordController>,
+    ktheory: Mutex<KTheoryController>,
+    covering: Mutex<CoveringArrayController>,
+    tstructure: Mutex<TStructureController>,
+    admm: Mutex<AdmmBudgetController>,
+    atiyah_bott: Mutex<AtiyahBottController>,
+    obstruction: Mutex<ObstructionDetector>,
+    operator_norm: Mutex<OperatorNormMonitor>,
+    pomdp: Mutex<PomdpRepairController>,
+    sos: Mutex<SosInvariantController>,
+    provenance: Mutex<ProvenanceInfoController>,
+    grobner: Mutex<GrobnerNormalizerController>,
+    grothendieck: Mutex<GrothendieckGlueController>,
     cached_risk_bonus_ppm: AtomicU64,
     cached_oracle_bias: [AtomicU8; ApiFamily::COUNT],
     cached_spectral_phase: AtomicU8,
@@ -367,6 +455,18 @@ pub struct RuntimeMathKernel {
     cached_microlocal_state: AtomicU8,
     cached_serre_state: AtomicU8,
     cached_clifford_state: AtomicU8,
+    cached_ktheory_state: AtomicU8,
+    cached_covering_state: AtomicU8,
+    cached_tstructure_state: AtomicU8,
+    cached_admm_state: AtomicU8,
+    cached_atiyah_bott_state: AtomicU8,
+    cached_obstruction_state: AtomicU8,
+    cached_operator_norm_state: AtomicU8,
+    cached_pomdp_state: AtomicU8,
+    cached_sos_state: AtomicU8,
+    cached_provenance_state: AtomicU8,
+    cached_grobner_state: AtomicU8,
+    cached_grothendieck_state: AtomicU8,
     decisions: AtomicU64,
 }
 
@@ -409,6 +509,18 @@ impl RuntimeMathKernel {
             microlocal: Mutex::new(MicrolocalController::new()),
             serre: Mutex::new(SerreSpectralController::new()),
             clifford: Mutex::new(CliffordController::new()),
+            ktheory: Mutex::new(KTheoryController::new()),
+            covering: Mutex::new(CoveringArrayController::new()),
+            tstructure: Mutex::new(TStructureController::new()),
+            admm: Mutex::new(AdmmBudgetController::new()),
+            atiyah_bott: Mutex::new(AtiyahBottController::new()),
+            obstruction: Mutex::new(ObstructionDetector::new()),
+            operator_norm: Mutex::new(OperatorNormMonitor::new()),
+            pomdp: Mutex::new(PomdpRepairController::new()),
+            sos: Mutex::new(SosInvariantController::new()),
+            provenance: Mutex::new(ProvenanceInfoController::new()),
+            grobner: Mutex::new(GrobnerNormalizerController::new()),
+            grothendieck: Mutex::new(GrothendieckGlueController::new()),
             cached_risk_bonus_ppm: AtomicU64::new(0),
             cached_oracle_bias: std::array::from_fn(|_| AtomicU8::new(1)),
             cached_spectral_phase: AtomicU8::new(0),
@@ -444,6 +556,18 @@ impl RuntimeMathKernel {
             cached_microlocal_state: AtomicU8::new(0),
             cached_serre_state: AtomicU8::new(0),
             cached_clifford_state: AtomicU8::new(0),
+            cached_ktheory_state: AtomicU8::new(0),
+            cached_covering_state: AtomicU8::new(0),
+            cached_tstructure_state: AtomicU8::new(0),
+            cached_admm_state: AtomicU8::new(0),
+            cached_atiyah_bott_state: AtomicU8::new(0),
+            cached_obstruction_state: AtomicU8::new(0),
+            cached_operator_norm_state: AtomicU8::new(0),
+            cached_pomdp_state: AtomicU8::new(0),
+            cached_sos_state: AtomicU8::new(0),
+            cached_provenance_state: AtomicU8::new(0),
+            cached_grobner_state: AtomicU8::new(0),
+            cached_grothendieck_state: AtomicU8::new(0),
             decisions: AtomicU64::new(0),
         }
     }
@@ -620,6 +744,96 @@ impl RuntimeMathKernel {
             2 => 45_000u32,  // MisalignmentDrift — bivector energy rising
             _ => 0u32,       // Calibrating/Aligned
         };
+        // K-theory transport: ABI compatibility integrity.
+        // Fractured K-class means ABI contract bundle diverged from baseline.
+        let ktheory_bonus = match self.cached_ktheory_state.load(Ordering::Relaxed) {
+            3 => 130_000u32, // Fractured — ABI compatibility broken
+            2 => 50_000u32,  // Drift — compatibility degrading
+            _ => 0u32,       // Calibrating/Compatible
+        };
+        // Covering-array matroid: conformance interaction coverage.
+        // CriticalGap means many interaction tuples are untested.
+        let covering_bonus = match self.cached_covering_state.load(Ordering::Relaxed) {
+            3 => 100_000u32, // CriticalGap — many untested interactions
+            2 => 40_000u32,  // CoverageGap — some missing coverage
+            _ => 0u32,       // Calibrating/Complete
+        };
+        // Derived t-structure: bootstrap ordering invariants.
+        // OrthogonalityViolation means stages executing severely out of order.
+        let tstructure_bonus = match self.cached_tstructure_state.load(Ordering::Relaxed) {
+            3 => 140_000u32, // OrthogonalityViolation — severe ordering fault
+            2 => 55_000u32,  // Disorder — minor ordering issues
+            _ => 0u32,       // Calibrating/WellOrdered
+        };
+        // Atiyah-Bott fixed-point localization: concentrated anomaly detection.
+        // ConcentratedAnomaly means risk localizes at very few controllers
+        // while the rest are perfectly stable — an isolated severe fault.
+        let atiyah_bott_bonus = match self.cached_atiyah_bott_state.load(Ordering::Relaxed) {
+            3 => 150_000u32, // ConcentratedAnomaly — isolated severe fault
+            2 => 45_000u32,  // Localized — risk concentrating
+            _ => 0u32,       // Calibrating/Distributed
+        };
+        // POMDP repair policy: optimality gap monitoring.
+        // PolicyDivergence means the threshold cascade is severely miscalibrated
+        // relative to the Bellman-optimal policy.
+        let pomdp_bonus = match self.cached_pomdp_state.load(Ordering::Relaxed) {
+            3 => 120_000u32, // PolicyDivergence — severe miscalibration
+            2 => 50_000u32,  // SuboptimalPolicy — growing gap
+            _ => 0u32,       // Calibrating/Optimal
+        };
+        // SOS polynomial invariant: cross-controller coherence guard.
+        // InvariantViolated means the combined controller state is in a region
+        // that the SOS certificate proved impossible under normal operation.
+        let sos_bonus = match self.cached_sos_state.load(Ordering::Relaxed) {
+            3 => 180_000u32, // InvariantViolated — structurally impossible state
+            2 => 60_000u32,  // InvariantStressed — approaching violation
+            _ => 0u32,       // Calibrating/InvariantSatisfied
+        };
+        // ADMM budget allocator: primal-dual convergence of budget allocation.
+        // ConstraintViolation means the risk/latency/coverage budget split
+        // is significantly suboptimal — shadow prices indicate binding constraints.
+        let admm_bonus = match self.cached_admm_state.load(Ordering::Relaxed) {
+            3 => 130_000u32, // ConstraintViolation — budget severely suboptimal
+            2 => 45_000u32,  // DualDrift — budget allocation adapting
+            _ => 0u32,       // Calibrating/Converged
+        };
+        // Spectral-sequence obstruction: cross-layer consistency defects.
+        // CriticalObstruction means d² ≠ 0 — the controller ensemble has
+        // a global consistency defect invisible to individual controllers.
+        let obstruction_bonus = match self.cached_obstruction_state.load(Ordering::Relaxed) {
+            3 => 160_000u32, // CriticalObstruction — ensemble breakdown
+            2 => 50_000u32,  // MinorObstruction — emerging defect
+            _ => 0u32,       // Calibrating/Exact
+        };
+        // Operator-norm spectral radius: ensemble dynamics stability.
+        // Unstable means perturbations are amplifying across the controller
+        // ensemble — a positive feedback cascade.
+        let operator_norm_bonus = match self.cached_operator_norm_state.load(Ordering::Relaxed) {
+            3 => 170_000u32, // Unstable — perturbation amplification
+            2 => 55_000u32,  // Marginal — near stability boundary
+            _ => 0u32,       // Calibrating/Contractive
+        };
+        // Provenance info-theoretic: fingerprint entropy degradation signals
+        // collision resistance loss in the allocation integrity subsystem.
+        let provenance_bonus = match self.cached_provenance_state.load(Ordering::Relaxed) {
+            3 => 160_000u32, // CollisionRisk — key rotation needed
+            2 => 55_000u32,  // EntropyDrift — entropy degrading
+            _ => 0u32,       // Calibrating/Secure
+        };
+        // Grobner normalizer: confluent constraint verification over the
+        // controller state vector. StructuralFault = state outside the ideal.
+        let grobner_bonus = match self.cached_grobner_state.load(Ordering::Relaxed) {
+            3 => 170_000u32, // StructuralFault — impossible controller config
+            2 => 50_000u32,  // MinorInconsistency — some constraints breached
+            _ => 0u32,       // Calibrating/Consistent
+        };
+        // Grothendieck glue: cocycle/descent coherence for NSS/resolv/locale.
+        // StackificationFault = equivalence classes don't compose.
+        let grothendieck_bonus = match self.cached_grothendieck_state.load(Ordering::Relaxed) {
+            3 => 140_000u32, // StackificationFault — deep incoherence
+            2 => 55_000u32,  // DescentFailure — cocycle violations
+            _ => 0u32,       // Calibrating/Coherent
+        };
         let pre_design_risk_ppm = base_risk_ppm
             .saturating_add(sampled_bonus)
             .saturating_add(cohomology_bonus)
@@ -647,6 +861,18 @@ impl RuntimeMathKernel {
             .saturating_add(microlocal_bonus)
             .saturating_add(serre_bonus)
             .saturating_add(clifford_bonus)
+            .saturating_add(ktheory_bonus)
+            .saturating_add(covering_bonus)
+            .saturating_add(tstructure_bonus)
+            .saturating_add(atiyah_bott_bonus)
+            .saturating_add(pomdp_bonus)
+            .saturating_add(sos_bonus)
+            .saturating_add(admm_bonus)
+            .saturating_add(obstruction_bonus)
+            .saturating_add(operator_norm_bonus)
+            .saturating_add(provenance_bonus)
+            .saturating_add(grobner_bonus)
+            .saturating_add(grothendieck_bonus)
             .min(1_000_000);
 
         // D-optimal probe scheduling:
@@ -1375,6 +1601,134 @@ impl RuntimeMathKernel {
                 .store(cliff_code, Ordering::Relaxed);
         }
 
+        // Feed K-theory transport controller with behavioral contract coordinates.
+        // Encodes: (normalized_latency, adverse, profile_depth, risk_level).
+        {
+            let norm_latency = (estimated_cost_ns as f64).clamp(0.0, 200.0) / 200.0;
+            let adverse_f = if adverse { 1.0 } else { 0.0 };
+            let prof_depth = if matches!(profile, ValidationProfile::Full) {
+                1.0
+            } else {
+                0.0
+            };
+            let risk_level = f64::from(risk_bound_ppm) / 1_000_000.0;
+            let coords = [norm_latency, adverse_f, prof_depth, risk_level];
+            let kt_code = {
+                let mut kt = self.ktheory.lock();
+                kt.observe_and_update(family as usize, coords);
+                match kt.state() {
+                    KTheoryState::Calibrating => 0u8,
+                    KTheoryState::Compatible => 1u8,
+                    KTheoryState::Drift => 2u8,
+                    KTheoryState::Fractured => 3u8,
+                }
+            };
+            self.cached_ktheory_state.store(kt_code, Ordering::Relaxed);
+        }
+
+        // Feed covering-array matroid conformance scheduler.
+        // Binary parameters: family_high, mode_hardened, profile_full, adverse,
+        // contention_high, aligned.
+        {
+            let family_high = if (family as u8) >= 4 { 1u8 } else { 0u8 };
+            let mode_hard = if mode.heals_enabled() { 1u8 } else { 0u8 };
+            let prof_full = if matches!(profile, ValidationProfile::Full) {
+                1u8
+            } else {
+                0u8
+            };
+            let adverse_b = if adverse { 1u8 } else { 0u8 };
+            let contention_high = if estimated_cost_ns > 100 { 1u8 } else { 0u8 };
+            let aligned = if estimated_cost_ns <= 16 && !adverse {
+                1u8
+            } else {
+                0u8
+            };
+            let params = [
+                family_high,
+                mode_hard,
+                prof_full,
+                adverse_b,
+                contention_high,
+                aligned,
+            ];
+            let cov_code = {
+                let mut cov = self.covering.lock();
+                cov.observe_and_update(params);
+                match cov.state() {
+                    CoverageState::Calibrating => 0u8,
+                    CoverageState::Complete => 1u8,
+                    CoverageState::CoverageGap => 2u8,
+                    CoverageState::CriticalGap => 3u8,
+                }
+            };
+            self.cached_covering_state
+                .store(cov_code, Ordering::Relaxed);
+        }
+
+        // Feed derived t-structure bootstrap ordering controller.
+        // We map family to a stage index (families are loosely ordered by
+        // initialization dependency depth) and check predecessors via risk.
+        {
+            let stage_idx = (family as usize).min(7);
+            let predecessors_complete = !adverse && risk_bound_ppm < 200_000;
+            let ts_code = {
+                let mut ts = self.tstructure.lock();
+                ts.observe_and_update(stage_idx, predecessors_complete);
+                match ts.state() {
+                    TStructureState::Calibrating => 0u8,
+                    TStructureState::WellOrdered => 1u8,
+                    TStructureState::Disorder => 2u8,
+                    TStructureState::OrthogonalityViolation => 3u8,
+                }
+            };
+            self.cached_tstructure_state
+                .store(ts_code, Ordering::Relaxed);
+        }
+
+        // Feed POMDP repair policy controller.
+        // Infer approximate action code from profile, mode, and risk.
+        {
+            let action_code = if risk_bound_ppm >= 500_000 {
+                if mode.heals_enabled() { 2u8 } else { 3u8 } // Repair / Deny
+            } else if profile.requires_full() || risk_bound_ppm >= 200_000 {
+                1u8 // FullValidate
+            } else if mode.heals_enabled() && risk_bound_ppm >= 100_000 {
+                2u8 // Repair
+            } else {
+                0u8 // Allow
+            };
+            let pomdp_code = {
+                let mut p = self.pomdp.lock();
+                p.observe_and_update(risk_bound_ppm, action_code, adverse);
+                match p.state() {
+                    PomdpState::Calibrating => 0u8,
+                    PomdpState::Optimal => 1u8,
+                    PomdpState::SuboptimalPolicy => 2u8,
+                    PomdpState::PolicyDivergence => 3u8,
+                }
+            };
+            self.cached_pomdp_state.store(pomdp_code, Ordering::Relaxed);
+        }
+
+        // Feed ADMM budget allocator with risk/latency/coverage signals.
+        {
+            let risk_cost = (risk_bound_ppm as f64 / 1_000_000.0).clamp(0.0, 1.0);
+            let latency_fraction = (estimated_cost_ns as f64 / 200.0).clamp(0.0, 1.0);
+            let coverage_gap = if profile.requires_full() { 0.1 } else { 0.4 };
+            let admm_code = {
+                let mut admm = self.admm.lock();
+                admm.observe_and_update(risk_cost, latency_fraction, coverage_gap);
+                match admm.state() {
+                    AdmmState::Calibrating => 0u8,
+                    AdmmState::Converged => 1u8,
+                    AdmmState::DualDrift => 2u8,
+                    AdmmState::ConstraintViolation => 3u8,
+                }
+            };
+            self.cached_admm_state.store(admm_code, Ordering::Relaxed);
+        }
+
         let mut anomaly_vec = [false; Probe::COUNT];
         if let Some(flag) = spectral_anomaly {
             anomaly_vec[Probe::Spectral as usize] = flag;
@@ -1447,7 +1801,7 @@ impl RuntimeMathKernel {
 
         // Feed equivariant transport controller (always-on, O(1)):
         // tracks cross-family symmetry breaking under mode/profile actions.
-        let equivariant_anomaly = {
+        let _equivariant_anomaly = {
             let (eq_code, eq_summary) = {
                 let mut eq = self.equivariant.lock();
                 eq.observe(
@@ -1476,32 +1830,247 @@ impl RuntimeMathKernel {
             eq_code >= 2
         };
 
-        // Feed robust fusion controller from current anomaly severity vector.
+        // Feed information-theoretic provenance controller with a compact byte
+        // derived from call context, risk, and latency.
         {
-            let severity = [
-                self.cached_spectral_phase.load(Ordering::Relaxed), // 0..2
-                self.cached_signature_state.load(Ordering::Relaxed), // 0..2
-                self.cached_topological_state.load(Ordering::Relaxed), // 0..2
-                self.cached_anytime_state[usize::from(family as u8)].load(Ordering::Relaxed), // 0..3
-                self.cached_cvar_state[usize::from(family as u8)].load(Ordering::Relaxed), // 0..3
-                self.cached_bridge_state.load(Ordering::Relaxed),                          // 0..2
-                self.cached_ld_state[usize::from(family as u8)].load(Ordering::Relaxed),   // 0..3
-                self.cached_hji_state.load(Ordering::Relaxed),                             // 0..3
-                self.cached_mfg_state.load(Ordering::Relaxed),                             // 0..3
-                self.cached_padic_state.load(Ordering::Relaxed),                           // 0..3
-                self.cached_symplectic_state.load(Ordering::Relaxed),                      // 0..3
-                self.cached_sparse_state.load(Ordering::Relaxed),                          // 0..4
-                self.cached_equivariant_state.load(Ordering::Relaxed),                     // 0..3
-                self.cached_topos_state.load(Ordering::Relaxed),                           // 0..3
-                self.cached_audit_state.load(Ordering::Relaxed),                           // 0..3
-                self.cached_changepoint_state.load(Ordering::Relaxed),                     // 0..3
-                self.cached_conformal_state.load(Ordering::Relaxed),                       // 0..3
-                self.cached_loss_minimizer_state.load(Ordering::Relaxed),                  // 0..4
-                self.cached_coupling_state.load(Ordering::Relaxed),                        // 0..4
-                self.cached_microlocal_state.load(Ordering::Relaxed),                      // 0..3
-                self.cached_serre_state.load(Ordering::Relaxed),                           // 0..3
-                self.cached_clifford_state.load(Ordering::Relaxed),                        // 0..3
+            let fingerprint_byte = (u64::from(risk_bound_ppm)
+                ^ estimated_cost_ns
+                ^ (u64::from(family as u8) << 8)
+                ^ (u64::from(profile as u8) << 16)) as u8;
+            let prov_code = {
+                let mut prov = self.provenance.lock();
+                prov.observe_bytes(&[fingerprint_byte]);
+                match prov.state() {
+                    ProvenanceState::Calibrating => 0u8,
+                    ProvenanceState::Secure => 1u8,
+                    ProvenanceState::EntropyDrift => 2u8,
+                    ProvenanceState::CollisionRisk => 3u8,
+                }
+            };
+            self.cached_provenance_state
+                .store(prov_code, Ordering::Relaxed);
+        }
+
+        // Feed Grothendieck glue controller with local-to-global coherence
+        // observations mapped from API family + adverse outcome.
+        {
+            let (query_family, source_i, source_j, is_stack_check) = match family {
+                ApiFamily::Resolver => (
+                    QueryFamily::Hostname,
+                    DataSource::Files,
+                    DataSource::Dns,
+                    false,
+                ),
+                ApiFamily::Threading => (
+                    QueryFamily::UserGroup,
+                    DataSource::Cache,
+                    DataSource::Files,
+                    false,
+                ),
+                ApiFamily::StringMemory => (
+                    QueryFamily::EncodingLookup,
+                    DataSource::IconvTables,
+                    DataSource::Fallback,
+                    true,
+                ),
+                ApiFamily::Stdlib => (
+                    QueryFamily::LocaleResolution,
+                    DataSource::LocaleFiles,
+                    DataSource::Fallback,
+                    true,
+                ),
+                ApiFamily::MathFenv => (
+                    QueryFamily::Transliteration,
+                    DataSource::LocaleFiles,
+                    DataSource::IconvTables,
+                    true,
+                ),
+                _ => (
+                    QueryFamily::Service,
+                    DataSource::Files,
+                    DataSource::Cache,
+                    false,
+                ),
+            };
+            let glue_code = {
+                let mut glue = self.grothendieck.lock();
+                let obs = CocycleObservation {
+                    family: query_family,
+                    source_i,
+                    source_j,
+                    compatible: !adverse,
+                    is_stack_check,
+                };
+                glue.observe_cocycle(&obs);
+                match glue.state() {
+                    GlueState::Calibrating => 0u8,
+                    GlueState::Coherent => 1u8,
+                    GlueState::DescentFailure => 2u8,
+                    GlueState::StackificationFault => 3u8,
+                }
+            };
+            self.cached_grothendieck_state
+                .store(glue_code, Ordering::Relaxed);
+        }
+
+        // Feed Grobner normalizer with the constrained 16-variable controller
+        // severity vector used for canonical consistency checks.
+        {
+            let risk_state = if risk_bound_ppm >= 500_000 {
+                3u8
+            } else if risk_bound_ppm >= 200_000 {
+                2u8
+            } else if risk_bound_ppm >= 50_000 {
+                1u8
+            } else {
+                0u8
+            };
+            let state_vec = [
+                risk_state,                                                   // 0 risk
+                self.cached_bridge_state.load(Ordering::Relaxed).min(3),      // 1 bridge
+                self.cached_changepoint_state.load(Ordering::Relaxed).min(3), // 2 changepoint
+                self.cached_hji_state.load(Ordering::Relaxed).min(3),         // 3 hji
+                self.cached_anytime_state[usize::from(family as u8)] // 4 eprocess/padic
+                    .load(Ordering::Relaxed)
+                    .max(self.cached_padic_state.load(Ordering::Relaxed))
+                    .min(3),
+                self.cached_cvar_state[usize::from(family as u8)] // 5 cvar
+                    .load(Ordering::Relaxed)
+                    .min(3),
+                self.cached_coupling_state.load(Ordering::Relaxed).min(3), // 6 coupling
+                self.cached_mfg_state.load(Ordering::Relaxed).min(3),      // 7 mfg
+                self.cached_equivariant_state.load(Ordering::Relaxed).min(3), // 8 equivariant
+                self.cached_microlocal_state.load(Ordering::Relaxed).min(3), // 9 microlocal
+                self.cached_ktheory_state.load(Ordering::Relaxed).min(3),  // 10 ktheory
+                self.cached_serre_state.load(Ordering::Relaxed).min(3),    // 11 serre
+                self.cached_tstructure_state.load(Ordering::Relaxed).min(3), // 12 tstructure
+                self.cached_clifford_state.load(Ordering::Relaxed).min(3), // 13 clifford
+                self.cached_topos_state.load(Ordering::Relaxed).min(3),    // 14 topos
+                self.cached_audit_state.load(Ordering::Relaxed).min(3),    // 15 audit
             ];
+            let grobner_code = {
+                let mut grobner = self.grobner.lock();
+                grobner.check_state_vector(&state_vec);
+                match grobner.state() {
+                    GrobnerState::Calibrating => 0u8,
+                    GrobnerState::Consistent => 1u8,
+                    GrobnerState::MinorInconsistency => 2u8,
+                    GrobnerState::StructuralFault => 3u8,
+                }
+            };
+            self.cached_grobner_state
+                .store(grobner_code, Ordering::Relaxed);
+        }
+
+        // Build base 25-element severity vector from cached controller states.
+        // This is consumed by Atiyah-Bott (localization), SOS (invariant guard),
+        // and the robust fusion controller.
+        let base_severity: [u8; 25] = [
+            self.cached_spectral_phase.load(Ordering::Relaxed), // 0..2
+            self.cached_signature_state.load(Ordering::Relaxed), // 0..2
+            self.cached_topological_state.load(Ordering::Relaxed), // 0..2
+            self.cached_anytime_state[usize::from(family as u8)].load(Ordering::Relaxed), // 0..3
+            self.cached_cvar_state[usize::from(family as u8)].load(Ordering::Relaxed), // 0..3
+            self.cached_bridge_state.load(Ordering::Relaxed),   // 0..2
+            self.cached_ld_state[usize::from(family as u8)].load(Ordering::Relaxed), // 0..3
+            self.cached_hji_state.load(Ordering::Relaxed),      // 0..3
+            self.cached_mfg_state.load(Ordering::Relaxed),      // 0..3
+            self.cached_padic_state.load(Ordering::Relaxed),    // 0..3
+            self.cached_symplectic_state.load(Ordering::Relaxed), // 0..3
+            self.cached_sparse_state.load(Ordering::Relaxed),   // 0..4
+            self.cached_equivariant_state.load(Ordering::Relaxed), // 0..3
+            self.cached_topos_state.load(Ordering::Relaxed),    // 0..3
+            self.cached_audit_state.load(Ordering::Relaxed),    // 0..3
+            self.cached_changepoint_state.load(Ordering::Relaxed), // 0..3
+            self.cached_conformal_state.load(Ordering::Relaxed), // 0..3
+            self.cached_loss_minimizer_state.load(Ordering::Relaxed), // 0..4
+            self.cached_coupling_state.load(Ordering::Relaxed), // 0..4
+            self.cached_microlocal_state.load(Ordering::Relaxed), // 0..3
+            self.cached_serre_state.load(Ordering::Relaxed),    // 0..3
+            self.cached_clifford_state.load(Ordering::Relaxed), // 0..3
+            self.cached_ktheory_state.load(Ordering::Relaxed),  // 0..3
+            self.cached_covering_state.load(Ordering::Relaxed), // 0..3
+            self.cached_tstructure_state.load(Ordering::Relaxed), // 0..3
+        ];
+
+        // Feed Atiyah-Bott fixed-point localization meta-controller.
+        // Tracks concentration of anomaly signal across the base controller set.
+        {
+            let ab_code = {
+                let mut ab = self.atiyah_bott.lock();
+                ab.observe_and_update(&base_severity);
+                match ab.state() {
+                    LocalizationState::Calibrating => 0u8,
+                    LocalizationState::Distributed => 1u8,
+                    LocalizationState::Localized => 2u8,
+                    LocalizationState::ConcentratedAnomaly => 3u8,
+                }
+            };
+            self.cached_atiyah_bott_state
+                .store(ab_code, Ordering::Relaxed);
+        }
+
+        // Feed SOS polynomial invariant meta-controller.
+        // Checks cross-controller quadratic coherence invariants.
+        {
+            let sos_code = {
+                let mut sos = self.sos.lock();
+                sos.observe_and_update(&base_severity);
+                match sos.state() {
+                    SosState::Calibrating => 0u8,
+                    SosState::InvariantSatisfied => 1u8,
+                    SosState::InvariantStressed => 2u8,
+                    SosState::InvariantViolated => 3u8,
+                }
+            };
+            self.cached_sos_state.store(sos_code, Ordering::Relaxed);
+        }
+
+        // Feed spectral-sequence obstruction detector.
+        // Tracks d² ≈ 0 (exactness) across tracked controller pairs.
+        {
+            let obs_code = {
+                let mut obs = self.obstruction.lock();
+                obs.observe_and_update(&base_severity);
+                match obs.state() {
+                    ObstructionState::Calibrating => 0u8,
+                    ObstructionState::Exact => 1u8,
+                    ObstructionState::MinorObstruction => 2u8,
+                    ObstructionState::CriticalObstruction => 3u8,
+                }
+            };
+            self.cached_obstruction_state
+                .store(obs_code, Ordering::Relaxed);
+        }
+
+        // Feed operator-norm spectral radius stability monitor.
+        // Tracks ensemble dynamics amplification via online power iteration.
+        {
+            let on_code = {
+                let mut on = self.operator_norm.lock();
+                on.observe_and_update(&base_severity);
+                match on.state() {
+                    StabilityState::Calibrating => 0u8,
+                    StabilityState::Contractive => 1u8,
+                    StabilityState::Marginal => 2u8,
+                    StabilityState::Unstable => 3u8,
+                }
+            };
+            self.cached_operator_norm_state
+                .store(on_code, Ordering::Relaxed);
+        }
+
+        // Feed robust fusion controller from extended severity vector.
+        // Includes the 25 base controller signals plus 6 meta-controller states.
+        {
+            let mut severity = [0u8; 31];
+            severity[..25].copy_from_slice(&base_severity);
+            severity[25] = self.cached_atiyah_bott_state.load(Ordering::Relaxed); // 0..3
+            severity[26] = self.cached_pomdp_state.load(Ordering::Relaxed); // 0..3
+            severity[27] = self.cached_sos_state.load(Ordering::Relaxed); // 0..3
+            severity[28] = self.cached_admm_state.load(Ordering::Relaxed); // 0..3
+            severity[29] = self.cached_obstruction_state.load(Ordering::Relaxed); // 0..3
+            severity[30] = self.cached_operator_norm_state.load(Ordering::Relaxed); // 0..3
             let summary = {
                 let mut fusion = self.fusion.lock();
                 fusion.observe(severity, adverse, mode)
@@ -1564,9 +2133,12 @@ impl RuntimeMathKernel {
             if let Some(flag) = conformal_anomaly {
                 design.record_probe(Probe::Conformal, flag);
             }
-            // Equivariant cohesion currently reuses large-deviation channel
-            // for design identifiability updates.
-            design.record_probe(Probe::LargeDeviations, equivariant_anomaly);
+            if let Some(flag) = loss_minimizer_anomaly {
+                design.record_probe(Probe::LossMinimizer, flag);
+            }
+            if let Some(flag) = coupling_anomaly {
+                design.record_probe(Probe::Coupling, flag);
+            }
         }
 
         // Feed allocator frees into primal-dual quarantine controller.
@@ -1642,6 +2214,21 @@ impl RuntimeMathKernel {
         let design_summary = self.design.lock().summary();
         let sparse_summary = self.sparse.lock().summary();
         let equivariant_summary = self.equivariant.lock().summary();
+        let ktheory_summary = self.ktheory.lock().summary();
+        let covering_summary = self.covering.lock().summary();
+        let tstructure_summary = self.tstructure.lock().summary();
+        let atiyah_bott_summary = self.atiyah_bott.lock().summary();
+        let pomdp_summary = self.pomdp.lock().summary();
+        let sos_summary = self.sos.lock().summary();
+        let admm_summary = self.admm.lock().summary();
+        let obstruction_summary = self.obstruction.lock().summary();
+        let operator_norm_summary = self.operator_norm.lock().summary();
+        let provenance_snapshot = self.provenance.lock().snapshot();
+        let grobner_snapshot = self.grobner.lock().snapshot();
+        let grothendieck_snapshot = self.grothendieck.lock().snapshot();
+        let microlocal_summary = self.microlocal.lock().summary();
+        let serre_summary = self.serre.lock().summary();
+        let clifford_summary = self.clifford.lock().summary();
         RuntimeKernelSnapshot {
             decisions: self.decisions.load(Ordering::Relaxed),
             consistency_faults: self.cohomology.fault_count(),
@@ -1699,18 +2286,40 @@ impl RuntimeMathKernel {
             fusion_entropy_milli: self.cached_fusion_entropy_milli.load(Ordering::Relaxed) as u32,
             fusion_drift_ppm: self.cached_fusion_drift_ppm.load(Ordering::Relaxed) as u32,
             fusion_dominant_signal: self.cached_fusion_dominant_signal.load(Ordering::Relaxed),
-            microlocal_active_strata: {
-                let mc = self.microlocal.lock();
-                mc.wavefront_bits().count_ones() as u8
-            },
-            microlocal_failure_rate: self.microlocal.lock().summary().propagation_failure_rate,
-            microlocal_fault_count: self.microlocal.lock().summary().fault_boundary_count,
-            serre_max_differential: self.serre.lock().summary().max_differential,
-            serre_nontrivial_cells: self.serre.lock().summary().nontrivial_cells,
-            serre_lifting_count: self.serre.lock().summary().lifting_failure_count,
-            clifford_grade2_energy: self.clifford.lock().summary().grade2_energy,
-            clifford_parity_imbalance: self.clifford.lock().summary().parity_imbalance,
-            clifford_violation_count: self.clifford.lock().summary().overlap_violation_count,
+            microlocal_active_strata: microlocal_summary.active_strata,
+            microlocal_failure_rate: microlocal_summary.propagation_failure_rate,
+            microlocal_fault_count: microlocal_summary.fault_boundary_count,
+            serre_max_differential: serre_summary.max_differential,
+            serre_nontrivial_cells: serre_summary.nontrivial_cells,
+            serre_lifting_count: serre_summary.lifting_failure_count,
+            clifford_grade2_energy: clifford_summary.grade2_energy,
+            clifford_parity_imbalance: clifford_summary.parity_imbalance,
+            clifford_violation_count: clifford_summary.overlap_violation_count,
+            ktheory_max_transport_distance: ktheory_summary.max_transport_distance,
+            ktheory_fracture_count: ktheory_summary.fracture_count,
+            covering_coverage_fraction: covering_summary.coverage_fraction,
+            covering_gap_count: covering_summary.gap_count,
+            tstructure_max_violation_rate: tstructure_summary.max_violation_rate,
+            tstructure_violation_count: tstructure_summary.orthogonality_violation_count,
+            atiyah_bott_euler_weight: atiyah_bott_summary.euler_weight,
+            atiyah_bott_concentration_count: atiyah_bott_summary.concentration_count,
+            pomdp_optimality_gap: pomdp_summary.optimality_gap,
+            pomdp_divergence_count: pomdp_summary.divergence_count,
+            sos_max_stress: sos_summary.max_stress_fraction,
+            sos_violation_count: sos_summary.violation_event_count,
+            admm_primal_dual_gap: admm_summary.primal_dual_gap,
+            admm_violation_count: admm_summary.violation_count,
+            obstruction_norm: obstruction_summary.obstruction_norm,
+            obstruction_critical_count: obstruction_summary.critical_count,
+            operator_norm_spectral_radius: operator_norm_summary.spectral_radius,
+            operator_norm_instability_count: operator_norm_summary.instability_count,
+            provenance_shannon_entropy: provenance_snapshot.shannon_entropy,
+            provenance_renyi_h2: provenance_snapshot.renyi_h2,
+            provenance_collision_count: provenance_snapshot.collision_risk_count,
+            grobner_violation_rate: grobner_snapshot.violation_rate,
+            grobner_fault_count: grobner_snapshot.fault_count,
+            grothendieck_violation_rate: grothendieck_snapshot.global_violation_rate,
+            grothendieck_stack_fault_count: grothendieck_snapshot.stack_fault_count,
         }
     }
 
@@ -1886,5 +2495,257 @@ mod tests {
         let bias = kernel.cached_oracle_bias[usize::from(ApiFamily::PointerValidation as u8)]
             .load(Ordering::Relaxed);
         assert!(bias <= 2);
+    }
+
+    #[test]
+    fn snapshot_literal_never_relocks_summary_mutexes() {
+        let src = include_str!("mod.rs");
+        let snapshot_fn_start = src
+            .find("pub fn snapshot(&self, mode: SafetyLevel) -> RuntimeKernelSnapshot")
+            .expect("snapshot function signature must exist");
+        let snapshot_tail = &src[snapshot_fn_start..];
+        let resample_fn_start = snapshot_tail
+            .find("fn resample_high_order_kernels(&self, mode: SafetyLevel, ctx: RuntimeContext) {")
+            .expect("resample function must follow snapshot");
+        let snapshot_src = &snapshot_tail[..resample_fn_start];
+
+        let struct_start = snapshot_src
+            .find("RuntimeKernelSnapshot {\n            decisions:")
+            .expect("snapshot must build RuntimeKernelSnapshot struct literal");
+        let struct_literal = &snapshot_src[struct_start..];
+        assert!(
+            !struct_literal.contains(".lock()"),
+            "snapshot struct literal must only read cached locals; direct mutex locking in the literal can deadlock"
+        );
+
+        for needle in [
+            "let tropical_full_wcl_ns = self.tropical.lock().worst_case_bound(PipelinePath::Full);",
+            "let spectral_sig = self.spectral.lock().signature();",
+            "let rp_summary = self.rough_path.lock().summary();",
+            "let bridge_summary = self.bridge.lock().summary();",
+            "let hji_summary = self.hji.lock().summary();",
+            "let mfg_summary = self.mfg.lock().summary();",
+            "let padic_summary = self.padic.lock().summary();",
+            "let symplectic_summary = self.symplectic.lock().summary();",
+            "let topos_summary = self.topos.lock().summary();",
+            "let audit_summary = self.audit.lock().summary();",
+            "let changepoint_summary = self.changepoint.lock().summary();",
+            "let conformal_summary = self.conformal.lock().summary();",
+            "let design_summary = self.design.lock().summary();",
+            "let sparse_summary = self.sparse.lock().summary();",
+            "let equivariant_summary = self.equivariant.lock().summary();",
+            "let ktheory_summary = self.ktheory.lock().summary();",
+            "let covering_summary = self.covering.lock().summary();",
+            "let tstructure_summary = self.tstructure.lock().summary();",
+            "let atiyah_bott_summary = self.atiyah_bott.lock().summary();",
+            "let pomdp_summary = self.pomdp.lock().summary();",
+            "let sos_summary = self.sos.lock().summary();",
+            "let admm_summary = self.admm.lock().summary();",
+            "let obstruction_summary = self.obstruction.lock().summary();",
+            "let operator_norm_summary = self.operator_norm.lock().summary();",
+            "let provenance_snapshot = self.provenance.lock().snapshot();",
+            "let grobner_snapshot = self.grobner.lock().snapshot();",
+            "let grothendieck_snapshot = self.grothendieck.lock().snapshot();",
+            "let microlocal_summary = self.microlocal.lock().summary();",
+            "let serre_summary = self.serre.lock().summary();",
+            "let clifford_summary = self.clifford.lock().summary();",
+        ] {
+            assert_eq!(
+                snapshot_src.matches(needle).count(),
+                1,
+                "snapshot must cache exactly one local for `{needle}` before struct construction"
+            );
+        }
+    }
+
+    #[test]
+    fn observe_validation_result_records_all_probe_anomalies() {
+        let src = include_str!("mod.rs");
+        let observe_start = src
+            .find("pub fn observe_validation_result(")
+            .expect("observe_validation_result must exist");
+        let observe_tail = &src[observe_start..];
+        let observe_end = observe_tail
+            .find("/// Record overlap information for cross-shard consistency checks.")
+            .expect("observe_validation_result end marker must exist");
+        let observe_src = &observe_tail[..observe_end];
+
+        for needle in [
+            "if let Some(flag) = spectral_anomaly {\n                design.record_probe(Probe::Spectral, flag);",
+            "if let Some(flag) = rough_anomaly {\n                design.record_probe(Probe::RoughPath, flag);",
+            "if let Some(flag) = persistence_anomaly {\n                design.record_probe(Probe::Persistence, flag);",
+            "if let Some(flag) = anytime_anomaly {\n                design.record_probe(Probe::Anytime, flag);",
+            "if let Some(flag) = cvar_anomaly {\n                design.record_probe(Probe::Cvar, flag);",
+            "if let Some(flag) = bridge_anomaly {\n                design.record_probe(Probe::Bridge, flag);",
+            "if let Some(flag) = ld_anomaly {\n                design.record_probe(Probe::LargeDeviations, flag);",
+            "if let Some(flag) = hji_anomaly {\n                design.record_probe(Probe::Hji, flag);",
+            "if let Some(flag) = mfg_anomaly {\n                design.record_probe(Probe::MeanField, flag);",
+            "if let Some(flag) = padic_anomaly {\n                design.record_probe(Probe::Padic, flag);",
+            "if let Some(flag) = symplectic_anomaly {\n                design.record_probe(Probe::Symplectic, flag);",
+            "if let Some(flag) = topos_anomaly {\n                design.record_probe(Probe::HigherTopos, flag);",
+            "if let Some(flag) = audit_anomaly {\n                design.record_probe(Probe::CommitmentAudit, flag);",
+            "if let Some(flag) = changepoint_anomaly {\n                design.record_probe(Probe::Changepoint, flag);",
+            "if let Some(flag) = conformal_anomaly {\n                design.record_probe(Probe::Conformal, flag);",
+            "if let Some(flag) = loss_minimizer_anomaly {\n                design.record_probe(Probe::LossMinimizer, flag);",
+            "if let Some(flag) = coupling_anomaly {\n                design.record_probe(Probe::Coupling, flag);",
+        ] {
+            assert!(
+                observe_src.contains(needle),
+                "observe_validation_result must feed design kernel with `{needle}`"
+            );
+        }
+    }
+
+    #[test]
+    fn high_risk_aggregation_literals_are_lock_free() {
+        let src = include_str!("mod.rs");
+        let observe_start = src
+            .find("pub fn observe_validation_result(")
+            .expect("observe_validation_result must exist");
+        let observe_tail = &src[observe_start..];
+        let observe_end = observe_tail
+            .find("/// Record overlap information for cross-shard consistency checks.")
+            .expect("observe_validation_result end marker must exist");
+        let observe_src = &observe_tail[..observe_end];
+
+        let base_start = observe_src
+            .find("let base_severity: [u8; 25] = [")
+            .expect("base_severity literal must exist");
+        let base_tail = &observe_src[base_start..];
+        let base_end = base_tail
+            .find("];")
+            .expect("base_severity literal must terminate");
+        let base_literal = &base_tail[..base_end + 2];
+        assert!(
+            !base_literal.contains(".lock()"),
+            "base_severity aggregation must use cached atomics only (no locking in literal)"
+        );
+
+        let fusion_start = observe_src
+            .find("let mut severity = [0u8; 31];")
+            .expect("fusion severity buffer must exist");
+        let fusion_tail = &observe_src[fusion_start..];
+        let fusion_end = fusion_tail
+            .find("let summary = {")
+            .expect("fusion summary acquisition block must exist");
+        let fusion_literal = &fusion_tail[..fusion_end];
+        assert!(
+            !fusion_literal.contains(".lock()"),
+            "fusion severity aggregation must use cached atomics only (no locking in literal)"
+        );
+    }
+
+    #[test]
+    fn grobner_state_vector_literal_is_lock_free() {
+        let src = include_str!("mod.rs");
+        let observe_start = src
+            .find("pub fn observe_validation_result(")
+            .expect("observe_validation_result must exist");
+        let observe_tail = &src[observe_start..];
+        let observe_end = observe_tail
+            .find("/// Record overlap information for cross-shard consistency checks.")
+            .expect("observe_validation_result end marker must exist");
+        let observe_src = &observe_tail[..observe_end];
+
+        let state_vec_start = observe_src
+            .find("let state_vec = [")
+            .expect("grobner state_vec literal must exist");
+        let state_vec_tail = &observe_src[state_vec_start..];
+        let state_vec_end = state_vec_tail
+            .find("];")
+            .expect("grobner state_vec literal must terminate");
+        let state_vec_literal = &state_vec_tail[..state_vec_end + 2];
+
+        assert!(
+            !state_vec_literal.contains(".lock()"),
+            "grobner state_vec aggregation must use cached atomics only (no locking in literal)"
+        );
+    }
+
+    #[test]
+    fn resample_high_order_kernels_has_no_multi_lock_statements() {
+        let src = include_str!("mod.rs");
+        let resample_start = src
+            .find("fn resample_high_order_kernels(&self, mode: SafetyLevel, ctx: RuntimeContext) {")
+            .expect("resample_high_order_kernels must exist");
+        let resample_tail = &src[resample_start..];
+        let resample_end = resample_tail
+            .find("\n}\n\nimpl Default for RuntimeMathKernel")
+            .expect("resample_high_order_kernels end marker must exist");
+        let resample_src = &resample_tail[..resample_end];
+
+        for (idx, line) in resample_src.lines().enumerate() {
+            let lock_count = line.matches(".lock()").count();
+            assert!(
+                lock_count <= 1,
+                "resample_high_order_kernels line {} contains multiple lock() calls: `{}`",
+                idx + 1,
+                line.trim()
+            );
+        }
+    }
+
+    #[test]
+    fn decide_pre_design_aggregation_is_lock_free() {
+        let src = include_str!("mod.rs");
+        let decide_start = src
+            .find(
+                "pub fn decide(&self, mode: SafetyLevel, ctx: RuntimeContext) -> RuntimeDecision {",
+            )
+            .expect("decide must exist");
+        let decide_tail = &src[decide_start..];
+        let pre_design_start = decide_tail
+            .find("let base_risk_ppm = self.risk.upper_bound_ppm(ctx.family);")
+            .expect("base risk aggregation start must exist");
+        let pre_design_tail = &decide_tail[pre_design_start..];
+        let pre_design_end = pre_design_tail
+            .find("let design_bonus = {")
+            .expect("design bonus block must exist");
+        let pre_design_src = &pre_design_tail[..pre_design_end];
+
+        assert!(
+            !pre_design_src.contains(".lock()"),
+            "pre-design risk aggregation must only consume cached atomics; no mutex locking allowed"
+        );
+    }
+
+    #[test]
+    fn decide_and_observe_critical_regions_avoid_multi_lock_statements() {
+        let src = include_str!("mod.rs");
+
+        let decide_start = src
+            .find(
+                "pub fn decide(&self, mode: SafetyLevel, ctx: RuntimeContext) -> RuntimeDecision {",
+            )
+            .expect("decide must exist");
+        let decide_tail = &src[decide_start..];
+        let decide_end = decide_tail
+            .find("/// Return the current contextual check ordering for a given family/context.")
+            .expect("decide end marker must exist");
+        let decide_src = &decide_tail[..decide_end];
+
+        let observe_start = src
+            .find("pub fn observe_validation_result(")
+            .expect("observe_validation_result must exist");
+        let observe_tail = &src[observe_start..];
+        let observe_end = observe_tail
+            .find("/// Record overlap information for cross-shard consistency checks.")
+            .expect("observe_validation_result end marker must exist");
+        let observe_src = &observe_tail[..observe_end];
+
+        for (label, body) in [
+            ("decide", decide_src),
+            ("observe_validation_result", observe_src),
+        ] {
+            for (idx, line) in body.lines().enumerate() {
+                let lock_count = line.matches(".lock()").count();
+                assert!(
+                    lock_count <= 1,
+                    "{label} line {} contains multiple lock() calls: `{}`",
+                    idx + 1,
+                    line.trim()
+                );
+            }
+        }
     }
 }

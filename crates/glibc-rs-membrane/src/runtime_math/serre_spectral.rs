@@ -228,7 +228,10 @@ impl SerreSpectralController {
             .mul_add(1.0 - EWMA_ALPHA, EWMA_ALPHA * signal);
 
         // Page transition: snapshot previous densities for convergence tracking.
-        if self.total_observations % (SPECTRAL_WINDOW as u64) == 0 {
+        if self
+            .total_observations
+            .is_multiple_of(SPECTRAL_WINDOW as u64)
+        {
             for c in &mut self.cells {
                 c.prev_density = c.differential_density;
             }

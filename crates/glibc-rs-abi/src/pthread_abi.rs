@@ -12,8 +12,10 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, OnceLock};
 use std::thread;
 
+use glibc_rs_membrane::check_oracle::CheckStage;
 use glibc_rs_membrane::runtime_math::{ApiFamily, MembraneAction};
 
+use crate::malloc_abi::known_remaining;
 use crate::runtime_policy;
 
 type JoinTable = HashMap<libc::pthread_t, thread::JoinHandle<usize>>;
@@ -53,15 +55,53 @@ fn current_thread_id() -> libc::pthread_t {
     })
 }
 
+#[inline]
+fn stage_index(ordering: &[CheckStage; 7], stage: CheckStage) -> usize {
+    ordering.iter().position(|s| *s == stage).unwrap_or(0)
+}
+
+#[inline]
+fn threading_stage_context(addr1: usize, addr2: usize) -> (bool, bool, [CheckStage; 7]) {
+    let aligned = ((addr1 | addr2) & 0x7) == 0;
+    let recent_page = (addr1 != 0 && known_remaining(addr1).is_some())
+        || (addr2 != 0 && known_remaining(addr2).is_some());
+    let ordering = runtime_policy::check_ordering(ApiFamily::Threading, aligned, recent_page);
+    (aligned, recent_page, ordering)
+}
+
+#[inline]
+fn record_threading_stage_outcome(
+    ordering: &[CheckStage; 7],
+    aligned: bool,
+    recent_page: bool,
+    exit_stage: Option<usize>,
+) {
+    runtime_policy::note_check_order_outcome(
+        ApiFamily::Threading,
+        aligned,
+        recent_page,
+        ordering,
+        exit_stage,
+    );
+}
+
 /// POSIX `pthread_self`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn pthread_self() -> libc::pthread_t {
+    let (aligned, recent_page, ordering) = threading_stage_context(0, 0);
     let (_, decision) = runtime_policy::decide(ApiFamily::Threading, 0, 0, false, false, 0);
     if matches!(decision.action, MembraneAction::Deny) {
+        record_threading_stage_outcome(
+            &ordering,
+            aligned,
+            recent_page,
+            Some(stage_index(&ordering, CheckStage::Arena)),
+        );
         runtime_policy::observe(ApiFamily::Threading, decision.profile, 4, true);
         return 0;
     }
     let id = current_thread_id();
+    record_threading_stage_outcome(&ordering, aligned, recent_page, None);
     runtime_policy::observe(ApiFamily::Threading, decision.profile, 4, false);
     id
 }
@@ -69,15 +109,22 @@ pub unsafe extern "C" fn pthread_self() -> libc::pthread_t {
 /// POSIX `pthread_equal`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn pthread_equal(a: libc::pthread_t, b: libc::pthread_t) -> c_int {
+    let (aligned, recent_page, ordering) = threading_stage_context(a as usize, b as usize);
     let (_, decision) =
         runtime_policy::decide(ApiFamily::Threading, a as usize, 0, false, false, 0);
+    if matches!(decision.action, MembraneAction::Deny) {
+        record_threading_stage_outcome(
+            &ordering,
+            aligned,
+            recent_page,
+            Some(stage_index(&ordering, CheckStage::Arena)),
+        );
+        runtime_policy::observe(ApiFamily::Threading, decision.profile, 4, true);
+        return 0;
+    }
     let equal = if a == b { 1 } else { 0 };
-    runtime_policy::observe(
-        ApiFamily::Threading,
-        decision.profile,
-        4,
-        matches!(decision.action, MembraneAction::Deny),
-    );
+    record_threading_stage_outcome(&ordering, aligned, recent_page, None);
+    runtime_policy::observe(ApiFamily::Threading, decision.profile, 4, false);
     equal
 }
 
@@ -91,12 +138,33 @@ pub unsafe extern "C" fn pthread_create(
     start_routine: Option<StartRoutine>,
     arg: *mut c_void,
 ) -> c_int {
+    let (aligned, recent_page, ordering) =
+        threading_stage_context(thread_out as usize, arg as usize);
     if thread_out.is_null() || start_routine.is_none() {
+        record_threading_stage_outcome(
+            &ordering,
+            aligned,
+            recent_page,
+            Some(stage_index(
+                &ordering,
+                if thread_out.is_null() {
+                    CheckStage::Null
+                } else {
+                    CheckStage::Bounds
+                },
+            )),
+        );
         return libc::EINVAL;
     }
     let (_, decision) =
         runtime_policy::decide(ApiFamily::Threading, arg as usize, 0, true, false, 0);
     if matches!(decision.action, MembraneAction::Deny) {
+        record_threading_stage_outcome(
+            &ordering,
+            aligned,
+            recent_page,
+            Some(stage_index(&ordering, CheckStage::Arena)),
+        );
         runtime_policy::observe(ApiFamily::Threading, decision.profile, 16, true);
         return libc::EAGAIN;
     }
@@ -120,10 +188,17 @@ pub unsafe extern "C" fn pthread_create(
             // SAFETY: `thread_out` was validated non-null above.
             unsafe { *thread_out = tid };
             lock_join_table().insert(tid, handle);
+            record_threading_stage_outcome(&ordering, aligned, recent_page, None);
             runtime_policy::observe(ApiFamily::Threading, decision.profile, 40, false);
             0
         }
         Err(_) => {
+            record_threading_stage_outcome(
+                &ordering,
+                aligned,
+                recent_page,
+                Some(stage_index(&ordering, CheckStage::Arena)),
+            );
             runtime_policy::observe(ApiFamily::Threading, decision.profile, 40, true);
             libc::EAGAIN
         }
@@ -133,15 +208,29 @@ pub unsafe extern "C" fn pthread_create(
 /// POSIX `pthread_join`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn pthread_join(thread: libc::pthread_t, retval: *mut *mut c_void) -> c_int {
+    let (aligned, recent_page, ordering) =
+        threading_stage_context(thread as usize, retval as usize);
     let (_, decision) =
         runtime_policy::decide(ApiFamily::Threading, thread as usize, 0, true, false, 0);
     if matches!(decision.action, MembraneAction::Deny) {
+        record_threading_stage_outcome(
+            &ordering,
+            aligned,
+            recent_page,
+            Some(stage_index(&ordering, CheckStage::Arena)),
+        );
         runtime_policy::observe(ApiFamily::Threading, decision.profile, 24, true);
         return libc::EINVAL;
     }
 
     let handle = lock_join_table().remove(&thread);
     let Some(handle) = handle else {
+        record_threading_stage_outcome(
+            &ordering,
+            aligned,
+            recent_page,
+            Some(stage_index(&ordering, CheckStage::Arena)),
+        );
         runtime_policy::observe(ApiFamily::Threading, decision.profile, 24, true);
         return libc::ESRCH;
     };
@@ -152,10 +241,17 @@ pub unsafe extern "C" fn pthread_join(thread: libc::pthread_t, retval: *mut *mut
                 // SAFETY: caller-provided output pointer.
                 unsafe { *retval = rv as *mut c_void };
             }
+            record_threading_stage_outcome(&ordering, aligned, recent_page, None);
             runtime_policy::observe(ApiFamily::Threading, decision.profile, 24, false);
             0
         }
         Err(_) => {
+            record_threading_stage_outcome(
+                &ordering,
+                aligned,
+                recent_page,
+                Some(stage_index(&ordering, CheckStage::Arena)),
+            );
             runtime_policy::observe(ApiFamily::Threading, decision.profile, 24, true);
             libc::EDEADLK
         }
@@ -165,15 +261,32 @@ pub unsafe extern "C" fn pthread_join(thread: libc::pthread_t, retval: *mut *mut
 /// POSIX `pthread_detach`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn pthread_detach(thread: libc::pthread_t) -> c_int {
+    let (aligned, recent_page, ordering) = threading_stage_context(thread as usize, 0);
     let (_, decision) =
         runtime_policy::decide(ApiFamily::Threading, thread as usize, 0, true, false, 0);
     if matches!(decision.action, MembraneAction::Deny) {
+        record_threading_stage_outcome(
+            &ordering,
+            aligned,
+            recent_page,
+            Some(stage_index(&ordering, CheckStage::Arena)),
+        );
         runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, true);
         return libc::EINVAL;
     }
 
     let removed = lock_join_table().remove(&thread);
     let adverse = removed.is_none();
+    record_threading_stage_outcome(
+        &ordering,
+        aligned,
+        recent_page,
+        if adverse {
+            Some(stage_index(&ordering, CheckStage::Arena))
+        } else {
+            None
+        },
+    );
     runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, adverse);
     if adverse { libc::ESRCH } else { 0 }
 }
