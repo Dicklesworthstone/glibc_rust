@@ -1,17 +1,27 @@
 //! Runtime risk upper-bound estimator (conformal-style envelope).
 
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
 use super::ApiFamily;
+
+/// Cadence at which cached upper-bound values are recomputed.
+/// Every 64 observations per family, the expensive sqrt+division computation
+/// runs once and results are cached in atomics for the hot path.
+const RECOMPUTE_CADENCE: u64 = 64;
 
 /// Conformal-style online risk envelope.
 ///
 /// This tracks adverse outcomes per family and exposes a conservative upper
 /// bound in ppm. It is intentionally lightweight for hot runtime use.
+///
+/// **Hot-path discipline:** `upper_bound_ppm()` reads only from a per-family
+/// atomic cache (single load, ~1-2ns). The expensive sqrt + f64 division
+/// computation runs on cadence inside `observe()` every 64 calls per family.
 pub struct ConformalRiskEngine {
     calls: [AtomicU64; ApiFamily::COUNT],
     adverse: [AtomicU64; ApiFamily::COUNT],
-    prior_ppm: u32,
+    /// Cached upper-bound ppm per family. Updated on cadence in `observe()`.
+    cached_ub_ppm: [AtomicU32; ApiFamily::COUNT],
     z_score: f64,
 }
 
@@ -25,37 +35,48 @@ impl ConformalRiskEngine {
         Self {
             calls: std::array::from_fn(|_| AtomicU64::new(0)),
             adverse: std::array::from_fn(|_| AtomicU64::new(0)),
-            prior_ppm,
+            cached_ub_ppm: std::array::from_fn(|_| AtomicU32::new(prior_ppm)),
             z_score,
         }
     }
 
     /// Record one runtime outcome for a family.
+    ///
+    /// On cadence (every 64 calls per family), recomputes the upper-bound ppm
+    /// using the expensive smoothed binomial + sqrt envelope and caches the
+    /// result in an atomic for the hot path.
     pub fn observe(&self, family: ApiFamily, adverse: bool) {
         let idx = usize::from(family as u8);
-        self.calls[idx].fetch_add(1, Ordering::Relaxed);
+        let new_calls = self.calls[idx].fetch_add(1, Ordering::Relaxed) + 1;
         if adverse {
             self.adverse[idx].fetch_add(1, Ordering::Relaxed);
+        }
+        // Cadenced recomputation: amortize the expensive sqrt+division over
+        // RECOMPUTE_CADENCE observations so the hot path is a single atomic load.
+        if new_calls >= 32 && new_calls.is_multiple_of(RECOMPUTE_CADENCE) {
+            let ub = self.compute_upper_bound(idx, new_calls);
+            self.cached_ub_ppm[idx].store(ub, Ordering::Relaxed);
         }
     }
 
     /// Conservative upper bound on adverse probability in ppm.
     ///
-    /// Uses a smoothed binomial estimate with normal approximation envelope.
+    /// **Hot-path safe:** single atomic load (~1-2ns). The expensive computation
+    /// is amortized in `observe()` on cadence.
     #[must_use]
     pub fn upper_bound_ppm(&self, family: ApiFamily) -> u32 {
         let idx = usize::from(family as u8);
-        let calls = self.calls[idx].load(Ordering::Relaxed);
-        if calls < 32 {
-            return self.prior_ppm;
-        }
+        self.cached_ub_ppm[idx].load(Ordering::Relaxed)
+    }
 
+    /// Expensive upper-bound computation (sqrt + f64 divisions).
+    /// Called only on cadence from `observe()`, never on the hot path.
+    fn compute_upper_bound(&self, idx: usize, calls: u64) -> u32 {
         let adverse = self.adverse[idx].load(Ordering::Relaxed);
         let n = calls as f64;
         let p_hat = (adverse as f64 + 1.0) / (n + 2.0);
         let var = (p_hat * (1.0 - p_hat) / (n + 3.0)).max(0.0);
         let ub = (p_hat + self.z_score * var.sqrt()).clamp(0.0, 1.0);
-
         (ub * 1_000_000.0).round() as u32
     }
 }

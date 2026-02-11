@@ -114,6 +114,47 @@ impl EvidenceSymbolRecord {
         }
     }
 
+    /// Construct a record from raw bytes (e.g. tooling ingest).
+    ///
+    /// This does not validate the record; callers should use `validate_basic()`
+    /// and optional integrity checks as appropriate.
+    #[must_use]
+    pub const fn from_bytes(bytes: [u8; EVIDENCE_RECORD_SIZE]) -> Self {
+        Self { bytes }
+    }
+
+    /// Construct and immediately run basic structural validation.
+    pub fn try_from_bytes(bytes: [u8; EVIDENCE_RECORD_SIZE]) -> Result<Self, EvidenceRecordError> {
+        let rec = Self::from_bytes(bytes);
+        rec.validate_basic()?;
+        Ok(rec)
+    }
+
+    /// Compute the v1 seeded payload hash for a payload.
+    #[must_use]
+    pub fn compute_payload_hash_v1(payload: &[u8; EVIDENCE_SYMBOL_SIZE_T], seed: u64) -> u64 {
+        evidence_hash64(payload, seed ^ 0xA0B1_C2D3_E4F5_0617)
+    }
+
+    /// Verify `payload_hash == H(payload; seed)` for v1.
+    #[must_use]
+    pub fn verify_payload_hash_v1(&self) -> bool {
+        self.payload_hash() == Self::compute_payload_hash_v1(self.payload(), self.seed())
+    }
+
+    /// Compute the v1 chain hash given the prior chain hash.
+    #[must_use]
+    pub fn compute_chain_hash_v1(&self, prev_chain_hash: u64) -> u64 {
+        let auth_present = (self.flags() & FLAG_AUTH_TAG_PRESENT) != 0;
+        chain_hash64(prev_chain_hash, &self.bytes, auth_present)
+    }
+
+    /// Verify `chain_hash == H(prev_chain_hash || header_prefix || auth_tag)` for v1.
+    #[must_use]
+    pub fn verify_chain_hash_v1(&self, prev_chain_hash: u64) -> bool {
+        self.chain_hash() == self.compute_chain_hash_v1(prev_chain_hash)
+    }
+
     /// Build a v1 record from raw envelope parameters + payload bytes.
     ///
     /// This computes:

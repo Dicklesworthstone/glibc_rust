@@ -7,6 +7,8 @@ description = "Transparent Safety Membrane for glibc_rust"
 
 [dependencies]
 parking_lot = { workspace = true }
+blake3 = { workspace = true }
+sha2 = { workspace = true }
 
 [dev-dependencies]
 criterion = { workspace = true }

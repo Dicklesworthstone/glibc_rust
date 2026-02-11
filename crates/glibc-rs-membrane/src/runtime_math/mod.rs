@@ -63,9 +63,11 @@ pub mod operator_norm;
 pub mod ornstein_uhlenbeck;
 pub mod pac_bayes;
 pub mod pareto;
+pub mod policy_table;
 pub mod pomdp_repair;
 pub mod provenance_info;
 pub mod rademacher_complexity;
+pub mod redundancy_tuner;
 pub mod renewal_theory;
 pub mod risk;
 pub mod serre_spectral;
@@ -156,6 +158,7 @@ use self::pareto::ParetoController;
 use self::pomdp_repair::{PomdpRepairController, PomdpState};
 use self::provenance_info::{ProvenanceInfoController, ProvenanceState};
 use self::rademacher_complexity::{RademacherComplexityMonitor, RademacherState};
+use self::redundancy_tuner::RedundancyTuner;
 use self::renewal_theory::{RenewalState, RenewalTheoryMonitor};
 use self::risk::ConformalRiskEngine;
 use self::serre_spectral::{
@@ -177,7 +180,7 @@ const FULL_PATH_BUDGET_NS: u64 = 200;
 /// Number of base severity signals fed from hot-path cached atomics.
 const BASE_SEVERITY_LEN: usize = 25;
 /// Number of meta-controller severity signals appended after the base set.
-const META_SEVERITY_LEN: usize = 38;
+const META_SEVERITY_LEN: usize = 39;
 /// Compile-time assertion: fusion::SIGNALS == BASE + META severity slots.
 const _: () = assert!(
     fusion::SIGNALS == BASE_SEVERITY_LEN + META_SEVERITY_LEN,
@@ -638,6 +641,24 @@ pub struct RuntimeKernelSnapshot {
     pub sobol_augmented_mask: u32,
     /// Number of probes added by Sobol rotation beyond the D-optimal base set.
     pub sobol_augmented_count: u8,
+    /// First 8 bytes of the active policy table hash (0 if no table loaded).
+    pub policy_hash_prefix: u64,
+    /// Action distribution: [Allow, FullValidate, Repair, Deny] counts.
+    pub policy_action_dist: [u64; 4],
+    /// Evidence ring buffer: total records written (monotonic seqno).
+    pub evidence_seqno: u64,
+    /// Evidence ring buffer: loss count (overwrites before consumption).
+    pub evidence_loss_count: u64,
+    /// Evidence: current epoch counter (max across all streams).
+    pub evidence_max_epoch: u64,
+    /// Adaptive redundancy tuner: current overhead in ppm.
+    pub redundancy_overhead_ppm: u32,
+    /// Adaptive redundancy tuner: observed loss rate in ppm (EWMA).
+    pub redundancy_loss_rate_ppm: u32,
+    /// Adaptive redundancy tuner: state (0=Calibrating,1=Nominal,2=Stressed,3=Critical).
+    pub redundancy_state: u8,
+    /// Adaptive redundancy tuner: total adjustments made.
+    pub redundancy_adjustments: u64,
 }
 
 /// Online control kernel for strict/hardened runtime decisions.
@@ -721,6 +742,14 @@ pub struct RuntimeMathKernel {
     approachability: Mutex<ApproachabilityController>,
     localization: Mutex<LocalizationChooser>,
     sobol_scheduler: Mutex<SobolGenerator>,
+    redundancy_tuner: Mutex<RedundancyTuner>,
+    evidence_log: Box<evidence::SystematicEvidenceLog<512>>,
+    cached_evidence_seqno: AtomicU64,
+    cached_evidence_loss: AtomicU64,
+    cached_evidence_max_epoch: AtomicU64,
+    policy_lookup: Option<policy_table::PolicyTableLookup>,
+    cached_policy_hash: AtomicU64,
+    cached_policy_action_dist: [AtomicU64; 4], // Allow, FullValidate, Repair, Deny
     cached_risk_bonus_ppm: AtomicU64,
     cached_oracle_bias: [AtomicU8; ApiFamily::COUNT],
     cached_spectral_phase: AtomicU8,
@@ -801,6 +830,8 @@ pub struct RuntimeMathKernel {
     cached_approachability_state: AtomicU8,
     cached_localization_state: AtomicU8,
     cached_localization_arm: AtomicU8,
+    cached_redundancy_state: AtomicU8,
+    cached_redundancy_overhead_ppm: AtomicU64,
     cached_sobol_index: AtomicU64,
     cached_sobol_augmented_mask: AtomicU64,
     decisions: AtomicU64,
@@ -900,6 +931,14 @@ impl RuntimeMathKernel {
             approachability: Mutex::new(ApproachabilityController::new(mode)),
             localization: Mutex::new(LocalizationChooser::new(mode)),
             sobol_scheduler: Mutex::new(SobolGenerator::new(sobol::MAX_DIM)),
+            redundancy_tuner: Mutex::new(RedundancyTuner::new()),
+            evidence_log: Box::new(evidence::SystematicEvidenceLog::new(0xDEAD_C0DE_CAFE_F00D)),
+            cached_evidence_seqno: AtomicU64::new(0),
+            cached_evidence_loss: AtomicU64::new(0),
+            cached_evidence_max_epoch: AtomicU64::new(0),
+            policy_lookup: None,
+            cached_policy_hash: AtomicU64::new(0),
+            cached_policy_action_dist: std::array::from_fn(|_| AtomicU64::new(0)),
             cached_risk_bonus_ppm: AtomicU64::new(0),
             cached_oracle_bias: std::array::from_fn(|_| AtomicU8::new(1)),
             cached_spectral_phase: AtomicU8::new(0),
@@ -980,17 +1019,42 @@ impl RuntimeMathKernel {
             cached_approachability_state: AtomicU8::new(0),
             cached_localization_state: AtomicU8::new(0),
             cached_localization_arm: AtomicU8::new(1), // Default: Cautious
+            cached_redundancy_state: AtomicU8::new(0),
+            cached_redundancy_overhead_ppm: AtomicU64::new(100_000), // 10% default
             cached_sobol_index: AtomicU64::new(0),
             cached_sobol_augmented_mask: AtomicU64::new(0),
             decisions: AtomicU64::new(0),
         }
     }
 
+    /// Load a proof-carrying policy table from a `.pcpt` artifact.
+    ///
+    /// The artifact is verified once (hash + structural invariants) and then
+    /// provides O(1) lookups in `decide()`. If verification fails, the kernel
+    /// continues without a policy table (conservative built-in policy).
+    pub fn load_policy_table(
+        &mut self,
+        artifact: &[u8],
+    ) -> Result<(), policy_table::PolicyTableError> {
+        let lookup = policy_table::PolicyTableLookup::from_artifact(artifact)?;
+        self.cached_policy_hash
+            .store(lookup.hash_prefix(), Ordering::Relaxed);
+        self.policy_lookup = Some(lookup);
+        Ok(())
+    }
+
     /// Decide runtime validation/repair strategy for one call context.
     #[must_use]
     pub fn decide(&self, mode: SafetyLevel, ctx: RuntimeContext) -> RuntimeDecision {
         let sequence = self.decisions.fetch_add(1, Ordering::Relaxed) + 1;
-        if sequence.is_multiple_of(128) {
+        // Cadence-gate expensive sampling/oracle updates. Strict mode prioritizes
+        // latency stability over reactivity; hardened can resample more often.
+        let do_resample = match mode {
+            SafetyLevel::Strict => sequence.is_multiple_of(512),
+            SafetyLevel::Hardened => sequence.is_multiple_of(512),
+            SafetyLevel::Off => sequence.is_multiple_of(1024),
+        };
+        if do_resample {
             self.resample_high_order_kernels(mode, ctx);
         }
 
@@ -1420,70 +1484,72 @@ impl RuntimeMathKernel {
             2 => 55_000u32,  // DescentFailure — cocycle violations
             _ => 0u32,       // Calibrating/Coherent
         };
-        let pre_design_risk_ppm = base_risk_ppm
-            .saturating_add(sampled_bonus)
-            .saturating_add(cohomology_bonus)
-            .saturating_add(tropical_bonus)
-            .saturating_add(spectral_bonus)
-            .saturating_add(sig_bonus)
-            .saturating_add(topo_bonus)
-            .saturating_add(anytime_bonus)
-            .saturating_add(cvar_bonus)
-            .saturating_add(bridge_bonus)
-            .saturating_add(ld_bonus)
-            .saturating_add(hji_bonus)
-            .saturating_add(mfg_bonus)
-            .saturating_add(padic_bonus)
-            .saturating_add(symplectic_bonus)
-            .saturating_add(sparse_bonus)
-            .saturating_add(equivariant_bonus)
-            .saturating_add(topos_bonus)
-            .saturating_add(audit_bonus)
-            .saturating_add(changepoint_bonus)
-            .saturating_add(conformal_bonus)
-            .saturating_add(loss_min_bonus)
-            .saturating_add(coupling_bonus)
-            .saturating_add(fusion_bonus)
-            .saturating_add(microlocal_bonus)
-            .saturating_add(serre_bonus)
-            .saturating_add(clifford_bonus)
-            .saturating_add(ktheory_bonus)
-            .saturating_add(covering_bonus)
-            .saturating_add(tstructure_bonus)
-            .saturating_add(atiyah_bott_bonus)
-            .saturating_add(pomdp_bonus)
-            .saturating_add(sos_bonus)
-            .saturating_add(admm_bonus)
-            .saturating_add(obstruction_bonus)
-            .saturating_add(operator_norm_bonus)
-            .saturating_add(provenance_bonus)
-            .saturating_add(grobner_bonus)
-            .saturating_add(grothendieck_bonus)
-            .saturating_add(malliavin_bonus)
-            .saturating_add(info_geo_bonus)
-            .saturating_add(matrix_conc_bonus)
-            .saturating_add(nerve_bonus)
-            .saturating_add(wasserstein_bonus)
-            .saturating_add(mmd_bonus)
-            .saturating_add(pac_bayes_bonus)
-            .saturating_add(stein_bonus)
-            .saturating_add(lyapunov_bonus)
-            .saturating_add(rademacher_bonus)
-            .saturating_add(transfer_entropy_bonus)
-            .saturating_add(hodge_bonus)
-            .saturating_add(doob_bonus)
-            .saturating_add(fano_bonus)
-            .saturating_add(dobrushin_bonus)
-            .saturating_add(azuma_bonus)
-            .saturating_add(renewal_bonus)
-            .saturating_add(lz_bonus)
-            .saturating_add(ito_qv_bonus)
-            .saturating_add(borel_cantelli_bonus)
-            .saturating_add(ou_bonus)
-            .saturating_add(hurst_bonus)
-            .saturating_add(dispersion_bonus)
-            .saturating_add(birkhoff_bonus)
-            .min(1_000_000);
+        // Aggregate risk contributions without saturating arithmetic; we clamp at 1_000_000 ppm.
+        // This avoids dozens of per-call saturating ops on the decide hot path.
+        let mut pre_design_risk_ppm_acc = u64::from(base_risk_ppm);
+        pre_design_risk_ppm_acc += u64::from(sampled_bonus);
+        pre_design_risk_ppm_acc += u64::from(cohomology_bonus);
+        pre_design_risk_ppm_acc += u64::from(tropical_bonus);
+        pre_design_risk_ppm_acc += u64::from(spectral_bonus);
+        pre_design_risk_ppm_acc += u64::from(sig_bonus);
+        pre_design_risk_ppm_acc += u64::from(topo_bonus);
+        pre_design_risk_ppm_acc += u64::from(anytime_bonus);
+        pre_design_risk_ppm_acc += u64::from(cvar_bonus);
+        pre_design_risk_ppm_acc += u64::from(bridge_bonus);
+        pre_design_risk_ppm_acc += u64::from(ld_bonus);
+        pre_design_risk_ppm_acc += u64::from(hji_bonus);
+        pre_design_risk_ppm_acc += u64::from(mfg_bonus);
+        pre_design_risk_ppm_acc += u64::from(padic_bonus);
+        pre_design_risk_ppm_acc += u64::from(symplectic_bonus);
+        pre_design_risk_ppm_acc += u64::from(sparse_bonus);
+        pre_design_risk_ppm_acc += u64::from(equivariant_bonus);
+        pre_design_risk_ppm_acc += u64::from(topos_bonus);
+        pre_design_risk_ppm_acc += u64::from(audit_bonus);
+        pre_design_risk_ppm_acc += u64::from(changepoint_bonus);
+        pre_design_risk_ppm_acc += u64::from(conformal_bonus);
+        pre_design_risk_ppm_acc += u64::from(loss_min_bonus);
+        pre_design_risk_ppm_acc += u64::from(coupling_bonus);
+        pre_design_risk_ppm_acc += u64::from(fusion_bonus);
+        pre_design_risk_ppm_acc += u64::from(microlocal_bonus);
+        pre_design_risk_ppm_acc += u64::from(serre_bonus);
+        pre_design_risk_ppm_acc += u64::from(clifford_bonus);
+        pre_design_risk_ppm_acc += u64::from(ktheory_bonus);
+        pre_design_risk_ppm_acc += u64::from(covering_bonus);
+        pre_design_risk_ppm_acc += u64::from(tstructure_bonus);
+        pre_design_risk_ppm_acc += u64::from(atiyah_bott_bonus);
+        pre_design_risk_ppm_acc += u64::from(pomdp_bonus);
+        pre_design_risk_ppm_acc += u64::from(sos_bonus);
+        pre_design_risk_ppm_acc += u64::from(admm_bonus);
+        pre_design_risk_ppm_acc += u64::from(obstruction_bonus);
+        pre_design_risk_ppm_acc += u64::from(operator_norm_bonus);
+        pre_design_risk_ppm_acc += u64::from(provenance_bonus);
+        pre_design_risk_ppm_acc += u64::from(grobner_bonus);
+        pre_design_risk_ppm_acc += u64::from(grothendieck_bonus);
+        pre_design_risk_ppm_acc += u64::from(malliavin_bonus);
+        pre_design_risk_ppm_acc += u64::from(info_geo_bonus);
+        pre_design_risk_ppm_acc += u64::from(matrix_conc_bonus);
+        pre_design_risk_ppm_acc += u64::from(nerve_bonus);
+        pre_design_risk_ppm_acc += u64::from(wasserstein_bonus);
+        pre_design_risk_ppm_acc += u64::from(mmd_bonus);
+        pre_design_risk_ppm_acc += u64::from(pac_bayes_bonus);
+        pre_design_risk_ppm_acc += u64::from(stein_bonus);
+        pre_design_risk_ppm_acc += u64::from(lyapunov_bonus);
+        pre_design_risk_ppm_acc += u64::from(rademacher_bonus);
+        pre_design_risk_ppm_acc += u64::from(transfer_entropy_bonus);
+        pre_design_risk_ppm_acc += u64::from(hodge_bonus);
+        pre_design_risk_ppm_acc += u64::from(doob_bonus);
+        pre_design_risk_ppm_acc += u64::from(fano_bonus);
+        pre_design_risk_ppm_acc += u64::from(dobrushin_bonus);
+        pre_design_risk_ppm_acc += u64::from(azuma_bonus);
+        pre_design_risk_ppm_acc += u64::from(renewal_bonus);
+        pre_design_risk_ppm_acc += u64::from(lz_bonus);
+        pre_design_risk_ppm_acc += u64::from(ito_qv_bonus);
+        pre_design_risk_ppm_acc += u64::from(borel_cantelli_bonus);
+        pre_design_risk_ppm_acc += u64::from(ou_bonus);
+        pre_design_risk_ppm_acc += u64::from(hurst_bonus);
+        pre_design_risk_ppm_acc += u64::from(dispersion_bonus);
+        pre_design_risk_ppm_acc += u64::from(birkhoff_bonus);
+        let pre_design_risk_ppm = pre_design_risk_ppm_acc.min(1_000_000) as u32;
 
         let ident_ppm = self.cached_design_ident_ppm.load(Ordering::Relaxed) as u32;
         let design_bonus = {
@@ -1496,9 +1562,8 @@ impl RuntimeMathKernel {
             }
         };
 
-        let risk_upper_bound_ppm = pre_design_risk_ppm
-            .saturating_add(design_bonus)
-            .min(1_000_000);
+        let risk_upper_bound_ppm =
+            (u64::from(pre_design_risk_ppm) + u64::from(design_bonus)).min(1_000_000) as u32;
 
         // D-optimal probe scheduling:
         // choose heavy monitors under budget to maximize online identifiability.
@@ -1506,8 +1571,15 @@ impl RuntimeMathKernel {
         // IMPORTANT: Strict decide() is a hot path; it must not execute heavy
         // floating-point or linear-algebra work per-call. We update the design
         // plan on a cadence and cache its outputs in atomics.
-        if self.cached_design_budget_ns.load(Ordering::Relaxed) == 0 || sequence.is_multiple_of(512)
-        {
+        // Cadence-gate design updates; the controller performs floating-point + logdet
+        // work under a mutex, so strict mode updates less frequently.
+        let do_design_update = self.cached_design_budget_ns.load(Ordering::Relaxed) == 0
+            || match mode {
+                SafetyLevel::Strict => sequence.is_multiple_of(4096),
+                SafetyLevel::Hardened => sequence.is_multiple_of(4096),
+                SafetyLevel::Off => sequence.is_multiple_of(8192),
+            };
+        if do_design_update {
             let adverse_hint = ctx.bloom_negative || (ctx.is_write && ctx.requested_bytes > 4096);
             let mut design = self.design.lock();
             let plan =
@@ -1523,52 +1595,61 @@ impl RuntimeMathKernel {
                 .store(plan.expected_cost_ns, Ordering::Relaxed);
             self.cached_design_selected
                 .store(plan.selected_count(), Ordering::Relaxed);
+            // Reset Sobol augmentation diff on plan refresh; the cadence block below re-augments
+            // deterministically using the new base plan.
+            self.cached_sobol_augmented_mask.store(0, Ordering::Relaxed);
+        }
 
-            // Sobol quasi-random probe augmentation: deterministically rotate
-            // additional probes beyond the D-optimal base set, achieving
-            // low-discrepancy coverage of the probe combination space over time.
-            // Covering-array gaps lower the activation threshold so that probes
-            // covering uncovered interactions are more likely to be included.
-            {
-                let mut sobol = self.sobol_scheduler.lock();
-                let point = sobol.next_ppm();
-                let cov_state = self.cached_covering_state.load(Ordering::Relaxed);
-                // Base threshold: 500k ppm = 50% activation probability per probe.
-                // Coverage gaps lower the threshold to activate more probes and
-                // fill uncovered interaction tuples faster.
-                let threshold = match cov_state {
-                    3 => 250_000u32, // CriticalGap: aggressive exploration
-                    2 => 350_000u32, // CoverageGap: moderate exploration
-                    _ => 500_000u32, // Calibrating/Complete: standard rotation
-                };
-                let base_mask = plan.mask;
-                let mut augmented_mask = base_mask;
-                let budget_remaining = plan.budget_ns.saturating_sub(plan.expected_cost_ns);
-                let mut augmented_cost = 0u64;
-                // Map each probe to a Sobol dimension (mod 8) for activation.
-                // Probes whose Sobol coordinate exceeds the threshold are added
-                // if they fit within the remaining budget.
-                for probe in Probe::ALL {
-                    if (base_mask & probe.bit()) != 0 {
-                        continue; // already in D-optimal set
-                    }
-                    let dim_idx = (probe as u8 as usize) % sobol.dim();
-                    if point[dim_idx] >= threshold {
-                        let cost = design::probe_cost_ns(probe);
-                        if augmented_cost.saturating_add(cost) <= budget_remaining {
-                            augmented_mask |= probe.bit();
-                            augmented_cost += cost;
-                        }
+        // Sobol quasi-random probe augmentation: deterministically rotate additional probes
+        // beyond the D-optimal base set. Runs on cadence (every 512 decisions) to keep
+        // the decide hot path fast.
+        if sequence.is_multiple_of(512) {
+            let current_mask = self.cached_probe_mask.load(Ordering::Relaxed) as u32;
+            let augmented_diff = self.cached_sobol_augmented_mask.load(Ordering::Relaxed) as u32;
+            let base_mask = current_mask ^ augmented_diff;
+
+            let budget_ns = self.cached_design_budget_ns.load(Ordering::Relaxed);
+            let expected_cost_ns = self.cached_design_expected_ns.load(Ordering::Relaxed);
+            let budget_remaining = budget_ns.saturating_sub(expected_cost_ns);
+
+            let mut sobol = self.sobol_scheduler.lock();
+            let point = sobol.next_ppm();
+            let cov_state = self.cached_covering_state.load(Ordering::Relaxed);
+            // Base threshold: 500k ppm = 50% activation probability per probe.
+            // Coverage gaps lower the threshold to activate more probes and
+            // fill uncovered interaction tuples faster.
+            let threshold = match cov_state {
+                3 => 250_000u32, // CriticalGap: aggressive exploration
+                2 => 350_000u32, // CoverageGap: moderate exploration
+                _ => 500_000u32, // Calibrating/Complete: standard rotation
+            };
+
+            let mut augmented_mask = base_mask;
+            let mut augmented_cost = 0u64;
+            // Map each probe to a Sobol dimension (mod 8) for activation.
+            // Probes whose Sobol coordinate exceeds the threshold are added
+            // if they fit within the remaining budget.
+            for probe in Probe::ALL {
+                if (base_mask & probe.bit()) != 0 {
+                    continue; // already in D-optimal set
+                }
+                let dim_idx = (probe as u8 as usize) % sobol.dim();
+                if point[dim_idx] >= threshold {
+                    let cost = design::probe_cost_ns(probe);
+                    if augmented_cost.saturating_add(cost) <= budget_remaining {
+                        augmented_mask |= probe.bit();
+                        augmented_cost += cost;
                     }
                 }
-                // Replace probe mask with Sobol-augmented version.
-                self.cached_probe_mask
-                    .store(u64::from(augmented_mask), Ordering::Relaxed);
-                self.cached_sobol_index
-                    .store(u64::from(sobol.index()), Ordering::Relaxed);
-                self.cached_sobol_augmented_mask
-                    .store(u64::from(augmented_mask ^ base_mask), Ordering::Relaxed);
             }
+
+            // Replace probe mask with Sobol-augmented version.
+            self.cached_probe_mask
+                .store(u64::from(augmented_mask), Ordering::Relaxed);
+            self.cached_sobol_index
+                .store(u64::from(sobol.index()), Ordering::Relaxed);
+            self.cached_sobol_augmented_mask
+                .store(u64::from(augmented_mask ^ base_mask), Ordering::Relaxed);
         }
 
         let limits = self.controller.limits(mode);
@@ -1666,9 +1747,47 @@ impl RuntimeMathKernel {
             profile = ValidationProfile::Full;
         }
 
+        // Proof-carrying policy table: O(1) lookup provides offline-synthesized
+        // profile/action suggestion. Strict mode: table only controls validation
+        // depth (conservative escalation). Hardened mode: table may choose action.
+        let policy_cell = self.policy_lookup.as_ref().and_then(|pt| {
+            pt.lookup(
+                mode,
+                ctx.family,
+                risk_upper_bound_ppm,
+                fast_over_budget,
+                full_over_budget,
+                pareto_budget_exhausted,
+                consistency_faults,
+            )
+        });
+        if let Some(cell) = policy_cell {
+            // Conservative merge: table can only escalate profile, never de-escalate.
+            if cell.profile.requires_full() {
+                profile = ValidationProfile::Full;
+            }
+        }
+
         let admissible = self
             .barrier
             .admissible(&ctx, mode, profile, risk_upper_bound_ppm, limits);
+
+        // Policy table escalation: extract Deny/Repair/FullValidate suggestions.
+        // Allow is NOT extracted — it defers to the normal cascade so that the
+        // source-level ordering invariant (barrier → full_validation → repair → Allow)
+        // is preserved.
+        let policy_escalation = policy_cell.and_then(|cell| match cell.action {
+            // Hardened mode: table may choose Repair/Deny directly.
+            MembraneAction::Deny if mode.heals_enabled() => Some(MembraneAction::Deny),
+            MembraneAction::Repair(heal) if mode.heals_enabled() => {
+                Some(MembraneAction::Repair(heal))
+            }
+            // Strict mode: Deny/Repair clamp to FullValidate (depth control
+            // only — cannot change externally visible semantics per bd-3kh).
+            MembraneAction::Deny | MembraneAction::Repair(_) => Some(MembraneAction::FullValidate),
+            MembraneAction::FullValidate => Some(MembraneAction::FullValidate),
+            _ => None,
+        });
 
         let action = if !admissible {
             if mode.heals_enabled() {
@@ -1676,6 +1795,8 @@ impl RuntimeMathKernel {
             } else {
                 MembraneAction::Deny
             }
+        } else if let Some(escalated) = policy_escalation {
+            escalated
         } else if profile.requires_full()
             || risk_upper_bound_ppm >= limits.full_validation_trigger_ppm
         {
@@ -1686,12 +1807,44 @@ impl RuntimeMathKernel {
             MembraneAction::Allow
         };
 
-        RuntimeDecision {
+        // Track policy table action distribution for snapshot.
+        let action_idx = match action {
+            MembraneAction::Allow => 0,
+            MembraneAction::FullValidate => 1,
+            MembraneAction::Repair(_) => 2,
+            MembraneAction::Deny => 3,
+        };
+        self.cached_policy_action_dist[action_idx].fetch_add(1, Ordering::Relaxed);
+
+        let decision = RuntimeDecision {
             profile,
             action,
             policy_id: compute_policy_id(mode, ctx.family, profile, action),
             risk_upper_bound_ppm,
+        };
+
+        // Evidence recording is intentionally cadence-gated:
+        // `record_decision()` computes integrity hashes + publishes into a ring buffer, which is
+        // too expensive to run on every call even in hardened mode.
+        //
+        // Policy:
+        // - Always record adverse decisions (Repair/Deny).
+        // - Otherwise, sample on a coarse cadence to keep overhead negligible.
+        let adverse = matches!(action, MembraneAction::Deny | MembraneAction::Repair(_));
+        let do_evidence = adverse
+            || match mode {
+                SafetyLevel::Strict => sequence.is_multiple_of(16384),
+                SafetyLevel::Hardened => sequence.is_multiple_of(16384),
+                SafetyLevel::Off => false,
+            };
+        if do_evidence {
+            let seqno = self
+                .evidence_log
+                .record_decision(mode, ctx, decision, 0, adverse, 0, None);
+            self.cached_evidence_seqno.store(seqno, Ordering::Relaxed);
         }
+
+        decision
     }
 
     /// Return the current contextual check ordering for a given family/context.
@@ -1801,11 +1954,33 @@ impl RuntimeMathKernel {
         // Cadence-gate the expensive meta-controller cascade (PAC-Bayes, fusion, etc.).
         // The core probe set is still selected by the design kernel via `probe_mask`.
         let meta_interval = match mode {
-            SafetyLevel::Strict => 8u64,
-            SafetyLevel::Hardened => 8u64,
-            SafetyLevel::Off => 16u64,
+            SafetyLevel::Strict => 32u64,
+            SafetyLevel::Hardened => 16u64,
+            SafetyLevel::Off => 64u64,
         };
         let run_meta = observe_seq.is_multiple_of(meta_interval);
+
+        // Redundancy tuner: cadence-gated epoch-level loss observation.
+        // This is an observe-path controller, so its updates are driven from
+        // observe_validation_result() rather than decide().
+        if observe_seq.is_multiple_of(4096) && !matches!(mode, SafetyLevel::Off) {
+            // Derive approximate epoch loss: if evidence seqno hasn't advanced
+            // proportionally, we infer loss from the gap.
+            let seqno = self.cached_evidence_seqno.load(Ordering::Relaxed);
+            let loss_count = self.cached_evidence_loss.load(Ordering::Relaxed);
+            let epoch = self.cached_evidence_max_epoch.load(Ordering::Relaxed);
+            let loss_ppm = if seqno > 0 {
+                ((loss_count as u128).saturating_mul(1_000_000) / (seqno as u128)) as u32
+            } else {
+                0
+            };
+            let mut tuner = self.redundancy_tuner.lock();
+            let _ = tuner.observe_epoch(loss_ppm, epoch);
+            self.cached_redundancy_state
+                .store(tuner.state() as u8, Ordering::Relaxed);
+            self.cached_redundancy_overhead_ppm
+                .store(u64::from(tuner.overhead_ppm()), Ordering::Relaxed);
+        }
 
         // Feed spectral monitor with multi-dimensional observation.
         if ProbePlan::includes_mask(probe_mask, Probe::Spectral) {
@@ -3387,6 +3562,7 @@ impl RuntimeMathKernel {
                 severity[60] = self.cached_sos_barrier_state.load(Ordering::Relaxed); // 0..3
                 severity[61] = self.cached_localization_state.load(Ordering::Relaxed); // 0..3
                 severity[62] = self.cached_approachability_state.load(Ordering::Relaxed); // 0..3
+                severity[63] = self.cached_redundancy_state.load(Ordering::Relaxed); // 0..3
                 let summary = {
                     let mut fusion = self.fusion.lock();
                     fusion.observe(severity, adverse, mode)
@@ -3580,6 +3756,7 @@ impl RuntimeMathKernel {
         let microlocal_summary = self.microlocal.lock().summary();
         let serre_summary = self.serre.lock().summary();
         let clifford_summary = self.clifford.lock().summary();
+        let redundancy_summary = self.redundancy_tuner.lock().summary();
         RuntimeKernelSnapshot {
             schema_version: RUNTIME_KERNEL_SNAPSHOT_SCHEMA_VERSION,
             decisions: self.decisions.load(Ordering::Relaxed),
@@ -3756,6 +3933,20 @@ impl RuntimeMathKernel {
             sobol_augmented_mask: self.cached_sobol_augmented_mask.load(Ordering::Relaxed) as u32,
             sobol_augmented_count: (self.cached_sobol_augmented_mask.load(Ordering::Relaxed) as u32)
                 .count_ones() as u8,
+            policy_hash_prefix: self.cached_policy_hash.load(Ordering::Relaxed),
+            policy_action_dist: [
+                self.cached_policy_action_dist[0].load(Ordering::Relaxed),
+                self.cached_policy_action_dist[1].load(Ordering::Relaxed),
+                self.cached_policy_action_dist[2].load(Ordering::Relaxed),
+                self.cached_policy_action_dist[3].load(Ordering::Relaxed),
+            ],
+            evidence_seqno: self.cached_evidence_seqno.load(Ordering::Relaxed),
+            evidence_loss_count: self.cached_evidence_loss.load(Ordering::Relaxed),
+            evidence_max_epoch: self.cached_evidence_max_epoch.load(Ordering::Relaxed),
+            redundancy_overhead_ppm: redundancy_summary.overhead_ppm,
+            redundancy_loss_rate_ppm: redundancy_summary.loss_rate_ppm,
+            redundancy_state: redundancy_summary.state,
+            redundancy_adjustments: redundancy_summary.adjustments,
         }
     }
 
@@ -4275,6 +4466,91 @@ mod tests {
         );
     }
 
+    /// Hard rule audit (bd-3dv): verify decide() contains no forbidden
+    /// operations on the strict fast path — no transcendentals, no floats,
+    /// no heap allocation, no matrix operations.
+    #[test]
+    fn decide_no_forbidden_math_on_strict_fast_path() {
+        let src = include_str!("mod.rs");
+        let decide_start = src
+            .find(
+                "pub fn decide(&self, mode: SafetyLevel, ctx: RuntimeContext) -> RuntimeDecision {",
+            )
+            .expect("decide must exist");
+        let decide_tail = &src[decide_start..];
+        let decide_end = decide_tail
+            .find("/// Return the current contextual check ordering for a given family/context.")
+            .expect("decide end marker must exist");
+        let decide_src = &decide_tail[..decide_end];
+
+        // Strip comments to avoid false positives from documentation.
+        let non_comment_lines: Vec<&str> = decide_src
+            .lines()
+            .filter(|l| {
+                let trimmed = l.trim();
+                !trimmed.starts_with("//") && !trimmed.starts_with("///")
+            })
+            .collect();
+        let code = non_comment_lines.join("\n");
+
+        // Forbidden transcendental functions (would each take >20ns alone).
+        for forbidden in &[
+            ".exp(", ".ln(", ".log(", ".log2(", ".log10(", ".pow(", ".powf(", ".powi(", ".sqrt(",
+            ".sin(", ".cos(", ".tan(", ".asin(", ".acos(", ".atan(",
+        ] {
+            assert!(
+                !code.contains(forbidden),
+                "decide() must not contain transcendental `{}` on strict fast path",
+                forbidden
+            );
+        }
+
+        // Forbidden float types in variable bindings/annotations.
+        // (AtomicU8 → u32 match is fine; f32/f64 arithmetic is not.)
+        assert!(
+            !code.contains(": f32")
+                && !code.contains(": f64")
+                && !code.contains("as f32")
+                && !code.contains("as f64"),
+            "decide() must not use floating-point types on strict fast path"
+        );
+
+        // Forbidden heap allocation.
+        for forbidden in &[
+            "Vec::new",
+            "Vec::with_capacity",
+            "Box::new",
+            "String::new",
+            "String::from",
+            "vec![",
+            ".to_vec()",
+            ".to_string()",
+            ".to_owned()",
+        ] {
+            assert!(
+                !code.contains(forbidden),
+                "decide() must not heap-allocate via `{}` on strict fast path",
+                forbidden
+            );
+        }
+
+        // Forbidden matrix/linear algebra.
+        for forbidden in &[
+            "inverse(",
+            "eigenvalue(",
+            "decompose(",
+            "solve_linear(",
+            "lu_decomp(",
+            "cholesky(",
+        ] {
+            assert!(
+                !code.contains(forbidden),
+                "decide() must not perform matrix operations via `{}`",
+                forbidden
+            );
+        }
+    }
+
     /// Decision-law invariant (behavioral): barrier non-admissibility always
     /// produces Deny (strict) or Repair(ReturnSafeDefault) (hardened), never
     /// Allow or FullValidate, regardless of risk level or soft heuristic state.
@@ -4440,7 +4716,7 @@ mod tests {
         let snap0 = kernel.snapshot(SafetyLevel::Hardened);
         assert_eq!(snap0.sobol_index, 0);
 
-        // Drive enough decide() calls to trigger the cadence gate (every 512).
+        // Drive enough decide() calls to trigger the design cadence gate (every 4096).
         let ctx = RuntimeContext {
             family: ApiFamily::PointerValidation,
             is_write: false,
@@ -4449,7 +4725,7 @@ mod tests {
             bloom_negative: false,
             addr_hint: 0x1000,
         };
-        for _ in 0..513 {
+        for _ in 0..4097 {
             let _ = kernel.decide(SafetyLevel::Hardened, ctx);
         }
 
@@ -4472,8 +4748,8 @@ mod tests {
             bloom_negative: false,
             addr_hint: 0x1000,
         };
-        // Drive past cadence gate.
-        for _ in 0..513 {
+        // Drive past design cadence gate (every 4096).
+        for _ in 0..4097 {
             let _ = kernel.decide(SafetyLevel::Strict, ctx);
         }
         let snap = kernel.snapshot(SafetyLevel::Strict);
@@ -4498,7 +4774,8 @@ mod tests {
             bloom_negative: false,
             addr_hint: 0x2000,
         };
-        for _ in 0..513 {
+        // Drive past design cadence gate (every 4096) so sobol_index > 0.
+        for _ in 0..4097 {
             let _ = k1.decide(SafetyLevel::Hardened, ctx);
             let _ = k2.decide(SafetyLevel::Hardened, ctx);
         }
@@ -4512,5 +4789,256 @@ mod tests {
             s1.sobol_augmented_mask, s2.sobol_augmented_mask,
             "two identical kernels must produce the same augmented mask"
         );
+    }
+
+    // --- bd-3kh: Proof-carrying policy table integration tests ---
+
+    #[test]
+    fn pcpt_no_table_same_as_default() {
+        let kernel = RuntimeMathKernel::new();
+        let ctx = RuntimeContext::pointer_validation(0x1000, false);
+        let d = kernel.decide(SafetyLevel::Strict, ctx);
+        // Without a table loaded, decisions follow built-in risk logic.
+        assert!(
+            matches!(
+                d.action,
+                MembraneAction::Allow | MembraneAction::FullValidate
+            ),
+            "default strict decision without PCPT should be Allow or FullValidate"
+        );
+    }
+
+    #[test]
+    fn pcpt_load_and_snapshot_hash() {
+        let mut kernel = RuntimeMathKernel::new();
+        let artifact = policy_table::build_test_pcpt(&[]);
+        kernel
+            .load_policy_table(&artifact)
+            .expect("load valid pcpt");
+        let snap = kernel.snapshot(SafetyLevel::Strict);
+        assert_ne!(
+            snap.policy_hash_prefix, 0,
+            "policy hash should be non-zero after load"
+        );
+    }
+
+    #[test]
+    fn pcpt_strict_profile_escalation() {
+        // Build a PCPT where ALL PointerValidation strict cells are Full.
+        // This satisfies risk monotonicity (all buckets same level) and mode
+        // refinement (hardened default Allow ≥ strict Full is fine because
+        // strict is more restrictive on profile, not action).
+        let per_family = policy_table::RISK_BUCKETS_V1
+            * policy_table::BUDGET_BUCKETS_V1
+            * policy_table::CONSISTENCY_BUCKETS_V1;
+        let mut overrides = Vec::new();
+        // Set all strict PointerValidation cells to (Full, Allow).
+        for i in 0..per_family {
+            overrides.push((i, 1, 0, 0)); // Full, Allow, None
+        }
+        // Mode refinement: hardened must be >= strict. Since strict has Allow
+        // action and hardened defaults to Allow, this passes. The profile
+        // refinement check only fails if hardened=Fast and strict=Full, so
+        // set hardened PointerValidation cells to Full too.
+        let per_mode = ApiFamily::COUNT * per_family;
+        for i in 0..per_family {
+            overrides.push((per_mode + i, 1, 0, 0)); // Full, Allow, None
+        }
+        let artifact = policy_table::build_test_pcpt(&overrides);
+        let mut kernel = RuntimeMathKernel::new();
+        kernel.load_policy_table(&artifact).expect("load");
+        let ctx = RuntimeContext::pointer_validation(0x1000, false);
+        let d = kernel.decide(SafetyLevel::Strict, ctx);
+        // PCPT escalated profile to Full → action should be FullValidate.
+        assert!(
+            matches!(d.action, MembraneAction::FullValidate),
+            "strict PCPT Full profile should produce FullValidate, got {:?}",
+            d.action
+        );
+    }
+
+    #[test]
+    fn pcpt_strict_deny_clamped_to_full_validate() {
+        // Build a PCPT where PointerValidation under both modes has Deny.
+        // Must satisfy: risk monotonicity (all cells same) + mode refinement
+        // (hardened >= strict). Setting both to (Full, Deny) works.
+        let per_family = policy_table::RISK_BUCKETS_V1
+            * policy_table::BUDGET_BUCKETS_V1
+            * policy_table::CONSISTENCY_BUCKETS_V1;
+        let per_mode = ApiFamily::COUNT * per_family;
+        let mut overrides = Vec::new();
+        // Strict PointerValidation: (Full, Deny, None)
+        for i in 0..per_family {
+            overrides.push((i, 1, 3, 0));
+        }
+        // Hardened PointerValidation: (Full, Deny, None) — must match or exceed.
+        for i in 0..per_family {
+            overrides.push((per_mode + i, 1, 3, 0));
+        }
+        let artifact = policy_table::build_test_pcpt(&overrides);
+        let mut kernel = RuntimeMathKernel::new();
+        kernel.load_policy_table(&artifact).expect("load");
+        let ctx = RuntimeContext::pointer_validation(0x1000, false);
+        let d = kernel.decide(SafetyLevel::Strict, ctx);
+        // Strict mode: Deny clamped to FullValidate.
+        assert!(
+            matches!(d.action, MembraneAction::FullValidate),
+            "strict PCPT Deny should clamp to FullValidate, got {:?}",
+            d.action
+        );
+    }
+
+    #[test]
+    fn pcpt_hardened_repair_action() {
+        // Build a PCPT where PointerValidation under hardened mode has Repair.
+        // Must satisfy: strict cells ≤ hardened. Set strict to FullValidate,
+        // hardened to Repair (which is stricter in hardened action ordering).
+        let per_family = policy_table::RISK_BUCKETS_V1
+            * policy_table::BUDGET_BUCKETS_V1
+            * policy_table::CONSISTENCY_BUCKETS_V1;
+        let per_mode = ApiFamily::COUNT * per_family;
+        let mut overrides = Vec::new();
+        // Strict PointerValidation: (Full, FullValidate, None)
+        for i in 0..per_family {
+            overrides.push((i, 1, 1, 0));
+        }
+        // Hardened PointerValidation: (Full, Repair, ReturnSafeDefault)
+        for i in 0..per_family {
+            overrides.push((per_mode + i, 1, 2, 6));
+        }
+        // Mode refinement: hardened Repair (rank 2) ≥ strict FullValidate (rank 1). OK.
+        let artifact = policy_table::build_test_pcpt(&overrides);
+        let mut kernel = RuntimeMathKernel::new();
+        kernel.load_policy_table(&artifact).expect("load");
+        let ctx = RuntimeContext::pointer_validation(0x1000, false);
+        let d = kernel.decide(SafetyLevel::Hardened, ctx);
+        assert!(
+            matches!(d.action, MembraneAction::Repair(_)),
+            "hardened PCPT Repair should produce Repair, got {:?}",
+            d.action
+        );
+    }
+
+    #[test]
+    fn pcpt_action_distribution_tracked() {
+        let mut kernel = RuntimeMathKernel::new();
+        let artifact = policy_table::build_test_pcpt(&[]);
+        kernel.load_policy_table(&artifact).expect("load");
+        let ctx = RuntimeContext::pointer_validation(0x1000, false);
+        for _ in 0..10 {
+            let _ = kernel.decide(SafetyLevel::Strict, ctx);
+        }
+        let snap = kernel.snapshot(SafetyLevel::Strict);
+        let total: u64 = snap.policy_action_dist.iter().sum();
+        assert!(
+            total >= 10,
+            "action distribution should track at least 10 decisions, got {total}"
+        );
+    }
+
+    // --- bd-abi: hash mismatch fallback + perf tests ---
+
+    #[test]
+    fn pcpt_hash_mismatch_falls_back_to_default() {
+        let mut kernel = RuntimeMathKernel::new();
+        // Create corrupted artifact.
+        let mut artifact = policy_table::build_test_pcpt(&[]);
+        artifact[120] ^= 0xFF; // corrupt table data
+        // load_policy_table should fail.
+        assert!(kernel.load_policy_table(&artifact).is_err());
+        // Kernel still works — falls back to no-table default.
+        let ctx = RuntimeContext::pointer_validation(0x1000, false);
+        let d = kernel.decide(SafetyLevel::Strict, ctx);
+        assert_eq!(d.action, MembraneAction::Allow);
+        let snap = kernel.snapshot(SafetyLevel::Strict);
+        assert_eq!(snap.policy_hash_prefix, 0, "no table loaded → hash=0");
+    }
+
+    #[test]
+    fn pcpt_lookup_deterministic_across_calls() {
+        let mut kernel = RuntimeMathKernel::new();
+        let artifact = policy_table::build_test_pcpt(&[]);
+        kernel.load_policy_table(&artifact).expect("load");
+        let ctx = RuntimeContext::pointer_validation(0x1000, false);
+        // Run many decisions and verify all produce same action.
+        let decisions: Vec<_> = (0..100)
+            .map(|_| kernel.decide(SafetyLevel::Strict, ctx).action)
+            .collect();
+        // All should be Allow (default table, low risk).
+        assert!(
+            decisions.iter().all(|a| *a == MembraneAction::Allow),
+            "deterministic table should produce consistent actions"
+        );
+    }
+
+    #[test]
+    fn pcpt_lookup_o1_cost_no_allocation() {
+        // Structural test: the lookup path is O(1) array indexing.
+        // We verify this indirectly by running many lookups in tight loop
+        // and checking the time is bounded. This is a smoke test, not a
+        // bench — we just ensure it completes quickly.
+        let mut kernel = RuntimeMathKernel::new();
+        let artifact = policy_table::build_test_pcpt(&[]);
+        kernel.load_policy_table(&artifact).expect("load");
+        let ctx = RuntimeContext::pointer_validation(0x1000, false);
+        let start = std::time::Instant::now();
+        for _ in 0..10_000 {
+            let _ = kernel.decide(SafetyLevel::Strict, ctx);
+        }
+        let elapsed = start.elapsed();
+        // 10k decisions should take < 50ms even on slow machines.
+        assert!(
+            elapsed.as_millis() < 50,
+            "10k decisions took {}ms — expected < 50ms",
+            elapsed.as_millis()
+        );
+    }
+
+    // --- bd-3ku: evidence integration tests ---
+
+    #[test]
+    fn evidence_seqno_advances_on_hardened_decide() {
+        let kernel = RuntimeMathKernel::new();
+        let ctx = RuntimeContext::pointer_validation(0x1000, false);
+        let snap_before = kernel.snapshot(SafetyLevel::Hardened);
+        assert_eq!(snap_before.evidence_seqno, 0);
+        // Evidence recording is cadence-gated (every 16384 calls) plus adverse
+        // decisions are always recorded.  Drive past the cadence boundary.
+        for _ in 0..16385 {
+            let _ = kernel.decide(SafetyLevel::Hardened, ctx);
+        }
+        let snap_after = kernel.snapshot(SafetyLevel::Hardened);
+        assert!(
+            snap_after.evidence_seqno >= 1,
+            "evidence seqno should advance, got {}",
+            snap_after.evidence_seqno
+        );
+    }
+
+    #[test]
+    fn evidence_strict_records_on_cadence() {
+        let kernel = RuntimeMathKernel::new();
+        let ctx = RuntimeContext::pointer_validation(0x1000, false);
+        // Strict mode records on evidence cadence (every 16384 calls).
+        // Run 16385 calls — the first record happens at sequence=16384.
+        for _ in 0..16385 {
+            let _ = kernel.decide(SafetyLevel::Strict, ctx);
+        }
+        let snap = kernel.snapshot(SafetyLevel::Strict);
+        assert!(
+            snap.evidence_seqno >= 1,
+            "strict mode should record at least 1 evidence on cadence, got seqno={}",
+            snap.evidence_seqno
+        );
+    }
+
+    #[test]
+    fn evidence_snapshot_fields_present() {
+        let kernel = RuntimeMathKernel::new();
+        let snap = kernel.snapshot(SafetyLevel::Strict);
+        // Verify evidence fields exist and have default values.
+        assert_eq!(snap.evidence_seqno, 0);
+        assert_eq!(snap.evidence_loss_count, 0);
+        assert_eq!(snap.evidence_max_epoch, 0);
     }
 }
