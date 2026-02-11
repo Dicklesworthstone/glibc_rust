@@ -96,20 +96,22 @@
     "tiers": [
       {
         "tier": "T1_critical",
-        "score_range": ">=10.0",
-        "description": "Stubs blocking 4+ workloads. Implement immediately.",
+        "criteria": "status == Stub",
+        "description": "Stub symbols returning error/no-op. Blocks workload functionality entirely.",
         "symbols": [
           {"symbol": "getaddrinfo", "module": "resolv_abi", "status": "Stub", "perf_class": "coldpath", "score": 12.0},
           {"symbol": "getnameinfo", "module": "resolv_abi", "status": "Stub", "perf_class": "coldpath", "score": 12.0},
           {"symbol": "freeaddrinfo", "module": "resolv_abi", "status": "Stub", "perf_class": "coldpath", "score": 12.0},
-          {"symbol": "gai_strerror", "module": "resolv_abi", "status": "Stub", "perf_class": "coldpath", "score": 12.0}
+          {"symbol": "gai_strerror", "module": "resolv_abi", "status": "Stub", "perf_class": "coldpath", "score": 12.0},
+          {"symbol": "setlocale", "module": "locale_abi", "status": "Stub", "perf_class": "coldpath", "score": 6.0},
+          {"symbol": "localeconv", "module": "locale_abi", "status": "Stub", "perf_class": "coldpath", "score": 6.0}
         ],
-        "count": 4
+        "count": 6
       },
       {
-        "tier": "T2_high",
-        "score_range": ">=5.0 and <10.0",
-        "description": "Hotpath callthroughs or stubs blocking 2+ workloads. Implement in next wave.",
+        "tier": "T2_hotpath",
+        "criteria": "status == GlibcCallThrough AND perf_class == strict_hotpath",
+        "description": "Hotpath callthroughs defeating safety membrane on performance-critical paths.",
         "symbols": [
           {"symbol": "pthread_mutex_lock", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
           {"symbol": "pthread_mutex_unlock", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
@@ -130,23 +132,21 @@
           {"symbol": "pthread_cond_destroy", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
           {"symbol": "pthread_cond_wait", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
           {"symbol": "pthread_cond_signal", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
-          {"symbol": "pthread_cond_broadcast", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
+          {"symbol": "pthread_cond_broadcast", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0}
+        ],
+        "count": 20
+      },
+      {
+        "tier": "T3_coldpath",
+        "criteria": "status == GlibcCallThrough AND perf_class == coldpath",
+        "description": "Coldpath callthroughs. Functional passthrough, no safety membrane coverage.",
+        "symbols": [
           {"symbol": "fopen", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
           {"symbol": "fclose", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
           {"symbol": "fread", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
           {"symbol": "fwrite", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
           {"symbol": "fprintf", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
           {"symbol": "printf", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
-          {"symbol": "setlocale", "module": "locale_abi", "status": "Stub", "perf_class": "coldpath", "score": 6.0},
-          {"symbol": "localeconv", "module": "locale_abi", "status": "Stub", "perf_class": "coldpath", "score": 6.0}
-        ],
-        "count": 28
-      },
-      {
-        "tier": "T3_moderate",
-        "score_range": ">=1.0 and <5.0",
-        "description": "Coldpath callthroughs blocking few workloads. Schedule for later waves.",
-        "symbols": [
           {"symbol": "fflush", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
           {"symbol": "fseek", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
           {"symbol": "ftell", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
@@ -176,7 +176,7 @@
           {"symbol": "dlsym", "module": "dlfcn_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 2.0},
           {"symbol": "dlerror", "module": "dlfcn_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 2.0}
         ],
-        "count": 28
+        "count": 34
       }
     ]
   },
@@ -227,9 +227,9 @@
     "callthroughs": 54,
     "modules_affected": 5,
     "tier_counts": {
-      "T1_critical": 4,
-      "T2_high": 28,
-      "T3_moderate": 28
+      "T1_critical": 6,
+      "T2_hotpath": 20,
+      "T3_coldpath": 34
     },
     "highest_per_symbol_score": {"symbol": "getaddrinfo", "score": 12.0},
     "highest_total_urgency": {"module": "stdio_abi", "urgency": 210.0},
