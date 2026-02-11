@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "bead": "bd-22p",
+  "description": "One-lever discipline guard for glibc_rust optimization work. Each optimization bead must reference exactly one lever category. Multi-lever submissions are flagged for split. This enforces the 'single optimization lever per iteration' rule from the extreme optimization loop (PROPOSED_ARCHITECTURE.md Section 6).",
+  "lever_categories": {
+    "description": "Taxonomy of optimization levers. Each optimization opportunity must be classified under exactly one category.",
+    "categories": {
+      "stub_elimination": {
+        "description": "Replace Stub symbols with working implementations. Transitions status from Stub to Implemented.",
+        "examples": ["locale stubs", "resolver stubs", "iconv stubs"]
+      },
+      "callthrough_removal": {
+        "description": "Replace GlibcCallThrough symbols with native Rust or raw syscall implementations.",
+        "examples": ["futex mutex", "thread bootstrap", "dlfcn raw syscall migration"]
+      },
+      "simd_acceleration": {
+        "description": "Add SIMD (SSE/AVX2/AVX-512/NEON) fast paths for compute-intensive operations.",
+        "examples": ["memcpy AVX2", "strlen SSE4.2", "ctype lookup table"]
+      },
+      "cache_optimization": {
+        "description": "Improve cache behavior: layout, prefetch, TLS caching, lookup tables.",
+        "examples": ["TLS cache for errno", "ctype 256-byte table", "locale data caching"]
+      },
+      "dispatch_optimization": {
+        "description": "Improve function dispatch: branch prediction, indirect call elimination, inlining.",
+        "examples": ["membrane fast-path bypass", "policy table lookup", "ifunc resolver"]
+      },
+      "allocation_optimization": {
+        "description": "Improve memory allocation performance: arena sizing, slab allocation, free-list tuning.",
+        "examples": ["malloc arena tuning", "thread-local free lists", "size class optimization"]
+      },
+      "syscall_optimization": {
+        "description": "Reduce syscall overhead: batching, vDSO, io_uring, syscall elimination.",
+        "examples": ["vDSO clock_gettime", "io_uring batch I/O", "syscall-less getpid"]
+      },
+      "subsystem_implementation": {
+        "description": "Implement a new subsystem required for replacement level transition. High effort, architectural scope.",
+        "examples": ["CRT bootstrap", "NSS files backend", "stdio FILE* implementation", "rtld ELF loader"]
+      }
+    }
+  },
+  "enforcement": {
+    "description": "Rules for lever assignment and guard enforcement.",
+    "rules": [
+      "Every opportunity_matrix entry must have a lever_category field",
+      "The lever_category value must be one of the defined categories",
+      "Each optimization bead should address exactly one lever category",
+      "Multi-lever beads must be split or carry a justification_waiver"
+    ],
+    "gate_script": "scripts/check_one_lever_discipline.sh",
+    "integration_test": "cargo test -p glibc-rs-harness --test one_lever_discipline_test"
+  },
+  "summary": {
+    "total_categories": 8,
+    "category_list": [
+      "stub_elimination",
+      "callthrough_removal",
+      "simd_acceleration",
+      "cache_optimization",
+      "dispatch_optimization",
+      "allocation_optimization",
+      "syscall_optimization",
+      "subsystem_implementation"
+    ]
+  }
+}
