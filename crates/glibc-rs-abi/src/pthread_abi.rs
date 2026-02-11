@@ -8,7 +8,7 @@
 use std::cell::Cell;
 use std::collections::HashMap;
 use std::ffi::{c_int, c_void};
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicI32, AtomicU64, Ordering};
 use std::sync::{Mutex, OnceLock};
 use std::thread;
 
@@ -53,6 +53,156 @@ fn current_thread_id() -> libc::pthread_t {
         slot.set(new_id);
         new_id
     })
+}
+
+// ---------------------------------------------------------------------------
+// Futex-backed NORMAL mutex core (bd-z84)
+// ---------------------------------------------------------------------------
+
+static MUTEX_SPIN_BRANCHES: AtomicU64 = AtomicU64::new(0);
+static MUTEX_WAIT_BRANCHES: AtomicU64 = AtomicU64::new(0);
+static MUTEX_WAKE_BRANCHES: AtomicU64 = AtomicU64::new(0);
+
+/// Treats the leading atomic word of `pthread_mutex_t` as our lock state.
+/// This avoids recursive dependence on libc's own pthread mutex internals.
+fn mutex_word_ptr(mutex: *mut libc::pthread_mutex_t) -> Option<*mut AtomicI32> {
+    if mutex.is_null() {
+        return None;
+    }
+    let align = std::mem::align_of::<AtomicI32>();
+    if (mutex as usize) % align != 0 {
+        return None;
+    }
+    Some(mutex.cast::<AtomicI32>())
+}
+
+#[cfg(target_os = "linux")]
+fn futex_wait_private(word: &AtomicI32, expected: i32) -> c_int {
+    // SAFETY: Linux futex syscall with valid userspace address and null timeout.
+    unsafe {
+        libc::syscall(
+            libc::SYS_futex,
+            word as *const AtomicI32 as *const i32,
+            libc::FUTEX_WAIT | libc::FUTEX_PRIVATE_FLAG,
+            expected,
+            std::ptr::null::<libc::timespec>(),
+        ) as c_int
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn futex_wake_private(word: &AtomicI32, count: i32) -> c_int {
+    // SAFETY: Linux futex syscall with valid userspace address.
+    unsafe {
+        libc::syscall(
+            libc::SYS_futex,
+            word as *const AtomicI32 as *const i32,
+            libc::FUTEX_WAKE | libc::FUTEX_PRIVATE_FLAG,
+            count,
+        ) as c_int
+    }
+}
+
+fn futex_lock_normal(word: &AtomicI32) -> c_int {
+    if word
+        .compare_exchange(0, 1, Ordering::Acquire, Ordering::Relaxed)
+        .is_ok()
+    {
+        return 0;
+    }
+
+    // Deterministic path: one spin/classification pass before parking.
+    MUTEX_SPIN_BRANCHES.fetch_add(1, Ordering::Relaxed);
+    loop {
+        let observed = word.load(Ordering::Relaxed);
+        if observed == 0 {
+            if word
+                .compare_exchange(0, 2, Ordering::Acquire, Ordering::Relaxed)
+                .is_ok()
+            {
+                return 0;
+            }
+            continue;
+        }
+
+        if observed == 1 {
+            let _ = word.compare_exchange(1, 2, Ordering::Acquire, Ordering::Relaxed);
+        }
+
+        MUTEX_WAIT_BRANCHES.fetch_add(1, Ordering::Relaxed);
+
+        #[cfg(target_os = "linux")]
+        {
+            let rc = futex_wait_private(word, 2);
+            if rc == 0 {
+                continue;
+            }
+            let errno = std::io::Error::last_os_error().raw_os_error().unwrap_or(0);
+            if errno == libc::EINTR || errno == libc::EAGAIN {
+                continue;
+            }
+            return if errno == 0 { libc::EAGAIN } else { errno };
+        }
+
+        #[cfg(not(target_os = "linux"))]
+        {
+            thread::yield_now();
+        }
+    }
+}
+
+fn futex_trylock_normal(word: &AtomicI32) -> c_int {
+    if word
+        .compare_exchange(0, 1, Ordering::Acquire, Ordering::Relaxed)
+        .is_ok()
+    {
+        0
+    } else {
+        libc::EBUSY
+    }
+}
+
+fn futex_unlock_normal(word: &AtomicI32) -> c_int {
+    let prev = word.swap(0, Ordering::Release);
+    match prev {
+        0 => libc::EPERM,
+        1 => 0,
+        _ => {
+            MUTEX_WAKE_BRANCHES.fetch_add(1, Ordering::Relaxed);
+            #[cfg(target_os = "linux")]
+            {
+                let _ = futex_wake_private(word, 1);
+            }
+            0
+        }
+    }
+}
+
+fn reset_mutex_registry_for_tests() {
+    MUTEX_SPIN_BRANCHES.store(0, Ordering::Relaxed);
+    MUTEX_WAIT_BRANCHES.store(0, Ordering::Relaxed);
+    MUTEX_WAKE_BRANCHES.store(0, Ordering::Relaxed);
+}
+
+fn mutex_branch_counters() -> (u64, u64, u64) {
+    (
+        MUTEX_SPIN_BRANCHES.load(Ordering::Relaxed),
+        MUTEX_WAIT_BRANCHES.load(Ordering::Relaxed),
+        MUTEX_WAKE_BRANCHES.load(Ordering::Relaxed),
+    )
+}
+
+/// Test hook: reset in-memory futex mutex registry + branch counters.
+#[doc(hidden)]
+pub fn pthread_mutex_reset_state_for_tests() {
+    reset_mutex_registry_for_tests();
+}
+
+/// Test hook: snapshot spin/wait/wake branch counters.
+#[doc(hidden)]
+#[must_use]
+pub fn pthread_mutex_branch_counters_for_tests() -> (u64, u64, u64) {
+    mutex_branch_counters()
 }
 
 #[inline]
@@ -304,6 +454,7 @@ pub unsafe extern "C" fn pthread_mutex_init(
     if mutex.is_null() {
         return libc::EINVAL;
     }
+    let _ = attr;
     let (_, decision) =
         runtime_policy::decide(ApiFamily::Threading, mutex as usize, 0, true, false, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -311,9 +462,15 @@ pub unsafe extern "C" fn pthread_mutex_init(
         return libc::EPERM;
     }
 
-    let rc = unsafe { libc::pthread_mutex_init(mutex, attr) };
-    let adverse = rc != 0;
-    runtime_policy::observe(ApiFamily::Threading, decision.profile, 10, adverse);
+    let Some(word_ptr) = mutex_word_ptr(mutex) else {
+        runtime_policy::observe(ApiFamily::Threading, decision.profile, 10, true);
+        return libc::EINVAL;
+    };
+    // SAFETY: `word_ptr` is alignment-checked and points to caller-owned mutex storage.
+    let word = unsafe { &*word_ptr };
+    word.store(0, Ordering::Release);
+    let rc = 0;
+    runtime_policy::observe(ApiFamily::Threading, decision.profile, 10, rc != 0);
     rc
 }
 
@@ -330,16 +487,26 @@ pub unsafe extern "C" fn pthread_mutex_destroy(mutex: *mut libc::pthread_mutex_t
         return libc::EPERM;
     }
 
-    let rc = unsafe { libc::pthread_mutex_destroy(mutex) };
-
-    // Hardened: if EBUSY, force-unlock then retry destroy.
-    if rc == libc::EBUSY && mode.heals_enabled() {
-        let _ = unsafe { libc::pthread_mutex_unlock(mutex) };
-        let rc2 = unsafe { libc::pthread_mutex_destroy(mutex) };
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 15, rc2 != 0);
-        return rc2;
-    }
-
+    let Some(word_ptr) = mutex_word_ptr(mutex) else {
+        runtime_policy::observe(ApiFamily::Threading, decision.profile, 10, true);
+        return libc::EINVAL;
+    };
+    // SAFETY: `word_ptr` is alignment-checked and points to caller-owned mutex storage.
+    let word = unsafe { &*word_ptr };
+    let locked = word.load(Ordering::Acquire) != 0;
+    let rc = if locked && !mode.heals_enabled() {
+        libc::EBUSY
+    } else {
+        if locked {
+            word.store(0, Ordering::Release);
+            MUTEX_WAKE_BRANCHES.fetch_add(1, Ordering::Relaxed);
+            #[cfg(target_os = "linux")]
+            {
+                let _ = futex_wake_private(word, i32::MAX);
+            }
+        }
+        0
+    };
     runtime_policy::observe(ApiFamily::Threading, decision.profile, 10, rc != 0);
     rc
 }
@@ -357,7 +524,13 @@ pub unsafe extern "C" fn pthread_mutex_lock(mutex: *mut libc::pthread_mutex_t) -
         return libc::EPERM;
     }
 
-    let rc = unsafe { libc::pthread_mutex_lock(mutex) };
+    let Some(word_ptr) = mutex_word_ptr(mutex) else {
+        runtime_policy::observe(ApiFamily::Threading, decision.profile, 12, true);
+        return libc::EINVAL;
+    };
+    // SAFETY: `word_ptr` is alignment-checked and points to caller-owned mutex storage.
+    let word = unsafe { &*word_ptr };
+    let rc = futex_lock_normal(word);
     runtime_policy::observe(ApiFamily::Threading, decision.profile, 12, rc != 0);
     rc
 }
@@ -375,8 +548,13 @@ pub unsafe extern "C" fn pthread_mutex_trylock(mutex: *mut libc::pthread_mutex_t
         return libc::EPERM;
     }
 
-    let rc = unsafe { libc::pthread_mutex_trylock(mutex) };
-    // EBUSY is not adverse — it's normal for trylock.
+    let Some(word_ptr) = mutex_word_ptr(mutex) else {
+        runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, true);
+        return libc::EINVAL;
+    };
+    // SAFETY: `word_ptr` is alignment-checked and points to caller-owned mutex storage.
+    let word = unsafe { &*word_ptr };
+    let rc = futex_trylock_normal(word);
     let adverse = rc != 0 && rc != libc::EBUSY;
     runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, adverse);
     rc
@@ -395,7 +573,13 @@ pub unsafe extern "C" fn pthread_mutex_unlock(mutex: *mut libc::pthread_mutex_t)
         return libc::EPERM;
     }
 
-    let rc = unsafe { libc::pthread_mutex_unlock(mutex) };
+    let Some(word_ptr) = mutex_word_ptr(mutex) else {
+        runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, true);
+        return libc::EINVAL;
+    };
+    // SAFETY: `word_ptr` is alignment-checked and points to caller-owned mutex storage.
+    let word = unsafe { &*word_ptr };
+    let rc = futex_unlock_normal(word);
 
     // Hardened: EPERM (not owner) → silently ignore.
     if rc == libc::EPERM && mode.heals_enabled() {
@@ -602,4 +786,94 @@ pub unsafe extern "C" fn pthread_rwlock_unlock(rwlock: *mut libc::pthread_rwlock
     let rc = unsafe { libc::pthread_rwlock_unlock(rwlock) };
     runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, rc != 0);
     rc
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::{Arc, Barrier};
+    use std::time::Duration;
+
+    fn alloc_mutex_ptr() -> *mut libc::pthread_mutex_t {
+        let boxed: Box<libc::pthread_mutex_t> = Box::new(unsafe { std::mem::zeroed() });
+        Box::into_raw(boxed)
+    }
+
+    unsafe fn free_mutex_ptr(ptr: *mut libc::pthread_mutex_t) {
+        // SAFETY: pointer was returned by `Box::into_raw` in `alloc_mutex_ptr`.
+        unsafe { drop(Box::from_raw(ptr)) };
+    }
+
+    #[test]
+    fn futex_mutex_roundtrip_and_trylock_busy() {
+        reset_mutex_registry_for_tests();
+        let mutex = alloc_mutex_ptr();
+
+        // SAFETY: ABI functions operate on opaque pointer identity in this implementation.
+        unsafe {
+            assert_eq!(pthread_mutex_init(mutex, std::ptr::null()), 0);
+            assert_eq!(pthread_mutex_lock(mutex), 0);
+            assert_eq!(pthread_mutex_trylock(mutex), libc::EBUSY);
+            assert_eq!(pthread_mutex_unlock(mutex), 0);
+            assert_eq!(pthread_mutex_destroy(mutex), 0);
+            free_mutex_ptr(mutex);
+        }
+    }
+
+    #[test]
+    fn futex_mutex_contention_increments_wait_and_wake_counters() {
+        reset_mutex_registry_for_tests();
+        let mutex = alloc_mutex_ptr();
+
+        // SAFETY: ABI functions operate on opaque pointer identity in this implementation.
+        unsafe {
+            assert_eq!(pthread_mutex_init(mutex, std::ptr::null()), 0);
+            assert_eq!(pthread_mutex_lock(mutex), 0);
+        }
+
+        let before = mutex_branch_counters();
+        let barrier = Arc::new(Barrier::new(2));
+        let barrier_worker = Arc::clone(&barrier);
+        let mutex_addr = mutex as usize;
+        let handle = std::thread::spawn(move || {
+            barrier_worker.wait();
+            // SAFETY: pointer identity is stable for test lifetime.
+            unsafe {
+                assert_eq!(
+                    pthread_mutex_lock(mutex_addr as *mut libc::pthread_mutex_t),
+                    0
+                );
+                assert_eq!(
+                    pthread_mutex_unlock(mutex_addr as *mut libc::pthread_mutex_t),
+                    0
+                );
+            }
+        });
+
+        barrier.wait();
+        std::thread::sleep(Duration::from_millis(10));
+        // SAFETY: pointer identity is stable for test lifetime.
+        unsafe { assert_eq!(pthread_mutex_unlock(mutex), 0) };
+        handle.join().unwrap();
+        let after = mutex_branch_counters();
+
+        assert!(
+            after.0 >= before.0 + 1,
+            "spin branch counter did not increase: before={before:?} after={after:?}"
+        );
+        assert!(
+            after.1 >= before.1 + 1,
+            "wait branch counter did not increase: before={before:?} after={after:?}"
+        );
+        assert!(
+            after.2 >= before.2 + 1,
+            "wake branch counter did not increase: before={before:?} after={after:?}"
+        );
+
+        // SAFETY: pointer identity is stable for test lifetime.
+        unsafe {
+            assert_eq!(pthread_mutex_destroy(mutex), 0);
+            free_mutex_ptr(mutex);
+        }
+    }
 }

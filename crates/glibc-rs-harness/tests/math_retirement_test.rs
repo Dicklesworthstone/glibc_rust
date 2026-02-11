@@ -40,8 +40,7 @@ fn load_manifest() -> serde_json::Value {
     let path = workspace_root().join("tests/runtime_math/production_kernel_manifest.v1.json");
     let content =
         std::fs::read_to_string(&path).expect("production_kernel_manifest.v1.json should exist");
-    serde_json::from_str(&content)
-        .expect("production_kernel_manifest.v1.json should be valid JSON")
+    serde_json::from_str(&content).expect("production_kernel_manifest.v1.json should be valid JSON")
 }
 
 #[test]
@@ -72,14 +71,20 @@ fn policy_exists_and_valid() {
 fn retirement_criteria_complete() {
     let p = load_policy();
     let rules = p["retirement_criteria"]["rules"].as_array().unwrap();
-    assert!(rules.len() >= 2, "Need at least 2 retirement criteria rules");
+    assert!(
+        rules.len() >= 2,
+        "Need at least 2 retirement criteria rules"
+    );
 
     let rule_ids: HashSet<String> = rules
         .iter()
         .filter_map(|r| r["id"].as_str().map(String::from))
         .collect();
 
-    assert!(rule_ids.contains("RC-1"), "Missing RC-1 (governance_mismatch)");
+    assert!(
+        rule_ids.contains("RC-1"),
+        "Missing RC-1 (governance_mismatch)"
+    );
     assert!(
         rule_ids.contains("RC-2"),
         "Missing RC-2 (no_decision_linkage)"
@@ -171,11 +176,7 @@ fn rc1_candidates_match_governance_vs_manifest() {
     let claimed_count = p["current_assessment"]["rc1_candidates"]["count"]
         .as_u64()
         .unwrap() as usize;
-    assert_eq!(
-        claimed_count,
-        actual_rc1.len(),
-        "RC-1 count mismatch"
-    );
+    assert_eq!(claimed_count, actual_rc1.len(), "RC-1 count mismatch");
 }
 
 #[test]
@@ -211,21 +212,21 @@ fn production_compliant_match_governance() {
         .cloned()
         .collect();
 
-    let claimed_core: HashSet<String> = p["current_assessment"]["production_compliant"]
-        ["production_core"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .filter_map(|m| m.as_str().map(String::from))
-        .collect();
+    let claimed_core: HashSet<String> =
+        p["current_assessment"]["production_compliant"]["production_core"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|m| m.as_str().map(String::from))
+            .collect();
 
-    let claimed_monitor: HashSet<String> = p["current_assessment"]["production_compliant"]
-        ["production_monitor"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .filter_map(|m| m.as_str().map(String::from))
-        .collect();
+    let claimed_monitor: HashSet<String> =
+        p["current_assessment"]["production_compliant"]["production_monitor"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|m| m.as_str().map(String::from))
+            .collect();
 
     assert_eq!(claimed_core, core_modules, "production_core mismatch");
     assert_eq!(
@@ -266,10 +267,7 @@ fn waivers_cover_all_rc1() {
     for w in waivers {
         // Check required fields
         for field in &required_fields {
-            assert!(
-                !w[field].is_null(),
-                "Waiver missing field '{field}'"
-            );
+            assert!(!w[field].is_null(), "Waiver missing field '{field}'");
         }
 
         let module = w["module"].as_str().unwrap_or("");
@@ -343,10 +341,7 @@ fn summary_consistent() {
     let manifest = load_manifest();
     let summary = &p["summary"];
 
-    let manifest_count = manifest["production_modules"]
-        .as_array()
-        .unwrap()
-        .len();
+    let manifest_count = manifest["production_modules"].as_array().unwrap().len();
     let rc1_count = p["current_assessment"]["rc1_candidates"]["modules"]
         .as_array()
         .unwrap()

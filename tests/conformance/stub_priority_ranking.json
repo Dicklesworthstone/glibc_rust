@@ -1,0 +1,238 @@
+{
+  "schema_version": 1,
+  "bead": "bd-4ia",
+  "description": "Stub priority ranking for glibc_rust remediation. Ranks non-implemented symbols (Stub + GlibcCallThrough) by severity and workload impact to guide implementation priority. Feeds next-wave implementation beads.",
+  "scoring": {
+    "description": "Per-symbol priority score combining status severity and workload impact.",
+    "formula": "score = severity_weight * workloads_blocked",
+    "severity_weights": {
+      "Stub": {
+        "weight": 3.0,
+        "rationale": "Returns error or no-op. Binary cannot function if this symbol is critical."
+      },
+      "GlibcCallThrough_hotpath": {
+        "weight": 2.0,
+        "rationale": "Passes through to host glibc on strict_hotpath. Performance-critical, defeats safety membrane purpose."
+      },
+      "GlibcCallThrough_coldpath": {
+        "weight": 1.0,
+        "rationale": "Passes through to host glibc on coldpath. Functional but no safety membrane coverage."
+      }
+    },
+    "workloads_blocked_source": "tests/conformance/workload_matrix.json subsystem_impact"
+  },
+  "module_ranking": {
+    "description": "Modules ranked by total remediation urgency (sum of per-symbol scores).",
+    "entries": [
+      {
+        "rank": 1,
+        "module": "stdio_abi",
+        "symbols_remaining": 30,
+        "status": "GlibcCallThrough",
+        "perf_class": "coldpath",
+        "severity_weight": 1.0,
+        "workloads_blocked": 7,
+        "per_symbol_score": 7.0,
+        "total_urgency": 210.0,
+        "implementation_bead": null,
+        "note": "Highest total urgency. FILE* reimplementation is massive but unblocks 7/10 workloads."
+      },
+      {
+        "rank": 2,
+        "module": "pthread_abi",
+        "symbols_remaining": 20,
+        "status": "GlibcCallThrough",
+        "perf_class": "strict_hotpath",
+        "severity_weight": 2.0,
+        "workloads_blocked": 4,
+        "per_symbol_score": 8.0,
+        "total_urgency": 160.0,
+        "implementation_bead": "bd-z84 (futex mutex), bd-yos (thread bootstrap)",
+        "note": "Highest per-symbol score among callthroughs. Active implementation by WhiteMeadow (bd-z84)."
+      },
+      {
+        "rank": 3,
+        "module": "resolv_abi",
+        "symbols_remaining": 4,
+        "status": "Stub",
+        "perf_class": "coldpath",
+        "severity_weight": 3.0,
+        "workloads_blocked": 4,
+        "per_symbol_score": 12.0,
+        "total_urgency": 48.0,
+        "implementation_bead": "bd-66s (stub wave 2)",
+        "note": "Highest per-symbol score overall. Small symbol count makes this high-ROI."
+      },
+      {
+        "rank": 4,
+        "module": "locale_abi",
+        "symbols_remaining": 2,
+        "status": "Stub",
+        "perf_class": "coldpath",
+        "severity_weight": 3.0,
+        "workloads_blocked": 2,
+        "per_symbol_score": 6.0,
+        "total_urgency": 12.0,
+        "implementation_bead": "bd-3pe (locale phase-1)",
+        "note": "Only 2 symbols. C/POSIX locale implementation is bounded and well-defined."
+      },
+      {
+        "rank": 5,
+        "module": "dlfcn_abi",
+        "symbols_remaining": 4,
+        "status": "GlibcCallThrough",
+        "perf_class": "coldpath",
+        "severity_weight": 1.0,
+        "workloads_blocked": 2,
+        "per_symbol_score": 2.0,
+        "total_urgency": 8.0,
+        "implementation_bead": "bd-3rn (rtld phase-1)",
+        "note": "Low urgency per-symbol but critical for L2 transition. Requires ELF relocation engine."
+      }
+    ]
+  },
+  "symbol_ranking": {
+    "description": "All 60 non-implemented symbols ranked by priority score (severity_weight * workloads_blocked). Higher score = implement first.",
+    "tiers": [
+      {
+        "tier": "T1_critical",
+        "score_range": ">=10.0",
+        "description": "Stubs blocking 4+ workloads. Implement immediately.",
+        "symbols": [
+          {"symbol": "getaddrinfo", "module": "resolv_abi", "status": "Stub", "perf_class": "coldpath", "score": 12.0},
+          {"symbol": "getnameinfo", "module": "resolv_abi", "status": "Stub", "perf_class": "coldpath", "score": 12.0},
+          {"symbol": "freeaddrinfo", "module": "resolv_abi", "status": "Stub", "perf_class": "coldpath", "score": 12.0},
+          {"symbol": "gai_strerror", "module": "resolv_abi", "status": "Stub", "perf_class": "coldpath", "score": 12.0}
+        ],
+        "count": 4
+      },
+      {
+        "tier": "T2_high",
+        "score_range": ">=5.0 and <10.0",
+        "description": "Hotpath callthroughs or stubs blocking 2+ workloads. Implement in next wave.",
+        "symbols": [
+          {"symbol": "pthread_mutex_lock", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
+          {"symbol": "pthread_mutex_unlock", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
+          {"symbol": "pthread_mutex_trylock", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
+          {"symbol": "pthread_mutex_init", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
+          {"symbol": "pthread_mutex_destroy", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
+          {"symbol": "pthread_create", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
+          {"symbol": "pthread_join", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
+          {"symbol": "pthread_detach", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
+          {"symbol": "pthread_self", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
+          {"symbol": "pthread_equal", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
+          {"symbol": "pthread_rwlock_rdlock", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
+          {"symbol": "pthread_rwlock_wrlock", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
+          {"symbol": "pthread_rwlock_unlock", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
+          {"symbol": "pthread_rwlock_init", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
+          {"symbol": "pthread_rwlock_destroy", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
+          {"symbol": "pthread_cond_init", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
+          {"symbol": "pthread_cond_destroy", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
+          {"symbol": "pthread_cond_wait", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
+          {"symbol": "pthread_cond_signal", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
+          {"symbol": "pthread_cond_broadcast", "module": "pthread_abi", "status": "GlibcCallThrough", "perf_class": "strict_hotpath", "score": 8.0},
+          {"symbol": "fopen", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "fclose", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "fread", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "fwrite", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "fprintf", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "printf", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "setlocale", "module": "locale_abi", "status": "Stub", "perf_class": "coldpath", "score": 6.0},
+          {"symbol": "localeconv", "module": "locale_abi", "status": "Stub", "perf_class": "coldpath", "score": 6.0}
+        ],
+        "count": 28
+      },
+      {
+        "tier": "T3_moderate",
+        "score_range": ">=1.0 and <5.0",
+        "description": "Coldpath callthroughs blocking few workloads. Schedule for later waves.",
+        "symbols": [
+          {"symbol": "fflush", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "fseek", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "ftell", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "rewind", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "fgetc", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "fgets", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "fputc", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "fputs", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "getchar", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "putchar", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "puts", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "perror", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "snprintf", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "sprintf", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "clearerr", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "feof", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "ferror", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "fileno", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "setbuf", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "setvbuf", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "ungetc", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "stdin", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "stdout", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "stderr", "module": "stdio_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 7.0},
+          {"symbol": "dlopen", "module": "dlfcn_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 2.0},
+          {"symbol": "dlclose", "module": "dlfcn_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 2.0},
+          {"symbol": "dlsym", "module": "dlfcn_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 2.0},
+          {"symbol": "dlerror", "module": "dlfcn_abi", "status": "GlibcCallThrough", "perf_class": "coldpath", "score": 2.0}
+        ],
+        "count": 28
+      }
+    ]
+  },
+  "trace_format": {
+    "description": "Instrumentation format for dynamic call-frequency collection during LD_PRELOAD smoke runs.",
+    "schema": {
+      "trace_id": "UUID per run",
+      "timestamp_ns": "u64 monotonic nanoseconds",
+      "symbol": "string (ABI symbol name)",
+      "module": "string (ABI module)",
+      "status": "Implemented | RawSyscall | GlibcCallThrough | Stub",
+      "call_count": "u64 cumulative per session",
+      "caller_binary": "string (binary under test)",
+      "mode": "strict | hardened"
+    },
+    "collection_script": "scripts/ld_preload_smoke.sh",
+    "output_path": "tests/cve_arena/results/stub_traces/",
+    "note": "Dynamic trace collection requires LD_PRELOAD of libglibc_rs_abi.so against target binary. Static ranking (this file) is used until dynamic data is available."
+  },
+  "burn_down": {
+    "description": "Burn-down tracking for stub/callthrough remediation waves.",
+    "total_non_implemented": 60,
+    "by_status": {
+      "Stub": 6,
+      "GlibcCallThrough": 54
+    },
+    "by_perf_class": {
+      "strict_hotpath": 20,
+      "coldpath": 40
+    },
+    "wave_plan": [
+      {"wave": 1, "bead": "bd-z84", "module": "pthread_abi", "scope": "mutex core (lock/unlock/trylock/init/destroy)", "symbols": 5, "status": "in_progress"},
+      {"wave": 2, "bead": "bd-yos", "module": "pthread_abi", "scope": "thread bootstrap (create/join/detach)", "symbols": 3, "status": "planned"},
+      {"wave": 3, "bead": "bd-66s", "module": "resolv_abi", "scope": "getaddrinfo/getnameinfo numeric+files", "symbols": 4, "status": "planned"},
+      {"wave": 4, "bead": "bd-3pe", "module": "locale_abi", "scope": "C/POSIX locale (setlocale/localeconv)", "symbols": 2, "status": "planned"},
+      {"wave": 5, "bead": "bd-3rn", "module": "dlfcn_abi", "scope": "rtld phase-1 (dlopen/dlclose/dlsym/dlerror)", "symbols": 4, "status": "planned"},
+      {"wave": 6, "bead": null, "module": "pthread_abi", "scope": "rwlock + condvar remaining", "symbols": 12, "status": "unscheduled"},
+      {"wave": 7, "bead": null, "module": "stdio_abi", "scope": "FILE* full reimplementation", "symbols": 30, "status": "unscheduled"}
+    ],
+    "waves_in_progress": 1,
+    "symbols_in_progress": 5,
+    "symbols_planned": 13,
+    "symbols_unscheduled": 42
+  },
+  "summary": {
+    "total_non_implemented": 60,
+    "stubs": 6,
+    "callthroughs": 54,
+    "modules_affected": 5,
+    "tier_counts": {
+      "T1_critical": 4,
+      "T2_high": 28,
+      "T3_moderate": 28
+    },
+    "highest_per_symbol_score": {"symbol": "getaddrinfo", "score": 12.0},
+    "highest_total_urgency": {"module": "stdio_abi", "urgency": 210.0},
+    "most_impactful_quick_win": {"module": "resolv_abi", "reason": "4 stubs, 4 workloads blocked, highest per-symbol score"}
+  }
+}
