@@ -373,4 +373,182 @@ mod tests {
         // Remaining: c1|c3|c5 → compound (3 irreducible causes).
         assert_eq!(cls, CANONICAL_CLASS_COMPOUND);
     }
+
+    // ── bd-3ld: Canonicalization stability and cost proofs ──
+
+    #[test]
+    fn equivalent_signatures_reduce_to_same_normal_form() {
+        // Signatures that differ only in ordering of cause activation
+        // must produce identical canonical classes.
+        // Both {c0,c3} and {c3,c0} (same set) should yield REGIME.
+        let mut a1 = [false; NUM_LATENT_CAUSES];
+        a1[0] = true;
+        a1[3] = true;
+        let mut a2 = [false; NUM_LATENT_CAUSES];
+        a2[3] = true;
+        a2[0] = true;
+        assert_eq!(
+            canonical_class_from_support(&a1),
+            canonical_class_from_support(&a2)
+        );
+
+        // {c1,c4} and {c4,c1} → CONGESTION.
+        let mut b1 = [false; NUM_LATENT_CAUSES];
+        b1[1] = true;
+        b1[4] = true;
+        let mut b2 = [false; NUM_LATENT_CAUSES];
+        b2[4] = true;
+        b2[1] = true;
+        assert_eq!(
+            canonical_class_from_support(&b1),
+            canonical_class_from_support(&b2)
+        );
+    }
+
+    #[test]
+    fn reduction_is_idempotent() {
+        // Applying reduce_mask to an already-reduced mask yields the same result.
+        // Exhaustively test all 2^6 = 64 possible support combinations.
+        for bits in 0u8..64 {
+            let mut active = [false; NUM_LATENT_CAUSES];
+            for (j, a) in active.iter_mut().enumerate() {
+                *a = (bits >> j) & 1 == 1;
+            }
+            let cls1 = canonical_class_from_support(&active);
+            // Construct the support vector that the canonical class implies,
+            // then reduce again — must be the same class.
+            let mut mask1: MonomialMask = 0;
+            for (i, &a) in active.iter().enumerate() {
+                if a {
+                    mask1 |= 1u128 << i;
+                }
+            }
+            let reduced1 = reduce_mask_with_limit(mask1, &CANONICAL_RULES, 16)
+                .map(|(m, _)| m)
+                .unwrap_or(mask1);
+            let reduced2 = reduce_mask_with_limit(reduced1, &CANONICAL_RULES, 16)
+                .map(|(m, _)| m)
+                .unwrap_or(reduced1);
+            assert_eq!(
+                reduced1, reduced2,
+                "Idempotency failed for bits={:#08b}: first={:#b}, second={:#b}",
+                bits, reduced1, reduced2
+            );
+            // Also verify the class ID is the same.
+            assert_eq!(
+                cls1,
+                canonical_id_from_reduced(reduced2),
+                "Class mismatch after double reduction for bits={:#08b}",
+                bits
+            );
+        }
+    }
+
+    #[test]
+    fn confluence_all_64_support_patterns() {
+        // Every support pattern must converge (no StepLimitExceeded).
+        for bits in 0u8..64 {
+            let mut mask: MonomialMask = 0;
+            for j in 0..NUM_LATENT_CAUSES {
+                if (bits >> j) & 1 == 1 {
+                    mask |= 1u128 << j;
+                }
+            }
+            let result = reduce_mask_with_limit(mask, &CANONICAL_RULES, 16);
+            assert!(
+                result.is_ok(),
+                "Reduction did not converge for bits={:#08b}",
+                bits
+            );
+            let (_, stats) = result.unwrap();
+            assert!(
+                stats.reached_fixpoint,
+                "Did not reach fixpoint for bits={:#08b}",
+                bits
+            );
+            // Each rule fires at most once (3 rules, each strictly reduces degree).
+            assert!(
+                stats.steps <= 3,
+                "Took {} steps for bits={:#08b}, expected ≤3",
+                stats.steps,
+                bits
+            );
+        }
+    }
+
+    #[test]
+    fn bounded_runtime_canonical_classification() {
+        // 100k classifications must complete in bounded time (< 50ms).
+        let start = std::time::Instant::now();
+        let mut checksum = 0u64;
+        for i in 0u32..100_000 {
+            let bits = (i % 64) as u8;
+            let mut active = [false; NUM_LATENT_CAUSES];
+            for (j, a) in active.iter_mut().enumerate() {
+                *a = (bits >> j) & 1 == 1;
+            }
+            checksum += u64::from(canonical_class_from_support(&active));
+        }
+        let elapsed = start.elapsed();
+        // Prevent optimizer from eliding the loop.
+        assert!(checksum > 0);
+        assert!(
+            elapsed.as_millis() < 200,
+            "100k canonical classifications took {}ms (expected <200ms in debug)",
+            elapsed.as_millis()
+        );
+    }
+
+    #[test]
+    fn reducer_is_o1_with_canonical_table() {
+        // Since there are only 3 rules and each fires at most once,
+        // reduction is O(1) regardless of mask value. Verify that the
+        // maximum steps across all 64 patterns is ≤3.
+        let mut max_steps = 0u32;
+        for bits in 0u8..64 {
+            let mut mask: MonomialMask = 0;
+            for j in 0..NUM_LATENT_CAUSES {
+                if (bits >> j) & 1 == 1 {
+                    mask |= 1u128 << j;
+                }
+            }
+            if let Ok((_, stats)) = reduce_mask_with_limit(mask, &CANONICAL_RULES, 16) {
+                max_steps = max_steps.max(stats.steps);
+            }
+        }
+        assert!(
+            max_steps <= 3,
+            "Max steps across all 64 patterns was {}, expected ≤3",
+            max_steps
+        );
+    }
+
+    #[test]
+    fn perf_no_degradation_at_large_masks() {
+        // Verify that reduction cost is independent of mask magnitude.
+        // Even with high bits set (bits 64..127), the canonical rules
+        // only touch bits 0..5 and ignore the rest.
+        let big_mask: MonomialMask = (1u128 << 120) | (1u128 << 100) | C0_TEMPORAL | C3_REGIME;
+        let (reduced, stats) = reduce_mask_with_limit(big_mask, &CANONICAL_RULES, 16).unwrap();
+        // c0|c3 → c3, but bits 100 and 120 are preserved.
+        assert_eq!(reduced, (1u128 << 120) | (1u128 << 100) | C3_REGIME);
+        assert!(stats.steps <= 3);
+    }
+
+    #[test]
+    fn canonical_class_covers_all_ids() {
+        // Ensure all 8 canonical class IDs are reachable.
+        let mut seen = [false; NUM_CANONICAL_CLASSES];
+        for bits in 0u8..64 {
+            let mut active = [false; NUM_LATENT_CAUSES];
+            for (j, a) in active.iter_mut().enumerate() {
+                *a = (bits >> j) & 1 == 1;
+            }
+            let cls = canonical_class_from_support(&active);
+            seen[usize::from(cls)] = true;
+        }
+        for (id, &was_seen) in seen.iter().enumerate() {
+            assert!(was_seen, "Canonical class {} was never produced", id);
+        }
+    }
 }

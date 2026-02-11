@@ -156,26 +156,26 @@ static INVARIANT_A_EXPONENTS: [[u8; MAX_VARS]; INVARIANT_A_MONOMIALS] = [
 ///
 /// Sign convention: positive = safe contribution, negative = unsafe penalty.
 static INVARIANT_A_COEFFICIENTS: [i64; INVARIANT_A_MONOMIALS] = [
-    200,   // 1: baseline positive (safe interior bias)
-    500,   // d: higher depth is generally safer
-    -300,  // c: higher contention is risky
-    -600,  // a: higher adverse rate is risky
-    -100,  // λ: latency pressure is mildly risky
-    -400,  // d²: excessive depth diminishing returns
-    -250,  // c²: quadratic contention penalty
-    -800,  // a²: quadratic adverse penalty
-    -350,  // dc: depth × contention interaction
-    700,   // da: depth helps against adverse (positive!)
-    -200,  // dλ: depth × latency interaction
-    -400,  // ca: contention × adverse is bad
-    -300,  // aλ: adverse × latency is bad
-    -500,  // d·a²: high adverse overwhelms depth
-    -300,  // d²·c: deep quarantine under contention
-    -150,  // c·λ²: contention × latency² pressure
-    -250,  // d·c·a: three-way interaction
-    -200,  // d·c·λ: three-way interaction
-    -900,  // a³: cubic adverse penalty (extreme)
-    100,   // d³: deep quarantine self-correcting
+    200,  // 1: baseline positive (safe interior bias)
+    500,  // d: higher depth is generally safer
+    -300, // c: higher contention is risky
+    -600, // a: higher adverse rate is risky
+    -100, // λ: latency pressure is mildly risky
+    -400, // d²: excessive depth diminishing returns
+    -250, // c²: quadratic contention penalty
+    -800, // a²: quadratic adverse penalty
+    -350, // dc: depth × contention interaction
+    700,  // da: depth helps against adverse (positive!)
+    -200, // dλ: depth × latency interaction
+    -400, // ca: contention × adverse is bad
+    -300, // aλ: adverse × latency is bad
+    -500, // d·a²: high adverse overwhelms depth
+    -300, // d²·c: deep quarantine under contention
+    -150, // c·λ²: contention × latency² pressure
+    -250, // d·c·a: three-way interaction
+    -200, // d·c·λ: three-way interaction
+    -900, // a³: cubic adverse penalty (extreme)
+    100,  // d³: deep quarantine self-correcting
 ];
 
 /// Normalization parameters for Invariant A state variables.
@@ -375,7 +375,7 @@ impl SosBarrierController {
         Self {
             observations: 0,
             last_provenance_value: PROVENANCE_RISK_BUDGET_PPM, // starts safe
-            last_quarantine_value: 200, // starts at baseline safe
+            last_quarantine_value: 200,                        // starts at baseline safe
             provenance_violations: 0,
             quarantine_violations: 0,
         }
@@ -492,10 +492,10 @@ mod tests {
     fn provenance_safe_low_risk_full_validation() {
         // Low risk + Full validation → strongly safe.
         let val = evaluate_provenance_barrier(
-            10_000,      // risk: low
-            1_000_000,   // validation: Full
-            50_000,      // bloom fp: 5%
-            200_000,     // arena: 20%
+            10_000,    // risk: low
+            1_000_000, // validation: Full
+            50_000,    // bloom fp: 5%
+            200_000,   // arena: 20%
         );
         assert!(val > 0, "Expected safe, got {val}");
     }
@@ -516,10 +516,10 @@ mod tests {
     fn provenance_violates_high_risk_fast_bad_bloom() {
         // High risk + Fast + bad bloom + high arena → violation.
         let val = evaluate_provenance_barrier(
-            500_000,   // risk: 50% (far above budget)
-            0,         // validation: Fast
-            400_000,   // bloom fp: 40%
-            800_000,   // arena: 80%
+            500_000, // risk: 50% (far above budget)
+            0,       // validation: Fast
+            400_000, // bloom fp: 40%
+            800_000, // arena: 80%
         );
         assert!(val < 0, "Expected violation, got {val}");
     }
@@ -549,14 +549,12 @@ mod tests {
     #[test]
     fn provenance_budget_boundary() {
         // At exactly the risk budget with minimal penalties.
-        let val = evaluate_provenance_barrier(
-            PROVENANCE_RISK_BUDGET_PPM as u32,
-            0,
-            0,
-            0,
-        );
+        let val = evaluate_provenance_barrier(PROVENANCE_RISK_BUDGET_PPM as u32, 0, 0, 0);
         // headroom = 0, penalties ≈ 0 (risk × 0 bloom × 0 arena), reward = 0.
-        assert_eq!(val, 0, "At budget boundary with no penalties, should be exactly 0");
+        assert_eq!(
+            val, 0,
+            "At budget boundary with no penalties, should be exactly 0"
+        );
     }
 
     // ---- Invariant A (Quarantine Depth) Tests ----
@@ -565,10 +563,10 @@ mod tests {
     fn quarantine_safe_moderate_depth_low_adverse() {
         // Moderate depth, low contention, low adverse → safe.
         let val = evaluate_quarantine_barrier(
-            4096,    // depth: mid-range
-            4,       // contention: low
-            1_000,   // adverse: 0.1%
-            0,       // lambda: neutral
+            4096,  // depth: mid-range
+            4,     // contention: low
+            1_000, // adverse: 0.1%
+            0,     // lambda: neutral
         );
         assert!(val > 0, "Expected safe, got {val}");
     }
@@ -577,12 +575,15 @@ mod tests {
     fn quarantine_unsafe_shallow_high_adverse() {
         // Very shallow depth + very high adverse → violation.
         let val = evaluate_quarantine_barrier(
-            64,        // depth: minimum
-            100,       // contention: moderate
-            500_000,   // adverse: 50%
-            50,        // lambda: moderate pressure
+            64,      // depth: minimum
+            100,     // contention: moderate
+            500_000, // adverse: 50%
+            50,      // lambda: moderate pressure
         );
-        assert!(val < 0, "Expected violation for shallow+high_adverse, got {val}");
+        assert!(
+            val < 0,
+            "Expected violation for shallow+high_adverse, got {val}"
+        );
     }
 
     #[test]
@@ -689,7 +690,12 @@ mod tests {
                 cadence_hits += 1;
             }
         }
-        assert_eq!(cadence_hits, 3, "Expected 3 cadence hits over {}", CADENCE_A * 3);
+        assert_eq!(
+            cadence_hits,
+            3,
+            "Expected 3 cadence hits over {}",
+            CADENCE_A * 3
+        );
     }
 
     #[test]

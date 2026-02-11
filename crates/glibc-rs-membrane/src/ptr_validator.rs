@@ -541,6 +541,33 @@ mod tests {
     }
 
     #[test]
+    fn tls_cache_does_not_allow_uaf_after_free() {
+        let pipeline = ValidationPipeline::new();
+        let ptr = pipeline.arena.allocate(64).expect("alloc");
+        let addr = ptr as usize;
+        pipeline.register_allocation(addr, 64);
+
+        // Populate TLS cache.
+        let _ = pipeline.validate(addr);
+        let cached = pipeline.validate(addr);
+        assert!(
+            matches!(cached, ValidationOutcome::CachedValid(_)),
+            "expected TLS cache hit on second validate()"
+        );
+
+        pipeline.arena.free(ptr);
+
+        // After free, the TLS cache must not report a stale valid pointer.
+        let outcome = pipeline.validate(addr);
+        assert!(
+            !matches!(outcome, ValidationOutcome::CachedValid(_)),
+            "TLS cache returned CachedValid for freed pointer"
+        );
+        assert!(!outcome.can_read());
+        assert!(!outcome.can_write());
+    }
+
+    #[test]
     fn dependency_safe_order_delays_deep_checks_until_after_arena() {
         let scrambled = [
             CheckStage::Null,

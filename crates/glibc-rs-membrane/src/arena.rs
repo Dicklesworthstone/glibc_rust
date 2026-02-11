@@ -14,6 +14,7 @@ use std::collections::VecDeque;
 
 use crate::fingerprint::{AllocationFingerprint, CANARY_SIZE, FINGERPRINT_SIZE};
 use crate::lattice::SafetyState;
+use crate::tls_cache::bump_tls_cache_epoch;
 
 /// Maximum quarantine queue size in bytes.
 const QUARANTINE_MAX_BYTES: usize = 64 * 1024 * 1024; // 64 MB
@@ -194,6 +195,11 @@ impl AllocationArena {
         let Some(&slot_idx) = shard.addr_to_slot.get(&user_base) else {
             return (FreeResult::ForeignPointer, Vec::new());
         };
+
+        // Pointer validity changes at free boundaries. Bump the global TLS-cache epoch so
+        // any thread-local cached validations for this address (or other addresses)
+        // cannot return stale CachedValid results after this point.
+        bump_tls_cache_epoch();
 
         let slot = &mut shard.slots[slot_idx];
 

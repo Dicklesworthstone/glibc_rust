@@ -5,10 +5,29 @@
 //! validation results per-thread.
 
 use crate::lattice::SafetyState;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 /// Number of entries in the TLS cache (must be power of 2).
 const CACHE_SIZE: usize = 1024;
 const CACHE_MASK: usize = CACHE_SIZE - 1;
+
+// Cross-thread invalidation stamp.
+//
+// Any operation that changes pointer validity (e.g. free) bumps this epoch.
+// Cache entries are tagged with the epoch at insertion time; lookups only hit
+// when epochs match. This prevents stale CachedValid hits after frees.
+static GLOBAL_TLS_CACHE_EPOCH: AtomicU64 = AtomicU64::new(1);
+
+#[inline]
+fn current_epoch() -> u64 {
+    GLOBAL_TLS_CACHE_EPOCH.load(Ordering::Relaxed)
+}
+
+pub(crate) fn bump_tls_cache_epoch() {
+    // Relaxed is sufficient: this is an advisory invalidation stamp, not a
+    // synchronization primitive for memory effects.
+    let _ = GLOBAL_TLS_CACHE_EPOCH.fetch_add(1, Ordering::Relaxed);
+}
 
 /// A cached validation result for a pointer.
 #[derive(Debug, Clone, Copy)]
@@ -23,6 +42,8 @@ struct CacheEntry {
     generation: u32,
     /// The safety state at time of validation.
     state: SafetyState,
+    /// Global invalidation epoch at time of insertion.
+    epoch: u64,
     /// Whether this entry is populated.
     valid: bool,
 }
@@ -34,6 +55,7 @@ impl CacheEntry {
         user_size: 0,
         generation: 0,
         state: SafetyState::Unknown,
+        epoch: 0,
         valid: false,
     };
 }
@@ -61,9 +83,10 @@ impl TlsValidationCache {
     /// Returns `Some((user_base, user_size, generation, state))` on hit.
     pub fn lookup(&mut self, addr: usize) -> Option<CachedValidation> {
         let idx = Self::index(addr);
-        let entry = &self.entries[idx];
+        let entry = &mut self.entries[idx];
+        let epoch = current_epoch();
 
-        if entry.valid && entry.addr == addr {
+        if entry.valid && entry.addr == addr && entry.epoch == epoch {
             self.hits += 1;
             Some(CachedValidation {
                 user_base: entry.user_base,
@@ -72,6 +95,11 @@ impl TlsValidationCache {
                 state: entry.state,
             })
         } else {
+            // If the address matches but the epoch does not, invalidate this entry
+            // so we don't pay repeated epoch-mismatch checks on the hot path.
+            if entry.valid && entry.addr == addr && entry.epoch != epoch {
+                entry.valid = false;
+            }
             self.misses += 1;
             None
         }
@@ -80,12 +108,14 @@ impl TlsValidationCache {
     /// Insert or update a cache entry.
     pub fn insert(&mut self, addr: usize, validation: CachedValidation) {
         let idx = Self::index(addr);
+        let epoch = current_epoch();
         self.entries[idx] = CacheEntry {
             addr,
             user_base: validation.user_base,
             user_size: validation.user_size,
             generation: validation.generation,
             state: validation.state,
+            epoch,
             valid: true,
         };
     }

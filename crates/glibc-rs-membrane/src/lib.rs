@@ -28,6 +28,8 @@ pub mod check_oracle;
 pub mod config;
 pub mod fingerprint;
 pub mod galois;
+#[path = "runtime_math/grobner.rs"]
+pub mod grobner;
 pub mod heal;
 pub mod hji_reachability;
 pub mod large_deviations;

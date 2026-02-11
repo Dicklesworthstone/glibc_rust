@@ -260,4 +260,34 @@ mod tests {
         assert!(HealingAction::IgnoreDoubleFree.is_heal());
         assert!(HealingAction::ReturnSafeDefault.is_heal());
     }
+
+    #[test]
+    fn canonical_class_none_yields_no_healing() {
+        use crate::grobner::CANONICAL_CLASS_NONE;
+        let action = recommended_healing_for_canonical_class(CANONICAL_CLASS_NONE);
+        assert_eq!(action, HealingAction::None);
+    }
+
+    #[test]
+    fn canonical_class_mapping_covers_all_classes() {
+        use crate::grobner;
+        for class_id in 0..grobner::NUM_CANONICAL_CLASSES as u8 {
+            let action = recommended_healing_for_canonical_class(class_id);
+            if class_id == grobner::CANONICAL_CLASS_NONE {
+                assert!(!action.is_heal());
+            } else {
+                assert!(
+                    action.is_heal(),
+                    "Class {} should produce a healing action",
+                    class_id
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn canonical_class_out_of_range_returns_safe_default() {
+        let action = recommended_healing_for_canonical_class(255);
+        assert_eq!(action, HealingAction::ReturnSafeDefault);
+    }
 }

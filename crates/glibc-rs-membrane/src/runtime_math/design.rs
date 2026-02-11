@@ -300,7 +300,7 @@ fn logdet_spd(matrix: &[[f64; LATENT_DIM]; LATENT_DIM]) -> f64 {
     logdet
 }
 
-fn probe_cost_ns(probe: Probe) -> u64 {
+pub fn probe_cost_ns(probe: Probe) -> u64 {
     match probe {
         Probe::Spectral => 20,
         Probe::RoughPath => 28,

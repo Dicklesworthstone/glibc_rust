@@ -16,6 +16,7 @@ use std::time::{Duration, Instant};
 
 use criterion::{BenchmarkId, Criterion, Throughput, black_box, criterion_group, criterion_main};
 use glibc_rs_membrane::config::safety_level;
+use glibc_rs_membrane::runtime_math::approachability::ApproachabilityController;
 use glibc_rs_membrane::runtime_math::bandit::ConstrainedBanditRouter;
 use glibc_rs_membrane::runtime_math::barrier::BarrierOracle;
 use glibc_rs_membrane::runtime_math::control::ControlLimits;
@@ -317,6 +318,74 @@ fn bench_runtime_math_kernels(c: &mut Criterion) {
         });
         group.finish();
         stats.borrow().report(mode_label, "design_choose_plan");
+    }
+
+    // --- approachability::observe (steady-state, post-calibration) ---
+    {
+        let mut appr = ApproachabilityController::new(mode);
+        // Pre-fill past calibration threshold so benches measure hot-path.
+        for i in 0..512u64 {
+            let lat = (i * 7919) % 1000;
+            let risk = (i * 1013) % 1000;
+            let cov = (i * 2027) % 1000;
+            appr.observe(lat, risk, cov);
+        }
+        // Warm up.
+        for _ in 0..10_000 {
+            appr.observe(black_box(300), black_box(200), black_box(600));
+        }
+
+        let stats = RefCell::new(BenchStats::default());
+        let mut group = c.benchmark_group("runtime_math_kernels");
+        group.throughput(Throughput::Elements(1));
+        group.bench_function(
+            BenchmarkId::new("approachability_observe", mode_label),
+            |b| {
+                b.iter_custom(|iters| {
+                    let start = Instant::now();
+                    for i in 0..iters {
+                        let lat = (i * 7919) % 1000;
+                        let risk = (i * 1013) % 1000;
+                        let cov = (i * 2027) % 1000;
+                        appr.observe(black_box(lat), black_box(risk), black_box(cov));
+                    }
+                    let dur = start.elapsed().max(Duration::from_nanos(1));
+                    stats.borrow_mut().record(iters, dur);
+                    dur
+                });
+            },
+        );
+        group.finish();
+        stats.borrow().report(mode_label, "approachability_observe");
+    }
+
+    // --- approachability::state + summary (read-only snapshot) ---
+    {
+        let mut appr = ApproachabilityController::new(mode);
+        for i in 0..512u64 {
+            appr.observe((i * 41) % 1000, (i * 67) % 1000, (i * 89) % 1000);
+        }
+
+        let stats = RefCell::new(BenchStats::default());
+        let mut group = c.benchmark_group("runtime_math_kernels");
+        group.throughput(Throughput::Elements(1));
+        group.bench_function(
+            BenchmarkId::new("approachability_summary", mode_label),
+            |b| {
+                b.iter_custom(|iters| {
+                    let start = Instant::now();
+                    for _ in 0..iters {
+                        black_box(appr.state());
+                        black_box(appr.summary());
+                    }
+                    let dur = start.elapsed().max(Duration::from_nanos(1));
+                    stats.borrow_mut().record(iters, dur);
+                    dur
+                });
+            },
+        );
+        group.finish();
+        stats.borrow().report(mode_label, "approachability_summary");
     }
 }
 

@@ -281,4 +281,49 @@ mod tests {
             SparseState::Focused | SparseState::Critical
         ));
     }
+
+    // ── bd-3ld: Canonical class integration tests ──
+
+    #[test]
+    fn canonical_class_starts_at_none() {
+        let s = SparseRecoveryController::new();
+        assert_eq!(s.canonical_class(), grobner::CANONICAL_CLASS_NONE);
+    }
+
+    #[test]
+    fn stable_traffic_yields_none_canonical_class() {
+        let mut s = SparseRecoveryController::new();
+        let mask = Probe::all_mask();
+        for _ in 0..256 {
+            s.observe(mask, [false; Probe::COUNT], false);
+        }
+        // With no anomalies, support should be empty → NONE class.
+        assert_eq!(s.canonical_class(), grobner::CANONICAL_CLASS_NONE);
+    }
+
+    #[test]
+    fn canonical_counts_accumulate() {
+        let mut s = SparseRecoveryController::new();
+        let mask = Probe::all_mask();
+        for _ in 0..128 {
+            s.observe(mask, [false; Probe::COUNT], false);
+        }
+        let summary = s.summary();
+        // Total of all canonical counts must equal total observations.
+        let total: u64 = summary.canonical_class_counts.iter().sum();
+        assert_eq!(total, 128);
+    }
+
+    #[test]
+    fn canonical_class_in_summary_matches_controller() {
+        let mut s = SparseRecoveryController::new();
+        let mask = Probe::all_mask();
+        let mut vec = [false; Probe::COUNT];
+        vec[Probe::Padic as usize] = true; // Padic loads c4 (numeric)
+        for _ in 0..256 {
+            s.observe(mask, vec, false);
+        }
+        let summary = s.summary();
+        assert_eq!(summary.canonical_class, s.canonical_class());
+    }
 }
