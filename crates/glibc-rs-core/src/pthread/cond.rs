@@ -66,4 +66,10 @@ mod tests {
         );
         assert_eq!(sanitize_cond_clock(99), PTHREAD_COND_CLOCK_REALTIME);
     }
+
+    #[test]
+    fn sanitize_cond_clock_extremes_default_to_realtime() {
+        assert_eq!(sanitize_cond_clock(i32::MIN), PTHREAD_COND_CLOCK_REALTIME);
+        assert_eq!(sanitize_cond_clock(i32::MAX), PTHREAD_COND_CLOCK_REALTIME);
+    }
 }

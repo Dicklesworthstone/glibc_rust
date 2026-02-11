@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "description": "Canonical structured log schema for glibc_rust test/e2e/perf workflows. All log lines must be JSONL (one JSON object per line) conforming to this schema.",
+  "required_fields": {
+    "timestamp": {
+      "type": "string",
+      "format": "ISO-8601 UTC (e.g., 2026-02-11T06:00:00.000Z)",
+      "description": "When the event occurred"
+    },
+    "trace_id": {
+      "type": "string",
+      "format": "<bead_id>::<run_id>::<seq> (e.g., bd-144::run-abc123::001)",
+      "description": "Correlation ID linking log entries across a single test/e2e run"
+    },
+    "level": {
+      "type": "string",
+      "enum": ["trace", "debug", "info", "warn", "error", "fatal"],
+      "description": "Log severity level"
+    },
+    "event": {
+      "type": "string",
+      "description": "Machine-readable event name (e.g., test_start, validation_pass, abi_call)"
+    }
+  },
+  "optional_fields": {
+    "bead_id": {
+      "type": "string",
+      "description": "Bead that owns this test/verification run"
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["strict", "hardened"],
+      "description": "TSM runtime mode under test"
+    },
+    "api_family": {
+      "type": "string",
+      "description": "API family (e.g., malloc, string, stdio, pthread, signal)"
+    },
+    "symbol": {
+      "type": "string",
+      "description": "Specific ABI symbol being tested (e.g., memcpy, malloc, strlen)"
+    },
+    "decision": {
+      "type": "string",
+      "enum": ["Allow", "FullValidate", "Repair", "Deny"],
+      "description": "TSM pipeline decision (for membrane-related events)"
+    },
+    "outcome": {
+      "type": "string",
+      "enum": ["pass", "fail", "skip", "error", "timeout"],
+      "description": "Test case or verification outcome"
+    },
+    "errno": {
+      "type": "integer",
+      "description": "errno value observed (0 = success)"
+    },
+    "latency_ns": {
+      "type": "integer",
+      "description": "Operation latency in nanoseconds"
+    },
+    "artifact_refs": {
+      "type": "array",
+      "items": "string",
+      "description": "Paths to related artifacts (snapshots, diffs, backtraces)"
+    },
+    "details": {
+      "type": "object",
+      "description": "Free-form additional context (test inputs, expected vs actual, etc.)"
+    }
+  },
+  "artifact_index_schema": {
+    "description": "Format for artifact index files linking logs to verification artifacts",
+    "required_fields": {
+      "index_version": {
+        "type": "integer",
+        "description": "Schema version (currently 1)"
+      },
+      "run_id": {
+        "type": "string",
+        "description": "Unique run identifier matching trace_id run component"
+      },
+      "bead_id": {
+        "type": "string",
+        "description": "Bead owning this run"
+      },
+      "generated_utc": {
+        "type": "string",
+        "description": "When this index was generated"
+      },
+      "artifacts": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["path", "kind", "sha256"],
+          "properties": {
+            "path": "Relative path to artifact",
+            "kind": "log | snapshot | golden | diff | backtrace | report",
+            "sha256": "SHA-256 hex digest for integrity verification",
+            "size_bytes": "File size",
+            "description": "What this artifact contains"
+          }
+        }
+      }
+    }
+  },
+  "examples": {
+    "test_start": {
+      "timestamp": "2026-02-11T06:00:00.000Z",
+      "trace_id": "bd-144::run-001::001",
+      "level": "info",
+      "event": "test_start",
+      "bead_id": "bd-144",
+      "mode": "strict",
+      "api_family": "string",
+      "symbol": "memcpy"
+    },
+    "validation_pass": {
+      "timestamp": "2026-02-11T06:00:00.005Z",
+      "trace_id": "bd-144::run-001::002",
+      "level": "info",
+      "event": "validation_pass",
+      "bead_id": "bd-144",
+      "mode": "strict",
+      "api_family": "string",
+      "symbol": "memcpy",
+      "outcome": "pass",
+      "latency_ns": 15,
+      "details": {
+        "input_size": 256,
+        "expected_return": 0
+      }
+    },
+    "test_failure": {
+      "timestamp": "2026-02-11T06:00:01.000Z",
+      "trace_id": "bd-144::run-001::003",
+      "level": "error",
+      "event": "test_failure",
+      "bead_id": "bd-144",
+      "mode": "hardened",
+      "api_family": "malloc",
+      "symbol": "realloc",
+      "outcome": "fail",
+      "errno": 12,
+      "details": {
+        "expected": "non-null",
+        "actual": "null"
+      },
+      "artifact_refs": [
+        "tests/conformance/logs/bd-144-run-001.backtrace"
+      ]
+    },
+    "artifact_index": {
+      "index_version": 1,
+      "run_id": "run-001",
+      "bead_id": "bd-144",
+      "generated_utc": "2026-02-11T06:01:00.000Z",
+      "artifacts": [
+        {
+          "path": "tests/conformance/logs/bd-144-run-001.jsonl",
+          "kind": "log",
+          "sha256": "abc123...",
+          "size_bytes": 4096,
+          "description": "Structured test log"
+        },
+        {
+          "path": "tests/conformance/golden/fixture_verify_strict_hardened.v1.json",
+          "kind": "golden",
+          "sha256": "def456...",
+          "size_bytes": 18000,
+          "description": "Golden conformance verification output"
+        }
+      ]
+    }
+  }
+}

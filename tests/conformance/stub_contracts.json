@@ -1,0 +1,170 @@
+{
+  "contract_version": 1,
+  "description": "Deterministic failure contract for all symbols currently classified as Stub in support_matrix.json. Every stub must have a documented, deterministic return value and errno. No stub may panic, call todo!(), or exhibit undefined behavior.",
+  "generated_bead": "bd-2y6",
+  "matrix_inconsistency_note": "All 6 symbols currently marked Stub are actually Implemented (see stub_census.json inconsistencies). This contracts file documents their actual behavior for audit/verification. The support_matrix.json should be updated to reflect reality (see bd-vfl / bd-3rf).",
+  "contracts": [
+    {
+      "symbol": "setlocale",
+      "matrix_status": "Stub",
+      "actual_status": "Implemented",
+      "module": "locale_abi",
+      "behavior": {
+        "description": "Bootstrap C/POSIX locale only. Query (NULL locale) returns 'C'. Set to 'C', 'POSIX', or '' succeeds. All other locale names fail (strict: returns NULL; hardened: falls back to 'C').",
+        "strict_mode": {
+          "query_null": "returns pointer to 'C' string",
+          "set_c_locale": "returns pointer to 'C' string",
+          "set_posix_locale": "returns pointer to 'C' string",
+          "set_empty_locale": "returns pointer to 'C' string",
+          "set_unknown_locale": "returns NULL",
+          "invalid_category": "returns NULL",
+          "errno": "unchanged (no errno set)"
+        },
+        "hardened_mode": {
+          "query_null": "returns pointer to 'C' string",
+          "set_c_locale": "returns pointer to 'C' string",
+          "set_posix_locale": "returns pointer to 'C' string",
+          "set_empty_locale": "returns pointer to 'C' string",
+          "set_unknown_locale": "returns pointer to 'C' string (healed fallback)",
+          "invalid_category": "returns NULL",
+          "errno": "unchanged (no errno set)"
+        },
+        "panics": false,
+        "calls_todo": false,
+        "deterministic": true
+      },
+      "rationale": "C locale is the minimal POSIX requirement. Programs that only use C/POSIX locale (most CLI tools) work correctly. Programs requiring locale-dependent formatting get a safe fallback."
+    },
+    {
+      "symbol": "localeconv",
+      "matrix_status": "Stub",
+      "actual_status": "Implemented",
+      "module": "locale_abi",
+      "behavior": {
+        "description": "Returns pointer to static struct lconv with C-locale defaults (decimal_point='.', all monetary fields set to CHAR_MAX per POSIX).",
+        "strict_mode": {
+          "normal": "returns pointer to static LCONV struct",
+          "denied": "returns NULL (membrane deny)",
+          "errno": "unchanged"
+        },
+        "hardened_mode": {
+          "normal": "returns pointer to static LCONV struct",
+          "denied": "returns NULL (membrane deny)",
+          "errno": "unchanged"
+        },
+        "panics": false,
+        "calls_todo": false,
+        "deterministic": true
+      },
+      "rationale": "C locale lconv is trivially constructible as static data. POSIX requires localeconv() to return a valid pointer after any successful setlocale() call."
+    },
+    {
+      "symbol": "getaddrinfo",
+      "matrix_status": "Stub",
+      "actual_status": "Implemented",
+      "module": "resolv_abi",
+      "behavior": {
+        "description": "Full numeric host/service resolution with TSM membrane validation. Parses numeric IPv4/IPv6 addresses and numeric/named service ports. Returns EAI_NONAME for non-numeric hostnames (no DNS).",
+        "strict_mode": {
+          "numeric_host": "resolves IPv4/IPv6 addresses, returns 0 on success",
+          "numeric_service": "resolves port numbers, returns 0 on success",
+          "non_numeric_host": "returns EAI_NONAME",
+          "null_inputs": "returns EAI_NONAME"
+        },
+        "hardened_mode": {
+          "numeric_host": "resolves IPv4/IPv6 addresses with healing on validation failures",
+          "numeric_service": "resolves port numbers with healing",
+          "non_numeric_host": "returns EAI_NONAME",
+          "null_inputs": "returns EAI_NONAME"
+        },
+        "panics": false,
+        "calls_todo": false,
+        "deterministic": true
+      },
+      "rationale": "Numeric resolution covers bootstrap use cases (127.0.0.1, ::1, port numbers). DNS resolution is deferred to a future phase (bd-1y7)."
+    },
+    {
+      "symbol": "freeaddrinfo",
+      "matrix_status": "Stub",
+      "actual_status": "Implemented",
+      "module": "resolv_abi",
+      "behavior": {
+        "description": "Frees addrinfo chain allocated by getaddrinfo. Handles NULL input safely.",
+        "strict_mode": {
+          "valid_chain": "frees all nodes, returns void",
+          "null_input": "no-op, returns void"
+        },
+        "hardened_mode": {
+          "valid_chain": "frees all nodes with validation, returns void",
+          "null_input": "no-op, returns void"
+        },
+        "panics": false,
+        "calls_todo": false,
+        "deterministic": true
+      },
+      "rationale": "Paired with getaddrinfo; must free memory allocated by getaddrinfo."
+    },
+    {
+      "symbol": "getnameinfo",
+      "matrix_status": "Stub",
+      "actual_status": "Implemented",
+      "module": "resolv_abi",
+      "behavior": {
+        "description": "Numeric-only reverse resolution. Formats sockaddr as numeric IP:port string. Returns EAI_FAMILY for unsupported address families.",
+        "strict_mode": {
+          "ipv4_address": "formats as dotted-decimal string, returns 0",
+          "ipv6_address": "formats as hex-colon string, returns 0",
+          "unsupported_family": "returns EAI_FAMILY",
+          "null_buffers": "returns EAI_OVERFLOW"
+        },
+        "hardened_mode": {
+          "ipv4_address": "formats with validation healing, returns 0",
+          "ipv6_address": "formats with validation healing, returns 0",
+          "unsupported_family": "returns EAI_FAMILY",
+          "null_buffers": "returns EAI_OVERFLOW"
+        },
+        "panics": false,
+        "calls_todo": false,
+        "deterministic": true
+      },
+      "rationale": "Numeric formatting is the bootstrap scope. Full reverse DNS is deferred."
+    },
+    {
+      "symbol": "gai_strerror",
+      "matrix_status": "Stub",
+      "actual_status": "Implemented",
+      "module": "resolv_abi",
+      "behavior": {
+        "description": "Returns human-readable error string for getaddrinfo error codes. Maps all standard EAI_* codes.",
+        "strict_mode": {
+          "known_code": "returns static error string",
+          "unknown_code": "returns 'Unknown error' string"
+        },
+        "hardened_mode": {
+          "known_code": "returns static error string",
+          "unknown_code": "returns 'Unknown error' string"
+        },
+        "panics": false,
+        "calls_todo": false,
+        "deterministic": true
+      },
+      "rationale": "Pure lookup table, trivially implementable. Required by any code that calls getaddrinfo."
+    }
+  ],
+  "summary": {
+    "total_stub_symbols": 6,
+    "actually_implemented": 6,
+    "truly_stubbed": 0,
+    "panics_on_call": 0,
+    "calls_todo": 0,
+    "all_deterministic": true,
+    "matrix_corrections_needed": [
+      {"symbol": "setlocale", "from": "Stub", "to": "Implemented", "evidence": "locale_abi.rs has full C-locale implementation"},
+      {"symbol": "localeconv", "from": "Stub", "to": "Implemented", "evidence": "locale_abi.rs returns static LCONV struct"},
+      {"symbol": "getaddrinfo", "from": "Stub", "to": "Implemented", "evidence": "resolv_abi.rs has full numeric resolution"},
+      {"symbol": "freeaddrinfo", "from": "Stub", "to": "Implemented", "evidence": "resolv_abi.rs frees addrinfo chain"},
+      {"symbol": "getnameinfo", "from": "Stub", "to": "Implemented", "evidence": "resolv_abi.rs has numeric reverse resolution"},
+      {"symbol": "gai_strerror", "from": "Stub", "to": "Implemented", "evidence": "resolv_abi.rs has EAI error string lookup"}
+    ]
+  }
+}

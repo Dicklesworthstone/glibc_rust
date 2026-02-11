@@ -1,0 +1,130 @@
+{
+  "profile_version": 1,
+  "description": "Replacement profile guard definition. In replacement mode (L2/L3), no symbol may call through to host glibc. In interpose mode (L0/L1), call-throughs are allowed for symbols on the interpose_allowlist. This file is the source of truth for the CI gate scripts/check_replacement_guard.sh.",
+  "generated_bead": "bd-130",
+  "profiles": {
+    "interpose": {
+      "description": "LD_PRELOAD interpose mode. Call-through to host glibc is permitted for allowlisted modules.",
+      "call_through_allowed": true
+    },
+    "replacement": {
+      "description": "Full glibc replacement mode. Zero call-through permitted. Every symbol must be Implemented or RawSyscall.",
+      "call_through_allowed": false
+    }
+  },
+  "detection_rules": {
+    "description": "A call-through is any libc:: function call that is NOT a raw syscall, constant, or type reference.",
+    "call_through_pattern": "libc::<function>(<args>) where <function> is not 'syscall'",
+    "raw_syscall_pattern": "libc::syscall(libc::SYS_<name>, ...)",
+    "safe_patterns": [
+      "libc::syscall(",
+      "libc::SYS_",
+      "libc::CLOCK_",
+      "libc::SIG",
+      "libc::O_",
+      "libc::AT_",
+      "libc::F_",
+      "libc::SEEK_",
+      "libc::MAP_",
+      "libc::PROT_",
+      "libc::MADV_",
+      "libc::SOL_",
+      "libc::SO_",
+      "libc::AF_",
+      "libc::SOCK_",
+      "libc::SHUT_",
+      "libc::POLL",
+      "libc::FD_",
+      "libc::EAI_",
+      "libc::AI_",
+      "libc::NI_",
+      "libc::IPPROTO_",
+      "libc::E",
+      "libc::EOF",
+      "libc::NULL",
+      "libc::STDIN_FILENO",
+      "libc::STDOUT_FILENO",
+      "libc::STDERR_FILENO",
+      "libc::CHAR_MAX"
+    ],
+    "type_indicators": [
+      "libc::pid_t",
+      "libc::pthread_t",
+      "libc::pthread_mutex_t",
+      "libc::pthread_cond_t",
+      "libc::pthread_rwlock_t",
+      "libc::pthread_attr_t",
+      "libc::sighandler_t",
+      "libc::sigaction",
+      "libc::timespec",
+      "libc::timeval",
+      "libc::sockaddr",
+      "libc::socklen_t",
+      "libc::addrinfo",
+      "libc::mode_t",
+      "libc::off_t",
+      "libc::size_t",
+      "libc::ssize_t",
+      "libc::c_int",
+      "libc::c_long",
+      "libc::c_char",
+      "libc::c_void",
+      "libc::c_uint",
+      "libc::rlimit",
+      "libc::stat",
+      "libc::termios",
+      "libc::dirent",
+      "libc::pollfd",
+      "libc::fd_set",
+      "libc::lconv",
+      "libc::__rlimit_resource_t",
+      "libc::in_addr",
+      "libc::in6_addr",
+      "libc::sockaddr_in",
+      "libc::sockaddr_in6",
+      "libc::sockaddr_storage",
+      "libc::nfds_t",
+      "libc::speed_t",
+      "libc::iovec"
+    ]
+  },
+  "interpose_allowlist": {
+    "description": "Modules permitted to call through to host glibc in interpose (LD_PRELOAD) mode. These modules have not yet been fully reimplemented.",
+    "modules": [
+      "pthread_abi",
+      "socket_abi",
+      "dlfcn_abi",
+      "signal_abi",
+      "io_abi",
+      "time_abi",
+      "termios_abi",
+      "resource_abi",
+      "dirent_abi",
+      "unistd_abi",
+      "process_abi"
+    ],
+    "rationale": "These modules delegate to host glibc for operations not yet reimplemented as RawSyscall or Implemented. They are safe in interpose mode because the host glibc is still loaded."
+  },
+  "replacement_forbidden": {
+    "description": "In replacement mode, these call-through patterns must be zero. The gate scans for libc:: function calls (not syscall/constant/type) and fails if any are found outside the allowlist.",
+    "enforcement": "scripts/check_replacement_guard.sh"
+  },
+  "call_through_census": {
+    "description": "Current census of host glibc function calls by module. Updated by CI gate.",
+    "modules": {
+      "pthread_abi": {"count": 20, "functions": ["pthread_mutex_init", "pthread_mutex_destroy", "pthread_mutex_lock", "pthread_mutex_trylock", "pthread_mutex_unlock", "pthread_cond_init", "pthread_cond_destroy", "pthread_cond_wait", "pthread_cond_signal", "pthread_cond_broadcast", "pthread_rwlock_init", "pthread_rwlock_destroy", "pthread_rwlock_rdlock", "pthread_rwlock_wrlock", "pthread_rwlock_unlock"]},
+      "socket_abi": {"count": 14, "functions": ["socket", "bind", "listen", "accept", "connect", "send", "recv", "sendto", "recvfrom", "shutdown", "setsockopt", "getsockopt", "getpeername", "getsockname"]},
+      "unistd_abi": {"count": 21, "functions": ["lseek", "stat", "fstat", "lstat", "access", "getcwd", "chdir", "fchdir", "getppid", "getuid", "geteuid", "getgid", "getegid", "unlink", "rmdir", "link", "symlink", "readlink", "fsync", "fdatasync", "sleep", "usleep"]},
+      "dlfcn_abi": {"count": 4, "functions": ["dlopen", "dlsym", "dlclose"]},
+      "signal_abi": {"count": 4, "functions": ["signal", "raise", "kill", "sigaction"]},
+      "termios_abi": {"count": 10, "functions": ["tcgetattr", "tcsetattr", "cfgetispeed", "cfgetospeed", "cfsetispeed", "cfsetospeed", "tcdrain", "tcflush", "tcflow", "tcsendbreak"]},
+      "io_abi": {"count": 4, "functions": ["dup", "dup2", "pipe", "fcntl"]},
+      "time_abi": {"count": 3, "functions": ["clock_gettime"]},
+      "resource_abi": {"count": 3, "functions": ["getrlimit", "setrlimit"]},
+      "dirent_abi": {"count": 2, "functions": ["open", "close"]},
+      "process_abi": {"count": 1, "functions": ["execvp"]}
+    },
+    "total_call_throughs": 86,
+    "note": "process_abi.rs has 1 call-through (execvp) plus raw syscalls. dirent_abi uses libc::open/close which are technically call-throughs."
+  }
+}

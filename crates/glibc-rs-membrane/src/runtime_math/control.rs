@@ -129,4 +129,52 @@ mod tests {
         }
         let _ = ctl.limits(SafetyLevel::Hardened);
     }
+
+    #[test]
+    fn limits_shift_after_cadence_update() {
+        let ctl = PrimalDualController::new();
+        let strict0 = ctl.limits(SafetyLevel::Strict);
+
+        for _ in 0..128 {
+            ctl.observe(200, true);
+        }
+
+        let strict1 = ctl.limits(SafetyLevel::Strict);
+        assert!(strict1.full_validation_trigger_ppm < strict0.full_validation_trigger_ppm);
+        assert!(strict1.repair_trigger_ppm <= strict0.repair_trigger_ppm);
+        assert_eq!(strict1.max_request_bytes, strict0.max_request_bytes);
+    }
+
+    #[test]
+    fn off_mode_limits_are_high_and_bounded() {
+        let ctl = PrimalDualController::new();
+        let off = ctl.limits(SafetyLevel::Off);
+        assert_eq!(off.full_validation_trigger_ppm, 900_000);
+        assert_eq!(off.repair_trigger_ppm, 980_000);
+        assert_eq!(off.max_request_bytes, usize::MAX / 4);
+    }
+
+    #[test]
+    fn limits_remain_bounded_under_long_trace() {
+        let ctl = PrimalDualController::new();
+
+        for i in 0..4096_u64 {
+            let cost = 20 + (i % 500);
+            let adverse = i % 11 == 0 || i % 257 == 0;
+            ctl.observe(cost, adverse);
+
+            let strict = ctl.limits(SafetyLevel::Strict);
+            let hardened = ctl.limits(SafetyLevel::Hardened);
+            let off = ctl.limits(SafetyLevel::Off);
+
+            assert!((5_000..=900_000).contains(&strict.full_validation_trigger_ppm));
+            assert!((10_000..=980_000).contains(&strict.repair_trigger_ppm));
+            assert!((5_000..=900_000).contains(&hardened.full_validation_trigger_ppm));
+            assert!((10_000..=980_000).contains(&hardened.repair_trigger_ppm));
+            assert_eq!(off.full_validation_trigger_ppm, 900_000);
+            assert_eq!(off.repair_trigger_ppm, 980_000);
+            assert!(hardened.full_validation_trigger_ppm <= strict.full_validation_trigger_ppm);
+            assert!(hardened.repair_trigger_ppm <= strict.repair_trigger_ppm);
+        }
+    }
 }

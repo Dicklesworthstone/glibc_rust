@@ -67,4 +67,10 @@ mod tests {
         assert_eq!(sanitize_rwlock_kind(1), 1);
         assert_eq!(sanitize_rwlock_kind(99), PTHREAD_RWLOCK_DEFAULT_NP);
     }
+
+    #[test]
+    fn sanitize_rwlock_kind_extremes_default_to_default_np() {
+        assert_eq!(sanitize_rwlock_kind(i32::MIN), PTHREAD_RWLOCK_DEFAULT_NP);
+        assert_eq!(sanitize_rwlock_kind(i32::MAX), PTHREAD_RWLOCK_DEFAULT_NP);
+    }
 }

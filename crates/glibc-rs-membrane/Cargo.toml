@@ -5,6 +5,11 @@ edition.workspace = true
 license.workspace = true
 description = "Transparent Safety Membrane for glibc_rust"
 
+[features]
+default = ["runtime-math-production"]
+runtime-math-production = []
+runtime-math-research = ["runtime-math-production"]
+
 [dependencies]
 parking_lot = { workspace = true }
 blake3 = { workspace = true }

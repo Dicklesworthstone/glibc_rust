@@ -54,10 +54,13 @@ fn record_allocator_stage_outcome(
 }
 
 /// Remaining bytes in a known live allocation at `addr`.
+///
+/// Returns `None` if the pipeline is not yet initialized (reentrant guard).
 #[must_use]
 pub(crate) fn known_remaining(addr: usize) -> Option<usize> {
     use glibc_rs_membrane::ptr_validator::ValidationOutcome;
-    match crate::membrane_state::global_pipeline().validate(addr) {
+    let pipeline = crate::membrane_state::try_global_pipeline()?;
+    match pipeline.validate(addr) {
         ValidationOutcome::CachedValid(abs) | ValidationOutcome::Validated(abs) => abs.remaining,
         _ => None,
     }

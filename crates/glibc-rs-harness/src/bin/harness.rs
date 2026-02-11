@@ -46,6 +46,15 @@ enum Command {
         #[arg(long)]
         output_json: PathBuf,
     },
+    /// Generate machine-readable docs reality report from support matrix taxonomy.
+    RealityReport {
+        /// Input support matrix JSON path.
+        #[arg(long, default_value = "support_matrix.json")]
+        support_matrix: PathBuf,
+        /// Output JSON path (if omitted, prints to stdout).
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
     /// Run membrane-specific verification tests.
     VerifyMembrane {
         /// Runtime mode to test (strict or hardened).
@@ -277,6 +286,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 output_md.display(),
                 output_json.display()
             );
+        }
+        Command::RealityReport {
+            support_matrix,
+            output,
+        } => {
+            let report = glibc_rs_harness::RealityReport::from_support_matrix_path(&support_matrix)
+                .map_err(|err| format!("failed generating reality report: {err}"))?;
+            let body = report.to_json();
+            if let Some(path) = output {
+                if let Some(parent) = path.parent() {
+                    std::fs::create_dir_all(parent)?;
+                }
+                std::fs::write(&path, body)?;
+                eprintln!("Wrote reality report to {}", path.display());
+            } else {
+                print!("{body}");
+            }
         }
         Command::VerifyMembrane { mode } => {
             eprintln!("Running membrane verification in {mode} mode");

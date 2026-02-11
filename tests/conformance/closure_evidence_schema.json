@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "bead": "bd-4rl",
+  "description": "Closure evidence requirements for critique beads. Every critique bead closed after the gate is established must satisfy these evidence requirements.",
+  "evidence_requirements": {
+    "matrix_entry": {
+      "required": true,
+      "description": "Bead must have an entry in tests/conformance/verification_matrix.json"
+    },
+    "test_commands": {
+      "required": true,
+      "description": "Row must have at least one non-empty test command in unit_cmds or e2e_cmds",
+      "fields": ["row.unit_cmds", "row.e2e_cmds"]
+    },
+    "artifact_references": {
+      "required": true,
+      "description": "Row must have at least one artifact path or log schema ref",
+      "fields": ["row.artifact_paths", "row.log_schema_refs"]
+    },
+    "coverage_not_missing": {
+      "required": true,
+      "description": "coverage_summary.overall must be 'partial' or 'complete', not 'missing'",
+      "valid_values": ["partial", "complete"]
+    },
+    "close_blockers_empty": {
+      "required": true,
+      "description": "row.close_blockers must be empty (all obligations met)"
+    }
+  },
+  "legacy_exempt": [
+    "bd-130",
+    "bd-144",
+    "bd-1h4",
+    "bd-1s7",
+    "bd-24x",
+    "bd-26o",
+    "bd-2ez",
+    "bd-2jn",
+    "bd-2p0",
+    "bd-2vb",
+    "bd-2y6",
+    "bd-34w",
+    "bd-35a",
+    "bd-38s",
+    "bd-3ex",
+    "bd-3n0",
+    "bd-3rf",
+    "bd-f7r",
+    "bd-id3",
+    "bd-vfl"
+  ],
+  "legacy_exempt_note": "Beads closed before bd-4rl gate was established. These are reported as informational debt, not failures.",
+  "enforcement": {
+    "mode": "gated",
+    "description": "Legacy-exempt beads produce warnings; non-exempt closed beads produce failures",
+    "ci_blocking": true,
+    "grace_period_beads": []
+  },
+  "paths": {
+    "matrix": "tests/conformance/verification_matrix.json",
+    "beads": ".beads/issues.jsonl",
+    "ci_gate": "scripts/check_closure_gate.sh"
+  }
+}

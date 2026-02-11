@@ -335,6 +335,26 @@ impl EvidenceSymbolRecord {
 const PAYLOAD_MAGIC_DECISION_V1: [u8; 4] = *b"EVP1";
 const PAYLOAD_VERSION_V1: u8 = 1;
 const EVENT_KIND_DECISION: u8 = 1;
+const LOSS_BLOCK_VERSION_V1: u8 = 1;
+const LOSS_BLOCK_OFFSET: usize = 60;
+
+/// Optional decision-theory evidence payload embedded in the decision symbol.
+///
+/// This captures the expected-loss attribution required for repair/deny audits:
+/// posterior severity estimate plus selected vs competing action costs.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LossEvidenceV1 {
+    /// Posterior `P(C=Adverse | evidence)` in ppm (0..1_000_000).
+    pub posterior_adverse_ppm: u32,
+    /// Selected action id (0=allow, 1=full-validate, 2=repair, 3=deny).
+    pub selected_action: u8,
+    /// Closest competing action id.
+    pub competing_action: u8,
+    /// Expected-loss cost for selected action in milli-units.
+    pub selected_expected_loss_milli: u32,
+    /// Expected-loss cost for competing action in milli-units.
+    pub competing_expected_loss_milli: u32,
+}
 
 /// Encode a v1 "decision" evidence payload.
 ///
@@ -349,6 +369,7 @@ pub fn encode_decision_payload_v1(
     decision: RuntimeDecision,
     estimated_cost_ns: u64,
     adverse: bool,
+    loss_evidence: Option<LossEvidenceV1>,
 ) -> [u8; EVIDENCE_SYMBOL_SIZE_T] {
     let mut p = [0u8; EVIDENCE_SYMBOL_SIZE_T];
     p[0..4].copy_from_slice(&PAYLOAD_MAGIC_DECISION_V1);
@@ -388,7 +409,30 @@ pub fn encode_decision_payload_v1(
     write_u64(&mut p, 44, heal_arg0);
     write_u64(&mut p, 52, heal_arg1);
 
-    // Remaining bytes reserved (zero).
+    if let Some(loss) = loss_evidence {
+        // Flag presence of the expected-loss block.
+        p[42] = 1;
+        p[43] = LOSS_BLOCK_VERSION_V1;
+        write_u32(
+            &mut p,
+            LOSS_BLOCK_OFFSET,
+            loss.posterior_adverse_ppm.min(1_000_000),
+        );
+        p[LOSS_BLOCK_OFFSET + 4] = loss.selected_action;
+        p[LOSS_BLOCK_OFFSET + 5] = loss.competing_action;
+        write_u32(
+            &mut p,
+            LOSS_BLOCK_OFFSET + 8,
+            loss.selected_expected_loss_milli,
+        );
+        write_u32(
+            &mut p,
+            LOSS_BLOCK_OFFSET + 12,
+            loss.competing_expected_loss_milli,
+        );
+    }
+
+    // Remaining bytes reserved for forward-compatible v1 growth.
     p
 }
 
@@ -721,6 +765,7 @@ impl<const CAP: usize> SystematicEvidenceLog<CAP> {
         decision: RuntimeDecision,
         estimated_cost_ns: u64,
         adverse: bool,
+        loss_evidence: Option<LossEvidenceV1>,
         flags: u16,
         auth_tag: Option<&[u8; EVIDENCE_AUTH_TAG_SIZE]>,
     ) -> u64 {
@@ -740,7 +785,14 @@ impl<const CAP: usize> SystematicEvidenceLog<CAP> {
         let seed = derive_epoch_seed(epoch_id);
 
         let seqno = self.ring.allocate_seqno();
-        let payload = encode_decision_payload_v1(mode, ctx, decision, estimated_cost_ns, adverse);
+        let payload = encode_decision_payload_v1(
+            mode,
+            ctx,
+            decision,
+            estimated_cost_ns,
+            adverse,
+            loss_evidence,
+        );
 
         let mut record_flags = flags | FLAG_SYSTEMATIC;
         if auth_tag.is_some() {
@@ -1077,7 +1129,7 @@ mod tests {
             policy_id: 7,
             risk_upper_bound_ppm: 99,
         };
-        let p = encode_decision_payload_v1(SafetyLevel::Strict, ctx, decision, 17, false);
+        let p = encode_decision_payload_v1(SafetyLevel::Strict, ctx, decision, 17, false, None);
         assert_eq!(&p[0..4], b"EVP1");
         assert_eq!(p[4], 1);
         assert_eq!(p[5], 1);
@@ -1088,6 +1140,64 @@ mod tests {
         assert_eq!(read_u16(&p, 26), 9);
         assert_eq!(u32::from_le_bytes([p[28], p[29], p[30], p[31]]), 7);
         assert_eq!(u32::from_le_bytes([p[32], p[33], p[34], p[35]]), 99);
+    }
+
+    #[test]
+    fn encode_decision_payload_embeds_loss_evidence_block() {
+        let ctx = RuntimeContext {
+            family: ApiFamily::Allocator,
+            addr_hint: 0x1234,
+            requested_bytes: 256,
+            is_write: false,
+            contention_hint: 3,
+            bloom_negative: true,
+        };
+        let decision = RuntimeDecision {
+            profile: ValidationProfile::Full,
+            action: MembraneAction::Repair(HealingAction::UpgradeToSafeVariant),
+            policy_id: 11,
+            risk_upper_bound_ppm: 250_000,
+        };
+        let loss = LossEvidenceV1 {
+            posterior_adverse_ppm: 720_000,
+            selected_action: 2,
+            competing_action: 1,
+            selected_expected_loss_milli: 640,
+            competing_expected_loss_milli: 910,
+        };
+        let p =
+            encode_decision_payload_v1(SafetyLevel::Hardened, ctx, decision, 64, true, Some(loss));
+        assert_eq!(p[42], 1);
+        assert_eq!(p[43], LOSS_BLOCK_VERSION_V1);
+        assert_eq!(
+            u32::from_le_bytes([
+                p[LOSS_BLOCK_OFFSET],
+                p[LOSS_BLOCK_OFFSET + 1],
+                p[LOSS_BLOCK_OFFSET + 2],
+                p[LOSS_BLOCK_OFFSET + 3],
+            ]),
+            loss.posterior_adverse_ppm
+        );
+        assert_eq!(p[LOSS_BLOCK_OFFSET + 4], loss.selected_action);
+        assert_eq!(p[LOSS_BLOCK_OFFSET + 5], loss.competing_action);
+        assert_eq!(
+            u32::from_le_bytes([
+                p[LOSS_BLOCK_OFFSET + 8],
+                p[LOSS_BLOCK_OFFSET + 9],
+                p[LOSS_BLOCK_OFFSET + 10],
+                p[LOSS_BLOCK_OFFSET + 11],
+            ]),
+            loss.selected_expected_loss_milli
+        );
+        assert_eq!(
+            u32::from_le_bytes([
+                p[LOSS_BLOCK_OFFSET + 12],
+                p[LOSS_BLOCK_OFFSET + 13],
+                p[LOSS_BLOCK_OFFSET + 14],
+                p[LOSS_BLOCK_OFFSET + 15],
+            ]),
+            loss.competing_expected_loss_milli
+        );
     }
 
     #[test]

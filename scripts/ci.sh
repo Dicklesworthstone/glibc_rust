@@ -41,6 +41,21 @@ if [[ "${GLIBC_RUST_EXTENDED_GATES:-0}" == "1" ]]; then
     echo "PASS"
     echo ""
 
+    echo "--- runtime_math decision linkage ledger check ---"
+    scripts/check_runtime_math_linkage.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- runtime_math production kernel manifest check ---"
+    scripts/check_runtime_math_manifest.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- expected-loss matrix policy artifact check ---"
+    scripts/check_expected_loss_matrix.sh
+    echo "PASS"
+    echo ""
+
     echo "--- module wiring checklist ---"
     scripts/check_module_wiring.sh || echo "WARN: wiring gaps found (non-blocking)"
     echo ""
@@ -62,6 +77,71 @@ if [[ "${GLIBC_RUST_EXTENDED_GATES:-0}" == "1" ]]; then
 
     echo "--- perf gate (runtime_math + membrane) ---"
     scripts/perf_gate.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- ABI symbol taxonomy drift check ---"
+    scripts/abi_audit.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- support matrix/docs reality drift check ---"
+    scripts/check_support_matrix_drift.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- math governance gate ---"
+    scripts/check_math_governance.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- math retirement gate ---"
+    scripts/check_math_retirement.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- symbol drift guard ---"
+    scripts/check_symbol_drift.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- mode semantics gate ---"
+    scripts/check_mode_semantics.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- closure evidence gate ---"
+    scripts/check_closure_gate.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- replacement levels gate ---"
+    scripts/check_replacement_levels.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- perf budget gate ---"
+    scripts/check_perf_budget.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- packaging gate ---"
+    scripts/check_packaging.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- isomorphism proof gate ---"
+    scripts/check_isomorphism_proof.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- opportunity matrix gate ---"
+    scripts/check_opportunity_matrix.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- workload matrix gate ---"
+    scripts/check_workload_matrix.sh
     echo "PASS"
     echo ""
 

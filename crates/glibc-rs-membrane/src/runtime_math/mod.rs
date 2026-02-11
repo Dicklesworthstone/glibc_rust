@@ -81,6 +81,19 @@ pub mod submodular_coverage;
 pub mod transfer_entropy;
 pub mod wasserstein_drift;
 
+#[cfg(all(
+    feature = "runtime-math-research",
+    not(feature = "runtime-math-production")
+))]
+compile_error!(
+    "`runtime-math-research` requires `runtime-math-production` to keep the default membrane decision law intact."
+);
+
+/// Compile-time flag indicating the production runtime-math kernel is enabled.
+pub const RUNTIME_MATH_PRODUCTION_ENABLED: bool = cfg!(feature = "runtime-math-production");
+/// Compile-time flag indicating research runtime-math extensions are enabled.
+pub const RUNTIME_MATH_RESEARCH_ENABLED: bool = cfg!(feature = "runtime-math-research");
+
 use std::sync::atomic::{AtomicU8, AtomicU64, Ordering};
 
 use parking_lot::Mutex;
@@ -601,6 +614,14 @@ pub struct RuntimeKernelSnapshot {
     pub coupling_certification_margin: f64,
     /// Loss-minimizer recommended action (0=allow, 1=full-validate, 2=repair, 3=deny).
     pub loss_recommended_action: u8,
+    /// Loss-minimizer posterior `P(C=Adverse | evidence)` in ppm.
+    pub loss_posterior_adverse_ppm: u32,
+    /// Loss-minimizer selected expected-loss cost (milli-units).
+    pub loss_selected_expected_cost_milli: u64,
+    /// Loss-minimizer competing action (second-best expected-loss action).
+    pub loss_competing_action: u8,
+    /// Loss-minimizer competing expected-loss cost (milli-units).
+    pub loss_competing_expected_cost_milli: u64,
     /// Loss-minimizer cost explosion detection count.
     pub loss_cost_explosion_count: u64,
     /// Spectral gap max |λ₂| across controllers (0..1, lower = faster mixing).
@@ -777,6 +798,11 @@ pub struct RuntimeMathKernel {
     cached_changepoint_state: AtomicU8,
     cached_conformal_state: AtomicU8,
     cached_loss_minimizer_state: AtomicU8,
+    cached_loss_posterior_ppm: AtomicU64,
+    cached_loss_selected_action: AtomicU8,
+    cached_loss_selected_cost_milli: AtomicU64,
+    cached_loss_competing_action: AtomicU8,
+    cached_loss_competing_cost_milli: AtomicU64,
     cached_coupling_state: AtomicU8,
     cached_fusion_bonus_ppm: AtomicU64,
     cached_fusion_entropy_milli: AtomicU64,
@@ -966,6 +992,11 @@ impl RuntimeMathKernel {
             cached_changepoint_state: AtomicU8::new(0),
             cached_conformal_state: AtomicU8::new(0),
             cached_loss_minimizer_state: AtomicU8::new(0),
+            cached_loss_posterior_ppm: AtomicU64::new(500_000),
+            cached_loss_selected_action: AtomicU8::new(1),
+            cached_loss_selected_cost_milli: AtomicU64::new(0),
+            cached_loss_competing_action: AtomicU8::new(0),
+            cached_loss_competing_cost_milli: AtomicU64::new(0),
             cached_coupling_state: AtomicU8::new(0),
             cached_fusion_bonus_ppm: AtomicU64::new(0),
             cached_fusion_entropy_milli: AtomicU64::new(0),
@@ -1838,9 +1869,32 @@ impl RuntimeMathKernel {
                 SafetyLevel::Off => false,
             };
         if do_evidence {
-            let seqno = self
-                .evidence_log
-                .record_decision(mode, ctx, decision, 0, adverse, 0, None);
+            let loss_evidence = evidence::LossEvidenceV1 {
+                posterior_adverse_ppm: self
+                    .cached_loss_posterior_ppm
+                    .load(Ordering::Relaxed)
+                    .min(1_000_000) as u32,
+                selected_action: self.cached_loss_selected_action.load(Ordering::Relaxed),
+                competing_action: self.cached_loss_competing_action.load(Ordering::Relaxed),
+                selected_expected_loss_milli: self
+                    .cached_loss_selected_cost_milli
+                    .load(Ordering::Relaxed)
+                    .min(u64::from(u32::MAX)) as u32,
+                competing_expected_loss_milli: self
+                    .cached_loss_competing_cost_milli
+                    .load(Ordering::Relaxed)
+                    .min(u64::from(u32::MAX)) as u32,
+            };
+            let seqno = self.evidence_log.record_decision(
+                mode,
+                ctx,
+                decision,
+                0,
+                adverse,
+                Some(loss_evidence),
+                0,
+                None,
+            );
             self.cached_evidence_seqno.store(seqno, Ordering::Relaxed);
         }
 
@@ -2338,12 +2392,29 @@ impl RuntimeMathKernel {
             };
             let lm_code = {
                 let mut lm = self.loss_minimizer.lock();
-                lm.observe(action_code, adverse, estimated_cost_ns);
-                let state = lm.state();
+                lm.observe(family, action_code, adverse, estimated_cost_ns);
+                let summary = lm.summary();
+                let state = summary.state;
                 loss_minimizer_anomaly = Some(matches!(
                     state,
                     LossState::DenyBiased | LossState::CostExplosion
                 ));
+                self.cached_loss_posterior_ppm.store(
+                    (summary.posterior_adverse_prob.clamp(0.0, 1.0) * 1_000_000.0).round() as u64,
+                    Ordering::Relaxed,
+                );
+                self.cached_loss_selected_action
+                    .store(summary.recommended_action, Ordering::Relaxed);
+                self.cached_loss_selected_cost_milli.store(
+                    (summary.selected_expected_loss.max(0.0) * 1_000.0).round() as u64,
+                    Ordering::Relaxed,
+                );
+                self.cached_loss_competing_action
+                    .store(summary.competing_action, Ordering::Relaxed);
+                self.cached_loss_competing_cost_milli.store(
+                    (summary.competing_expected_loss.max(0.0) * 1_000.0).round() as u64,
+                    Ordering::Relaxed,
+                );
                 match state {
                     LossState::Calibrating => 0u8,
                     LossState::Balanced => 1u8,
@@ -3907,6 +3978,17 @@ impl RuntimeMathKernel {
             coupling_divergence_bound: coupling_summary.divergence_bound,
             coupling_certification_margin: coupling_summary.certification_margin,
             loss_recommended_action: loss_summary.recommended_action,
+            loss_posterior_adverse_ppm: self
+                .cached_loss_posterior_ppm
+                .load(Ordering::Relaxed)
+                .min(1_000_000) as u32,
+            loss_selected_expected_cost_milli: self
+                .cached_loss_selected_cost_milli
+                .load(Ordering::Relaxed),
+            loss_competing_action: self.cached_loss_competing_action.load(Ordering::Relaxed),
+            loss_competing_expected_cost_milli: self
+                .cached_loss_competing_cost_milli
+                .load(Ordering::Relaxed),
             loss_cost_explosion_count: loss_summary.cost_explosion_count,
             spectral_gap_max_eigenvalue: spectral_gap_summary.max_second_eigenvalue,
             spectral_gap_mean_eigenvalue: spectral_gap_summary.mean_second_eigenvalue,
@@ -4070,6 +4152,16 @@ fn oracle_bias_from_ordering(ordering: &[CheckStage; 7], mode: SafetyLevel) -> u
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn runtime_math_feature_flags_are_consistent() {
+        if !RUNTIME_MATH_PRODUCTION_ENABLED {
+            panic!("runtime-math-production must be enabled for membrane builds");
+        }
+        if RUNTIME_MATH_RESEARCH_ENABLED && !RUNTIME_MATH_PRODUCTION_ENABLED {
+            panic!("runtime-math-research requires runtime-math-production");
+        }
+    }
 
     #[test]
     fn hardened_can_escalate_to_full() {
@@ -5040,5 +5132,8 @@ mod tests {
         assert_eq!(snap.evidence_seqno, 0);
         assert_eq!(snap.evidence_loss_count, 0);
         assert_eq!(snap.evidence_max_epoch, 0);
+        assert!(snap.loss_posterior_adverse_ppm <= 1_000_000);
+        assert!(snap.loss_recommended_action <= 3);
+        assert!(snap.loss_competing_action <= 3);
     }
 }

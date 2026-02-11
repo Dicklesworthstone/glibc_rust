@@ -1,16 +1,43 @@
 # glibc_rust
 
-**Drop-in, memory-safe replacement for glibc. Written in Rust. Zero C code at runtime.**
+**Safety-focused glibc interposition layer in Rust with incremental replacement kernels.**
 
-C programs call `malloc`, `memcpy`, `strlen`, `printf` every microsecond and trust that nothing goes wrong. glibc_rust makes that trust justified: every pointer is validated, every buffer is bounds-checked, every use-after-free is caught -- invisibly, behind the same ABI your binaries already expect.
+C programs call `malloc`, `memcpy`, `strlen`, `printf` every microsecond and trust that nothing goes wrong. glibc_rust places a Transparent Safety Membrane at that ABI boundary and incrementally replaces host-libc behavior with Rust-owned implementations, raw syscall veneers, and deterministic fallback contracts.
 
 ```bash
-# Replace your system libc for a single process
+# Interpose libc for a single process
 LD_PRELOAD=/usr/lib/glibc-rust/libc.so ./my_program
 
 # Or go hardened: catch and repair unsafe operations instead of crashing
 GLIBC_RUST_MODE=hardened LD_PRELOAD=/usr/lib/glibc-rust/libc.so ./my_program
 ```
+
+---
+
+## Current Implementation Reality (Machine-Generated)
+
+Source of truth: `tests/conformance/reality_report.v1.json` (generated `2026-02-11T03:14:20Z`).
+Reality snapshot: total_exported=227, implemented=84, raw_syscall=83, glibc_call_through=54, stub=6.
+Counts below reflect that generated snapshot and will change as matrix drift fixes land.
+
+Current implementation is **hybrid interposition**, not full replacement. Exported symbols are classified into four support-taxonomy states:
+
+| Status | Count | Share | Meaning |
+|---|---:|---:|---|
+| `Implemented` | 84 | 37% | Native Rust implementation owns behavior |
+| `RawSyscall` | 83 | 37% | ABI entrypoint marshals directly to Linux syscalls |
+| `GlibcCallThrough` | 54 | 24% | Delegates to host glibc after membrane checks |
+| `Stub` | 6 | 3% | Deterministic fallback contract (documented) |
+
+Total currently classified exports: **227**.
+
+Known stubs:
+- `freeaddrinfo`
+- `gai_strerror`
+- `getaddrinfo`
+- `getnameinfo`
+- `localeconv`
+- `setlocale`
 
 ---
 
@@ -127,28 +154,28 @@ These 29 subsystems = **1,640,126 lines (88.1%)** of the total codebase.
 
 ## The Solution
 
-glibc_rust reimplements glibc's full POSIX + GNU API surface in safe Rust behind a **Transparent Safety Membrane** (TSM). Your C programs link against it with zero code changes. The membrane validates every pointer, checks every bound, and tracks every allocation's lifetime -- at the ABI boundary where C hands control to libc.
+glibc_rust provides a **Transparent Safety Membrane** (TSM) behind a glibc-compatible ABI and classifies each exported symbol as `Implemented`, `RawSyscall`, `GlibcCallThrough`, or `Stub`. The membrane validates every pointer, checks bounds, and tracks allocation lifetimes at the C ABI boundary.
 
 Two runtime modes let you choose your trade-off:
 
 | Mode | Behavior | Overhead | Use Case |
 |------|----------|----------|----------|
-| **`strict`** (default) | ABI-identical to glibc. No repairs. | <20ns/call | Production drop-in replacement |
+| **`strict`** (default) | ABI-compatible semantics for currently supported symbols. No repairs. | <20ns/call | Compatibility mode for validated workloads |
 | **`hardened`** | Catches and repairs unsafe operations | <200ns/call | Security-critical deployments |
 
 ## Why glibc_rust?
 
 | Feature | glibc | musl | glibc_rust |
 |---------|-------|------|------------|
-| Full POSIX + GNU extensions | Yes | Partial | Yes |
-| ABI compatible (symbol versions) | -- | No | Yes |
-| Memory-safe implementation | No | No | Yes |
-| Use-after-free detection | No | No | Yes (P=1) |
-| Buffer overflow detection | No | No | Yes (P >= 1 - 2^-64) |
-| Double-free protection | No | No | Yes |
+| Full POSIX + GNU extensions | Yes | Partial | In progress (see current reality snapshot) |
+| ABI compatible (symbol versions) | -- | No | Partial (classified ABI surface with version script) |
+| Memory-safe implementation | No | No | Yes for `Implemented`/`RawSyscall` paths |
+| Use-after-free detection | No | No | Membrane-governed paths |
+| Buffer overflow detection | No | No | Membrane-governed paths |
+| Double-free protection | No | No | Membrane-governed allocator paths |
 | Runtime repair mode | No | No | Yes (`hardened`) |
 | Auditable safety decisions | No | No | Yes (per-call evidence) |
-| Drop-in for existing binaries | -- | Recompile | Yes (`LD_PRELOAD`) |
+| Drop-in for existing binaries | -- | Recompile | Partial (`LD_PRELOAD`, depends on symbol coverage) |
 
 ---
 
@@ -158,7 +185,7 @@ Two runtime modes let you choose your trade-off:
 # 1. Build libc.so
 cargo build --release -p glibc-rs-abi
 
-# 2. Run any program with glibc_rust as its libc
+# 2. Run a candidate program with glibc_rust interposed
 LD_PRELOAD=target/release/libc.so ls -la
 
 # 3. Enable hardened mode to catch unsafe patterns
@@ -184,7 +211,7 @@ cargo bench -p glibc-rs-bench
 
 ### 1. The ABI is the contract
 
-glibc_rust exports the same symbols, with the same version tags (`GLIBC_2.2.5`, `GLIBC_2.14`, etc.), using the same calling conventions. Programs don't know they're running on Rust. If the ABI contract breaks, nothing else matters.
+glibc_rust targets glibc ABI compatibility for the currently exported/classified symbol set, including version tags (`GLIBC_2.2.5`, `GLIBC_2.14`, etc.) and calling conventions. If the ABI contract breaks, nothing else matters.
 
 ### 2. Safety is structural, not aspirational
 
@@ -192,7 +219,7 @@ Memory safety isn't achieved by "being careful with `unsafe`." It's achieved by 
 
 ### 3. Two modes, one binary
 
-Strict mode matches glibc behavior exactly -- same return values, same `errno`, same side effects. Hardened mode adds repair semantics for invalid inputs (clamping oversized copies, quarantining freed pointers, null-terminating truncated strings). The mode is chosen once at process startup via environment variable and cannot change.
+Strict mode targets glibc-compatible behavior for the currently supported symbol set -- same return values, same `errno`, same side effects where covered. Hardened mode adds repair semantics for invalid inputs (clamping oversized copies, quarantining freed pointers, null-terminating truncated strings). The mode is chosen once at process startup via environment variable and cannot change.
 
 ### 4. No line-by-line translation
 
@@ -232,6 +259,7 @@ LD_PRELOAD=/usr/lib/glibc-rust/libc.so ./your_program
 - Rust nightly (edition 2024)
 - Linux x86_64 (primary target)
 - No runtime dependencies beyond the kernel
+- Host glibc runtime currently required for `GlibcCallThrough` symbols
 
 ---
 
@@ -424,7 +452,7 @@ These are build/test tooling dependencies only, not production runtime dependenc
 LD_PRELOAD=target/release/libc.so ./my_app
 ```
 
-- ABI-identical to glibc for all defined behavior
+- ABI-compatible for the currently supported/classified symbol set
 - No repair transformations
 - Invalid operations return glibc-compatible error codes
 - Overhead budget: <20ns per membrane-gated call
@@ -453,32 +481,23 @@ GLIBC_RUST_MODE=hardened LD_PRELOAD=target/release/libc.so ./my_app
 
 ## API Coverage
 
-glibc_rust covers the full POSIX API surface plus GNU extensions. 3,160 exported symbols with correct version tags.
+`tests/conformance/reality_report.v1.json` is the canonical coverage snapshot (generated from `support_matrix.json` via `harness reality-report`).
 
-| Family | Functions | Examples |
-|--------|-----------|---------|
-| String/memory | 35+ | `memcpy`, `memmove`, `strlen`, `strcmp`, `strstr`, `strtok` |
-| Allocator | 10+ | `malloc`, `free`, `realloc`, `calloc`, `memalign`, `posix_memalign` |
-| Stdio | 40+ | `printf`, `fprintf`, `scanf`, `fopen`, `fread`, `fwrite`, `fflush` |
-| Stdlib | 30+ | `atoi`, `strtol`, `qsort`, `bsearch`, `rand`, `exit`, `getenv` |
-| Math | 100+ | `sin`, `cos`, `exp`, `log`, `pow`, `fma`, `ceil`, `floor` |
-| POSIX I/O | 25+ | `open`, `close`, `read`, `write`, `lseek`, `stat`, `fstat` |
-| Pthread | 40+ | `pthread_create`, `pthread_mutex_*`, `pthread_cond_*`, `pthread_rwlock_*` |
-| Socket | 20+ | `socket`, `bind`, `listen`, `accept`, `connect`, `send`, `recv` |
-| Time | 15+ | `time`, `gettimeofday`, `clock_gettime`, `mktime`, `strftime` |
-| Signal | 10+ | `signal`, `sigaction`, `kill`, `sigprocmask` |
-| Locale | 10+ | `setlocale`, `newlocale`, `uselocale` |
-| DNS/NSS | 10+ | `getaddrinfo`, `gethostbyname`, `getpwnam`, `getgrnam` |
-| Wide string | 30+ | `wcscpy`, `wcslen`, `mbrtowc`, `wcrtomb` |
-| Directory | 8+ | `opendir`, `readdir`, `closedir`, `scandir` |
-| Dynamic link | 5+ | `dlopen`, `dlclose`, `dlsym`, `dlerror` |
-| Terminal | 5+ | `tcgetattr`, `tcsetattr`, `isatty`, `ttyname` |
+| Taxonomy | Primary Families/Modules |
+|---|---|
+| `Implemented` | `string_abi`, `wchar_abi`, `math_abi`, `malloc_abi`, `stdlib_abi`, `ctype_abi`, `inet_abi`, `errno_abi` |
+| `RawSyscall` | `unistd_abi`, `socket_abi`, `termios_abi`, `time_abi`, `dirent_abi`, `process_abi`, `poll_abi`, `io_abi`, `mmap_abi`, `resource_abi`, `signal_abi` |
+| `GlibcCallThrough` | `stdio_abi`, `pthread_abi`, `dlfcn_abi` |
+| `Stub` | `resolv_abi` + `locale_abi` (`getaddrinfo`, `getnameinfo`, `freeaddrinfo`, `gai_strerror`, `setlocale`, `localeconv`) |
+
+For exact counts, stub surface, and snapshot timestamp, inspect `tests/conformance/reality_report.v1.json`.
+For per-symbol strict/hardened semantics and status, inspect `support_matrix.json` directly.
 
 ---
 
 ## Conformance Testing
 
-glibc_rust's correctness is proven, not assumed.
+glibc_rust correctness is validated through fixture-driven conformance and drift gates.
 
 ```bash
 # Run the full conformance suite
@@ -497,6 +516,9 @@ scripts/conformance_golden_gate.sh
 
 # Verify runtime_math snapshot golden drift
 scripts/snapshot_gate.sh
+
+# Run LD_PRELOAD smoke suite (coreutils + integration C binary + python/busybox)
+TIMEOUT_SECONDS=10 scripts/ld_preload_smoke.sh
 
 # Run healing oracle tests (hardened mode)
 cargo run -p glibc-rs-harness --bin harness -- verify-membrane --mode hardened
@@ -573,7 +595,7 @@ cargo bench -p glibc-rs-bench -- --baseline committed
 ## FAQ
 
 **Q: Can I use this in production?**
-A: Strict mode is designed for production use. It matches glibc's ABI contract exactly. Hardened mode is suitable for security-sensitive deployments where the overhead is acceptable.
+A: For controlled workloads that stay within the currently supported symbol set, yes. This project is not yet a full glibc replacement; use the support taxonomy and smoke/conformance gates to validate your workload.
 
 **Q: Does this protect against all memory safety bugs?**
 A: It protects against memory safety bugs that flow through libc calls -- which is a large and important class. It does not protect against bugs in application code that never calls libc (e.g., stack buffer overflows within a function).

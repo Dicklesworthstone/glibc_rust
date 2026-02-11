@@ -1,0 +1,211 @@
+{
+  "schema_version": 1,
+  "bead": "bd-1ik",
+  "description": "Opportunity matrix for glibc_rust optimization work. Scores hotspots on three dimensions (impact, confidence, effort) to produce a composite score. Only items scoring >= 2.0 proceed to implementation. Items below threshold remain deferred unless manually justified with a waiver.",
+  "scoring": {
+    "dimensions": {
+      "impact": {
+        "description": "Expected improvement magnitude. Combines call frequency, current overhead, and user-visible effect.",
+        "scale": "0.0 to 5.0",
+        "anchors": {
+          "0.0": "No measurable improvement",
+          "1.0": "Minor: <5% reduction in overhead for coldpath APIs",
+          "2.0": "Moderate: 5-20% reduction for hotpath, or eliminates a call-through",
+          "3.0": "Significant: >20% reduction for hotpath, or eliminates multiple call-throughs",
+          "4.0": "Major: enables new replacement level (L1\u2192L2 transition)",
+          "5.0": "Critical: removes last blocker for replacement level transition"
+        }
+      },
+      "confidence": {
+        "description": "Certainty that the optimization will achieve claimed impact. Based on profiling data, benchmarks, or prior art.",
+        "scale": "0.0 to 5.0",
+        "anchors": {
+          "0.0": "Pure speculation, no data",
+          "1.0": "Theoretical argument only",
+          "2.0": "Comparable system shows improvement (e.g., musl, bionic)",
+          "3.0": "Prototype benchmark shows improvement on synthetic workload",
+          "4.0": "Criterion benchmark shows improvement on representative workload",
+          "5.0": "Production trace confirms improvement with statistical significance"
+        }
+      },
+      "effort": {
+        "description": "Implementation complexity and risk. Higher score = less effort (inverted so high total score = desirable).",
+        "scale": "0.0 to 5.0",
+        "anchors": {
+          "0.0": "Requires new subsystem (rtld, CRT, NSS backend)",
+          "1.0": "Multi-module refactor with ABI changes",
+          "2.0": "Single-module implementation with new tests",
+          "3.0": "Contained change within existing module",
+          "4.0": "Straightforward optimization (SIMD, lookup table, cache)",
+          "5.0": "Trivial: flag change, constant tuning, config update"
+        }
+      }
+    },
+    "formula": "score = (impact * 0.5) + (confidence * 0.3) + (effort * 0.2)",
+    "threshold": 2.0,
+    "threshold_policy": "Items with score >= 2.0 are eligible for implementation. Items below 2.0 are deferred unless a justification_waiver is provided."
+  },
+  "entries": [
+    {
+      "id": "opp-001",
+      "title": "Eliminate locale_abi stubs (setlocale, localeconv)",
+      "bead_id": "bd-3pe",
+      "module": "locale_abi",
+      "impact": 3.0,
+      "confidence": 4.0,
+      "effort": 3.0,
+      "score": 3.3,
+      "rationale": "Eliminates 2 stubs blocking L1 transition. C/POSIX locale is well-defined, implementation is bounded.",
+      "status": "eligible"
+    },
+    {
+      "id": "opp-002",
+      "title": "Eliminate resolv_abi stubs (getaddrinfo, getnameinfo, freeaddrinfo, gai_strerror)",
+      "bead_id": "bd-66s",
+      "module": "resolv_abi",
+      "impact": 3.0,
+      "confidence": 3.0,
+      "effort": 2.0,
+      "score": 2.8,
+      "rationale": "Eliminates 4 stubs blocking L1. Numeric-only backend is feasible but DNS requires significant work.",
+      "status": "eligible"
+    },
+    {
+      "id": "opp-003",
+      "title": "Migrate dlfcn_abi to raw syscall (dlopen, dlclose, dlsym, dlerror)",
+      "bead_id": "bd-3rn",
+      "module": "dlfcn_abi",
+      "impact": 4.0,
+      "confidence": 2.0,
+      "effort": 1.0,
+      "score": 2.8,
+      "rationale": "Required for L2 transition. ELF relocation + symbol lookup is complex but well-documented.",
+      "status": "eligible"
+    },
+    {
+      "id": "opp-004",
+      "title": "Futex-based pthread_mutex_* (lock, unlock, trylock, init, destroy)",
+      "bead_id": "bd-z84",
+      "module": "pthread_abi",
+      "impact": 4.0,
+      "confidence": 4.0,
+      "effort": 2.0,
+      "score": 3.6,
+      "rationale": "Eliminates 5+ call-throughs from hotpath. Futex mutex is well-understood (musl, bionic precedent).",
+      "status": "eligible"
+    },
+    {
+      "id": "opp-005",
+      "title": "Thread bootstrap (pthread_create, pthread_join, pthread_detach)",
+      "bead_id": "bd-yos",
+      "module": "pthread_abi",
+      "impact": 4.0,
+      "confidence": 3.0,
+      "effort": 1.0,
+      "score": 3.1,
+      "rationale": "Eliminates 3 critical call-throughs. TLS handoff is the hard part.",
+      "status": "eligible"
+    },
+    {
+      "id": "opp-006",
+      "title": "SIMD-accelerated memcpy/memmove/memset",
+      "bead_id": null,
+      "module": "string_abi",
+      "impact": 2.0,
+      "confidence": 4.0,
+      "effort": 4.0,
+      "score": 3.0,
+      "rationale": "Current Rust std implementations are already good. Marginal gain from explicit AVX2/AVX-512.",
+      "status": "eligible"
+    },
+    {
+      "id": "opp-007",
+      "title": "CRT bootstrap (_start, __libc_start_main)",
+      "bead_id": "bd-qwm",
+      "module": null,
+      "impact": 5.0,
+      "confidence": 2.0,
+      "effort": 0.0,
+      "score": 3.1,
+      "rationale": "Critical for L3 (full replacement) but very high effort. Assembly-level bootstrap required.",
+      "status": "eligible"
+    },
+    {
+      "id": "opp-008",
+      "title": "Env variable functions (getenv, setenv, unsetenv)",
+      "bead_id": "bd-747",
+      "module": "stdlib_abi",
+      "impact": 1.0,
+      "confidence": 5.0,
+      "effort": 4.0,
+      "score": 2.8,
+      "rationale": "Simple to implement but low call frequency. Nice L1 hygiene improvement.",
+      "status": "eligible"
+    },
+    {
+      "id": "opp-009",
+      "title": "NSS files backend for passwd/group/hosts",
+      "bead_id": "bd-1rf",
+      "module": null,
+      "impact": 3.0,
+      "confidence": 2.0,
+      "effort": 1.0,
+      "score": 2.3,
+      "rationale": "Required for L3 but complex. File parsing + caching + thread safety.",
+      "status": "eligible"
+    },
+    {
+      "id": "opp-010",
+      "title": "Resolver UDP backend",
+      "bead_id": "bd-1y7",
+      "module": "resolv_abi",
+      "impact": 3.0,
+      "confidence": 2.0,
+      "effort": 1.0,
+      "score": 2.3,
+      "rationale": "Required for L3. UDP DNS with timeout/retry is well-specified but needs careful implementation.",
+      "status": "eligible"
+    },
+    {
+      "id": "opp-011",
+      "title": "Lookup table ctype (isalpha, isdigit, etc.)",
+      "bead_id": null,
+      "module": "ctype_abi",
+      "impact": 1.0,
+      "confidence": 5.0,
+      "effort": 5.0,
+      "score": 3.0,
+      "rationale": "Already Implemented. 256-byte lookup table could improve branch prediction for ASCII classification.",
+      "status": "eligible"
+    },
+    {
+      "id": "opp-012",
+      "title": "Native stdio (fopen, fread, fwrite, etc.)",
+      "bead_id": null,
+      "module": "stdio_abi",
+      "impact": 4.0,
+      "confidence": 2.0,
+      "effort": 0.0,
+      "score": 2.6,
+      "rationale": "Required for L3. FILE* reimplementation is massive (30 symbols). Very high effort offsets high impact.",
+      "status": "eligible"
+    }
+  ],
+  "deferred": [],
+  "summary": {
+    "total_entries": 12,
+    "eligible": 12,
+    "deferred": 0,
+    "average_score": 2.89,
+    "highest_score": {
+      "id": "opp-004",
+      "score": 3.6,
+      "title": "Futex-based pthread_mutex_* (lock, unlock, trylock, init, destroy)"
+    },
+    "lowest_score": {
+      "id": "opp-009",
+      "score": 2.3,
+      "title": "NSS files backend for passwd/group/hosts"
+    }
+  }
+}

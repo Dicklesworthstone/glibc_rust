@@ -6,7 +6,7 @@
 #   2. Human-readable summary to stdout
 #
 # Usage:
-#   bash scripts/abi_audit.sh [--json-only]
+#   bash scripts/abi_audit.sh [--json-only] [--deterministic]
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -17,9 +17,22 @@ HOST_LIB="/usr/lib/x86_64-linux-gnu/libc.so.6"
 MATRIX_OUT="${PROJECT_ROOT}/support_matrix.json"
 
 JSON_ONLY=0
-if [[ "${1:-}" == "--json-only" ]]; then
-  JSON_ONLY=1
-fi
+DETERMINISTIC=0
+for arg in "$@"; do
+  case "${arg}" in
+    --json-only)
+      JSON_ONLY=1
+      ;;
+    --deterministic)
+      DETERMINISTIC=1
+      ;;
+    *)
+      echo "ERROR: unsupported argument: ${arg}" >&2
+      echo "Usage: bash scripts/abi_audit.sh [--json-only] [--deterministic]" >&2
+      exit 2
+      ;;
+  esac
+done
 
 # Use alternate target dir if default doesn't exist.
 if [[ ! -f "${OUR_LIB}" ]] && [[ -f "${ALT_LIB}" ]]; then
@@ -40,6 +53,84 @@ fi
 declare -A SYM_STATUS
 declare -A SYM_MODULE
 declare -A SYM_PERF
+
+declare -A MOD_STRICT
+declare -A MOD_HARDENED
+
+MOD_STRICT[malloc_abi]="Safe Rust arena allocator; null on failure; double-free silently ignored"
+MOD_HARDENED[malloc_abi]="Arena with healing: foreign-ptr realloc as malloc, double-free logged as HealingAction"
+
+MOD_STRICT[string_abi]="Safe Rust string/memory ops; unbounded scans follow C semantics; no repair"
+MOD_HARDENED[string_abi]="Clamps copy/scan to tracked allocation bounds; logs ClampSize/TruncateWithNull"
+
+MOD_STRICT[wchar_abi]="Safe Rust wide-char ops; follows C semantics; no repair"
+MOD_HARDENED[wchar_abi]="Clamps wide-char copy/scan to tracked allocation bounds; logs ClampSize"
+
+MOD_STRICT[stdlib_abi]="Safe Rust stdlib (atoi/qsort/bsearch); POSIX-correct return values and errno"
+MOD_HARDENED[stdlib_abi]="Stdlib with hardened membrane; repair clamping on comparator bounds"
+
+MOD_STRICT[errno_abi]="Thread-local errno via Rust; ABI-compatible __errno_location pointer"
+MOD_HARDENED[errno_abi]="Thread-local errno; no mode difference (stateless query)"
+
+MOD_STRICT[math_abi]="Rust std::f64 math; returns NaN/Inf per IEEE 754; no repair"
+MOD_HARDENED[math_abi]="Rust std::f64 math; no mode difference (pure computation)"
+
+MOD_STRICT[ctype_abi]="Lookup-table ctype classification; returns 0/1 per POSIX C locale"
+MOD_HARDENED[ctype_abi]="Lookup-table ctype; no mode difference (pure computation)"
+
+MOD_STRICT[stdio_abi]="Delegates to host glibc FILE* ops after membrane validation; preserves host semantics"
+MOD_HARDENED[stdio_abi]="Host glibc delegation; hardened membrane bounds C string scans, logs TruncateWithNull"
+
+MOD_STRICT[io_abi]="Raw Linux syscall for dup/dup2/pipe/fcntl; POSIX errno on failure"
+MOD_HARDENED[io_abi]="Raw syscall with hardened membrane; repair on invalid flags"
+
+MOD_STRICT[unistd_abi]="Raw Linux syscall for POSIX I/O and process queries; POSIX errno on failure"
+MOD_HARDENED[unistd_abi]="Raw syscall; clamps read/write count to tracked buffer bounds, defaults invalid whence/amode"
+
+MOD_STRICT[socket_abi]="Raw Linux syscall for BSD sockets; POSIX errno on failure"
+MOD_HARDENED[socket_abi]="Raw syscall; clamps send/recv buffer lengths to tracked bounds"
+
+MOD_STRICT[inet_abi]="Pure-computation byte-order and address conversion; no syscalls"
+MOD_HARDENED[inet_abi]="Pure computation; no mode difference"
+
+MOD_STRICT[signal_abi]="Raw Linux syscall for signal handling; POSIX errno on failure"
+MOD_HARDENED[signal_abi]="Raw syscall; denies invalid signal numbers instead of passing to kernel"
+
+MOD_STRICT[time_abi]="Raw Linux syscall for time queries; POSIX errno on failure"
+MOD_HARDENED[time_abi]="Raw syscall; defaults invalid clock_id to CLOCK_REALTIME"
+
+MOD_STRICT[pthread_abi]="Delegates to host glibc pthread; preserves host semantics"
+MOD_HARDENED[pthread_abi]="Host glibc pthread delegation; hardened membrane validates mutex/cond state"
+
+MOD_STRICT[resolv_abi]="Stub: returns EAI_SERVICE/EAI_NONAME on unparseable input"
+MOD_HARDENED[resolv_abi]="Stub with safe defaults: unparseable port to 0, invalid host to localhost"
+
+MOD_STRICT[locale_abi]="Stub: setlocale returns C locale pointer; localeconv returns static C locale struct"
+MOD_HARDENED[locale_abi]="Stub; no mode difference (always returns C locale safe default)"
+
+MOD_STRICT[dlfcn_abi]="Delegates to host glibc dlopen/dlsym/dlclose/dlerror; preserves host semantics"
+MOD_HARDENED[dlfcn_abi]="Host glibc delegation; hardened membrane validates path strings"
+
+MOD_STRICT[dirent_abi]="Raw Linux syscall for directory enumeration; POSIX errno on failure"
+MOD_HARDENED[dirent_abi]="Raw syscall; validates path pointer bounds before getdents64"
+
+MOD_STRICT[resource_abi]="Raw Linux syscall for getrlimit/setrlimit; POSIX errno on failure"
+MOD_HARDENED[resource_abi]="Raw syscall; denies invalid resource constants"
+
+MOD_STRICT[termios_abi]="Raw Linux ioctl for terminal control; POSIX errno on failure"
+MOD_HARDENED[termios_abi]="Raw ioctl; validates termios struct pointer bounds"
+
+MOD_STRICT[mmap_abi]="Raw Linux syscall for virtual memory; POSIX errno on failure"
+MOD_HARDENED[mmap_abi]="Raw syscall; denies conflicting prot/flags combinations"
+
+MOD_STRICT[poll_abi]="Raw Linux syscall for I/O multiplexing; POSIX errno on failure"
+MOD_HARDENED[poll_abi]="Raw syscall; clamps nfds to tracked pollfd array bounds"
+
+MOD_STRICT[process_abi]="Raw Linux syscall for process control; POSIX errno on failure"
+MOD_HARDENED[process_abi]="Raw syscall; validates argv/envp pointer arrays before execve"
+
+MOD_STRICT[unknown]="Unclassified symbol defaulting to Stub contract"
+MOD_HARDENED[unknown]="Unclassified symbol; evidence emitted on every call"
 
 # malloc_abi: Implemented (safe Rust allocator)
 for s in malloc free calloc realloc posix_memalign memalign aligned_alloc; do
@@ -239,51 +330,82 @@ our_count=$(echo "${our_syms}" | wc -l)
 # ------------------------------------------------------------------
 # Build JSON support matrix
 # ------------------------------------------------------------------
+if [[ ${DETERMINISTIC} -eq 1 ]]; then
+  generated_at_utc="1970-01-01T00:00:00Z"
+  library_field="$(basename "${OUR_LIB}")"
+else
+  generated_at_utc="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  library_field="${OUR_LIB}"
+fi
+
+impl=0
+raw=0
+glibc=0
+stub=0
+default_stub=0
+
 {
   echo "{"
-  echo "  \"version\": 1,"
-  echo "  \"generated_at_utc\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\","
-  echo "  \"library\": \"${OUR_LIB}\","
+  echo "  \"version\": 2,"
+  echo "  \"generated_at_utc\": \"${generated_at_utc}\","
+  echo "  \"library\": \"${library_field}\","
   echo "  \"total_exported\": ${our_count},"
+  echo "  \"taxonomy\": {"
+  echo "    \"Implemented\": \"Native Rust code owns the entire operation. No host libc dependency. Full test coverage required.\","
+  echo "    \"RawSyscall\": \"ABI entrypoint marshals arguments directly to Linux syscall instruction. No glibc call-through.\","
+  echo "    \"GlibcCallThrough\": \"Delegates to host glibc after membrane pre/post validation. Requires host libc at runtime.\","
+  echo "    \"Stub\": \"Deterministic failure contract. Returns stable errno/error code. Documented in support policy.\","
+  echo "    \"perf_classes\": {"
+  echo "      \"strict_hotpath\": \"Called >= 1M/sec in typical workloads. Must meet <20ns strict budget.\","
+  echo "      \"hardened_hotpath\": \"Called >= 1M/sec in hardened mode. Must meet <200ns hardened budget.\","
+  echo "      \"coldpath\": \"Called < 1K/sec. No latency budget enforced.\""
+  echo "    },"
+  echo "    \"default_policy\": \"Any exported symbol absent from explicit classification defaults to Stub and causes drift failure (exit 3).\","
+  echo "    \"mode_contract\": {"
+  echo "      \"strict\": \"POSIX-correct error semantics. Membrane validates but never silently rewrites. ABI-compatible.\","
+  echo "      \"hardened\": \"TSM repair enabled. Membrane applies deterministic healing (clamp, truncate, safe-default). Logs HealingAction.\""
+  echo "    }"
+  echo "  },"
   echo "  \"symbols\": ["
 
   first=1
   while IFS= read -r sym; do
     [[ -z "$sym" ]] && continue
-    status="${SYM_STATUS[$sym]:-Unclassified}"
+    status="${SYM_STATUS[$sym]:-Stub}"
     module="${SYM_MODULE[$sym]:-unknown}"
-    perf="${SYM_PERF[$sym]:-unknown}"
+    perf="${SYM_PERF[$sym]:-coldpath}"
+    strict_semantics="${MOD_STRICT[$module]:-${MOD_STRICT[unknown]}}"
+    hardened_semantics="${MOD_HARDENED[$module]:-${MOD_HARDENED[unknown]}}"
+    default_stub_flag="false"
+    if [[ -z "${SYM_STATUS[$sym]:-}" ]]; then
+      default_stub=$((default_stub + 1))
+      default_stub_flag="true"
+    fi
 
     if [[ $first -eq 0 ]]; then
       echo ","
     fi
     first=0
-    printf '    {"symbol": "%s", "status": "%s", "module": "%s", "perf_class": "%s"}' \
-      "$sym" "$status" "$module" "$perf"
-  done <<< "${our_syms}"
+    printf '    {"symbol": "%s", "status": "%s", "module": "%s", "perf_class": "%s", "strict_semantics": "%s", "hardened_semantics": "%s", "default_stub": %s}' \
+      "$sym" "$status" "$module" "$perf" "$strict_semantics" "$hardened_semantics" "$default_stub_flag"
 
-  echo ""
-  echo "  ],"
-
-  # Summary counts
-  impl=0; raw=0; glibc=0; stub=0; unclass=0
-  while IFS= read -r sym; do
-    [[ -z "$sym" ]] && continue
-    case "${SYM_STATUS[$sym]:-Unclassified}" in
+    case "${status}" in
       Implemented) impl=$((impl + 1)) ;;
       RawSyscall) raw=$((raw + 1)) ;;
       GlibcCallThrough) glibc=$((glibc + 1)) ;;
       Stub) stub=$((stub + 1)) ;;
-      *) unclass=$((unclass + 1)) ;;
     esac
   done <<< "${our_syms}"
+
+  echo ""
+  echo "  ],"
 
   echo "  \"summary\": {"
   echo "    \"Implemented\": ${impl},"
   echo "    \"RawSyscall\": ${raw},"
   echo "    \"GlibcCallThrough\": ${glibc},"
   echo "    \"Stub\": ${stub},"
-  echo "    \"Unclassified\": ${unclass}"
+  echo "    \"DefaultStub\": ${default_stub}"
   echo "  }"
   echo "}"
 } > "${MATRIX_OUT}"
@@ -301,37 +423,18 @@ echo "Library: ${OUR_LIB}"
 echo "Total exported symbols: ${our_count}"
 echo ""
 
-# Count by status
-impl=0; raw=0; glibc=0; stub=0; unclass=0
-while IFS= read -r sym; do
-  [[ -z "$sym" ]] && continue
-  case "${SYM_STATUS[$sym]:-Unclassified}" in
-    Implemented) impl=$((impl + 1)) ;;
-    RawSyscall) raw=$((raw + 1)) ;;
-    GlibcCallThrough) glibc=$((glibc + 1)) ;;
-    Stub) stub=$((stub + 1)) ;;
-    *) unclass=$((unclass + 1)) ;;
-  esac
-done <<< "${our_syms}"
-
 echo "Classification:"
 printf "  %-20s %d\n" "Implemented:" "$impl"
 printf "  %-20s %d\n" "RawSyscall:" "$raw"
 printf "  %-20s %d\n" "GlibcCallThrough:" "$glibc"
 printf "  %-20s %d\n" "Stub:" "$stub"
-printf "  %-20s %d\n" "Unclassified:" "$unclass"
+printf "  %-20s %d\n" "DefaultStub:" "$default_stub"
 echo ""
 
-# List unclassified symbols if any
-if [[ $unclass -gt 0 ]]; then
-  echo "=== UNCLASSIFIED SYMBOLS ==="
-  while IFS= read -r sym; do
-    [[ -z "$sym" ]] && continue
-    if [[ "${SYM_STATUS[$sym]:-Unclassified}" == "Unclassified" ]]; then
-      echo "  $sym"
-    fi
-  done <<< "${our_syms}"
-  echo ""
+if [[ $default_stub -gt 0 ]]; then
+  echo "ERROR: ${default_stub} symbol(s) fell back to default Stub classification." >&2
+  echo "This is treated as taxonomy drift; classify new symbols explicitly in scripts/abi_audit.sh." >&2
+  exit 3
 fi
 
 # Host comparison

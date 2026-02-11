@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "bead": "bd-2bu",
+  "description": "Replacement maturity model for glibc_rust. Defines four levels from LD_PRELOAD interposition to full standalone replacement, with measurable gate criteria for each level transition.",
+  "levels": [
+    {
+      "level": "L0",
+      "name": "Interpose",
+      "description": "LD_PRELOAD interposition over host glibc. Call-throughs to host glibc allowed for all modules. Primary value: membrane validation + structured logging on top of host libc.",
+      "deployment": "LD_PRELOAD=libglibc_rs_abi.so",
+      "host_glibc_required": true,
+      "gate_criteria": {
+        "max_callthrough_pct": 100,
+        "max_stub_pct": 100,
+        "min_implemented_pct": 0,
+        "e2e_smoke_required": true,
+        "perf_budget_strict_ns": 20,
+        "perf_budget_hardened_ns": 200,
+        "test_gate": "cargo test --workspace passes"
+      },
+      "current_state": {
+        "implemented_pct": 37,
+        "raw_syscall_pct": 37,
+        "callthrough_pct": 24,
+        "stub_pct": 3,
+        "callthrough_modules": ["stdio_abi", "pthread_abi", "dlfcn_abi"],
+        "stub_modules": ["locale_abi", "resolv_abi"]
+      },
+      "status": "achieved"
+    },
+    {
+      "level": "L1",
+      "name": "Hardened Interpose",
+      "description": "LD_PRELOAD with hardened mode active. All call-throughs validated by membrane. Healing actions applied for safety-critical APIs. Stubs eliminated — all symbols either Implemented, RawSyscall, or GlibcCallThrough.",
+      "deployment": "GLIBC_RUST_MODE=hardened LD_PRELOAD=libglibc_rs_abi.so",
+      "host_glibc_required": true,
+      "gate_criteria": {
+        "max_callthrough_pct": 30,
+        "max_stub_pct": 0,
+        "min_implemented_pct": 35,
+        "e2e_smoke_required": true,
+        "perf_budget_strict_ns": 20,
+        "perf_budget_hardened_ns": 200,
+        "test_gate": "cargo test --workspace + E2E smoke suite passes in both modes",
+        "additional": ["All stubs eliminated", "Hardened mode E2E validated"]
+      },
+      "blockers": [
+        "6 Stub symbols need implementation (locale_abi: 2, resolv_abi: 4)",
+        "E2E smoke harness needs hardened mode validation"
+      ],
+      "status": "in_progress"
+    },
+    {
+      "level": "L2",
+      "name": "Partial Replacement",
+      "description": "Standalone for core subsystems. stdio/pthread still delegate to host glibc but all other modules use raw syscalls or native Rust. Suitable for containers and minimal environments.",
+      "deployment": "Direct link or LD_PRELOAD (host glibc for stdio/pthread only)",
+      "host_glibc_required": true,
+      "gate_criteria": {
+        "max_callthrough_pct": 15,
+        "max_stub_pct": 0,
+        "min_implemented_pct": 50,
+        "e2e_smoke_required": true,
+        "perf_budget_strict_ns": 20,
+        "perf_budget_hardened_ns": 200,
+        "test_gate": "Full test suite + C fixture suite + perf benchmarks",
+        "additional": [
+          "dlfcn_abi migrated to raw syscall or eliminated",
+          "Replacement profile guard passes in interpose mode with zero violations outside stdio/pthread",
+          "C compile/link/run fixtures pass"
+        ]
+      },
+      "blockers": [
+        "dlfcn_abi call-throughs (4 symbols) need raw syscall migration",
+        "C fixture suite (bd-3jh) not yet built",
+        "Perf benchmarks (bd-2r0) not yet enforced"
+      ],
+      "status": "planned"
+    },
+    {
+      "level": "L3",
+      "name": "Full Replacement",
+      "description": "Complete standalone glibc replacement. Zero host glibc dependency. All symbols either Implemented or RawSyscall. Requires custom CRT, rtld, and NSS/locale/resolver backends.",
+      "deployment": "Direct link as system libc (replaces /lib/x86_64-linux-gnu/libc.so.6)",
+      "host_glibc_required": false,
+      "gate_criteria": {
+        "max_callthrough_pct": 0,
+        "max_stub_pct": 0,
+        "min_implemented_pct": 60,
+        "e2e_smoke_required": true,
+        "perf_budget_strict_ns": 20,
+        "perf_budget_hardened_ns": 200,
+        "test_gate": "Full test suite + C fixtures + real binary workload matrix + perf parity",
+        "additional": [
+          "Zero GlibcCallThrough symbols",
+          "pthread implemented via futex (no host pthread)",
+          "stdio implemented (no host FILE*)",
+          "Custom _start/CRT bootstrap",
+          "NSS files backend operational",
+          "Resolver UDP backend operational"
+        ]
+      },
+      "blockers": [
+        "pthread_abi: 20 call-throughs need futex-based implementation (bd-z84, bd-yos)",
+        "stdio_abi: 30 call-throughs need native implementation",
+        "CRT bootstrap (bd-qwm) not started",
+        "rtld (bd-3rn) not started",
+        "NSS backend (bd-1rf) not started",
+        "Resolver backend (bd-1y7) not started"
+      ],
+      "status": "roadmap"
+    }
+  ],
+  "current_level": "L0",
+  "current_assessment": {
+    "total_symbols": 227,
+    "implemented": 84,
+    "raw_syscall": 83,
+    "callthrough": 54,
+    "stub": 6,
+    "implemented_pct": 37,
+    "raw_syscall_pct": 37,
+    "callthrough_pct": 24,
+    "stub_pct": 3,
+    "callthrough_breakdown": {
+      "stdio_abi": 30,
+      "pthread_abi": 20,
+      "dlfcn_abi": 4
+    },
+    "stub_breakdown": {
+      "locale_abi": 2,
+      "resolv_abi": 4
+    }
+  },
+  "transition_requirements": {
+    "L0_to_L1": [
+      "Eliminate all 6 Stub symbols",
+      "Validate hardened mode E2E",
+      "Complete E2E smoke harness"
+    ],
+    "L1_to_L2": [
+      "Migrate dlfcn_abi to raw syscall or eliminate",
+      "Build C compile/link/run fixture suite",
+      "Enforce perf budgets in CI",
+      "Replacement profile guard passes with only stdio/pthread exceptions"
+    ],
+    "L2_to_L3": [
+      "Implement futex-based pthread (20 symbols)",
+      "Implement native stdio (30 symbols)",
+      "Build custom CRT bootstrap",
+      "Build minimal rtld",
+      "Build NSS files backend",
+      "Build resolver UDP backend",
+      "Pass real binary workload matrix"
+    ]
+  }
+}

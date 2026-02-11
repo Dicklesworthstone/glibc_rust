@@ -207,4 +207,48 @@ mod tests {
         assert_eq!(cache.total_cached(), 0);
         assert!(cache.alloc(3).is_none());
     }
+
+    #[test]
+    fn test_drain_empty_magazine_is_noop() {
+        let mut cache = ThreadCache::new();
+        let drained = cache.drain_magazine(0);
+        assert!(drained.is_empty());
+        assert_eq!(cache.total_cached(), 0);
+        assert!(cache.alloc(0).is_none());
+    }
+
+    #[test]
+    fn test_total_cached_matches_magazine_population_under_trace() {
+        fn lcg(state: &mut u64) -> u64 {
+            *state = state
+                .wrapping_mul(2862933555777941757)
+                .wrapping_add(3037000493);
+            *state
+        }
+
+        let mut cache = ThreadCache::new();
+        let mut rng = 0x1234_5678_9ABC_DEF0u64;
+
+        for _ in 0..5000 {
+            let r = lcg(&mut rng);
+            let class = (r as usize) % NUM_SIZE_CLASSES;
+
+            match r % 3 {
+                0 => {
+                    let ptr = ((r >> 12) as usize) | 0x1000;
+                    let _ = cache.dealloc(class, ptr);
+                }
+                1 => {
+                    let _ = cache.alloc(class);
+                }
+                _ => {
+                    let _ = cache.drain_magazine(class);
+                }
+            }
+
+            let observed: usize = cache.magazines.iter().map(|m| m.objects.len()).sum();
+            assert_eq!(cache.total_cached(), observed);
+            assert!(cache.total_cached() <= NUM_SIZE_CLASSES * MAGAZINE_CAPACITY);
+        }
+    }
 }

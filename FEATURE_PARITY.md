@@ -2,54 +2,56 @@
 
 ## Current Reality
 
-This repository is currently in **spec/architecture stage**. No libc API is marked implemented yet.
+Source of truth for implementation parity is `tests/conformance/reality_report.v1.json` (generated `2026-02-11T03:14:20Z`).
+Reality snapshot: total_exported=227, implemented=84, raw_syscall=83, glibc_call_through=54, stub=6.
+Counts below reflect that generated snapshot and will change as matrix drift fixes land.
+
+Current exported ABI surface is **227 symbols**, classified as:
+- `Implemented`: 84
+- `RawSyscall`: 83
+- `GlibcCallThrough`: 54
+- `Stub`: 6
+
+This means the current artifact is a **hybrid interposition profile** (mixed Rust-owned behavior, raw syscalls, host-glibc delegation, and deterministic stubs), not a full replacement profile.
 
 Legend:
-- `DONE`: implemented + conformance fixture pass + benchmark status recorded
-- `IN_PROGRESS`: implementation underway but gates incomplete
-- `PLANNED`: specified but not implemented
+- `Implemented`: Native Rust behavior, no host glibc dependency for that symbol
+- `RawSyscall`: Direct Linux syscall veneer, no host glibc dependency for that symbol
+- `GlibcCallThrough`: Host glibc delegation with membrane pre/post checks
+- `Stub`: Deterministic fallback/error contract (documented and testable)
+- `DONE` / `IN_PROGRESS` / `PLANNED`: roadmap status for broader subsystem goals
 
 ## Macro Coverage Targets
 
 | Area | Target | Status |
 |---|---|---|
-| POSIX API surface | Full coverage | PLANNED |
-| ABI symbol/version fidelity | Target-compatible | PLANNED |
-| Strict mode conformance | Differentially equivalent on defined behavior | PLANNED |
-| Hardened mode safety | Deterministic repair/deny coverage on unsafe patterns | PLANNED |
-| Transparent Safety Membrane enforcement | All pointer-sensitive APIs | PLANNED |
-| Conformance harness | Fixture-driven | IN_PROGRESS |
-| Benchmark gates | Regression-blocking | PLANNED |
+| Exported symbol classification | 100% of current exports explicitly classified in support taxonomy | DONE |
+| POSIX/GNU replacement completeness | Remove `GlibcCallThrough` + `Stub` classes from critical surfaces | IN_PROGRESS |
+| ABI symbol/version fidelity | Preserve exported ABI and classify each exported symbol state | IN_PROGRESS |
+| Strict mode conformance | Differential parity on supported symbol set | IN_PROGRESS |
+| Hardened mode safety | Deterministic repair/deny coverage on membrane-gated paths | IN_PROGRESS |
+| Transparent Safety Membrane enforcement | Pointer-sensitive APIs validated before dispatch | IN_PROGRESS |
+| Conformance harness | Fixture-driven validation + drift gates | IN_PROGRESS |
+| Benchmark gates | Regression-blocking + budget evidence | IN_PROGRESS |
 
-## Bootstrap Slice
+## Symbol Coverage by ABI Module (Taxonomy)
 
-| Family | Representative APIs | Status |
-|---|---|---|
-| memory ops | `memcpy`, `memmove`, `memset`, `memcmp`, `memchr`, `memrchr` | DONE |
-| string ops | `strlen`, `strcmp`, `strncpy`, `strstr`, `strtok`, `strtok_r`, `strchr`, `strrchr`, `strcpy`, `strcat`, `strncat`, `strncmp` | DONE |
-| wide string ops | `wcslen`, `wcscpy`, `wcscmp`, `wcsncpy`, `wcscat`, `wcsncmp`, `wcschr`, `wcsrchr`, `wcsstr` | IN_PROGRESS |
-| wide memory ops | `wmemcpy`, `wmemmove`, `wmemset`, `wmemcmp`, `wmemchr` | DONE |
-| math ops | `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `exp`, `log`, `log10`, `pow`, `fabs`, `ceil`, `floor`, `round`, `fmod`, `erf`, `tgamma`, `lgamma` | DONE |
-| stdlib ops | `atoi`, `strtol`, `strtoul`, `exit`, `atexit`, `qsort`, `bsearch` | DONE |
-| allocator boundary | `malloc`, `free`, `realloc`, `calloc` | DONE |
-| ctype ops | `isalpha`, `isdigit`, `isalnum`, `isspace`, `isupper`, `islower`, `isprint`, `ispunct`, `isxdigit`, `toupper`, `tolower` | DONE |
-| errno | `__errno_location` (thread-local), constants (`ENOSYS`, `EOVERFLOW`, `ETIMEDOUT`) | DONE |
-| time ops | `time`, `clock_gettime`, `clock`, `localtime_r` | DONE |
-| signal ops | `signal`, `raise`, `kill`, `sigaction` | DONE |
-| io ops | `dup`, `dup2`, `pipe`, `fcntl` | DONE |
-| resource ops | `getrlimit`, `setrlimit` | DONE |
-| dirent ops | `opendir`, `readdir`, `closedir` | DONE |
-| unistd ops | `read`, `write`, `close`, `lseek`, `getpid`, `getppid`, `getuid`, `geteuid`, `getgid`, `getegid`, `isatty`, `access`, `getcwd`, `chdir`, `fchdir`, `unlink`, `rmdir`, `link`, `symlink`, `readlink`, `stat`, `fstat`, `lstat`, `fsync`, `fdatasync`, `sleep`, `usleep` | DONE |
-| socket ops | `socket`, `bind`, `listen`, `accept`, `connect`, `send`, `recv`, `sendto`, `recvfrom`, `shutdown`, `setsockopt`, `getsockopt`, `getpeername`, `getsockname` | DONE |
-| inet ops | `htons`, `htonl`, `ntohs`, `ntohl`, `inet_pton`, `inet_ntop`, `inet_addr` | DONE |
-| locale ops | `setlocale`, `localeconv` | DONE |
-| termios ops | `tcgetattr`, `tcsetattr`, `cfgetispeed`, `cfgetospeed`, `cfsetispeed`, `cfsetospeed`, `tcdrain`, `tcflush`, `tcflow`, `tcsendbreak` | DONE |
-| dlfcn ops | `dlopen`, `dlsym`, `dlclose`, `dlerror` | DONE |
-| stdio file ops | `fopen`, `fclose`, `fread`, `fwrite`, `fgets`, `fputs`, `fgetc`, `fputc`, `fseek`, `ftell`, `rewind`, `feof`, `ferror`, `clearerr`, `ungetc`, `fileno`, `setvbuf`, `setbuf`, `fflush`, `fprintf`, `printf`, `sprintf`, `snprintf`, `perror`, `putchar`, `puts`, `getchar` | DONE |
-| process ops | `fork`, `_exit`, `execve`, `execvp`, `waitpid`, `wait` | DONE |
-| virtual memory ops | `mmap`, `munmap`, `mprotect`, `msync`, `madvise` | DONE |
-| pthread sync ops | `pthread_mutex_init`, `pthread_mutex_destroy`, `pthread_mutex_lock`, `pthread_mutex_trylock`, `pthread_mutex_unlock`, `pthread_cond_init`, `pthread_cond_destroy`, `pthread_cond_wait`, `pthread_cond_signal`, `pthread_cond_broadcast`, `pthread_rwlock_init`, `pthread_rwlock_destroy`, `pthread_rwlock_rdlock`, `pthread_rwlock_wrlock`, `pthread_rwlock_unlock` | DONE |
-| poll ops | `poll`, `ppoll`, `select`, `pselect` | DONE |
+| Taxonomy | Primary modules |
+|---|---|
+| `Implemented` | `string_abi`, `wchar_abi`, `math_abi`, `stdlib_abi`, `malloc_abi`, `ctype_abi`, `inet_abi`, `errno_abi` |
+| `RawSyscall` | `unistd_abi`, `socket_abi`, `termios_abi`, `time_abi`, `dirent_abi`, `process_abi`, `poll_abi`, `io_abi`, `mmap_abi`, `resource_abi`, `signal_abi` |
+| `GlibcCallThrough` | `stdio_abi`, `pthread_abi`, `dlfcn_abi` |
+| `Stub` | `resolv_abi`, `locale_abi` |
+
+## Deterministic Stub Surface
+
+Current stubbed symbols (explicit deterministic contracts):
+- `freeaddrinfo`
+- `gai_strerror`
+- `getaddrinfo`
+- `getnameinfo`
+- `localeconv`
+- `setlocale`
 
 ## Mode-Specific Parity Matrix
 

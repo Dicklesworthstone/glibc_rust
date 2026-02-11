@@ -23,10 +23,11 @@ pub mod membrane_tests;
 pub mod report;
 pub mod runner;
 pub mod snapshot_diff;
+pub mod structured_log;
 pub mod traceability;
 pub mod verify;
 
 pub use fixtures::{FixtureCase, FixtureSet};
-pub use report::ConformanceReport;
+pub use report::{ConformanceReport, RealityReport};
 pub use runner::TestRunner;
 pub use verify::VerificationResult;

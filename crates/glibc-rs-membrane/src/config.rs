@@ -9,7 +9,7 @@
 //!   This is opt-in behavior that deviates from strict POSIX where safety requires it.
 //! - `off`: No validation. Pure passthrough for benchmarking baseline only.
 
-use std::sync::OnceLock;
+use std::sync::atomic::{AtomicU8, Ordering};
 
 /// Runtime operating mode for the membrane.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
@@ -52,7 +52,17 @@ impl SafetyLevel {
     }
 }
 
-static GLOBAL_LEVEL: OnceLock<SafetyLevel> = OnceLock::new();
+// Atomic cache: 0=unresolved, 1=Strict, 2=Hardened, 3=Off, 255=resolving.
+// Uses a non-blocking state machine instead of OnceLock to prevent deadlock
+// under LD_PRELOAD when our exported strlen is called reentrant during
+// std::env::var() inside OnceLock::get_or_init().
+static CACHED_LEVEL: AtomicU8 = AtomicU8::new(0);
+
+const LEVEL_UNRESOLVED: u8 = 0;
+const LEVEL_STRICT: u8 = 1;
+const LEVEL_HARDENED: u8 = 2;
+const LEVEL_OFF: u8 = 3;
+const LEVEL_RESOLVING: u8 = 255;
 
 fn parse_runtime_mode_env(raw: &str) -> SafetyLevel {
     match raw.to_ascii_lowercase().as_str() {
@@ -64,14 +74,67 @@ fn parse_runtime_mode_env(raw: &str) -> SafetyLevel {
     }
 }
 
+fn level_to_u8(level: SafetyLevel) -> u8 {
+    match level {
+        SafetyLevel::Strict => LEVEL_STRICT,
+        SafetyLevel::Hardened => LEVEL_HARDENED,
+        SafetyLevel::Off => LEVEL_OFF,
+    }
+}
+
+fn u8_to_level(v: u8) -> SafetyLevel {
+    match v {
+        LEVEL_HARDENED => SafetyLevel::Hardened,
+        LEVEL_OFF => SafetyLevel::Off,
+        _ => SafetyLevel::Strict,
+    }
+}
+
 /// Get the configured safety level (reads env var on first call, caches thereafter).
+///
+/// Uses a non-blocking atomic state machine instead of OnceLock. When a reentrant
+/// call arrives during env var resolution (e.g., our strlen called by std::env::var),
+/// the RESOLVING state is detected and Strict is returned as safe default.
 #[must_use]
 pub fn safety_level() -> SafetyLevel {
-    *GLOBAL_LEVEL.get_or_init(|| {
-        std::env::var("GLIBC_RUST_MODE")
-            .map(|v| parse_runtime_mode_env(&v))
-            .unwrap_or_default()
-    })
+    let cached = CACHED_LEVEL.load(Ordering::Relaxed);
+
+    // Fast path: already resolved.
+    if cached != LEVEL_UNRESOLVED && cached != LEVEL_RESOLVING {
+        return u8_to_level(cached);
+    }
+
+    // Reentrant call during resolution: return Strict (safe default).
+    if cached == LEVEL_RESOLVING {
+        return SafetyLevel::Strict;
+    }
+
+    // Try to claim the resolution slot.
+    if CACHED_LEVEL
+        .compare_exchange(
+            LEVEL_UNRESOLVED,
+            LEVEL_RESOLVING,
+            Ordering::SeqCst,
+            Ordering::Relaxed,
+        )
+        .is_err()
+    {
+        // Another thread/reentrant call. Return Strict until resolved.
+        let v = CACHED_LEVEL.load(Ordering::Relaxed);
+        return if v != LEVEL_UNRESOLVED && v != LEVEL_RESOLVING {
+            u8_to_level(v)
+        } else {
+            SafetyLevel::Strict
+        };
+    }
+
+    // We own the resolution. Read env var (may trigger reentrant calls to our
+    // exported functions like strlen — those will see RESOLVING and return Strict).
+    let level = std::env::var("GLIBC_RUST_MODE")
+        .map(|v| parse_runtime_mode_env(&v))
+        .unwrap_or_default();
+    CACHED_LEVEL.store(level_to_u8(level), Ordering::Release);
+    level
 }
 
 #[cfg(test)]

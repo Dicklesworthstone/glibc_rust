@@ -98,6 +98,20 @@ mod tests {
     }
 
     #[test]
+    fn recomputes_on_cadence_boundary() {
+        let risk = ConformalRiskEngine::new(1, 3.0);
+        for _ in 0..63 {
+            risk.observe(ApiFamily::Allocator, false);
+        }
+        assert_eq!(risk.upper_bound_ppm(ApiFamily::Allocator), 1);
+
+        risk.observe(ApiFamily::Allocator, false);
+        let ub = risk.upper_bound_ppm(ApiFamily::Allocator);
+        assert!(ub > 1);
+        assert!(ub <= 1_000_000);
+    }
+
+    #[test]
     fn adverse_outcomes_increase_upper_bound() {
         let risk = ConformalRiskEngine::default();
         for _ in 0..128 {
@@ -115,5 +129,29 @@ mod tests {
         }
         let ub = risk.upper_bound_ppm(ApiFamily::PointerValidation);
         assert!(ub < 50_000);
+    }
+
+    #[test]
+    fn upper_bound_is_always_valid_ppm() {
+        let risk = ConformalRiskEngine::new(25_000, 3.5);
+        for i in 0..4096 {
+            risk.observe(ApiFamily::Resolver, i % 17 == 0 || i % 97 == 0);
+        }
+        let ub = risk.upper_bound_ppm(ApiFamily::Resolver);
+        assert!(ub <= 1_000_000);
+    }
+
+    #[test]
+    fn family_counters_are_isolated() {
+        let risk = ConformalRiskEngine::new(10_000, 3.0);
+
+        for _ in 0..256 {
+            risk.observe(ApiFamily::Allocator, true);
+            risk.observe(ApiFamily::PointerValidation, false);
+        }
+
+        let allocator = risk.upper_bound_ppm(ApiFamily::Allocator);
+        let pointer = risk.upper_bound_ppm(ApiFamily::PointerValidation);
+        assert!(allocator > pointer);
     }
 }

@@ -346,6 +346,30 @@ mod tests {
     }
 
     #[test]
+    fn test_realloc_unknown_pointer_allocates_new_block() {
+        let mut state = MallocState::new();
+        let new_ptr = state.realloc(0xDEAD, 64).unwrap();
+        assert_ne!(new_ptr, 0xDEAD);
+        assert_eq!(state.active_count(), 1);
+        assert_eq!(state.total_allocated(), 64);
+        assert_eq!(state.lookup(0xDEAD), None);
+        assert_eq!(state.lookup(new_ptr), Some(64));
+    }
+
+    #[test]
+    fn test_realloc_large_to_small_moves_to_small_path() {
+        let mut state = MallocState::new();
+        let large_ptr = state.malloc(MAX_SMALL_SIZE + 1).unwrap();
+        let small_ptr = state.realloc(large_ptr, 64).unwrap();
+
+        assert_ne!(small_ptr, large_ptr);
+        assert_eq!(state.active_count(), 1);
+        assert_eq!(state.total_allocated(), 64);
+        assert_eq!(state.lookup(large_ptr), None);
+        assert_eq!(state.lookup(small_ptr), Some(64));
+    }
+
+    #[test]
     fn test_thread_cache_reuse() {
         let mut state = MallocState::new();
 
@@ -366,5 +390,59 @@ mod tests {
         let ptr = state.malloc(42).unwrap();
         assert_eq!(state.lookup(ptr), Some(42));
         assert_eq!(state.lookup(0xBEEF), None);
+    }
+
+    #[test]
+    fn test_accounting_invariant_under_deterministic_trace() {
+        fn lcg(state: &mut u64) -> u64 {
+            *state = state.wrapping_mul(6364136223846793005).wrapping_add(1);
+            *state
+        }
+
+        let mut state = MallocState::new();
+        let mut live: Vec<usize> = Vec::new();
+        let mut rng = 0xA5A5_5A5A_DEAD_BEEFu64;
+
+        for _ in 0..1500 {
+            let r = lcg(&mut rng);
+            match r % 3 {
+                0 => {
+                    let size = ((r >> 8) as usize % (MAX_SMALL_SIZE * 2)).max(1);
+                    if let Some(ptr) = state.malloc(size) {
+                        live.push(ptr);
+                    }
+                }
+                1 if !live.is_empty() => {
+                    let idx = (r as usize) % live.len();
+                    let ptr = live.swap_remove(idx);
+                    state.free(ptr);
+                }
+                2 if !live.is_empty() => {
+                    let idx = (r as usize) % live.len();
+                    let ptr = live[idx];
+                    let new_size = ((r >> 16) as usize) % (MAX_SMALL_SIZE * 2);
+                    let next = state.realloc(ptr, new_size);
+                    if new_size == 0 {
+                        // realloc(ptr, 0) behaves like free(ptr)
+                        live.swap_remove(idx);
+                        assert!(next.is_none());
+                    } else if let Some(new_ptr) = next {
+                        live[idx] = new_ptr;
+                    }
+                }
+                _ => {}
+            }
+
+            let observed_total: usize = live
+                .iter()
+                .map(|&ptr| {
+                    state
+                        .lookup(ptr)
+                        .expect("all tracked pointers must stay live")
+                })
+                .sum();
+            assert_eq!(state.active_count(), live.len());
+            assert_eq!(state.total_allocated(), observed_total);
+        }
     }
 }

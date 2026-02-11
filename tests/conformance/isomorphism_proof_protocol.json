@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "bead": "bd-2bd",
+  "description": "Isomorphism proof protocol for glibc_rust optimizations. Defines a standardized checklist that must be completed before any optimization lever can be merged. Each proof artifact demonstrates that the optimized implementation is behaviorally isomorphic to the original.",
+  "proof_categories": {
+    "ordering": {
+      "description": "Sort stability, comparison transitivity, and element ordering guarantees. Applies to qsort, bsearch, and any function with ordering semantics.",
+      "required_checks": [
+        "Stable sort order preserved (or documented as unstable)",
+        "Comparison function called with consistent argument order",
+        "Equal elements maintain relative position (if stable required)"
+      ],
+      "golden_format": "Input array + expected output array + comparator specification"
+    },
+    "tie_breaking": {
+      "description": "Deterministic behavior when multiple valid outputs exist. Applies to strtok, strstr (overlapping matches), and allocation placement.",
+      "required_checks": [
+        "Tie-breaking rule documented (leftmost, first-fit, etc.)",
+        "Same input always produces same output",
+        "Edge cases (empty input, single element, all equal) tested"
+      ],
+      "golden_format": "Input + all valid outputs + which one is selected + rule justification"
+    },
+    "fp_behavior": {
+      "description": "IEEE 754 compliance for floating-point operations. Applies to all math_abi functions.",
+      "required_checks": [
+        "NaN propagation: NaN input produces NaN output",
+        "Infinity handling: overflow/underflow behavior matches",
+        "Signed zero: -0.0 vs +0.0 distinction preserved",
+        "Rounding mode: default round-to-nearest-even behavior",
+        "Subnormal handling: gradual underflow support"
+      ],
+      "golden_format": "IEEE 754 test vectors (input, expected output, ULP tolerance)"
+    },
+    "rng_behavior": {
+      "description": "Determinism for any randomized algorithms. Applies if arena allocation uses randomized placement or if any ASLR-like features are used.",
+      "required_checks": [
+        "Same seed produces same sequence (if seeded)",
+        "Entropy source documented",
+        "Fallback behavior on entropy failure documented"
+      ],
+      "golden_format": "Seed + expected first N outputs"
+    },
+    "side_effects": {
+      "description": "Observable side effects match between original and optimized. Applies to all ABI functions that modify global state (errno, thread-local storage, signal masks).",
+      "required_checks": [
+        "errno set identically on success and failure paths",
+        "Thread-local state mutations match",
+        "Signal mask changes match",
+        "Memory allocation patterns compatible (no new OOM paths)",
+        "File descriptor state unchanged"
+      ],
+      "golden_format": "Pre-state + call + expected post-state (errno, TLS, signals)"
+    },
+    "memory_semantics": {
+      "description": "Memory access patterns and aliasing behavior. Applies to memcpy, memmove, string operations, and allocator optimizations.",
+      "required_checks": [
+        "Overlapping buffer behavior matches (memcpy UB preserved, memmove correct)",
+        "Alignment requirements unchanged",
+        "Out-of-bounds read/write behavior unchanged",
+        "Null pointer behavior unchanged"
+      ],
+      "golden_format": "Buffer layout + operation + expected memory state"
+    }
+  },
+  "proof_template": {
+    "required_fields": [
+      "lever_id",
+      "bead_id",
+      "functions",
+      "categories",
+      "golden_commands",
+      "golden_hash",
+      "proof_status"
+    ],
+    "optional_fields": [
+      "pre_optimization_baseline",
+      "post_optimization_result",
+      "reviewer",
+      "ulp_tolerance",
+      "notes"
+    ],
+    "proof_statuses": ["pending", "verified", "failed", "waived"],
+    "example": {
+      "lever_id": "opt-memcpy-avx2",
+      "bead_id": "bd-example",
+      "functions": ["memcpy"],
+      "categories": ["memory_semantics", "side_effects"],
+      "golden_commands": [
+        "cargo test -p glibc-rs-harness --test memcpy_golden -- --exact",
+        "scripts/run_golden_vectors.sh memcpy"
+      ],
+      "golden_hash": "blake3:abc123...",
+      "proof_status": "verified",
+      "pre_optimization_baseline": "tests/golden/memcpy_baseline.json",
+      "post_optimization_result": "tests/golden/memcpy_optimized.json",
+      "reviewer": "CrimsonCove",
+      "notes": "AVX2 path tested with aligned and unaligned inputs, overlapping ranges confirmed UB-equivalent"
+    }
+  },
+  "enforcement": {
+    "merge_gate": "No optimization bead can close without a completed isomorphism proof artifact in tests/conformance/proofs/",
+    "proof_directory": "tests/conformance/proofs/",
+    "ci_gate_script": "scripts/check_isomorphism_proof.sh",
+    "audit_replay": "All golden_commands must be replayable from stored proof artifacts. Auditors run the commands and verify golden_hash matches."
+  },
+  "applicable_modules": {
+    "description": "Modules where optimization levers are most likely and proofs most critical.",
+    "high_priority": [
+      {"module": "malloc_abi", "reason": "Allocator hot path; memory semantics + side effects critical"},
+      {"module": "string_abi", "reason": "String ops hot path; memory semantics + ordering critical"},
+      {"module": "wchar_abi", "reason": "Wide char hot path; memory semantics critical"},
+      {"module": "math_abi", "reason": "Math functions; fp_behavior proofs mandatory"},
+      {"module": "ctype_abi", "reason": "Character classification; ordering + locale sensitivity"},
+      {"module": "stdlib_abi", "reason": "qsort/bsearch; ordering + tie_breaking proofs required"}
+    ],
+    "medium_priority": [
+      {"module": "pthread_abi", "reason": "Threading; side_effects + memory_semantics for synchronization"},
+      {"module": "errno_abi", "reason": "Error state; side_effects proof required"}
+    ],
+    "low_priority": [
+      {"module": "stdio_abi", "reason": "Currently GlibcCallThrough; proofs needed when migrated"},
+      {"module": "socket_abi", "reason": "RawSyscall; proofs needed if syscall batching optimized"},
+      {"module": "unistd_abi", "reason": "RawSyscall; proofs needed if argument marshaling optimized"}
+    ]
+  },
+  "existing_proofs": [],
+  "summary": {
+    "total_categories": 6,
+    "high_priority_modules": 6,
+    "medium_priority_modules": 2,
+    "low_priority_modules": 3,
+    "existing_proof_count": 0,
+    "enforcement_status": "protocol_defined"
+  }
+}

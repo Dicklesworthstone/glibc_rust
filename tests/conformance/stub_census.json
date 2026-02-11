@@ -1,0 +1,471 @@
+{
+  "census_version": 1,
+  "generated_utc": "2026-02-11T06:06:32Z",
+  "workspace_root": "/data/projects/glibc_rust",
+  "total_todo_occurrences": 22,
+  "total_unique_stub_symbols": 19,
+  "total_abi_exports": 224,
+  "total_matrix_symbols": 227,
+  "stubs": [
+    {
+      "symbol": "getnameinfo",
+      "abi_module": "crates/glibc-rs-abi/src/resolv_abi.rs",
+      "core_location": "crates/glibc-rs-core/src/resolv/mod.rs:36",
+      "stub_type": "todo!",
+      "stub_message": "POSIX getnameinfo: implementation pending",
+      "support_matrix_status": "Stub",
+      "in_support_matrix": true,
+      "has_abi_export": true,
+      "abi_calls_core_stub": false,
+      "reachable_from_abi": false,
+      "risk_category": "netdb",
+      "call_family": "resolver"
+    },
+    {
+      "symbol": "iconv_close",
+      "abi_module": null,
+      "core_location": "crates/glibc-rs-core/src/iconv/mod.rs:34",
+      "stub_type": "todo!",
+      "stub_message": "POSIX iconv_close: implementation pending",
+      "support_matrix_status": null,
+      "in_support_matrix": false,
+      "has_abi_export": false,
+      "abi_calls_core_stub": false,
+      "reachable_from_abi": false,
+      "risk_category": "other",
+      "call_family": "other"
+    },
+    {
+      "symbol": "iconv_open",
+      "abi_module": null,
+      "core_location": "crates/glibc-rs-core/src/iconv/mod.rs:15",
+      "stub_type": "todo!",
+      "stub_message": "POSIX iconv_open: implementation pending",
+      "support_matrix_status": null,
+      "in_support_matrix": false,
+      "has_abi_export": false,
+      "abi_calls_core_stub": false,
+      "reachable_from_abi": false,
+      "risk_category": "other",
+      "call_family": "other"
+    },
+    {
+      "symbol": "longjmp",
+      "abi_module": null,
+      "core_location": "crates/glibc-rs-core/src/setjmp/mod.rs:31",
+      "stub_type": "todo!",
+      "stub_message": "POSIX longjmp: implementation pending (requires unsafe for real impl",
+      "support_matrix_status": null,
+      "in_support_matrix": false,
+      "has_abi_export": false,
+      "abi_calls_core_stub": false,
+      "reachable_from_abi": false,
+      "risk_category": "setjmp",
+      "call_family": "setjmp"
+    },
+    {
+      "symbol": "setjmp",
+      "abi_module": null,
+      "core_location": "crates/glibc-rs-core/src/setjmp/mod.rs:21",
+      "stub_type": "todo!",
+      "stub_message": "POSIX setjmp: implementation pending (requires unsafe for real impl",
+      "support_matrix_status": null,
+      "in_support_matrix": false,
+      "has_abi_export": false,
+      "abi_calls_core_stub": false,
+      "reachable_from_abi": false,
+      "risk_category": "setjmp",
+      "call_family": "setjmp"
+    },
+    {
+      "symbol": "getenv",
+      "abi_module": null,
+      "core_location": "crates/glibc-rs-core/src/stdlib/env.rs:5",
+      "stub_type": "todo!",
+      "stub_message": "",
+      "support_matrix_status": null,
+      "in_support_matrix": false,
+      "has_abi_export": false,
+      "abi_calls_core_stub": false,
+      "reachable_from_abi": false,
+      "risk_category": "stdlib",
+      "call_family": "stdlib"
+    },
+    {
+      "symbol": "rand",
+      "abi_module": null,
+      "core_location": "crates/glibc-rs-core/src/stdlib/random.rs:5",
+      "stub_type": "todo!",
+      "stub_message": "",
+      "support_matrix_status": null,
+      "in_support_matrix": false,
+      "has_abi_export": false,
+      "abi_calls_core_stub": false,
+      "reachable_from_abi": false,
+      "risk_category": "stdlib",
+      "call_family": "stdlib"
+    },
+    {
+      "symbol": "setenv",
+      "abi_module": null,
+      "core_location": "crates/glibc-rs-core/src/stdlib/env.rs:8",
+      "stub_type": "todo!",
+      "stub_message": "",
+      "support_matrix_status": null,
+      "in_support_matrix": false,
+      "has_abi_export": false,
+      "abi_calls_core_stub": false,
+      "reachable_from_abi": false,
+      "risk_category": "stdlib",
+      "call_family": "stdlib"
+    },
+    {
+      "symbol": "srand",
+      "abi_module": null,
+      "core_location": "crates/glibc-rs-core/src/stdlib/random.rs:8",
+      "stub_type": "todo!",
+      "stub_message": "",
+      "support_matrix_status": null,
+      "in_support_matrix": false,
+      "has_abi_export": false,
+      "abi_calls_core_stub": false,
+      "reachable_from_abi": false,
+      "risk_category": "stdlib",
+      "call_family": "stdlib"
+    },
+    {
+      "symbol": "tcgetattr",
+      "abi_module": "crates/glibc-rs-abi/src/termios_abi.rs",
+      "core_location": "crates/glibc-rs-core/src/termios/mod.rs:295",
+      "stub_type": "todo!",
+      "stub_message": "POSIX tcgetattr: implementation pending",
+      "support_matrix_status": "RawSyscall",
+      "in_support_matrix": true,
+      "has_abi_export": true,
+      "abi_calls_core_stub": false,
+      "reachable_from_abi": false,
+      "risk_category": "terminal",
+      "call_family": "termios"
+    },
+    {
+      "symbol": "tcsetattr",
+      "abi_module": "crates/glibc-rs-abi/src/termios_abi.rs",
+      "core_location": "crates/glibc-rs-core/src/termios/mod.rs:303",
+      "stub_type": "todo!",
+      "stub_message": "POSIX tcsetattr: implementation pending",
+      "support_matrix_status": "RawSyscall",
+      "in_support_matrix": true,
+      "has_abi_export": true,
+      "abi_calls_core_stub": false,
+      "reachable_from_abi": false,
+      "risk_category": "terminal",
+      "call_family": "termios"
+    },
+    {
+      "symbol": "pthread_detach",
+      "abi_module": "crates/glibc-rs-abi/src/pthread_abi.rs",
+      "core_location": "crates/glibc-rs-core/src/pthread/thread.rs:41",
+      "stub_type": "todo!",
+      "stub_message": "POSIX pthread_detach: implementation pending",
+      "support_matrix_status": "GlibcCallThrough",
+      "in_support_matrix": true,
+      "has_abi_export": true,
+      "abi_calls_core_stub": false,
+      "reachable_from_abi": false,
+      "risk_category": "threading",
+      "call_family": "pthread"
+    },
+    {
+      "symbol": "pthread_exit",
+      "abi_module": null,
+      "core_location": "crates/glibc-rs-core/src/pthread/thread.rs:48",
+      "stub_type": "todo!",
+      "stub_message": "POSIX pthread_exit: implementation pending",
+      "support_matrix_status": null,
+      "in_support_matrix": false,
+      "has_abi_export": false,
+      "abi_calls_core_stub": false,
+      "reachable_from_abi": false,
+      "risk_category": "threading",
+      "call_family": "pthread"
+    },
+    {
+      "symbol": "pthread_getspecific",
+      "abi_module": null,
+      "core_location": "crates/glibc-rs-core/src/pthread/tls.rs:32",
+      "stub_type": "todo!",
+      "stub_message": "POSIX pthread_getspecific: implementation pending",
+      "support_matrix_status": null,
+      "in_support_matrix": false,
+      "has_abi_export": false,
+      "abi_calls_core_stub": false,
+      "reachable_from_abi": false,
+      "risk_category": "threading",
+      "call_family": "pthread"
+    },
+    {
+      "symbol": "pthread_join",
+      "abi_module": "crates/glibc-rs-abi/src/pthread_abi.rs",
+      "core_location": "crates/glibc-rs-core/src/pthread/thread.rs:34",
+      "stub_type": "todo!",
+      "stub_message": "POSIX pthread_join: implementation pending",
+      "support_matrix_status": "GlibcCallThrough",
+      "in_support_matrix": true,
+      "has_abi_export": true,
+      "abi_calls_core_stub": false,
+      "reachable_from_abi": false,
+      "risk_category": "threading",
+      "call_family": "pthread"
+    },
+    {
+      "symbol": "pthread_key_create",
+      "abi_module": null,
+      "core_location": "crates/glibc-rs-core/src/pthread/tls.rs:17",
+      "stub_type": "todo!",
+      "stub_message": "POSIX pthread_key_create: implementation pending",
+      "support_matrix_status": null,
+      "in_support_matrix": false,
+      "has_abi_export": false,
+      "abi_calls_core_stub": false,
+      "reachable_from_abi": false,
+      "risk_category": "threading",
+      "call_family": "pthread"
+    },
+    {
+      "symbol": "pthread_key_delete",
+      "abi_module": null,
+      "core_location": "crates/glibc-rs-core/src/pthread/tls.rs:24",
+      "stub_type": "todo!",
+      "stub_message": "POSIX pthread_key_delete: implementation pending",
+      "support_matrix_status": null,
+      "in_support_matrix": false,
+      "has_abi_export": false,
+      "abi_calls_core_stub": false,
+      "reachable_from_abi": false,
+      "risk_category": "threading",
+      "call_family": "pthread"
+    },
+    {
+      "symbol": "pthread_self",
+      "abi_module": "crates/glibc-rs-abi/src/pthread_abi.rs",
+      "core_location": "crates/glibc-rs-core/src/pthread/thread.rs:55",
+      "stub_type": "todo!",
+      "stub_message": "POSIX pthread_self: implementation pending",
+      "support_matrix_status": "GlibcCallThrough",
+      "in_support_matrix": true,
+      "has_abi_export": true,
+      "abi_calls_core_stub": false,
+      "reachable_from_abi": false,
+      "risk_category": "threading",
+      "call_family": "pthread"
+    },
+    {
+      "symbol": "pthread_setspecific",
+      "abi_module": null,
+      "core_location": "crates/glibc-rs-core/src/pthread/tls.rs:39",
+      "stub_type": "todo!",
+      "stub_message": "POSIX pthread_setspecific: implementation pending",
+      "support_matrix_status": null,
+      "in_support_matrix": false,
+      "has_abi_export": false,
+      "abi_calls_core_stub": false,
+      "reachable_from_abi": false,
+      "risk_category": "threading",
+      "call_family": "pthread"
+    }
+  ],
+  "inconsistencies": [
+    {
+      "symbol": "freeaddrinfo",
+      "matrix_status": "Stub",
+      "actual_status": "Implemented",
+      "evidence": "resolv_abi.rs has full extern \"C\" implementation",
+      "severity": "high"
+    },
+    {
+      "symbol": "gai_strerror",
+      "matrix_status": "Stub",
+      "actual_status": "Implemented",
+      "evidence": "resolv_abi.rs has full extern \"C\" implementation",
+      "severity": "high"
+    },
+    {
+      "symbol": "getaddrinfo",
+      "matrix_status": "Stub",
+      "actual_status": "Implemented",
+      "evidence": "resolv_abi.rs has full extern \"C\" implementation",
+      "severity": "high"
+    },
+    {
+      "symbol": "getnameinfo",
+      "matrix_status": "Stub",
+      "actual_status": "Implemented",
+      "evidence": "resolv_abi.rs has full extern \"C\" implementation",
+      "severity": "high"
+    },
+    {
+      "symbol": "pthread_create",
+      "matrix_status": "GlibcCallThrough",
+      "actual_status": "Implemented",
+      "evidence": "pthread_abi.rs uses std::thread (not libc call-through)",
+      "severity": "medium"
+    },
+    {
+      "symbol": "pthread_detach",
+      "matrix_status": "GlibcCallThrough",
+      "actual_status": "Implemented",
+      "evidence": "pthread_abi.rs uses std::thread (not libc call-through)",
+      "severity": "medium"
+    },
+    {
+      "symbol": "pthread_equal",
+      "matrix_status": "GlibcCallThrough",
+      "actual_status": "Implemented",
+      "evidence": "pthread_abi.rs uses pure Rust (no libc:: calls)",
+      "severity": "medium"
+    },
+    {
+      "symbol": "pthread_join",
+      "matrix_status": "GlibcCallThrough",
+      "actual_status": "Implemented",
+      "evidence": "pthread_abi.rs uses std::thread (not libc call-through)",
+      "severity": "medium"
+    },
+    {
+      "symbol": "pthread_self",
+      "matrix_status": "GlibcCallThrough",
+      "actual_status": "Implemented",
+      "evidence": "pthread_abi.rs uses pure Rust (no libc:: calls)",
+      "severity": "medium"
+    },
+    {
+      "symbol": "tcgetattr",
+      "matrix_status": "RawSyscall",
+      "actual_status": "GlibcCallThrough",
+      "evidence": "termios_abi.rs calls libc::tcgetattr()",
+      "severity": "medium"
+    },
+    {
+      "symbol": "tcsetattr",
+      "matrix_status": "RawSyscall",
+      "actual_status": "GlibcCallThrough",
+      "evidence": "termios_abi.rs calls libc::tcsetattr()",
+      "severity": "medium"
+    }
+  ],
+  "missing_from_abi_and_matrix": [
+    {
+      "symbol": "getenv",
+      "core_location": "crates/glibc-rs-core/src/stdlib/env.rs:5",
+      "risk_category": "stdlib",
+      "call_family": "stdlib",
+      "note": "Has core stub with todo!() but no ABI export and not in support matrix"
+    },
+    {
+      "symbol": "iconv_close",
+      "core_location": "crates/glibc-rs-core/src/iconv/mod.rs:34",
+      "risk_category": "other",
+      "call_family": "other",
+      "note": "Has core stub with todo!() but no ABI export and not in support matrix"
+    },
+    {
+      "symbol": "iconv_open",
+      "core_location": "crates/glibc-rs-core/src/iconv/mod.rs:15",
+      "risk_category": "other",
+      "call_family": "other",
+      "note": "Has core stub with todo!() but no ABI export and not in support matrix"
+    },
+    {
+      "symbol": "longjmp",
+      "core_location": "crates/glibc-rs-core/src/setjmp/mod.rs:31",
+      "risk_category": "setjmp",
+      "call_family": "setjmp",
+      "note": "Has core stub with todo!() but no ABI export and not in support matrix"
+    },
+    {
+      "symbol": "pthread_exit",
+      "core_location": "crates/glibc-rs-core/src/pthread/thread.rs:48",
+      "risk_category": "threading",
+      "call_family": "pthread",
+      "note": "Has core stub with todo!() but no ABI export and not in support matrix"
+    },
+    {
+      "symbol": "pthread_getspecific",
+      "core_location": "crates/glibc-rs-core/src/pthread/tls.rs:32",
+      "risk_category": "threading",
+      "call_family": "pthread",
+      "note": "Has core stub with todo!() but no ABI export and not in support matrix"
+    },
+    {
+      "symbol": "pthread_key_create",
+      "core_location": "crates/glibc-rs-core/src/pthread/tls.rs:17",
+      "risk_category": "threading",
+      "call_family": "pthread",
+      "note": "Has core stub with todo!() but no ABI export and not in support matrix"
+    },
+    {
+      "symbol": "pthread_key_delete",
+      "core_location": "crates/glibc-rs-core/src/pthread/tls.rs:24",
+      "risk_category": "threading",
+      "call_family": "pthread",
+      "note": "Has core stub with todo!() but no ABI export and not in support matrix"
+    },
+    {
+      "symbol": "pthread_setspecific",
+      "core_location": "crates/glibc-rs-core/src/pthread/tls.rs:39",
+      "risk_category": "threading",
+      "call_family": "pthread",
+      "note": "Has core stub with todo!() but no ABI export and not in support matrix"
+    },
+    {
+      "symbol": "rand",
+      "core_location": "crates/glibc-rs-core/src/stdlib/random.rs:5",
+      "risk_category": "stdlib",
+      "call_family": "stdlib",
+      "note": "Has core stub with todo!() but no ABI export and not in support matrix"
+    },
+    {
+      "symbol": "setenv",
+      "core_location": "crates/glibc-rs-core/src/stdlib/env.rs:8",
+      "risk_category": "stdlib",
+      "call_family": "stdlib",
+      "note": "Has core stub with todo!() but no ABI export and not in support matrix"
+    },
+    {
+      "symbol": "setjmp",
+      "core_location": "crates/glibc-rs-core/src/setjmp/mod.rs:21",
+      "risk_category": "setjmp",
+      "call_family": "setjmp",
+      "note": "Has core stub with todo!() but no ABI export and not in support matrix"
+    },
+    {
+      "symbol": "srand",
+      "core_location": "crates/glibc-rs-core/src/stdlib/random.rs:8",
+      "risk_category": "stdlib",
+      "call_family": "stdlib",
+      "note": "Has core stub with todo!() but no ABI export and not in support matrix"
+    }
+  ],
+  "summary": {
+    "reachable_stubs": 0,
+    "unreachable_stubs": 19,
+    "matrix_inconsistencies": 11,
+    "missing_symbols": 13,
+    "by_risk_category": {
+      "netdb": 1,
+      "other": 2,
+      "setjmp": 2,
+      "stdlib": 4,
+      "terminal": 2,
+      "threading": 8
+    },
+    "by_call_family": {
+      "other": 2,
+      "pthread": 8,
+      "resolver": 1,
+      "setjmp": 2,
+      "stdlib": 4,
+      "termios": 2
+    }
+  }
+}

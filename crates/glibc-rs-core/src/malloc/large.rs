@@ -184,6 +184,14 @@ mod tests {
     }
 
     #[test]
+    fn test_large_realloc_unknown_base_is_none() {
+        let mut allocator = LargeAllocator::new();
+        assert!(allocator.realloc(0xBAD, 4096).is_none());
+        assert_eq!(allocator.active_count(), 0);
+        assert_eq!(allocator.total_mapped(), 0);
+    }
+
+    #[test]
     fn test_page_alignment() {
         assert_eq!(page_align(1), 4096);
         assert_eq!(page_align(4096), 4096);

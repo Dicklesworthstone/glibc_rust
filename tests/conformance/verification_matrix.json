@@ -1,0 +1,5276 @@
+{
+  "matrix_version": 1,
+  "generated_utc": "2026-02-11T06:37:46Z",
+  "description": "Verification obligations matrix for all open/in_progress critique beads. Maps each bead to required evidence types with current coverage status. Blocks bead closure when evidence is missing.",
+  "schema": {
+    "coverage_statuses": {
+      "complete": "All required evidence artifacts exist and pass validation",
+      "partial": "Some evidence exists but is incomplete",
+      "missing": "No evidence artifacts exist for this obligation",
+      "not_required": "This evidence type is not required for this bead"
+    },
+    "obligation_types": {
+      "unit_tests": "Comprehensive unit tests (happy-path, negative, adversarial, regression cases)",
+      "e2e_scripts": "Deterministic e2e scripts exercising strict and hardened modes",
+      "structured_logs": "JSONL-formatted logs with trace_id, mode, API/symbol, outcome, errno, timing, artifact_refs",
+      "perf_evidence": "Benchmark data proving overhead targets (strict<20ns, hardened<200ns)",
+      "conformance_fixtures": "Machine-readable test fixtures with POSIX-referenced input/output/errno expectations",
+      "golden_artifacts": "Deterministic golden output files with SHA256 regression checks"
+    },
+    "row_schema_version": "v1",
+    "row_status_states": {
+      "missing": "One or more required sections have no commands and no artifact paths",
+      "partial": "Required sections are only partially populated, or close_blockers is non-empty",
+      "complete": "All required sections have >=1 command and >=1 artifact path; close_blockers is empty"
+    },
+    "row_status_transitions": [
+      {
+        "to": "missing",
+        "when": "any required section has command_count=0 and artifact_count=0"
+      },
+      {
+        "to": "partial",
+        "when": "no required section is empty but at least one required section has command_count=0 xor artifact_count=0, or close_blockers is non-empty"
+      },
+      {
+        "to": "complete",
+        "when": "all required sections have command_count>=1 and artifact_count>=1 and close_blockers is empty"
+      }
+    ],
+    "row_template": {
+      "bead_id": "bd-xxxx",
+      "stream": "docs|e2e|syscall|stubs|math|perf",
+      "status": "missing|partial|complete",
+      "unit_cmds": [
+        "cargo test ..."
+      ],
+      "e2e_cmds": [
+        "scripts/...sh"
+      ],
+      "expected_assertions": [
+        "all required checks pass"
+      ],
+      "log_schema_refs": [
+        "tests/conformance/log_schema.json"
+      ],
+      "artifact_paths": [
+        "tests/cve_arena/results/.../trace.jsonl",
+        "tests/cve_arena/results/.../artifact_index.json"
+      ],
+      "perf_proof_refs": [
+        "scripts/perf_gate.sh"
+      ],
+      "close_blockers": [
+        "missing_unit",
+        "missing_e2e",
+        "missing_logs",
+        "missing_perf_proof"
+      ],
+      "notes": "Status is derived via row_status_transitions."
+    },
+    "stream_examples": [
+      {
+        "bead_id": "bd-3rf",
+        "stream": "docs",
+        "status": "complete",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-harness --test parity_report_drift_test"
+        ],
+        "e2e_cmds": [
+          "scripts/check_support_matrix_drift.sh"
+        ],
+        "expected_assertions": [
+          "README and FEATURE_PARITY snapshots match reality_report.v1.json"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/conformance/reality_report.v1.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [],
+        "notes": "Docs/reality drift guard example row."
+      },
+      {
+        "bead_id": "bd-2ez",
+        "stream": "e2e",
+        "status": "complete",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-harness --test e2e_suite_test"
+        ],
+        "e2e_cmds": [
+          "scripts/e2e_suite.sh smoke",
+          "scripts/e2e_suite.sh stress hardened"
+        ],
+        "expected_assertions": [
+          "strict and hardened scenario runs emit case_pass/case_fail records with trace IDs"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "target/e2e_suite/<run_id>/trace.jsonl",
+          "target/e2e_suite/<run_id>/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [],
+        "notes": "Deterministic end-to-end suite example row."
+      },
+      {
+        "bead_id": "bd-2cr",
+        "stream": "syscall",
+        "status": "partial",
+        "unit_cmds": [
+          "cargo test --test e2e_link_test"
+        ],
+        "e2e_cmds": [
+          "scripts/ld_preload_smoke.sh"
+        ],
+        "expected_assertions": [
+          "core binaries execute under LD_PRELOAD in strict and hardened modes"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "target/e2e_smoke/<run_id>/trace.jsonl"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_golden_artifacts"
+        ],
+        "notes": "Syscall/interposition smoke row with explicit remaining blocker."
+      },
+      {
+        "bead_id": "bd-2y6",
+        "stream": "stubs",
+        "status": "complete",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-harness --test stub_contract_test",
+          "cargo test -p glibc-rs-harness --test stub_guard_test"
+        ],
+        "e2e_cmds": [
+          "scripts/check_stub_contracts.sh",
+          "scripts/check_stub_guard.sh"
+        ],
+        "expected_assertions": [
+          "stub fallback contracts and guard checks pass"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/conformance/stub_contracts.json",
+          "tests/conformance/stub_census.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [],
+        "notes": "Stub-contract verification row."
+      },
+      {
+        "bead_id": "bd-35a",
+        "stream": "math",
+        "status": "complete",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-membrane runtime_math::loss_minimizer::tests:: -- --nocapture",
+          "cargo test -p glibc-rs-membrane runtime_math::evidence::tests::encode_decision_payload_embeds_loss_evidence_block -- --exact"
+        ],
+        "e2e_cmds": [
+          "scripts/bd35a_evidence_run.sh"
+        ],
+        "expected_assertions": [
+          "expected-loss matrix checks and evidence payload checks pass in strict and hardened modes"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json",
+          "tests/runtime_math/expected_loss_matrix.v1.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-35a/<run_id>/trace.jsonl",
+          "tests/cve_arena/results/bd-35a/<run_id>/artifact_index.json"
+        ],
+        "perf_proof_refs": [
+          "scripts/check_expected_loss_matrix.sh"
+        ],
+        "close_blockers": [],
+        "notes": "Runtime-math expected-loss policy row."
+      },
+      {
+        "bead_id": "bd-2wp",
+        "stream": "perf",
+        "status": "partial",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-bench --no-run"
+        ],
+        "e2e_cmds": [
+          "scripts/perf_gate.sh"
+        ],
+        "expected_assertions": [
+          "strict<20ns and hardened<200ns envelope checks remain within budget"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "target/criterion",
+          "scripts/perf_gate.sh"
+        ],
+        "perf_proof_refs": [
+          "scripts/perf_gate.sh",
+          "scripts/profile_pipeline.sh"
+        ],
+        "close_blockers": [
+          "missing_perf_proof"
+        ],
+        "notes": "Performance-proof row for benchmark gate stream."
+      }
+    ]
+  },
+  "dashboard": {
+    "total_critique_beads": 49,
+    "by_coverage_status": {
+      "missing": 47,
+      "partial": 2
+    },
+    "by_priority": {
+      "P0": {
+        "total": 13,
+        "complete": 0,
+        "partial": 2,
+        "missing": 11
+      },
+      "P1": {
+        "total": 24,
+        "complete": 0,
+        "partial": 0,
+        "missing": 24
+      },
+      "P2": {
+        "total": 12,
+        "complete": 0,
+        "partial": 0,
+        "missing": 12
+      }
+    },
+    "by_obligation_type": {
+      "conformance_fixtures": {
+        "required": 20,
+        "complete": 0,
+        "partial": 0,
+        "missing": 20
+      },
+      "e2e_scripts": {
+        "required": 27,
+        "complete": 0,
+        "partial": 1,
+        "missing": 26
+      },
+      "golden_artifacts": {
+        "required": 48,
+        "complete": 0,
+        "partial": 0,
+        "missing": 48
+      },
+      "perf_evidence": {
+        "required": 14,
+        "complete": 0,
+        "partial": 1,
+        "missing": 13
+      },
+      "structured_logs": {
+        "required": 47,
+        "complete": 0,
+        "partial": 0,
+        "missing": 47
+      },
+      "unit_tests": {
+        "required": 49,
+        "complete": 0,
+        "partial": 0,
+        "missing": 49
+      }
+    },
+    "by_stream": {
+      "docs": {
+        "total": 5,
+        "complete": 0,
+        "partial": 0,
+        "missing": 5
+      },
+      "e2e": {
+        "total": 6,
+        "complete": 0,
+        "partial": 1,
+        "missing": 5
+      },
+      "syscall": {
+        "total": 18,
+        "complete": 0,
+        "partial": 0,
+        "missing": 18
+      },
+      "stubs": {
+        "total": 6,
+        "complete": 0,
+        "partial": 0,
+        "missing": 6
+      },
+      "math": {
+        "total": 8,
+        "complete": 0,
+        "partial": 0,
+        "missing": 8
+      },
+      "perf": {
+        "total": 6,
+        "complete": 0,
+        "partial": 1,
+        "missing": 5
+      }
+    }
+  },
+  "artifact_catalog": {
+    "test_files": {
+      "harness_integration_tests": [
+        "/data/projects/glibc_rust/crates/glibc-rs-harness/tests/stub_guard_test.rs"
+      ],
+      "c_integration_tests": [
+        "/data/projects/glibc_rust/tests/integration/link_test.c"
+      ]
+    },
+    "scripts": {
+      "ci_gates": [
+        "/data/projects/glibc_rust/scripts/perf_gate.sh",
+        "/data/projects/glibc_rust/scripts/snapshot_gate.sh",
+        "/data/projects/glibc_rust/scripts/check_module_inventory.sh",
+        "/data/projects/glibc_rust/scripts/check_module_wiring.sh",
+        "/data/projects/glibc_rust/scripts/cve_arena_gate.sh",
+        "/data/projects/glibc_rust/scripts/check_snapshot_coverage.sh",
+        "/data/projects/glibc_rust/scripts/conformance_golden_gate.sh",
+        "/data/projects/glibc_rust/scripts/ci.sh",
+        "/data/projects/glibc_rust/scripts/check_runtime_math_linkage.sh",
+        "/data/projects/glibc_rust/scripts/check_stub_guard.sh"
+      ],
+      "census_and_audit": [
+        "/data/projects/glibc_rust/scripts/hard_rule_audit.sh",
+        "/data/projects/glibc_rust/scripts/abi_audit.sh",
+        "/data/projects/glibc_rust/scripts/stub_census.sh"
+      ],
+      "e2e_smoke": [
+        "/data/projects/glibc_rust/scripts/ld_preload_smoke.sh"
+      ],
+      "update_and_utility": [
+        "/data/projects/glibc_rust/scripts/extract_symbols.sh",
+        "/data/projects/glibc_rust/scripts/compare_abi.sh",
+        "/data/projects/glibc_rust/scripts/bench_compare.sh",
+        "/data/projects/glibc_rust/scripts/update_golden_snapshots.sh",
+        "/data/projects/glibc_rust/scripts/profile_pipeline.sh",
+        "/data/projects/glibc_rust/scripts/update_conformance_golden.sh"
+      ]
+    },
+    "conformance_fixtures": [
+      "/data/projects/glibc_rust/tests/conformance/fixtures/memcpy_strict.json",
+      "/data/projects/glibc_rust/tests/conformance/fixtures/strlen_strict.json",
+      "/data/projects/glibc_rust/tests/conformance/fixtures/membrane_mode_split.json",
+      "/data/projects/glibc_rust/tests/conformance/fixtures/string_memory_full.json",
+      "/data/projects/glibc_rust/tests/conformance/fixtures/wide_string.json",
+      "/data/projects/glibc_rust/tests/conformance/fixtures/wide_string_ops.json",
+      "/data/projects/glibc_rust/tests/conformance/fixtures/stdlib_conversion.json",
+      "/data/projects/glibc_rust/tests/conformance/fixtures/string_ops.json",
+      "/data/projects/glibc_rust/tests/conformance/fixtures/allocator.json",
+      "/data/projects/glibc_rust/tests/conformance/fixtures/stdlib_numeric.json",
+      "/data/projects/glibc_rust/tests/conformance/fixtures/wide_memory.json",
+      "/data/projects/glibc_rust/tests/conformance/fixtures/stdlib_sort.json"
+    ],
+    "golden_artifacts": [
+      "/data/projects/glibc_rust/tests/conformance/golden/fixture_verify_strict_hardened.v1.md",
+      "/data/projects/glibc_rust/tests/conformance/golden/fixture_verify_strict_hardened.v1.json",
+      "/data/projects/glibc_rust/tests/conformance/golden/fixture_verify_strict_hardened.v1.suite.json",
+      "/data/projects/glibc_rust/tests/conformance/golden/sha256sums.txt"
+    ],
+    "benchmarks": [
+      "/data/projects/glibc_rust/crates/glibc-rs-bench/benches/string_bench.rs",
+      "/data/projects/glibc_rust/crates/glibc-rs-bench/benches/malloc_bench.rs",
+      "/data/projects/glibc_rust/crates/glibc-rs-bench/benches/membrane_bench.rs",
+      "/data/projects/glibc_rust/crates/glibc-rs-bench/benches/stdio_bench.rs",
+      "/data/projects/glibc_rust/crates/glibc-rs-bench/benches/runtime_math_bench.rs",
+      "/data/projects/glibc_rust/crates/glibc-rs-bench/benches/runtime_math_kernels_bench.rs"
+    ],
+    "fuzz_targets": [
+      "/data/projects/glibc_rust/crates/glibc-rs-fuzz/fuzz_targets/fuzz_string.rs",
+      "/data/projects/glibc_rust/crates/glibc-rs-fuzz/fuzz_targets/fuzz_malloc.rs",
+      "/data/projects/glibc_rust/crates/glibc-rs-fuzz/fuzz_targets/fuzz_membrane.rs",
+      "/data/projects/glibc_rust/crates/glibc-rs-fuzz/fuzz_targets/fuzz_printf.rs"
+    ],
+    "cve_arena": {
+      "glibc_internal": [],
+      "targets": [
+        "redis",
+        "sudo",
+        "curl",
+        "perl",
+        "vlc"
+      ]
+    }
+  },
+  "entries": [
+    {
+      "bead_id": "bd-182",
+      "title": "Anytime-valid monitor standard: e-process thresholds + alert budget contracts",
+      "priority": 1,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "alien",
+        "critique",
+        "math",
+        "monitoring"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": false,
+          "scope": ""
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "not_required"
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 3,
+        "complete": 0,
+        "partial": 0,
+        "missing": 3
+      },
+      "row": {
+        "bead_id": "bd-182",
+        "stream": "math",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-membrane runtime_math::loss_minimizer::tests:: -- --nocapture"
+        ],
+        "e2e_cmds": [],
+        "expected_assertions": [
+          "runtime math gates and targeted tests pass"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-182/trace.jsonl",
+          "tests/cve_arena/results/bd-182/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_logs",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-182; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-1gh",
+      "title": "Stub wave 5: TLS key APIs (pthread_key_* + destructors)",
+      "priority": 2,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "pthread",
+        "stubs",
+        "tls"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "LD_PRELOAD smoke for affected symbols"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": true,
+          "scope": "POSIX-referenced input/output/errno expectations"
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 5,
+        "complete": 0,
+        "partial": 0,
+        "missing": 5
+      },
+      "row": {
+        "bead_id": "bd-1gh",
+        "stream": "stubs",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-harness --test stub_contract_test"
+        ],
+        "e2e_cmds": [
+          "scripts/check_stub_guard.sh"
+        ],
+        "expected_assertions": [
+          "stub contract and guard checks pass deterministically"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-1gh/trace.jsonl",
+          "tests/cve_arena/results/bd-1gh/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_logs",
+          "missing_fixtures",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-1gh; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-1ik",
+      "title": "Opportunity matrix workflow: score hotspots and enforce score>=2.0 before implementation",
+      "priority": 1,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "perf",
+        "planning"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": false,
+          "scope": ""
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": true,
+          "scope": "criterion/hyperfine: strict<20ns, hardened<200ns"
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "not_required"
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 4,
+        "complete": 0,
+        "partial": 0,
+        "missing": 4
+      },
+      "row": {
+        "bead_id": "bd-1ik",
+        "stream": "perf",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-bench --no-run"
+        ],
+        "e2e_cmds": [],
+        "expected_assertions": [
+          "performance budgets and regression gates remain satisfied"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-1ik/trace.jsonl",
+          "tests/cve_arena/results/bd-1ik/artifact_index.json"
+        ],
+        "perf_proof_refs": [
+          "scripts/perf_gate.sh"
+        ],
+        "close_blockers": [
+          "missing_unit",
+          "missing_logs",
+          "missing_perf_proof",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-1ik; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-1j4",
+      "title": "EPIC: Hard Parts Roadmap (rtld/CRT + NSS/locale/resolver)",
+      "priority": 2,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "locale",
+        "nss",
+        "resolver",
+        "rtld"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "required by EPIC scope"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": true,
+          "scope": "required by EPIC scope"
+        },
+        "conformance_fixtures": {
+          "required": true,
+          "scope": "required by EPIC scope"
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "conformance_fixtures": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 6,
+        "complete": 0,
+        "partial": 0,
+        "missing": 6
+      },
+      "row": {
+        "bead_id": "bd-1j4",
+        "stream": "syscall",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test --test e2e_link_test"
+        ],
+        "e2e_cmds": [
+          "scripts/ld_preload_smoke.sh"
+        ],
+        "expected_assertions": [
+          "syscall/interposition fixtures run under LD_PRELOAD"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-1j4/trace.jsonl",
+          "tests/cve_arena/results/bd-1j4/artifact_index.json"
+        ],
+        "perf_proof_refs": [
+          "scripts/perf_gate.sh"
+        ],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_logs",
+          "missing_perf_proof",
+          "missing_fixtures",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-1j4; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-1rf",
+      "title": "NSS phase-1: files backend for passwd/group/hosts lookups",
+      "priority": 2,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "nss",
+        "resolver"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": false,
+          "scope": ""
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "not_required"
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 3,
+        "complete": 0,
+        "partial": 0,
+        "missing": 3
+      },
+      "row": {
+        "bead_id": "bd-1rf",
+        "stream": "syscall",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test --test e2e_link_test"
+        ],
+        "e2e_cmds": [],
+        "expected_assertions": [
+          "syscall/interposition fixtures run under LD_PRELOAD"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-1rf/trace.jsonl",
+          "tests/cve_arena/results/bd-1rf/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_logs",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-1rf; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-1x3",
+      "title": "EPIC: Stub Extermination (ranked by real call traces)",
+      "priority": 1,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "stubs"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "LD_PRELOAD smoke for affected symbols"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": true,
+          "scope": "required by EPIC scope"
+        },
+        "conformance_fixtures": {
+          "required": true,
+          "scope": "POSIX-referenced input/output/errno expectations"
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "conformance_fixtures": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 6,
+        "complete": 0,
+        "partial": 0,
+        "missing": 6
+      },
+      "row": {
+        "bead_id": "bd-1x3",
+        "stream": "stubs",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-harness --test stub_contract_test"
+        ],
+        "e2e_cmds": [
+          "scripts/check_stub_guard.sh"
+        ],
+        "expected_assertions": [
+          "stub contract and guard checks pass deterministically"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-1x3/trace.jsonl",
+          "tests/cve_arena/results/bd-1x3/artifact_index.json"
+        ],
+        "perf_proof_refs": [
+          "scripts/perf_gate.sh"
+        ],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_logs",
+          "missing_perf_proof",
+          "missing_fixtures",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-1x3; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-1y7",
+      "title": "Resolver phase-1: UDP DNS A/AAAA + resolv.conf parser + timeout/retry policy",
+      "priority": 2,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "dns",
+        "resolver"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": false,
+          "scope": ""
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "not_required"
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 3,
+        "complete": 0,
+        "partial": 0,
+        "missing": 3
+      },
+      "row": {
+        "bead_id": "bd-1y7",
+        "stream": "syscall",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test --test e2e_link_test"
+        ],
+        "e2e_cmds": [],
+        "expected_assertions": [
+          "syscall/interposition fixtures run under LD_PRELOAD"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-1y7/trace.jsonl",
+          "tests/cve_arena/results/bd-1y7/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_logs",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-1y7; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-1zd",
+      "title": "EPIC: Scope Honesty + Support Matrix (impl vs passthrough vs stub)",
+      "priority": 0,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "docs"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "required by EPIC scope"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": true,
+          "scope": "required by EPIC scope"
+        },
+        "conformance_fixtures": {
+          "required": true,
+          "scope": "required by EPIC scope"
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "conformance_fixtures": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 6,
+        "complete": 0,
+        "partial": 0,
+        "missing": 6
+      },
+      "row": {
+        "bead_id": "bd-1zd",
+        "stream": "docs",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-harness --test parity_report_drift_test"
+        ],
+        "e2e_cmds": [
+          "scripts/check_support_matrix_drift.sh"
+        ],
+        "expected_assertions": [
+          "docs snapshots and support-matrix report remain aligned"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-1zd/trace.jsonl",
+          "tests/cve_arena/results/bd-1zd/artifact_index.json"
+        ],
+        "perf_proof_refs": [
+          "scripts/perf_gate.sh"
+        ],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_logs",
+          "missing_perf_proof",
+          "missing_fixtures",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-1zd; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-22p",
+      "title": "One-lever discipline guard: prevent multi-lever optimization commits",
+      "priority": 2,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "perf",
+        "process"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": false,
+          "scope": ""
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": true,
+          "scope": "criterion/hyperfine: strict<20ns, hardened<200ns"
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "not_required"
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 4,
+        "complete": 0,
+        "partial": 0,
+        "missing": 4
+      },
+      "row": {
+        "bead_id": "bd-22p",
+        "stream": "perf",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-bench --no-run"
+        ],
+        "e2e_cmds": [],
+        "expected_assertions": [
+          "performance budgets and regression gates remain satisfied"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-22p/trace.jsonl",
+          "tests/cve_arena/results/bd-22p/artifact_index.json"
+        ],
+        "perf_proof_refs": [
+          "scripts/perf_gate.sh"
+        ],
+        "close_blockers": [
+          "missing_unit",
+          "missing_logs",
+          "missing_perf_proof",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-22p; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-25n",
+      "title": "Unit test expansion program: exhaustive positive/negative/property tests by subsystem",
+      "priority": 0,
+      "status": "in_progress",
+      "assignee": "BronzeTower",
+      "labels": [
+        "critique",
+        "testing",
+        "unit",
+        "verification"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "strict + hardened mode coverage"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 4,
+        "complete": 0,
+        "partial": 0,
+        "missing": 4
+      },
+      "row": {
+        "bead_id": "bd-25n",
+        "stream": "syscall",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test --test e2e_link_test"
+        ],
+        "e2e_cmds": [
+          "scripts/ld_preload_smoke.sh"
+        ],
+        "expected_assertions": [
+          "syscall/interposition fixtures run under LD_PRELOAD"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-25n/trace.jsonl",
+          "tests/cve_arena/results/bd-25n/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_logs",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-25n; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-28s",
+      "title": "Guard: automated drift check (support matrix vs code + harness)",
+      "priority": 1,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "ci",
+        "critique",
+        "docs"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": false,
+          "scope": ""
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "not_required"
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 3,
+        "complete": 0,
+        "partial": 0,
+        "missing": 3
+      },
+      "row": {
+        "bead_id": "bd-28s",
+        "stream": "docs",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-harness --test parity_report_drift_test"
+        ],
+        "e2e_cmds": [],
+        "expected_assertions": [
+          "docs snapshots and support-matrix report remain aligned"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-28s/trace.jsonl",
+          "tests/cve_arena/results/bd-28s/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_logs",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-28s; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-2bd",
+      "title": "Isomorphism proof protocol: required checklist for each optimization lever",
+      "priority": 1,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "perf",
+        "proof"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": false,
+          "scope": ""
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": true,
+          "scope": "criterion/hyperfine: strict<20ns, hardened<200ns"
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "not_required"
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 4,
+        "complete": 0,
+        "partial": 0,
+        "missing": 4
+      },
+      "row": {
+        "bead_id": "bd-2bd",
+        "stream": "perf",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-bench --no-run"
+        ],
+        "e2e_cmds": [],
+        "expected_assertions": [
+          "performance budgets and regression gates remain satisfied"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-2bd/trace.jsonl",
+          "tests/cve_arena/results/bd-2bd/artifact_index.json"
+        ],
+        "perf_proof_refs": [
+          "scripts/perf_gate.sh"
+        ],
+        "close_blockers": [
+          "missing_unit",
+          "missing_logs",
+          "missing_perf_proof",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-2bd; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-2bu",
+      "title": "Replacement levels model: L0 Interpose, L1 Hardened Interpose, L2 Partial Replace, L3 Full Replace",
+      "priority": 1,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "docs",
+        "roadmap"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": false,
+          "scope": ""
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "not_required"
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 3,
+        "complete": 0,
+        "partial": 0,
+        "missing": 3
+      },
+      "row": {
+        "bead_id": "bd-2bu",
+        "stream": "docs",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-harness --test parity_report_drift_test"
+        ],
+        "e2e_cmds": [],
+        "expected_assertions": [
+          "docs snapshots and support-matrix report remain aligned"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-2bu/trace.jsonl",
+          "tests/cve_arena/results/bd-2bu/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_logs",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-2bu; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-2cr",
+      "title": "E2E: LD_PRELOAD smoke harness (real programs; strict + hardened)",
+      "priority": 0,
+      "status": "in_progress",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "e2e"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "strict + hardened mode coverage"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "partial",
+          "artifacts": "scripts/ld_preload_smoke.sh exists with strict+hardened modes"
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "partial",
+        "required": 4,
+        "complete": 0,
+        "partial": 1,
+        "missing": 3
+      },
+      "row": {
+        "bead_id": "bd-2cr",
+        "stream": "e2e",
+        "status": "partial",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-harness --test e2e_suite_test"
+        ],
+        "e2e_cmds": [
+          "scripts/e2e_suite.sh smoke"
+        ],
+        "expected_assertions": [
+          "strict and hardened runs complete with structured logs"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "scripts/ld_preload_smoke.sh exists with strict+hardened modes"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_logs",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-2cr; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-2j9",
+      "title": "Stub wave 3: iconv phase-1 (UTF-8 <-> Latin-1 and UTF-16LE)",
+      "priority": 2,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "iconv",
+        "stubs"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "LD_PRELOAD smoke for affected symbols"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": true,
+          "scope": "POSIX-referenced input/output/errno expectations"
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 5,
+        "complete": 0,
+        "partial": 0,
+        "missing": 5
+      },
+      "row": {
+        "bead_id": "bd-2j9",
+        "stream": "stubs",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-harness --test stub_contract_test"
+        ],
+        "e2e_cmds": [
+          "scripts/check_stub_guard.sh"
+        ],
+        "expected_assertions": [
+          "stub contract and guard checks pass deterministically"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-2j9/trace.jsonl",
+          "tests/cve_arena/results/bd-2j9/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_logs",
+          "missing_fixtures",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-2j9; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-2r0",
+      "title": "Perf budget CI: enforce strict<20ns and hardened<200ns targets on selected hot APIs",
+      "priority": 0,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "ci",
+        "critique",
+        "perf"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": false,
+          "scope": ""
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": true,
+          "scope": "criterion/hyperfine: strict<20ns, hardened<200ns"
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "not_required"
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 4,
+        "complete": 0,
+        "partial": 0,
+        "missing": 4
+      },
+      "row": {
+        "bead_id": "bd-2r0",
+        "stream": "perf",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-bench --no-run"
+        ],
+        "e2e_cmds": [],
+        "expected_assertions": [
+          "performance budgets and regression gates remain satisfied"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-2r0/trace.jsonl",
+          "tests/cve_arena/results/bd-2r0/artifact_index.json"
+        ],
+        "perf_proof_refs": [
+          "scripts/perf_gate.sh"
+        ],
+        "close_blockers": [
+          "missing_unit",
+          "missing_logs",
+          "missing_perf_proof",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-2r0; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-2ry",
+      "title": "Stub wave 4: setjmp/longjmp control-transfer strategy + safety constraints",
+      "priority": 2,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "setjmp",
+        "signal",
+        "stubs"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "LD_PRELOAD smoke for affected symbols"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": true,
+          "scope": "POSIX-referenced input/output/errno expectations"
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 5,
+        "complete": 0,
+        "partial": 0,
+        "missing": 5
+      },
+      "row": {
+        "bead_id": "bd-2ry",
+        "stream": "stubs",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-harness --test stub_contract_test"
+        ],
+        "e2e_cmds": [
+          "scripts/check_stub_guard.sh"
+        ],
+        "expected_assertions": [
+          "stub contract and guard checks pass deterministically"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-2ry/trace.jsonl",
+          "tests/cve_arena/results/bd-2ry/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_logs",
+          "missing_fixtures",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-2ry; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-2wp",
+      "title": "Perf baseline suite: hyperfine + criterion for strict/hardened critical paths",
+      "priority": 0,
+      "status": "in_progress",
+      "assignee": null,
+      "labels": [
+        "baseline",
+        "critique",
+        "perf"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": false,
+          "scope": ""
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": true,
+          "scope": "criterion/hyperfine: strict<20ns, hardened<200ns"
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "not_required"
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "partial",
+          "artifacts": "scripts/perf_baseline.json + 6 bench files + perf_gate.sh exist"
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "partial",
+        "required": 4,
+        "complete": 0,
+        "partial": 1,
+        "missing": 3
+      },
+      "row": {
+        "bead_id": "bd-2wp",
+        "stream": "perf",
+        "status": "partial",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-bench --no-run"
+        ],
+        "e2e_cmds": [],
+        "expected_assertions": [
+          "performance budgets and regression gates remain satisfied"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "scripts/perf_baseline.json + 6 bench files + perf_gate.sh exist"
+        ],
+        "perf_proof_refs": [
+          "scripts/perf_gate.sh"
+        ],
+        "close_blockers": [
+          "missing_unit",
+          "missing_logs",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-2wp; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-2yx",
+      "title": "Math governance: classify existing runtime_math/RaptorQ beads as Production vs Research",
+      "priority": 0,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "alien",
+        "critique",
+        "math",
+        "roadmap"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": false,
+          "scope": ""
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "not_required"
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 3,
+        "complete": 0,
+        "partial": 0,
+        "missing": 3
+      },
+      "row": {
+        "bead_id": "bd-2yx",
+        "stream": "math",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-membrane runtime_math::loss_minimizer::tests:: -- --nocapture"
+        ],
+        "e2e_cmds": [],
+        "expected_assertions": [
+          "runtime math gates and targeted tests pass"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-2yx/trace.jsonl",
+          "tests/cve_arena/results/bd-2yx/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_logs",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-2yx; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-30h",
+      "title": "Packaging: define artifacts + guarantee levels (Interpose vs Replace)",
+      "priority": 1,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "docs"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": false,
+          "scope": ""
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "not_required"
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 3,
+        "complete": 0,
+        "partial": 0,
+        "missing": 3
+      },
+      "row": {
+        "bead_id": "bd-30h",
+        "stream": "docs",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-harness --test parity_report_drift_test"
+        ],
+        "e2e_cmds": [],
+        "expected_assertions": [
+          "docs snapshots and support-matrix report remain aligned"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-30h/trace.jsonl",
+          "tests/cve_arena/results/bd-30h/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_logs",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-30h; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-34w",
+      "title": "Verification matrix drift guard: fail when critique beads lack matrix coverage",
+      "priority": 1,
+      "status": "in_progress",
+      "assignee": "CrimsonCove",
+      "labels": [
+        "ci",
+        "critique",
+        "testing",
+        "verification"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "strict + hardened mode coverage"
+        },
+        "structured_logs": {
+          "required": false,
+          "scope": ""
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "not_required"
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 3,
+        "complete": 0,
+        "partial": 0,
+        "missing": 3
+      },
+      "row": {
+        "bead_id": "bd-34w",
+        "stream": "syscall",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test --test e2e_link_test"
+        ],
+        "e2e_cmds": [
+          "scripts/ld_preload_smoke.sh"
+        ],
+        "expected_assertions": [
+          "syscall/interposition fixtures run under LD_PRELOAD"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-34w/trace.jsonl",
+          "tests/cve_arena/results/bd-34w/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-34w; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-38s",
+      "title": "Verification matrix dashboard export: operator-friendly progress and gaps",
+      "priority": 1,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "logging",
+        "reporting",
+        "verification"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "strict + hardened mode coverage"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 4,
+        "complete": 0,
+        "partial": 0,
+        "missing": 4
+      },
+      "row": {
+        "bead_id": "bd-38s",
+        "stream": "syscall",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test --test e2e_link_test"
+        ],
+        "e2e_cmds": [
+          "scripts/ld_preload_smoke.sh"
+        ],
+        "expected_assertions": [
+          "syscall/interposition fixtures run under LD_PRELOAD"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-38s/trace.jsonl",
+          "tests/cve_arena/results/bd-38s/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_logs",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-38s; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-3bg",
+      "title": "Iconvdata pipeline: minimal codec tables + deterministic build/generation flow",
+      "priority": 2,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "iconv",
+        "tooling"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": false,
+          "scope": ""
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "not_required"
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 3,
+        "complete": 0,
+        "partial": 0,
+        "missing": 3
+      },
+      "row": {
+        "bead_id": "bd-3bg",
+        "stream": "syscall",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test --test e2e_link_test"
+        ],
+        "e2e_cmds": [],
+        "expected_assertions": [
+          "syscall/interposition fixtures run under LD_PRELOAD"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-3bg/trace.jsonl",
+          "tests/cve_arena/results/bd-3bg/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_logs",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-3bg; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-3fb",
+      "title": "EPIC: Extreme Optimization Loop (baselines + profiles + goldens)",
+      "priority": 0,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "perf"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "required by EPIC scope"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": true,
+          "scope": "criterion/hyperfine: strict<20ns, hardened<200ns"
+        },
+        "conformance_fixtures": {
+          "required": true,
+          "scope": "required by EPIC scope"
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "conformance_fixtures": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 6,
+        "complete": 0,
+        "partial": 0,
+        "missing": 6
+      },
+      "row": {
+        "bead_id": "bd-3fb",
+        "stream": "perf",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-bench --no-run"
+        ],
+        "e2e_cmds": [
+          "scripts/perf_gate.sh"
+        ],
+        "expected_assertions": [
+          "performance budgets and regression gates remain satisfied"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-3fb/trace.jsonl",
+          "tests/cve_arena/results/bd-3fb/artifact_index.json"
+        ],
+        "perf_proof_refs": [
+          "scripts/perf_gate.sh"
+        ],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_logs",
+          "missing_perf_proof",
+          "missing_fixtures",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-3fb; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-3jh",
+      "title": "Integration: C compile/link/run fixture suite under LD_PRELOAD",
+      "priority": 1,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "conformance",
+        "critique",
+        "e2e"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "LD_PRELOAD smoke for affected symbols"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": true,
+          "scope": "POSIX-referenced input/output/errno expectations"
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 5,
+        "complete": 0,
+        "partial": 0,
+        "missing": 5
+      },
+      "row": {
+        "bead_id": "bd-3jh",
+        "stream": "e2e",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-harness --test e2e_suite_test"
+        ],
+        "e2e_cmds": [
+          "scripts/e2e_suite.sh smoke"
+        ],
+        "expected_assertions": [
+          "strict and hardened runs complete with structured logs"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-3jh/trace.jsonl",
+          "tests/cve_arena/results/bd-3jh/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_logs",
+          "missing_fixtures",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-3jh; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-3n0",
+      "title": "Verification matrix backfill: populate rows for all open critique beads",
+      "priority": 0,
+      "status": "in_progress",
+      "assignee": "WhiteMeadow",
+      "labels": [
+        "critique",
+        "e2e",
+        "testing",
+        "unit",
+        "verification"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "strict + hardened mode coverage"
+        },
+        "structured_logs": {
+          "required": false,
+          "scope": ""
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": false,
+          "scope": ""
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "not_required"
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "not_required"
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 2,
+        "complete": 0,
+        "partial": 0,
+        "missing": 2
+      },
+      "row": {
+        "bead_id": "bd-3n0",
+        "stream": "e2e",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-harness --test e2e_suite_test"
+        ],
+        "e2e_cmds": [
+          "scripts/e2e_suite.sh smoke"
+        ],
+        "expected_assertions": [
+          "strict and hardened runs complete with structured logs"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-3n0/trace.jsonl",
+          "tests/cve_arena/results/bd-3n0/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e"
+        ],
+        "notes": "Auto-backfilled row for bd-3n0; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-3pe",
+      "title": "Locale phase-1: C/POSIX locale core + LC_CTYPE/LC_NUMERIC primitives",
+      "priority": 2,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "locale"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": false,
+          "scope": ""
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "not_required"
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 3,
+        "complete": 0,
+        "partial": 0,
+        "missing": 3
+      },
+      "row": {
+        "bead_id": "bd-3pe",
+        "stream": "syscall",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test --test e2e_link_test"
+        ],
+        "e2e_cmds": [],
+        "expected_assertions": [
+          "syscall/interposition fixtures run under LD_PRELOAD"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-3pe/trace.jsonl",
+          "tests/cve_arena/results/bd-3pe/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_logs",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-3pe; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-3qq",
+      "title": "EPIC: HA1zgq Critique Response (Make glibc_rust real + honest + fast)",
+      "priority": 0,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "required by EPIC scope"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": true,
+          "scope": "required by EPIC scope"
+        },
+        "conformance_fixtures": {
+          "required": true,
+          "scope": "required by EPIC scope"
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "conformance_fixtures": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 6,
+        "complete": 0,
+        "partial": 0,
+        "missing": 6
+      },
+      "row": {
+        "bead_id": "bd-3qq",
+        "stream": "syscall",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test --test e2e_link_test"
+        ],
+        "e2e_cmds": [
+          "scripts/ld_preload_smoke.sh"
+        ],
+        "expected_assertions": [
+          "syscall/interposition fixtures run under LD_PRELOAD"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-3qq/trace.jsonl",
+          "tests/cve_arena/results/bd-3qq/artifact_index.json"
+        ],
+        "perf_proof_refs": [
+          "scripts/perf_gate.sh"
+        ],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_logs",
+          "missing_perf_proof",
+          "missing_fixtures",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-3qq; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-3rn",
+      "title": "rtld phase-1: ELF relocation + symbol lookup core for non-IFUNC path",
+      "priority": 2,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "elf",
+        "rtld"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": false,
+          "scope": ""
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "not_required"
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 3,
+        "complete": 0,
+        "partial": 0,
+        "missing": 3
+      },
+      "row": {
+        "bead_id": "bd-3rn",
+        "stream": "syscall",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test --test e2e_link_test"
+        ],
+        "e2e_cmds": [],
+        "expected_assertions": [
+          "syscall/interposition fixtures run under LD_PRELOAD"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-3rn/trace.jsonl",
+          "tests/cve_arena/results/bd-3rn/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_logs",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-3rn; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-3tc",
+      "title": "Change-point drift policy: BOCPD integration for regime-shift-aware control routing",
+      "priority": 1,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "alien",
+        "critique",
+        "drift",
+        "math"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": false,
+          "scope": ""
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "not_required"
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 3,
+        "complete": 0,
+        "partial": 0,
+        "missing": 3
+      },
+      "row": {
+        "bead_id": "bd-3tc",
+        "stream": "math",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-membrane runtime_math::loss_minimizer::tests:: -- --nocapture"
+        ],
+        "e2e_cmds": [],
+        "expected_assertions": [
+          "runtime math gates and targeted tests pass"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-3tc/trace.jsonl",
+          "tests/cve_arena/results/bd-3tc/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_logs",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-3tc; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-3tp",
+      "title": "Math value proof: A/B benchmark each kept module against simpler baseline",
+      "priority": 1,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "alien",
+        "critique",
+        "math",
+        "perf"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": false,
+          "scope": ""
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": true,
+          "scope": "criterion/hyperfine: strict<20ns, hardened<200ns"
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "not_required"
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 4,
+        "complete": 0,
+        "partial": 0,
+        "missing": 4
+      },
+      "row": {
+        "bead_id": "bd-3tp",
+        "stream": "math",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-membrane runtime_math::loss_minimizer::tests:: -- --nocapture"
+        ],
+        "e2e_cmds": [],
+        "expected_assertions": [
+          "runtime math gates and targeted tests pass"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-3tp/trace.jsonl",
+          "tests/cve_arena/results/bd-3tp/artifact_index.json"
+        ],
+        "perf_proof_refs": [
+          "scripts/perf_gate.sh"
+        ],
+        "close_blockers": [
+          "missing_unit",
+          "missing_logs",
+          "missing_perf_proof",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-3tp; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-3u0",
+      "title": "Hard-parts workload matrix: map real binaries to required subsystems",
+      "priority": 1,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "e2e",
+        "roadmap"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "strict + hardened mode coverage"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 4,
+        "complete": 0,
+        "partial": 0,
+        "missing": 4
+      },
+      "row": {
+        "bead_id": "bd-3u0",
+        "stream": "e2e",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-harness --test e2e_suite_test"
+        ],
+        "e2e_cmds": [
+          "scripts/e2e_suite.sh smoke"
+        ],
+        "expected_assertions": [
+          "strict and hardened runs complete with structured logs"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-3u0/trace.jsonl",
+          "tests/cve_arena/results/bd-3u0/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_logs",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-3u0; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-4ia",
+      "title": "Stub priority ranking: dynamic call-frequency traces from LD_PRELOAD smoke runs",
+      "priority": 1,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "e2e",
+        "stubs"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "LD_PRELOAD smoke for affected symbols"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": true,
+          "scope": "POSIX-referenced input/output/errno expectations"
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 5,
+        "complete": 0,
+        "partial": 0,
+        "missing": 5
+      },
+      "row": {
+        "bead_id": "bd-4ia",
+        "stream": "e2e",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-harness --test e2e_suite_test"
+        ],
+        "e2e_cmds": [
+          "scripts/e2e_suite.sh smoke"
+        ],
+        "expected_assertions": [
+          "strict and hardened runs complete with structured logs"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-4ia/trace.jsonl",
+          "tests/cve_arena/results/bd-4ia/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_logs",
+          "missing_fixtures",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-4ia; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-4rl",
+      "title": "Closure gate: block bead completion without test commands, logs, and evidence links",
+      "priority": 0,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "ci",
+        "critique",
+        "logging",
+        "testing",
+        "verification"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "strict + hardened mode coverage"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 4,
+        "complete": 0,
+        "partial": 0,
+        "missing": 4
+      },
+      "row": {
+        "bead_id": "bd-4rl",
+        "stream": "syscall",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test --test e2e_link_test"
+        ],
+        "e2e_cmds": [
+          "scripts/ld_preload_smoke.sh"
+        ],
+        "expected_assertions": [
+          "syscall/interposition fixtures run under LD_PRELOAD"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-4rl/trace.jsonl",
+          "tests/cve_arena/results/bd-4rl/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_logs",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-4rl; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-545",
+      "title": "Math retirement gate: deprecate unused/non-beneficial modules with CI enforcement",
+      "priority": 1,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "alien",
+        "ci",
+        "critique",
+        "math"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": false,
+          "scope": ""
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "not_required"
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 3,
+        "complete": 0,
+        "partial": 0,
+        "missing": 3
+      },
+      "row": {
+        "bead_id": "bd-545",
+        "stream": "math",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-membrane runtime_math::loss_minimizer::tests:: -- --nocapture"
+        ],
+        "e2e_cmds": [],
+        "expected_assertions": [
+          "runtime math gates and targeted tests pass"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-545/trace.jsonl",
+          "tests/cve_arena/results/bd-545/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_logs",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-545; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-66s",
+      "title": "Stub wave 2: getaddrinfo/getnameinfo numeric+files backend",
+      "priority": 1,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "resolver",
+        "stubs"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "LD_PRELOAD smoke for affected symbols"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": true,
+          "scope": "POSIX-referenced input/output/errno expectations"
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 5,
+        "complete": 0,
+        "partial": 0,
+        "missing": 5
+      },
+      "row": {
+        "bead_id": "bd-66s",
+        "stream": "stubs",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-harness --test stub_contract_test"
+        ],
+        "e2e_cmds": [
+          "scripts/check_stub_guard.sh"
+        ],
+        "expected_assertions": [
+          "stub contract and guard checks pass deterministically"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-66s/trace.jsonl",
+          "tests/cve_arena/results/bd-66s/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_logs",
+          "missing_fixtures",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-66s; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-6yd",
+      "title": "Crash bundle: deterministic evidence + backtrace capture on failure",
+      "priority": 1,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "alien",
+        "critique",
+        "diagnostics"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": false,
+          "scope": ""
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "not_required"
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 3,
+        "complete": 0,
+        "partial": 0,
+        "missing": 3
+      },
+      "row": {
+        "bead_id": "bd-6yd",
+        "stream": "math",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-membrane runtime_math::loss_minimizer::tests:: -- --nocapture"
+        ],
+        "e2e_cmds": [],
+        "expected_assertions": [
+          "runtime math gates and targeted tests pass"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-6yd/trace.jsonl",
+          "tests/cve_arena/results/bd-6yd/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_logs",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-6yd; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-747",
+      "title": "Stub wave 1: getenv/setenv/unsetenv + environment invariants",
+      "priority": 1,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "env",
+        "stubs"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "LD_PRELOAD smoke for affected symbols"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": true,
+          "scope": "POSIX-referenced input/output/errno expectations"
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 5,
+        "complete": 0,
+        "partial": 0,
+        "missing": 5
+      },
+      "row": {
+        "bead_id": "bd-747",
+        "stream": "stubs",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-harness --test stub_contract_test"
+        ],
+        "e2e_cmds": [
+          "scripts/check_stub_guard.sh"
+        ],
+        "expected_assertions": [
+          "stub contract and guard checks pass deterministically"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-747/trace.jsonl",
+          "tests/cve_arena/results/bd-747/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_logs",
+          "missing_fixtures",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-747; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-c1x",
+      "title": "Futex condvar core: implement pthread_cond_* with clock/timeout semantics",
+      "priority": 2,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "futex",
+        "pthread"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "LD_PRELOAD smoke for affected symbols"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": true,
+          "scope": "POSIX-referenced input/output/errno expectations"
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 5,
+        "complete": 0,
+        "partial": 0,
+        "missing": 5
+      },
+      "row": {
+        "bead_id": "bd-c1x",
+        "stream": "syscall",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test --test e2e_link_test"
+        ],
+        "e2e_cmds": [
+          "scripts/ld_preload_smoke.sh"
+        ],
+        "expected_assertions": [
+          "syscall/interposition fixtures run under LD_PRELOAD"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-c1x/trace.jsonl",
+          "tests/cve_arena/results/bd-c1x/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_logs",
+          "missing_fixtures",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-c1x; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-cj0",
+      "title": "Syscall core: introduce raw Linux x86_64 syscall veneer (no libc::syscall)",
+      "priority": 1,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "p0-path",
+        "syscall"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "LD_PRELOAD smoke for affected symbols"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": true,
+          "scope": "POSIX-referenced input/output/errno expectations"
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 5,
+        "complete": 0,
+        "partial": 0,
+        "missing": 5
+      },
+      "row": {
+        "bead_id": "bd-cj0",
+        "stream": "syscall",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test --test e2e_link_test"
+        ],
+        "e2e_cmds": [
+          "scripts/ld_preload_smoke.sh"
+        ],
+        "expected_assertions": [
+          "syscall/interposition fixtures run under LD_PRELOAD"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-cj0/trace.jsonl",
+          "tests/cve_arena/results/bd-cj0/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_logs",
+          "missing_fixtures",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-cj0; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-ef2",
+      "title": "I/O migration wave: route core unistd/io ABI entrypoints through raw veneer",
+      "priority": 1,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "io",
+        "syscall"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "LD_PRELOAD smoke for affected symbols"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": true,
+          "scope": "POSIX-referenced input/output/errno expectations"
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 5,
+        "complete": 0,
+        "partial": 0,
+        "missing": 5
+      },
+      "row": {
+        "bead_id": "bd-ef2",
+        "stream": "syscall",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test --test e2e_link_test"
+        ],
+        "e2e_cmds": [
+          "scripts/ld_preload_smoke.sh"
+        ],
+        "expected_assertions": [
+          "syscall/interposition fixtures run under LD_PRELOAD"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-ef2/trace.jsonl",
+          "tests/cve_arena/results/bd-ef2/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_logs",
+          "missing_fixtures",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-ef2; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-h5x",
+      "title": "EPIC: Remove glibc callthrough (raw syscalls + pthread primitives)",
+      "priority": 1,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "pthread",
+        "syscall"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "LD_PRELOAD smoke for affected symbols"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": true,
+          "scope": "required by EPIC scope"
+        },
+        "conformance_fixtures": {
+          "required": true,
+          "scope": "POSIX-referenced input/output/errno expectations"
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "conformance_fixtures": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 6,
+        "complete": 0,
+        "partial": 0,
+        "missing": 6
+      },
+      "row": {
+        "bead_id": "bd-h5x",
+        "stream": "syscall",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test --test e2e_link_test"
+        ],
+        "e2e_cmds": [
+          "scripts/ld_preload_smoke.sh"
+        ],
+        "expected_assertions": [
+          "syscall/interposition fixtures run under LD_PRELOAD"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-h5x/trace.jsonl",
+          "tests/cve_arena/results/bd-h5x/artifact_index.json"
+        ],
+        "perf_proof_refs": [
+          "scripts/perf_gate.sh"
+        ],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_logs",
+          "missing_perf_proof",
+          "missing_fixtures",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-h5x; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-kan",
+      "title": "EPIC: Math Kernel Rebuild (production vs research; alien artifact but relevant)",
+      "priority": 0,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "alien",
+        "critique",
+        "math"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "required by EPIC scope"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": true,
+          "scope": "required by EPIC scope"
+        },
+        "conformance_fixtures": {
+          "required": true,
+          "scope": "required by EPIC scope"
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "conformance_fixtures": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 6,
+        "complete": 0,
+        "partial": 0,
+        "missing": 6
+      },
+      "row": {
+        "bead_id": "bd-kan",
+        "stream": "math",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-membrane runtime_math::loss_minimizer::tests:: -- --nocapture"
+        ],
+        "e2e_cmds": [
+          "scripts/check_runtime_math_linkage.sh"
+        ],
+        "expected_assertions": [
+          "runtime math gates and targeted tests pass"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-kan/trace.jsonl",
+          "tests/cve_arena/results/bd-kan/artifact_index.json"
+        ],
+        "perf_proof_refs": [
+          "scripts/perf_gate.sh"
+        ],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_logs",
+          "missing_perf_proof",
+          "missing_fixtures",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-kan; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-mtj",
+      "title": "EPIC: E2E Reality Gate (build + LD_PRELOAD smoke + ABI surface)",
+      "priority": 0,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "abi",
+        "critique",
+        "e2e"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "LD_PRELOAD smoke for affected symbols"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": true,
+          "scope": "required by EPIC scope"
+        },
+        "conformance_fixtures": {
+          "required": true,
+          "scope": "POSIX-referenced input/output/errno expectations"
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "conformance_fixtures": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 6,
+        "complete": 0,
+        "partial": 0,
+        "missing": 6
+      },
+      "row": {
+        "bead_id": "bd-mtj",
+        "stream": "e2e",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-harness --test e2e_suite_test"
+        ],
+        "e2e_cmds": [
+          "scripts/e2e_suite.sh smoke"
+        ],
+        "expected_assertions": [
+          "strict and hardened runs complete with structured logs"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-mtj/trace.jsonl",
+          "tests/cve_arena/results/bd-mtj/artifact_index.json"
+        ],
+        "perf_proof_refs": [
+          "scripts/perf_gate.sh"
+        ],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_logs",
+          "missing_perf_proof",
+          "missing_fixtures",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-mtj; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-qwm",
+      "title": "CRT phase-0: _start/__libc_start_main bootstrap skeleton + acceptance fixtures",
+      "priority": 2,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "crt",
+        "rtld"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": false,
+          "scope": ""
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "not_required"
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 3,
+        "complete": 0,
+        "partial": 0,
+        "missing": 3
+      },
+      "row": {
+        "bead_id": "bd-qwm",
+        "stream": "syscall",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test --test e2e_link_test"
+        ],
+        "e2e_cmds": [],
+        "expected_assertions": [
+          "syscall/interposition fixtures run under LD_PRELOAD"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-qwm/trace.jsonl",
+          "tests/cve_arena/results/bd-qwm/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_logs",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-qwm; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-rqn",
+      "title": "Production kernel manifest: minimal required math set + compile-time gates",
+      "priority": 0,
+      "status": "in_progress",
+      "assignee": "WhiteMeadow",
+      "labels": [
+        "alien",
+        "critique",
+        "math"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": false,
+          "scope": ""
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "not_required"
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 3,
+        "complete": 0,
+        "partial": 0,
+        "missing": 3
+      },
+      "row": {
+        "bead_id": "bd-rqn",
+        "stream": "math",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-membrane runtime_math::loss_minimizer::tests:: -- --nocapture"
+        ],
+        "e2e_cmds": [],
+        "expected_assertions": [
+          "runtime math gates and targeted tests pass"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-rqn/trace.jsonl",
+          "tests/cve_arena/results/bd-rqn/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_logs",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-rqn; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-wud",
+      "title": "Mode semantics matrix: strict vs hardened behavior table per API family",
+      "priority": 1,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "docs",
+        "semantics"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": false,
+          "scope": ""
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": false,
+          "scope": ""
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "not_required"
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "not_required"
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 3,
+        "complete": 0,
+        "partial": 0,
+        "missing": 3
+      },
+      "row": {
+        "bead_id": "bd-wud",
+        "stream": "docs",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test -p glibc-rs-harness --test parity_report_drift_test"
+        ],
+        "e2e_cmds": [],
+        "expected_assertions": [
+          "docs snapshots and support-matrix report remain aligned"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-wud/trace.jsonl",
+          "tests/cve_arena/results/bd-wud/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_logs",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-wud; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-yos",
+      "title": "Thread bootstrap: minimal pthread_create/join/detach path with TLS handoff",
+      "priority": 1,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "pthread",
+        "tls"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "LD_PRELOAD smoke for affected symbols"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": true,
+          "scope": "POSIX-referenced input/output/errno expectations"
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 5,
+        "complete": 0,
+        "partial": 0,
+        "missing": 5
+      },
+      "row": {
+        "bead_id": "bd-yos",
+        "stream": "syscall",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test --test e2e_link_test"
+        ],
+        "e2e_cmds": [
+          "scripts/ld_preload_smoke.sh"
+        ],
+        "expected_assertions": [
+          "syscall/interposition fixtures run under LD_PRELOAD"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-yos/trace.jsonl",
+          "tests/cve_arena/results/bd-yos/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_logs",
+          "missing_fixtures",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-yos; refine commands/artifacts as implementation evidence lands."
+      }
+    },
+    {
+      "bead_id": "bd-z84",
+      "title": "Futex mutex core: implement pthread_mutex_* state machine without glibc call-through",
+      "priority": 1,
+      "status": "open",
+      "assignee": null,
+      "labels": [
+        "critique",
+        "futex",
+        "pthread"
+      ],
+      "dependencies": [],
+      "obligations": {
+        "unit_tests": {
+          "required": true,
+          "scope": "happy-path, negative, adversarial, regression"
+        },
+        "e2e_scripts": {
+          "required": true,
+          "scope": "LD_PRELOAD smoke for affected symbols"
+        },
+        "structured_logs": {
+          "required": true,
+          "scope": "JSONL with trace_id, mode, symbol, outcome, errno, timing"
+        },
+        "perf_evidence": {
+          "required": false,
+          "scope": ""
+        },
+        "conformance_fixtures": {
+          "required": true,
+          "scope": "POSIX-referenced input/output/errno expectations"
+        },
+        "golden_artifacts": {
+          "required": true,
+          "scope": "SHA256-verified golden output files"
+        }
+      },
+      "coverage": {
+        "unit_tests": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "e2e_scripts": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "structured_logs": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "perf_evidence": {
+          "status": "not_required"
+        },
+        "conformance_fixtures": {
+          "status": "missing",
+          "artifacts": ""
+        },
+        "golden_artifacts": {
+          "status": "missing",
+          "artifacts": ""
+        }
+      },
+      "coverage_summary": {
+        "overall": "missing",
+        "required": 5,
+        "complete": 0,
+        "partial": 0,
+        "missing": 5
+      },
+      "row": {
+        "bead_id": "bd-z84",
+        "stream": "syscall",
+        "status": "missing",
+        "unit_cmds": [
+          "cargo test --test e2e_link_test"
+        ],
+        "e2e_cmds": [
+          "scripts/ld_preload_smoke.sh"
+        ],
+        "expected_assertions": [
+          "syscall/interposition fixtures run under LD_PRELOAD"
+        ],
+        "log_schema_refs": [
+          "tests/conformance/log_schema.json"
+        ],
+        "artifact_paths": [
+          "tests/cve_arena/results/bd-z84/trace.jsonl",
+          "tests/cve_arena/results/bd-z84/artifact_index.json"
+        ],
+        "perf_proof_refs": [],
+        "close_blockers": [
+          "missing_unit",
+          "missing_e2e",
+          "missing_logs",
+          "missing_fixtures",
+          "missing_golden_artifacts"
+        ],
+        "notes": "Auto-backfilled row for bd-z84; refine commands/artifacts as implementation evidence lands."
+      }
+    }
+  ]
+}

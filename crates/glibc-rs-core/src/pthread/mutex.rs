@@ -74,4 +74,10 @@ mod tests {
         assert_eq!(sanitize_mutex_type(99), PTHREAD_MUTEX_NORMAL);
         assert_eq!(sanitize_mutex_type(-1), PTHREAD_MUTEX_NORMAL);
     }
+
+    #[test]
+    fn sanitize_mutex_type_extremes_default_to_normal() {
+        assert_eq!(sanitize_mutex_type(i32::MIN), PTHREAD_MUTEX_NORMAL);
+        assert_eq!(sanitize_mutex_type(i32::MAX), PTHREAD_MUTEX_NORMAL);
+    }
 }
