@@ -249,6 +249,18 @@ cargo build --release -p glibc-rs-abi
 cargo test --all-targets
 ```
 
+**2a. Run the canonical full workspace gate (fmt/check/clippy/test + ABI cdylib build):**
+
+```bash
+scripts/ci.sh
+```
+
+For the heavier policy/perf/snapshot suite, opt in explicitly:
+
+```bash
+GLIBC_RUST_EXTENDED_GATES=1 scripts/ci.sh
+```
+
 **3. Run a program in strict mode (default):**
 
 ```bash
@@ -265,6 +277,12 @@ GLIBC_RUST_MODE=hardened LD_PRELOAD=target/release/libc.so ./my_app
 
 ```bash
 cargo bench -p glibc-rs-bench
+```
+
+Reproducible hotspot pipeline (CPU + alloc + syscall) for critical benchmarks:
+
+```bash
+scripts/profile_pipeline.sh
 ```
 
 ---
@@ -470,6 +488,15 @@ cargo test -p glibc-rs-harness
 cargo run -p glibc-rs-harness --bin harness -- verify \
   --fixture tests/conformance/fixtures \
   --report /tmp/glibc_rust_conformance.md
+
+# Regenerate deterministic strict+hardened conformance goldens + checksums
+scripts/update_conformance_golden.sh
+
+# Verify conformance golden drift
+scripts/conformance_golden_gate.sh
+
+# Verify runtime_math snapshot golden drift
+scripts/snapshot_gate.sh
 
 # Run healing oracle tests (hardened mode)
 cargo run -p glibc-rs-harness --bin harness -- verify-membrane --mode hardened

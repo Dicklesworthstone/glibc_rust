@@ -2,6 +2,32 @@
 
 This repo treats runtime performance as a first-class contract. Before merging any runtime_math optimization or new kernel wiring, re-run the profile loop below and record the top hotspots.
 
+## One-Command Pipeline (Recommended)
+
+Run the reproducible pipeline for critical benchmarks:
+
+```bash
+# strict-mode critical benchmarks
+scripts/profile_pipeline.sh
+
+# hardened-mode critical benchmarks
+MODE=hardened scripts/profile_pipeline.sh
+```
+
+What it generates:
+- CPU flamegraphs + top-5 symbols
+- allocation-focused perf captures + top-5 allocator hotspots
+- syscall summaries (`strace -c`) + top-5 syscalls
+- timestamped artifacts under `target/profiles/<run_ts>/<mode>/`
+
+Narrow to a subset when iterating:
+
+```bash
+MODE=strict PROFILE_TIME=1 \
+PROFILE_TARGETS="runtime_math_decide_strict membrane_validate_known_strict" \
+scripts/profile_pipeline.sh
+```
+
 ## Prereqs
 
 Tools:
@@ -17,6 +43,8 @@ Perf permissions:
   - temporarily lower it (example): `sudo sysctl -w kernel.perf_event_paranoid=0`
   - or run flamegraph with root: `cargo flamegraph --root ...`
 - After profiling, restore the previous setting (example): `sudo sysctl -w kernel.perf_event_paranoid=4`
+
+The pipeline script uses `sudo -n` for perf/flamegraph operations and fails fast if passwordless sudo is unavailable.
 
 ## Targets To Profile
 
@@ -100,6 +128,19 @@ perf report -i /tmp/glibc_rust_profiles/perf_runtime_math_decide_strict.data \
 
 Record the output into a perf log (commit message, bead comment, or a local note) and re-run after changes. Track when the top-5 set changes and when the ordering materially shifts.
 
+## Allocation + Syscall Hotspots
+
+The pipeline writes:
+- `target/profiles/<run_ts>/<mode>/alloc/*.top5.txt`
+- `target/profiles/<run_ts>/<mode>/syscall/*.top5.txt`
+
+Each critical benchmark therefore has three hotspot views:
+1. CPU self-cost (flamegraph/perf report)
+2. allocation-heavy symbols (allocator-focused perf extraction)
+3. syscall distribution (`strace -c` top-5)
+
+Treat changes in any of these top-5 sets as optimization round deltas and capture them in bead comments before implementing further perf changes.
+
 ## Example Top-5 (Strict, 2026-02-10)
 
 These are example top-5 self-cost symbols captured from this workspace environment; your machine may differ.
@@ -124,4 +165,3 @@ Pointer validation (validate_known):
 - `<glibc_rs_membrane::runtime_math::RuntimeMathKernel>::observe_validation_result`
 - `core::slice::sort::unstable::ipnsort::<...>`
 - `__ieee754_log_fma`
-

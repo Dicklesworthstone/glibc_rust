@@ -96,10 +96,21 @@ pub fn build_kernel_snapshot_fixture(
 }
 
 fn capture_for_mode(seed: u64, steps: u32, mode: SafetyLevel) -> ModeSnapshotV1 {
-    let kernel = RuntimeMathKernel::new();
-    run_scenario(&kernel, seed, steps, mode);
-    let snap = kernel.snapshot(mode);
-    let snapshot_lines = format!("{snap:#?}").lines().map(str::to_string).collect();
+    // NOTE: `RuntimeKernelSnapshot` is intentionally large, and debug rendering may
+    // require a larger-than-default stack in `libtest` threads. Capture the fixture
+    // on a dedicated thread with an explicit stack size for determinism and safety.
+    let snapshot_lines = std::thread::Builder::new()
+        .name(format!("kernel-snapshot-{:?}", mode))
+        .stack_size(32 * 1024 * 1024)
+        .spawn(move || {
+            let kernel = RuntimeMathKernel::new();
+            run_scenario(&kernel, seed, steps, mode);
+            let snap = kernel.snapshot(mode);
+            format!("{snap:#?}").lines().map(str::to_string).collect()
+        })
+        .expect("spawn kernel snapshot capture")
+        .join()
+        .expect("join kernel snapshot capture");
 
     ModeSnapshotV1 {
         mode: match mode {

@@ -231,6 +231,8 @@ Rules:
 - `runtime_math/eprocess.rs` — anytime-valid sequential risk monitor (e-values)
 - `runtime_math/cvar.rs` — distributionally-robust CVaR tail controller
 - `runtime_math/design.rs` — D-optimal probe scheduling + identifiability control
+- `runtime_math/sobol.rs` — Sobol low-discrepancy sequence generator for deterministic probe scheduling
+- `runtime_math/redundancy_tuner.rs` — Adaptive evidence redundancy tuner using anytime-valid e-process updates and fixed-point overhead control
 - `runtime_math/sparse.rs` — online sparse latent-cause recovery + concentration state
 - `runtime_math/fusion.rs` — robust weighted fusion + entropy/drift telemetry
 - `runtime_math/equivariant.rs` — representation-stability transport + symmetry-break detection
@@ -255,8 +257,10 @@ Rules:
 - `runtime_math/covering_array.rs` — Covering-array matroid conformance interaction coverage scheduler (math #17)
 - `runtime_math/derived_tstructure.rs` — Derived-category t-structure bootstrap ordering invariant controller (math #38)
 - `runtime_math/atiyah_bott.rs` — Atiyah-Bott fixed-point localization meta-controller for hot-path anomaly concentration detection (math #35)
+- `runtime_math/localization_chooser.rs` — Localization fixed-point policy chooser for concentrated anomaly regimes (Atiyah-Bott style)
 - `runtime_math/pomdp_repair.rs` — Constrained POMDP repair policy controller with Bayesian belief tracking and Bellman value iteration (math #8)
 - `runtime_math/sos_invariant.rs` — Sum-of-squares polynomial invariant runtime guard for cross-controller coherence verification (math #21)
+- `runtime_math/sos_barrier.rs` — SOS barrier certificate runtime polynomial evaluator for admissibility guards (offline synthesis, cheap runtime eval)
 - `runtime_math/admm_budget.rs` — ADMM operator-splitting budget allocator for online risk/latency/coverage budget optimization (math #26)
 - `runtime_math/obstruction_detector.rs` — Spectral-sequence obstruction detector for cross-layer consistency defect detection (math #28)
 - `runtime_math/operator_norm.rs` — Operator-norm spectral radius stability monitor for ensemble dynamics instability detection
@@ -267,6 +271,7 @@ Rules:
 - `runtime_math/wasserstein_drift.rs` — 1-Wasserstein (Earth Mover's) distance on severity histograms for metric-aware distributional shift detection
 - `runtime_math/kernel_mmd.rs` — Maximum Mean Discrepancy (Gretton et al. 2012) with RBF kernel for distribution-free two-sample testing
 - `runtime_math/provenance_info.rs` — Information-theoretic provenance tag monitor with Shannon/Rényi/min-entropy collision bounds (math #11)
+- `runtime_math/policy_table.rs` — Proof-carrying policy table loader/verifier (PCPT / `.pcpt` artifacts)
 - `runtime_math/grobner_normalizer.rs` — Gröbner-basis constraint normalizer for confluent controller-state consistency verification (math #30)
 - `runtime_math/grothendieck_glue.rs` — Grothendieck site cocycle/descent/stackification coherence monitor for NSS/resolv/locale source gluing (math #33)
 - `runtime_math/clifford.rs` — Clifford algebra + Spin/Pin symmetry methods for SIMD/alignment/overlap kernel correctness monitoring (math #36)
@@ -299,6 +304,7 @@ Rules:
 - `runtime_math/submodular_coverage.rs` — Submodular validation stage coverage monitor
 - `runtime_math/alpha_investing.rs` — Alpha-Investing FDR controller for sequential false-discovery control over monitor alarm ensemble (Foster & Stine 2008)
 - `runtime_math/approachability.rs` — Blackwell approachability controller (multi-objective safe-set convergence for routing decisions)
+- `runtime_math/redundancy_tuner.rs` — Adaptive redundancy tuner (e-process + evidence ledger) for RaptorQ overhead_percent control
 
 ### glibc-rs-core (Safe Implementations)
 - `string/` — mem*, str*, wide string functions

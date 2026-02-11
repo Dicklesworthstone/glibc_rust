@@ -1,1 +1,1 @@
-b960d74810c151de3fbf20bf63e7a0ffb989cc05a92e819be61ae6ef61ddde8b  kernel_snapshot_smoke.v1.json
+932ecab2d4be8e3a3c5561ab4cd9caf7df26a364ce645ebbbcaf6a852b0a9a92  kernel_snapshot_smoke.v1.json

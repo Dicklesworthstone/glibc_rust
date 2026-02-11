@@ -13,6 +13,8 @@
 pub mod asupersync_orchestrator;
 pub mod capture;
 pub mod diff;
+pub mod evidence_decode;
+pub mod evidence_decode_render;
 pub mod fixtures;
 pub mod healing_oracle;
 pub mod kernel_regression_report;

@@ -33,6 +33,9 @@ enum Command {
         /// Output report path (markdown).
         #[arg(long)]
         report: Option<PathBuf>,
+        /// Optional fixed timestamp string for deterministic report generation.
+        #[arg(long)]
+        timestamp: Option<String>,
     },
     /// Generate traceability matrix.
     Traceability {
@@ -48,6 +51,27 @@ enum Command {
         /// Runtime mode to test (strict or hardened).
         #[arg(long, default_value = "strict")]
         mode: String,
+    },
+    /// Decode exported evidence symbol records and emit an explainable proof report.
+    DecodeEvidence {
+        /// Input path containing concatenated 256-byte `EvidenceSymbolRecord` blobs.
+        #[arg(long)]
+        input: PathBuf,
+        /// Optional epoch filter (only decode this epoch id).
+        #[arg(long)]
+        epoch_id: Option<u64>,
+        /// Output format: `json` (default), `plain`, or `ftui` (requires `frankentui-ui`).
+        #[arg(long, default_value = "json")]
+        format: String,
+        /// Output file path (if omitted, prints to stdout).
+        #[arg(long)]
+        output: Option<PathBuf>,
+        /// Emit ANSI color/styling (only when `frankentui-ui` is enabled and `--format ftui`).
+        #[arg(long)]
+        ansi: bool,
+        /// Render width for the UI table (only when `frankentui-ui` is enabled and `--format ftui`).
+        #[arg(long, default_value_t = 140)]
+        width: u16,
     },
     /// Capture deterministic runtime_math kernel snapshots as a fixture.
     SnapshotKernel {
@@ -152,7 +176,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             std::fs::create_dir_all(&output)?;
             eprintln!("TODO: implement capture for {family}");
         }
-        Command::Verify { fixture, report } => {
+        Command::Verify {
+            fixture,
+            report,
+            timestamp,
+        } => {
             eprintln!("Verifying against fixtures in {}", fixture.display());
             let mut fixture_sets = Vec::new();
             let mut fixture_paths: Vec<PathBuf> = std::fs::read_dir(&fixture)?
@@ -172,7 +200,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
 
             #[cfg(feature = "asupersync-tooling")]
-            let (results, suite) = {
+            let (mut results, suite) = {
                 let run = glibc_rs_harness::asupersync_orchestrator::run_fixture_verification(
                     "fixture-verify",
                     &fixture_sets,
@@ -181,7 +209,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
 
             #[cfg(not(feature = "asupersync-tooling"))]
-            let results = {
+            let mut results = {
                 let strict_runner = glibc_rs_harness::TestRunner::new("fixture-verify", "strict");
                 let hardened_runner =
                     glibc_rs_harness::TestRunner::new("fixture-verify", "hardened");
@@ -194,11 +222,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 results
             };
 
+            // Stabilize report ordering for reproducible golden-output hashing.
+            results.sort_by(|a, b| {
+                a.case_name
+                    .cmp(&b.case_name)
+                    .then_with(|| a.spec_section.cmp(&b.spec_section))
+                    .then_with(|| a.expected.cmp(&b.expected))
+                    .then_with(|| a.actual.cmp(&b.actual))
+                    .then_with(|| a.passed.cmp(&b.passed))
+            });
+
             let summary = glibc_rs_harness::verify::VerificationSummary::from_results(results);
             let report_doc = glibc_rs_harness::ConformanceReport {
                 title: String::from("glibc_rust Conformance Report"),
                 mode: String::from("strict+hardened"),
-                timestamp: format!("{:?}", std::time::SystemTime::now()),
+                timestamp: timestamp
+                    .unwrap_or_else(|| format!("{:?}", std::time::SystemTime::now())),
                 summary,
             };
 
@@ -266,6 +305,49 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
             eprintln!("Membrane verification spec checks completed");
+        }
+        Command::DecodeEvidence {
+            input,
+            epoch_id,
+            format,
+            output,
+            ansi,
+            width,
+        } => {
+            let report = glibc_rs_harness::evidence_decode::decode_evidence_file(&input, epoch_id)?;
+
+            let out = match format.to_ascii_lowercase().as_str() {
+                "json" => serde_json::to_string_pretty(&report)?,
+                "plain" => glibc_rs_harness::evidence_decode_render::render_plain(&report),
+                "ftui" => {
+                    #[cfg(feature = "frankentui-ui")]
+                    {
+                        glibc_rs_harness::evidence_decode_render::render_ftui(&report, ansi, width)
+                    }
+
+                    #[cfg(not(feature = "frankentui-ui"))]
+                    {
+                        let _ = ansi;
+                        let _ = width;
+                        eprintln!("note: enable `frankentui-ui` feature for ftui rendering");
+                        glibc_rs_harness::evidence_decode_render::render_plain(&report)
+                    }
+                }
+                other => {
+                    return Err(
+                        format!("Unsupported format '{other}', expected json|plain|ftui").into(),
+                    );
+                }
+            };
+
+            if let Some(path) = output {
+                if let Some(parent) = path.parent() {
+                    std::fs::create_dir_all(parent)?;
+                }
+                std::fs::write(&path, out)?;
+            } else {
+                print!("{out}");
+            }
         }
         Command::SnapshotKernel {
             output,

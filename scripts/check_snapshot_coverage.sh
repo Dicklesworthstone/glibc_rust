@@ -82,6 +82,8 @@ declare -A SNAP_PREFIX=(
     [azuma_hoeffding]="azuma_"
     [renewal_theory]="renewal_"
     [lempel_ziv]="lz_"
+    [localization_chooser]="localization_"
+    [policy_table]="policy_"
     [spectral_gap]="spectral_gap_"
     [submodular_coverage]="submodular_"
     [bifurcation_detector]="bifurcation_"
@@ -92,6 +94,7 @@ declare -A SNAP_PREFIX=(
     [ornstein_uhlenbeck]="ou_"
     [hurst_exponent]="hurst_"
     [birkhoff_ergodic]="birkhoff_"
+    [redundancy_tuner]="redundancy_"
 )
 
 # Hot-path modules (lock-free access in decide())
