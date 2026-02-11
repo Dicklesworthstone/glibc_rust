@@ -67,12 +67,12 @@
     }
   },
   "current_assessment": {
-    "total_symbols": 227,
-    "interpose_ready": 227,
-    "replace_ready": 167,
+    "total_symbols": 230,
+    "interpose_ready": 230,
+    "replace_ready": 170,
     "replace_blocked": 60,
     "symbol_distribution": {
-      "Implemented": 84,
+      "Implemented": 87,
       "RawSyscall": 83,
       "GlibcCallThrough": 54,
       "Stub": 6
