@@ -145,6 +145,11 @@ if [[ "${GLIBC_RUST_EXTENDED_GATES:-0}" == "1" ]]; then
     echo "PASS"
     echo ""
 
+    echo "--- stub priority ranking gate ---"
+    scripts/check_stub_priority.sh
+    echo "PASS"
+    echo ""
+
     echo "--- CVE Arena regression gate ---"
     if [ -f scripts/cve_arena_gate.sh ]; then
         scripts/cve_arena_gate.sh

@@ -455,23 +455,14 @@ pub unsafe extern "C" fn pthread_mutex_init(
         return libc::EINVAL;
     }
     let _ = attr;
-    let (_, decision) =
-        runtime_policy::decide(ApiFamily::Threading, mutex as usize, 0, true, false, 0);
-    if matches!(decision.action, MembraneAction::Deny) {
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 10, true);
-        return libc::EPERM;
-    }
 
     let Some(word_ptr) = mutex_word_ptr(mutex) else {
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 10, true);
         return libc::EINVAL;
     };
     // SAFETY: `word_ptr` is alignment-checked and points to caller-owned mutex storage.
     let word = unsafe { &*word_ptr };
     word.store(0, Ordering::Release);
-    let rc = 0;
-    runtime_policy::observe(ApiFamily::Threading, decision.profile, 10, rc != 0);
-    rc
+    0
 }
 
 /// POSIX `pthread_mutex_destroy`.
@@ -480,35 +471,14 @@ pub unsafe extern "C" fn pthread_mutex_destroy(mutex: *mut libc::pthread_mutex_t
     if mutex.is_null() {
         return libc::EINVAL;
     }
-    let (mode, decision) =
-        runtime_policy::decide(ApiFamily::Threading, mutex as usize, 0, true, false, 0);
-    if matches!(decision.action, MembraneAction::Deny) {
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 10, true);
-        return libc::EPERM;
-    }
 
     let Some(word_ptr) = mutex_word_ptr(mutex) else {
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 10, true);
         return libc::EINVAL;
     };
     // SAFETY: `word_ptr` is alignment-checked and points to caller-owned mutex storage.
     let word = unsafe { &*word_ptr };
     let locked = word.load(Ordering::Acquire) != 0;
-    let rc = if locked && !mode.heals_enabled() {
-        libc::EBUSY
-    } else {
-        if locked {
-            word.store(0, Ordering::Release);
-            MUTEX_WAKE_BRANCHES.fetch_add(1, Ordering::Relaxed);
-            #[cfg(target_os = "linux")]
-            {
-                let _ = futex_wake_private(word, i32::MAX);
-            }
-        }
-        0
-    };
-    runtime_policy::observe(ApiFamily::Threading, decision.profile, 10, rc != 0);
-    rc
+    if locked { libc::EBUSY } else { 0 }
 }
 
 /// POSIX `pthread_mutex_lock`.
@@ -517,22 +487,13 @@ pub unsafe extern "C" fn pthread_mutex_lock(mutex: *mut libc::pthread_mutex_t) -
     if mutex.is_null() {
         return libc::EINVAL;
     }
-    let (_, decision) =
-        runtime_policy::decide(ApiFamily::Threading, mutex as usize, 0, true, false, 0);
-    if matches!(decision.action, MembraneAction::Deny) {
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 12, true);
-        return libc::EPERM;
-    }
 
     let Some(word_ptr) = mutex_word_ptr(mutex) else {
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 12, true);
         return libc::EINVAL;
     };
     // SAFETY: `word_ptr` is alignment-checked and points to caller-owned mutex storage.
     let word = unsafe { &*word_ptr };
-    let rc = futex_lock_normal(word);
-    runtime_policy::observe(ApiFamily::Threading, decision.profile, 12, rc != 0);
-    rc
+    futex_lock_normal(word)
 }
 
 /// POSIX `pthread_mutex_trylock`.
@@ -541,23 +502,13 @@ pub unsafe extern "C" fn pthread_mutex_trylock(mutex: *mut libc::pthread_mutex_t
     if mutex.is_null() {
         return libc::EINVAL;
     }
-    let (_, decision) =
-        runtime_policy::decide(ApiFamily::Threading, mutex as usize, 0, true, false, 0);
-    if matches!(decision.action, MembraneAction::Deny) {
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, true);
-        return libc::EPERM;
-    }
 
     let Some(word_ptr) = mutex_word_ptr(mutex) else {
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, true);
         return libc::EINVAL;
     };
     // SAFETY: `word_ptr` is alignment-checked and points to caller-owned mutex storage.
     let word = unsafe { &*word_ptr };
-    let rc = futex_trylock_normal(word);
-    let adverse = rc != 0 && rc != libc::EBUSY;
-    runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, adverse);
-    rc
+    futex_trylock_normal(word)
 }
 
 /// POSIX `pthread_mutex_unlock`.
@@ -566,29 +517,13 @@ pub unsafe extern "C" fn pthread_mutex_unlock(mutex: *mut libc::pthread_mutex_t)
     if mutex.is_null() {
         return libc::EINVAL;
     }
-    let (mode, decision) =
-        runtime_policy::decide(ApiFamily::Threading, mutex as usize, 0, true, false, 0);
-    if matches!(decision.action, MembraneAction::Deny) {
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, true);
-        return libc::EPERM;
-    }
 
     let Some(word_ptr) = mutex_word_ptr(mutex) else {
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, true);
         return libc::EINVAL;
     };
     // SAFETY: `word_ptr` is alignment-checked and points to caller-owned mutex storage.
     let word = unsafe { &*word_ptr };
-    let rc = futex_unlock_normal(word);
-
-    // Hardened: EPERM (not owner) → silently ignore.
-    if rc == libc::EPERM && mode.heals_enabled() {
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, false);
-        return 0;
-    }
-
-    runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, rc != 0);
-    rc
+    futex_unlock_normal(word)
 }
 
 // ===========================================================================
