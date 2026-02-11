@@ -1,0 +1,233 @@
+{
+  "schema_version": 1,
+  "bead": "bd-182",
+  "description": "Anytime-valid monitor standard: codifies the e-process alarming policy, alpha-wealth budget contracts, and false-alarm control guarantees for the runtime_math monitor ensemble. Ensures alerting remains valid under optional stopping.",
+  "eprocess_policy": {
+    "description": "Per-API-family e-process monitor using likelihood-ratio statistics. Tracks adverse outcomes against a null adverse-rate budget, producing warning/alarm states consumed by the decision controller.",
+    "implementation": "crates/glibc-rs-membrane/src/runtime_math/eprocess.rs",
+    "parameters": {
+      "null_budget_p0": {
+        "value": 0.02,
+        "description": "Expected adverse rate under the null hypothesis (2%).",
+        "rationale": "Membrane should produce < 2% adverse outcomes under normal workloads."
+      },
+      "alternative_q1": {
+        "value": 0.20,
+        "description": "Adverse rate under the alternative hypothesis (20%).",
+        "rationale": "Elevated regime where remediation is needed."
+      },
+      "warmup_calls": {
+        "value": 64,
+        "description": "Minimum observations before leaving Calibrating state.",
+        "rationale": "Prevents premature alarms on startup transients."
+      },
+      "warning_threshold_e": {
+        "value": 100.0,
+        "description": "E-value threshold for Warning state.",
+        "rationale": "Moderate evidence of elevated adverse rate."
+      },
+      "alarm_threshold_e": {
+        "value": 10000.0,
+        "description": "E-value threshold for Alarm state.",
+        "rationale": "Strong evidence of elevated adverse rate; triggers escalation."
+      }
+    },
+    "states": [
+      {"state": "Calibrating", "description": "Insufficient data (calls < warmup_calls)."},
+      {"state": "Normal", "description": "E-value below warning threshold; operating within budget."},
+      {"state": "Warning", "description": "E-value >= 100; evidence of elevated adverse rate accumulating."},
+      {"state": "Alarm", "description": "E-value >= 10,000; strong evidence of persistent adverse outcomes."}
+    ],
+    "mathematical_properties": {
+      "anytime_validity": "E-process is a non-negative supermartingale under H0; valid at any stopping time.",
+      "type_i_control": "P(e-value >= 1/alpha at any stopping time | H0) <= alpha.",
+      "likelihood_ratio": "log(e) += log(q1/p0) on adverse, log((1-q1)/(1-p0)) on clean.",
+      "fixed_point_scale": 1000000,
+      "log_e_floor": -20.0,
+      "log_e_cap": 50.0
+    },
+    "api_families_monitored": 20,
+    "api_family_list": [
+      "PointerValidation", "Allocator", "StringMemory", "Stdio", "Threading",
+      "Resolver", "MathFenv", "Loader", "Stdlib", "Ctype",
+      "Time", "Signal", "IoFd", "Socket", "Locale",
+      "Termios", "Inet", "Process", "VirtualMemory", "Poll"
+    ]
+  },
+  "alpha_investing_policy": {
+    "description": "Alpha-Investing FDR controller (Foster & Stine 2008). Controls compound false discovery rate across the monitor ensemble by maintaining a wealth budget that governs alarm acceptance aggressiveness.",
+    "implementation": "crates/glibc-rs-membrane/src/runtime_math/alpha_investing.rs",
+    "parameters": {
+      "initial_wealth_milli": {
+        "value": 500,
+        "description": "Initial alarm budget in milli-units.",
+        "rationale": "Affords ~50 false alarms before exhaustion at 5% spend fraction."
+      },
+      "spend_fraction_milli": {
+        "value": 50,
+        "description": "Fraction of wealth spent per alarm test (50/1000 = 5%).",
+        "rationale": "Conservative spend rate ensures long-lived alarm budget."
+      },
+      "reward_milli": {
+        "value": 10,
+        "description": "Wealth reward for accepting a true discovery.",
+        "rationale": "Enables wealth recovery; mFDR <= W(0)/reward."
+      },
+      "min_spend_milli": {
+        "value": 1,
+        "description": "Floor on per-test spend to prevent zero-spend when wealth is very low."
+      },
+      "strong_evidence_severity": {
+        "value": 3,
+        "description": "Severity level required for strong evidence (accept alarm)."
+      },
+      "depleted_threshold_milli": {
+        "value": 10,
+        "description": "Wealth below which all alarms are suppressed (conservative mode)."
+      },
+      "generous_threshold_milli": {
+        "value": 300,
+        "description": "Wealth above which alarm acceptance is most permissive."
+      },
+      "warmup": {
+        "value": 64,
+        "description": "Observations before leaving Calibrating state."
+      },
+      "cadence": {
+        "value": 8,
+        "description": "Only process alarms every N observations to reduce overhead."
+      }
+    },
+    "states": [
+      {"state": "Calibrating", "description": "Insufficient data."},
+      {"state": "Normal", "description": "Wealth healthy; standard FDR control."},
+      {"state": "Generous", "description": "Wealth >= 300 milli; permissive alarm acceptance."},
+      {"state": "Depleted", "description": "Wealth <= 10 milli; all alarms suppressed."}
+    ],
+    "fdr_guarantee": {
+      "description": "Under the null, expected number of false discoveries <= W(0)/reward = 50.",
+      "formula": "E[false_discoveries] <= initial_wealth_milli / reward_milli",
+      "bound": 50,
+      "note": "mFDR (modified false discovery rate) controlled anytime."
+    },
+    "alarm_acceptance_logic": {
+      "strong_evidence": "severity >= 3 AND evidence > 1/alpha(t) → accept, deduct spend, add reward.",
+      "weak_evidence": "severity < 3 → reject, deduct spend only.",
+      "depleted": "All alarms suppressed regardless of evidence."
+    },
+    "base_controllers_tracked": 25
+  },
+  "alert_budget_contracts": {
+    "description": "Contracts governing how the alert budget is managed across the monitor ensemble. These ensure that false-alarm control is maintained even under optional stopping.",
+    "contracts": [
+      {
+        "id": "ABC-1",
+        "name": "Wealth non-negativity",
+        "invariant": "W(t) >= 0 for all t.",
+        "enforcement": "Saturating arithmetic; spend clamped to available wealth."
+      },
+      {
+        "id": "ABC-2",
+        "name": "Wealth bounded above",
+        "invariant": "W(t) <= W(0) + cumulative_rewards.",
+        "enforcement": "Rewards only added on accepted alarms."
+      },
+      {
+        "id": "ABC-3",
+        "name": "Spend fraction bound",
+        "invariant": "alpha(t) <= W(t-1) * spend_fraction.",
+        "enforcement": "Computed per-step; cannot exceed fraction of current wealth."
+      },
+      {
+        "id": "ABC-4",
+        "name": "Conservative on exhaustion",
+        "invariant": "When W(t) <= depleted_threshold, suppress all alarms.",
+        "enforcement": "State machine transitions to Depleted; no false alarms possible."
+      },
+      {
+        "id": "ABC-5",
+        "name": "Anytime validity",
+        "invariant": "FDR guarantee holds at any stopping time, not just predetermined sample sizes.",
+        "enforcement": "E-process supermartingale property + alpha-investing sequential control."
+      },
+      {
+        "id": "ABC-6",
+        "name": "Lock-free hot path",
+        "invariant": "No locks in observe() path; all updates via atomic operations.",
+        "enforcement": "AtomicU64/AtomicI64 with Relaxed ordering; CAS loops for conflict resolution."
+      }
+    ]
+  },
+  "companion_monitors": {
+    "description": "Production monitor modules that integrate with the e-process + alpha-investing framework.",
+    "modules": [
+      {"module": "eprocess", "role": "Primary anytime-valid drift detector per API family."},
+      {"module": "alpha_investing", "role": "FDR controller for compound alarm acceptance."},
+      {"module": "changepoint", "role": "Bayesian online change-point detection (Adams & MacKay 2007)."},
+      {"module": "cvar", "role": "Distributionally-robust CVaR tail controller for latency."},
+      {"module": "azuma_hoeffding", "role": "Martingale concentration monitor for noise bounds."},
+      {"module": "pareto", "role": "Latency-risk Pareto controller with online regret."},
+      {"module": "sobol", "role": "Low-discrepancy probe scheduling for validation coverage."},
+      {"module": "covering_array", "role": "t-wise interaction coverage for conformance scheduling."},
+      {"module": "submodular_coverage", "role": "Submodular validation stage coverage."},
+      {"module": "dispersion_index", "role": "Variance-to-mean ratio monitoring."},
+      {"module": "borel_cantelli", "role": "Recurrence monitor (transient vs recurrent)."},
+      {"module": "doob_decomposition", "role": "Drift/noise separation."},
+      {"module": "renewal_theory", "role": "Inter-arrival time monitoring for recovery tracking."}
+    ],
+    "total_production_monitors": 13,
+    "governance_ref": "tests/conformance/math_governance.json"
+  },
+  "false_alarm_calibration": {
+    "description": "Empirical calibration targets and verification methodology for false-alarm control.",
+    "targets": {
+      "per_family_type_i_rate": {
+        "target_alpha": 0.01,
+        "description": "Per-family false alarm rate under null traffic.",
+        "calibration_method": "Run 10,000 clean observations per family; count alarm triggers."
+      },
+      "ensemble_mfdr": {
+        "target": 0.05,
+        "description": "Modified false discovery rate across all families.",
+        "calibration_method": "Run all 20 families with null traffic; measure E[false_discoveries] / max(1, total_discoveries)."
+      },
+      "optional_stopping_validity": {
+        "description": "FDR guarantee must hold when checked at arbitrary stopping times.",
+        "test_points": [100, 250, 500, 1000, 2000, 5000],
+        "calibration_method": "Check alarm counts at each test point during null-traffic run."
+      }
+    },
+    "empirical_results": {
+      "status": "calibrated_in_unit_tests",
+      "note": "Unit tests in eprocess.rs and alpha_investing.rs verify type-I control and wealth invariants. Full empirical calibration across production workloads is pending (waiver under bd-kan)."
+    }
+  },
+  "diagnostics_integration": {
+    "description": "How monitor states integrate with the crash bundle and structured logging pipeline.",
+    "snapshot_fields_exported": [
+      {"field": "anytime_max_e_value", "source": "eprocess", "description": "Maximum e-process value across families."},
+      {"field": "anytime_alarmed_families", "source": "eprocess", "description": "Families in alarm state."},
+      {"field": "alpha_investing_wealth_milli", "source": "alpha_investing", "description": "Current FDR controller wealth."},
+      {"field": "alpha_investing_empirical_fdr", "source": "alpha_investing", "description": "Empirical false discovery rate."},
+      {"field": "cvar_max_robust_ns", "source": "cvar", "description": "Maximum CVaR latency estimate."},
+      {"field": "cvar_alarmed_families", "source": "cvar", "description": "Families in CVaR alarm."},
+      {"field": "changepoint_count", "source": "changepoint", "description": "Bayesian change-point detections."},
+      {"field": "spectral_phase_transition", "source": "spectral_monitor", "description": "Phase transition active."},
+      {"field": "spectral_edge_ratio", "source": "spectral_monitor", "description": "Eigenvalue edge ratio."}
+    ],
+    "crash_bundle_ref": "tests/conformance/crash_bundle_spec.json",
+    "log_schema_ref": "tests/conformance/log_schema.json",
+    "evidence_system_ref": "crates/glibc-rs-membrane/src/runtime_math/evidence.rs"
+  },
+  "summary": {
+    "eprocess_parameters": 5,
+    "eprocess_states": 4,
+    "alpha_investing_parameters": 9,
+    "alpha_investing_states": 4,
+    "alert_budget_contracts": 6,
+    "companion_monitors": 13,
+    "api_families_monitored": 20,
+    "fdr_bound": 50,
+    "calibration_targets": 3
+  }
+}

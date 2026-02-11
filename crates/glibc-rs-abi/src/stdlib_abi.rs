@@ -1,6 +1,7 @@
 //! ABI stubs for stdlib functions.
 //!
 //! Implements numeric conversion functions (`atoi`, `atol`, `strtol`, `strtoul`),
+//! environment variables (`getenv`, `setenv`, `unsetenv`),
 //! process control (`exit`, `atexit`), and sorting/searching (`qsort`, `bsearch`)
 //! with membrane validation.
 
@@ -10,6 +11,12 @@ use std::ptr;
 use crate::malloc_abi::known_remaining;
 use crate::runtime_policy;
 use glibc_rs_membrane::runtime_math::{ApiFamily, MembraneAction};
+
+#[inline]
+unsafe fn set_abi_errno(val: c_int) {
+    let p = unsafe { super::errno_abi::__errno_location() };
+    unsafe { *p = val };
+}
 
 // Helper: Check if repair is enabled for this decision
 #[inline]
@@ -410,4 +417,194 @@ pub unsafe extern "C" fn bsearch(
         Some(s) => s.as_ptr() as *mut c_void,
         None => ptr::null_mut(),
     }
+}
+
+// ---------------------------------------------------------------------------
+// getenv
+// ---------------------------------------------------------------------------
+
+/// POSIX `getenv` — retrieve an environment variable value.
+///
+/// Returns a pointer to the value string, or null if the variable is not set.
+/// The returned pointer belongs to the environment; callers must not free it.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn getenv(name: *const c_char) -> *mut c_char {
+    if name.is_null() {
+        return ptr::null_mut();
+    }
+
+    let (mode, decision) = runtime_policy::decide(
+        ApiFamily::Stdlib,
+        name as usize,
+        0,
+        false,
+        known_remaining(name as usize).is_none(),
+        0,
+    );
+    if matches!(decision.action, MembraneAction::Deny) {
+        runtime_policy::observe(ApiFamily::Stdlib, decision.profile, 5, true);
+        return ptr::null_mut();
+    }
+
+    let bound = if repair_enabled(mode.heals_enabled(), decision.action) {
+        known_remaining(name as usize)
+    } else {
+        None
+    };
+
+    let (len, terminated) = unsafe { scan_c_string(name, bound) };
+    if !terminated && mode.heals_enabled() {
+        // Unterminated name in hardened mode — refuse.
+        runtime_policy::observe(ApiFamily::Stdlib, decision.profile, 5, true);
+        return ptr::null_mut();
+    }
+
+    let name_slice = unsafe { std::slice::from_raw_parts(name as *const u8, len) };
+    if !glibc_rs_core::stdlib::valid_env_name(name_slice) {
+        runtime_policy::observe(ApiFamily::Stdlib, decision.profile, 5, true);
+        return ptr::null_mut();
+    }
+
+    // Delegate to system libc.
+    let result = unsafe { libc::getenv(name) };
+    let adverse = result.is_null();
+    runtime_policy::observe(
+        ApiFamily::Stdlib,
+        decision.profile,
+        runtime_policy::scaled_cost(8, len),
+        adverse,
+    );
+    result
+}
+
+// ---------------------------------------------------------------------------
+// setenv
+// ---------------------------------------------------------------------------
+
+/// POSIX `setenv` — set an environment variable.
+///
+/// If `overwrite` is zero, an existing variable is not changed.
+/// Returns 0 on success, -1 on error (with errno set).
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn setenv(
+    name: *const c_char,
+    value: *const c_char,
+    overwrite: c_int,
+) -> c_int {
+    if name.is_null() {
+        unsafe { set_abi_errno(libc::EINVAL) };
+        return -1;
+    }
+
+    let (mode, decision) = runtime_policy::decide(
+        ApiFamily::Stdlib,
+        name as usize,
+        0,
+        true, // write operation (modifying environment)
+        known_remaining(name as usize).is_none(),
+        0,
+    );
+    if matches!(decision.action, MembraneAction::Deny) {
+        runtime_policy::observe(ApiFamily::Stdlib, decision.profile, 5, true);
+        unsafe { set_abi_errno(libc::EPERM) };
+        return -1;
+    }
+
+    let bound = if repair_enabled(mode.heals_enabled(), decision.action) {
+        known_remaining(name as usize)
+    } else {
+        None
+    };
+
+    let (name_len, name_terminated) = unsafe { scan_c_string(name, bound) };
+    if !name_terminated && mode.heals_enabled() {
+        runtime_policy::observe(ApiFamily::Stdlib, decision.profile, 5, true);
+        unsafe { set_abi_errno(libc::EINVAL) };
+        return -1;
+    }
+
+    let name_slice = unsafe { std::slice::from_raw_parts(name as *const u8, name_len) };
+    if !glibc_rs_core::stdlib::valid_env_name(name_slice) {
+        runtime_policy::observe(ApiFamily::Stdlib, decision.profile, 5, true);
+        unsafe { set_abi_errno(libc::EINVAL) };
+        return -1;
+    }
+
+    // Validate value pointer.
+    if value.is_null() {
+        unsafe { set_abi_errno(libc::EINVAL) };
+        runtime_policy::observe(ApiFamily::Stdlib, decision.profile, 5, true);
+        return -1;
+    }
+
+    // Delegate to system libc.
+    let rc = unsafe { libc::setenv(name, value, overwrite) };
+    let adverse = rc != 0;
+    runtime_policy::observe(
+        ApiFamily::Stdlib,
+        decision.profile,
+        runtime_policy::scaled_cost(15, name_len),
+        adverse,
+    );
+    rc
+}
+
+// ---------------------------------------------------------------------------
+// unsetenv
+// ---------------------------------------------------------------------------
+
+/// POSIX `unsetenv` — remove an environment variable.
+///
+/// Returns 0 on success, -1 on error (with errno set).
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn unsetenv(name: *const c_char) -> c_int {
+    if name.is_null() {
+        unsafe { set_abi_errno(libc::EINVAL) };
+        return -1;
+    }
+
+    let (mode, decision) = runtime_policy::decide(
+        ApiFamily::Stdlib,
+        name as usize,
+        0,
+        true, // write operation (modifying environment)
+        known_remaining(name as usize).is_none(),
+        0,
+    );
+    if matches!(decision.action, MembraneAction::Deny) {
+        runtime_policy::observe(ApiFamily::Stdlib, decision.profile, 5, true);
+        unsafe { set_abi_errno(libc::EPERM) };
+        return -1;
+    }
+
+    let bound = if repair_enabled(mode.heals_enabled(), decision.action) {
+        known_remaining(name as usize)
+    } else {
+        None
+    };
+
+    let (name_len, name_terminated) = unsafe { scan_c_string(name, bound) };
+    if !name_terminated && mode.heals_enabled() {
+        runtime_policy::observe(ApiFamily::Stdlib, decision.profile, 5, true);
+        unsafe { set_abi_errno(libc::EINVAL) };
+        return -1;
+    }
+
+    let name_slice = unsafe { std::slice::from_raw_parts(name as *const u8, name_len) };
+    if !glibc_rs_core::stdlib::valid_env_name(name_slice) {
+        runtime_policy::observe(ApiFamily::Stdlib, decision.profile, 5, true);
+        unsafe { set_abi_errno(libc::EINVAL) };
+        return -1;
+    }
+
+    // Delegate to system libc.
+    let rc = unsafe { libc::unsetenv(name) };
+    let adverse = rc != 0;
+    runtime_policy::observe(
+        ApiFamily::Stdlib,
+        decision.profile,
+        runtime_policy::scaled_cost(10, name_len),
+        adverse,
+    );
+    rc
 }

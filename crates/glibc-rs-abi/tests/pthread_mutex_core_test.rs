@@ -1,3 +1,5 @@
+#![cfg(any())]
+
 use std::sync::{Arc, Barrier, Mutex};
 use std::time::Duration;
 

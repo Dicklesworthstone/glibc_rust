@@ -145,8 +145,38 @@ if [[ "${GLIBC_RUST_EXTENDED_GATES:-0}" == "1" ]]; then
     echo "PASS"
     echo ""
 
+    echo "--- C fixture suite gate ---"
+    scripts/check_c_fixture_suite.sh
+    echo "PASS"
+    echo ""
+
     echo "--- stub priority ranking gate ---"
     scripts/check_stub_priority.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- math value proof gate ---"
+    scripts/check_math_value_proof.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- changepoint drift policy gate ---"
+    scripts/check_changepoint_drift.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- anytime-valid monitor gate ---"
+    scripts/check_anytime_valid_monitor.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- perf baseline suite gate ---"
+    scripts/check_perf_baseline.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- crash bundle gate ---"
+    scripts/check_crash_bundle.sh
     echo "PASS"
     echo ""
 

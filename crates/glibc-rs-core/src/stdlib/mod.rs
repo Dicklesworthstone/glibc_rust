@@ -10,7 +10,7 @@ pub mod random;
 pub mod sort;
 
 pub use conversion::{atoi, atol, strtol, strtoul};
-pub use env::{getenv, setenv};
+pub use env::{entry_matches, entry_value, valid_env_name, valid_env_value};
 pub use exit::{atexit, exit};
 pub use random::{rand, srand};
 pub use sort::{bsearch, qsort};

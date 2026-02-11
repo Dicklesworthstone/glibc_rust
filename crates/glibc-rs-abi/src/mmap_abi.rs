@@ -5,9 +5,9 @@
 //! under `ApiFamily::VirtualMemory`.
 
 use std::ffi::{c_int, c_void};
-use std::os::raw::c_long;
 
 use glibc_rs_core::mmap;
+use glibc_rs_core::syscall;
 use glibc_rs_membrane::heal::{HealingAction, global_healing_policy};
 use glibc_rs_membrane::runtime_math::{ApiFamily, MembraneAction};
 
@@ -80,29 +80,38 @@ pub unsafe extern "C" fn mmap(
         (prot, flags)
     };
 
-    let rc = unsafe {
-        libc::syscall(
-            libc::SYS_mmap as c_long,
-            addr,
+    let result = unsafe {
+        syscall::sys_mmap(
+            addr as *mut u8,
             length,
             actual_prot,
             actual_flags,
             fd,
             offset,
-        ) as *mut c_void
+        )
     };
 
-    let adverse = rc as usize == mmap::MAP_FAILED;
-    if adverse {
-        unsafe { set_abi_errno(libc::ENOMEM) };
+    match result {
+        Ok(ptr) => {
+            runtime_policy::observe(
+                ApiFamily::VirtualMemory,
+                decision.profile,
+                runtime_policy::scaled_cost(40, length),
+                false,
+            );
+            ptr as *mut c_void
+        }
+        Err(e) => {
+            unsafe { set_abi_errno(e) };
+            runtime_policy::observe(
+                ApiFamily::VirtualMemory,
+                decision.profile,
+                runtime_policy::scaled_cost(40, length),
+                true,
+            );
+            mmap::MAP_FAILED as *mut c_void
+        }
     }
-    runtime_policy::observe(
-        ApiFamily::VirtualMemory,
-        decision.profile,
-        runtime_policy::scaled_cost(40, length),
-        adverse,
-    );
-    rc
 }
 
 // ---------------------------------------------------------------------------
@@ -126,12 +135,14 @@ pub unsafe extern "C" fn munmap(addr: *mut c_void, length: usize) -> c_int {
         return -1;
     }
 
-    let rc = unsafe { libc::syscall(libc::SYS_munmap as c_long, addr, length) as c_int };
-    let adverse = rc < 0;
-    if adverse {
-        unsafe { set_abi_errno(libc::EINVAL) };
-    }
-    runtime_policy::observe(ApiFamily::VirtualMemory, decision.profile, 20, adverse);
+    let rc = match unsafe { syscall::sys_munmap(addr as *mut u8, length) } {
+        Ok(()) => 0,
+        Err(e) => {
+            unsafe { set_abi_errno(e) };
+            -1
+        }
+    };
+    runtime_policy::observe(ApiFamily::VirtualMemory, decision.profile, 20, rc < 0);
     rc
 }
 
@@ -167,13 +178,14 @@ pub unsafe extern "C" fn mprotect(addr: *mut c_void, length: usize, prot: c_int)
         prot
     };
 
-    let rc =
-        unsafe { libc::syscall(libc::SYS_mprotect as c_long, addr, length, actual_prot) as c_int };
-    let adverse = rc < 0;
-    if adverse {
-        unsafe { set_abi_errno(libc::EINVAL) };
-    }
-    runtime_policy::observe(ApiFamily::VirtualMemory, decision.profile, 20, adverse);
+    let rc = match unsafe { syscall::sys_mprotect(addr as *mut u8, length, actual_prot) } {
+        Ok(()) => 0,
+        Err(e) => {
+            unsafe { set_abi_errno(e) };
+            -1
+        }
+    };
+    runtime_policy::observe(ApiFamily::VirtualMemory, decision.profile, 20, rc < 0);
     rc
 }
 
@@ -209,13 +221,14 @@ pub unsafe extern "C" fn msync(addr: *mut c_void, length: usize, flags: c_int) -
         flags
     };
 
-    let rc =
-        unsafe { libc::syscall(libc::SYS_msync as c_long, addr, length, actual_flags) as c_int };
-    let adverse = rc < 0;
-    if adverse {
-        unsafe { set_abi_errno(libc::EINVAL) };
-    }
-    runtime_policy::observe(ApiFamily::VirtualMemory, decision.profile, 25, adverse);
+    let rc = match unsafe { syscall::sys_msync(addr as *mut u8, length, actual_flags) } {
+        Ok(()) => 0,
+        Err(e) => {
+            unsafe { set_abi_errno(e) };
+            -1
+        }
+    };
+    runtime_policy::observe(ApiFamily::VirtualMemory, decision.profile, 25, rc < 0);
     rc
 }
 
@@ -251,12 +264,13 @@ pub unsafe extern "C" fn madvise(addr: *mut c_void, length: usize, advice: c_int
         advice
     };
 
-    let rc =
-        unsafe { libc::syscall(libc::SYS_madvise as c_long, addr, length, actual_advice) as c_int };
-    let adverse = rc < 0;
-    if adverse {
-        unsafe { set_abi_errno(libc::EINVAL) };
-    }
-    runtime_policy::observe(ApiFamily::VirtualMemory, decision.profile, 15, adverse);
+    let rc = match unsafe { syscall::sys_madvise(addr as *mut u8, length, actual_advice) } {
+        Ok(()) => 0,
+        Err(e) => {
+            unsafe { set_abi_errno(e) };
+            -1
+        }
+    };
+    runtime_policy::observe(ApiFamily::VirtualMemory, decision.profile, 15, rc < 0);
     rc
 }

@@ -16,6 +16,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SPEC="${ROOT}/tests/conformance/packaging_spec.json"
 MATRIX="${ROOT}/support_matrix.json"
+README="${ROOT}/README.md"
 
 failures=0
 
@@ -36,6 +37,7 @@ fi
 
 valid_check=$(python3 -c "
 import json
+import re
 try:
     with open('${SPEC}') as f:
         spec = json.load(f)
@@ -124,9 +126,60 @@ fi
 echo ""
 
 # ---------------------------------------------------------------------------
-# Check 3: Assessment counts match support_matrix.json
+# Check 3: support_matrix artifact applicability matches packaging contracts
 # ---------------------------------------------------------------------------
-echo "--- Check 3: Assessment counts ---"
+echo "--- Check 3: support_matrix artifact applicability ---"
+
+applicability_check=$(python3 -c "
+import json
+
+with open('${SPEC}') as f:
+    spec = json.load(f)
+with open('${MATRIX}') as f:
+    matrix = json.load(f)
+
+errors = []
+tax = matrix.get('taxonomy', {})
+app = tax.get('artifact_applicability')
+
+if not isinstance(app, dict):
+    errors.append('support_matrix.taxonomy.artifact_applicability missing or invalid')
+else:
+    interpose_expected = set(spec.get('artifacts', {}).get('interpose', {}).get('allowed_statuses', []))
+    replace_expected = set(spec.get('artifacts', {}).get('replace', {}).get('allowed_statuses', []))
+    interpose_decl = set(app.get('Interpose', []))
+    replace_decl = set(app.get('Replace', []))
+
+    if interpose_decl != interpose_expected:
+        errors.append(
+            f'Interpose applicability mismatch: matrix={sorted(interpose_decl)} spec={sorted(interpose_expected)}'
+        )
+    if replace_decl != replace_expected:
+        errors.append(
+            f'Replace applicability mismatch: matrix={sorted(replace_decl)} spec={sorted(replace_expected)}'
+        )
+    if not app.get('rule'):
+        errors.append('artifact_applicability.rule is missing')
+
+print(f'APPLICABILITY_ERRORS={len(errors)}')
+for e in errors:
+    print(f'  {e}')
+")
+
+app_errs=$(echo "${applicability_check}" | grep '^APPLICABILITY_ERRORS=' | cut -d= -f2)
+if [[ "${app_errs}" -gt 0 ]]; then
+    echo "FAIL: ${app_errs} artifact applicability error(s):"
+    echo "${applicability_check}" | grep '  '
+    failures=$((failures + 1))
+else
+    echo "PASS: support_matrix artifact applicability aligns with packaging spec"
+fi
+echo ""
+
+# ---------------------------------------------------------------------------
+# Check 4: Assessment counts match support_matrix.json
+# ---------------------------------------------------------------------------
+echo "--- Check 4: Assessment counts ---"
 
 assess_check=$(python3 -c "
 import json
@@ -200,9 +253,9 @@ echo "${assess_check}" | grep -E '^(Interpose|Replace)' || true
 echo ""
 
 # ---------------------------------------------------------------------------
-# Check 4: Replace blockers match actual CallThrough+Stub
+# Check 5: Replace blockers match actual CallThrough+Stub
 # ---------------------------------------------------------------------------
-echo "--- Check 4: Replace blockers ---"
+echo "--- Check 5: Replace blockers ---"
 
 blocker_check=$(python3 -c "
 import json
@@ -275,16 +328,95 @@ fi
 echo ""
 
 # ---------------------------------------------------------------------------
-# Check 5: Interpose artifact build command verification
+# Check 6: Interpose artifact build command verification
 # ---------------------------------------------------------------------------
-echo "--- Check 5: Build artifact existence ---"
+echo "--- Check 6: Build artifact existence ---"
 
-ARTIFACT="${ROOT}/target/release/libglibc_rs_abi.so"
+target_dir="${CARGO_TARGET_DIR:-${ROOT}/target}"
+interpose_output="$(python3 -c "
+import json
+with open('${SPEC}') as f:
+    spec = json.load(f)
+print(spec['artifacts']['interpose']['output_path'])
+")"
+interpose_rel="${interpose_output#target/}"
+ARTIFACT="${target_dir%/}/${interpose_rel}"
 if [[ -f "${ARTIFACT}" ]]; then
     size=$(stat -c%s "${ARTIFACT}" 2>/dev/null || stat -f%z "${ARTIFACT}" 2>/dev/null || echo "?")
     echo "PASS: ${ARTIFACT} exists (${size} bytes)"
 else
     echo "WARN: ${ARTIFACT} not found (run 'cargo build -p glibc-rs-abi --release' to produce it)"
+fi
+echo ""
+
+# ---------------------------------------------------------------------------
+# Check 7: README command alignment with packaging spec
+# ---------------------------------------------------------------------------
+echo "--- Check 7: README alignment ---"
+
+if [[ ! -f "${README}" ]]; then
+    echo "FAIL: README.md not found"
+    failures=$((failures + 1))
+else
+    readme_check=$(python3 -c "
+import json
+import re
+
+with open('${SPEC}') as f:
+    spec = json.load(f)
+with open('${README}', encoding='utf-8') as f:
+    readme = f.read()
+
+errors = []
+interpose = spec.get('artifacts', {}).get('interpose', {})
+replace = spec.get('artifacts', {}).get('replace', {})
+
+required_literals = [
+    interpose.get('build_command', ''),
+    interpose.get('output_path', ''),
+    interpose.get('artifact_name', ''),
+    replace.get('artifact_name', ''),
+]
+
+for lit in required_literals:
+    if lit and lit not in readme:
+        errors.append(f'Missing README literal: {lit}')
+
+interpose_deploy = interpose.get('deployment', '')
+if interpose_deploy.startswith('LD_PRELOAD='):
+    preload_prefix = interpose_deploy.split(' ', 1)[0]
+    if preload_prefix not in readme:
+        errors.append(f'Missing README deployment prefix: {preload_prefix}')
+
+hardened_deploy = interpose.get('deployment_modes', {}).get('hardened', '')
+if hardened_deploy.startswith('GLIBC_RUST_MODE=hardened'):
+    hardened_prefix = hardened_deploy.split(' ', 1)[0]
+    if hardened_prefix not in readme:
+        errors.append(f'Missing README hardened prefix: {hardened_prefix}')
+
+for status_token in ['Implemented', 'RawSyscall', 'GlibcCallThrough', 'Stub']:
+    if status_token not in readme:
+        errors.append(f'Missing README status token for applicability guidance: {status_token}')
+
+if 'symbols apply to both artifacts.' not in readme:
+    errors.append('Missing README applicability phrase for dual-artifact symbols')
+
+if not re.search(r'symbols apply to (\x60)?Interpose(\x60)? only\.', readme, flags=re.IGNORECASE):
+    errors.append('Missing README applicability phrase for interpose-only symbols')
+
+print(f'README_ERRORS={len(errors)}')
+for e in errors:
+    print(f'  {e}')
+")
+
+    readme_errs=$(echo "${readme_check}" | grep '^README_ERRORS=' | cut -d= -f2)
+    if [[ "${readme_errs}" -gt 0 ]]; then
+        echo "FAIL: ${readme_errs} README alignment error(s):"
+        echo "${readme_check}" | grep '  '
+        failures=$((failures + 1))
+    else
+        echo "PASS: README commands and artifact references align with packaging spec"
+    fi
 fi
 echo ""
 

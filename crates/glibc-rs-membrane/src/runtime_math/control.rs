@@ -177,4 +177,29 @@ mod tests {
             assert!(hardened.repair_trigger_ppm <= strict.repair_trigger_ppm);
         }
     }
+
+    #[test]
+    fn higher_adverse_pressure_tightens_thresholds() {
+        let calm = PrimalDualController::new();
+        let noisy = PrimalDualController::new();
+
+        for i in 0..1024_u64 {
+            calm.observe(60, false);
+            noisy.observe(60, i % 3 == 0);
+        }
+
+        let calm_strict = calm.limits(SafetyLevel::Strict);
+        let noisy_strict = noisy.limits(SafetyLevel::Strict);
+        let calm_hardened = calm.limits(SafetyLevel::Hardened);
+        let noisy_hardened = noisy.limits(SafetyLevel::Hardened);
+
+        assert!(
+            noisy_strict.full_validation_trigger_ppm <= calm_strict.full_validation_trigger_ppm
+        );
+        assert!(noisy_strict.repair_trigger_ppm <= calm_strict.repair_trigger_ppm);
+        assert!(
+            noisy_hardened.full_validation_trigger_ppm <= calm_hardened.full_validation_trigger_ppm
+        );
+        assert!(noisy_hardened.repair_trigger_ppm <= calm_hardened.repair_trigger_ppm);
+    }
 }

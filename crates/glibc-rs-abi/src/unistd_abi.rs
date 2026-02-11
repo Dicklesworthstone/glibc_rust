@@ -5,9 +5,9 @@
 //! link operations (link/symlink/readlink/unlink/rmdir), and sync (fsync/fdatasync).
 
 use std::ffi::{c_char, c_int, c_void};
-use std::os::raw::c_long;
 
 use glibc_rs_core::errno;
+use glibc_rs_core::syscall;
 use glibc_rs_core::unistd as unistd_core;
 use glibc_rs_membrane::heal::{HealingAction, global_healing_policy};
 use glibc_rs_membrane::runtime_math::{ApiFamily, MembraneAction};
@@ -41,12 +41,24 @@ fn maybe_clamp_io_len(requested: usize, addr: usize, enable_repair: bool) -> (us
 
 pub(crate) unsafe fn sys_read_fd(fd: c_int, buf: *mut c_void, count: usize) -> libc::ssize_t {
     // SAFETY: caller enforces syscall argument validity.
-    unsafe { libc::syscall(libc::SYS_read as c_long, fd, buf, count) as libc::ssize_t }
+    match unsafe { syscall::sys_read(fd, buf as *mut u8, count) } {
+        Ok(n) => n as libc::ssize_t,
+        Err(e) => {
+            unsafe { set_abi_errno(e) };
+            -1
+        }
+    }
 }
 
 pub(crate) unsafe fn sys_write_fd(fd: c_int, buf: *const c_void, count: usize) -> libc::ssize_t {
     // SAFETY: caller enforces syscall argument validity.
-    unsafe { libc::syscall(libc::SYS_write as c_long, fd, buf, count) as libc::ssize_t }
+    match unsafe { syscall::sys_write(fd, buf as *const u8, count) } {
+        Ok(n) => n as libc::ssize_t,
+        Err(e) => {
+            unsafe { set_abi_errno(e) };
+            -1
+        }
+    }
 }
 
 /// POSIX `read`.
@@ -151,8 +163,13 @@ pub unsafe extern "C" fn close(fd: c_int) -> c_int {
         runtime_policy::observe(ApiFamily::Stdio, decision.profile, 6, true);
         return -1;
     }
-    // SAFETY: direct syscall close(fd).
-    let rc = unsafe { libc::syscall(libc::SYS_close as c_long, fd) as c_int };
+    let rc = match syscall::sys_close(fd) {
+        Ok(()) => 0,
+        Err(e) => {
+            unsafe { set_abi_errno(e) };
+            -1
+        }
+    };
     runtime_policy::observe(ApiFamily::Stdio, decision.profile, 6, rc != 0);
     rc
 }
@@ -169,8 +186,7 @@ pub unsafe extern "C" fn getpid() -> libc::pid_t {
         runtime_policy::observe(ApiFamily::Stdio, decision.profile, 4, true);
         return -1;
     }
-    // SAFETY: direct syscall getpid().
-    let pid = unsafe { libc::syscall(libc::SYS_getpid as c_long) as libc::pid_t };
+    let pid = syscall::sys_getpid();
     runtime_policy::observe(ApiFamily::Stdio, decision.profile, 4, pid < 0);
     pid
 }
@@ -190,16 +206,10 @@ pub unsafe extern "C" fn isatty(fd: c_int) -> c_int {
 
     let mut ws = std::mem::MaybeUninit::<libc::winsize>::zeroed();
     // SAFETY: ioctl(TIOCGWINSZ) writes into `ws` on success.
-    let rc = unsafe {
-        libc::syscall(
-            libc::SYS_ioctl as c_long,
-            fd,
-            libc::TIOCGWINSZ as c_long,
-            ws.as_mut_ptr(),
-        ) as c_int
-    };
-    runtime_policy::observe(ApiFamily::Stdio, decision.profile, 6, rc != 0);
-    if rc == 0 { 1 } else { 0 }
+    let rc = unsafe { syscall::sys_ioctl(fd, libc::TIOCGWINSZ as usize, ws.as_mut_ptr() as usize) };
+    let success = rc.is_ok();
+    runtime_policy::observe(ApiFamily::Stdio, decision.profile, 6, !success);
+    if success { 1 } else { 0 }
 }
 
 // ---------------------------------------------------------------------------
@@ -217,19 +227,34 @@ pub unsafe extern "C" fn lseek(fd: c_int, offset: i64, whence: c_int) -> i64 {
     if !unistd_core::valid_whence(whence) {
         if mode.heals_enabled() {
             // default to SEEK_SET in hardened mode
-            let rc = unsafe { libc::lseek(fd, offset, unistd_core::SEEK_SET) };
-            runtime_policy::observe(ApiFamily::IoFd, decision.profile, 8, rc == -1);
-            return rc;
+            match syscall::sys_lseek(fd, offset, unistd_core::SEEK_SET) {
+                Ok(pos) => {
+                    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 8, false);
+                    return pos;
+                }
+                Err(e) => {
+                    unsafe { set_abi_errno(e) };
+                    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 8, true);
+                    return -1;
+                }
+            }
         }
         unsafe { set_abi_errno(errno::EINVAL) };
         runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
         return -1;
     }
 
-    let rc = unsafe { libc::lseek(fd, offset, whence) };
-    let adverse = rc == -1;
-    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 8, adverse);
-    rc
+    match syscall::sys_lseek(fd, offset, whence) {
+        Ok(pos) => {
+            runtime_policy::observe(ApiFamily::IoFd, decision.profile, 8, false);
+            pos
+        }
+        Err(e) => {
+            unsafe { set_abi_errno(e) };
+            runtime_policy::observe(ApiFamily::IoFd, decision.profile, 8, true);
+            -1
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -519,7 +544,13 @@ pub unsafe extern "C" fn fsync(fd: c_int) -> c_int {
         runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
         return -1;
     }
-    let rc = unsafe { libc::fsync(fd) };
+    let rc = match syscall::sys_fsync(fd) {
+        Ok(()) => 0,
+        Err(e) => {
+            unsafe { set_abi_errno(e) };
+            -1
+        }
+    };
     runtime_policy::observe(ApiFamily::IoFd, decision.profile, 15, rc != 0);
     rc
 }
@@ -531,7 +562,13 @@ pub unsafe extern "C" fn fdatasync(fd: c_int) -> c_int {
         runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
         return -1;
     }
-    let rc = unsafe { libc::fdatasync(fd) };
+    let rc = match syscall::sys_fdatasync(fd) {
+        Ok(()) => 0,
+        Err(e) => {
+            unsafe { set_abi_errno(e) };
+            -1
+        }
+    };
     runtime_policy::observe(ApiFamily::IoFd, decision.profile, 15, rc != 0);
     rc
 }

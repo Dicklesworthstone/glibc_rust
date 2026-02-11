@@ -6,10 +6,10 @@ C programs call `malloc`, `memcpy`, `strlen`, `printf` every microsecond and tru
 
 ```bash
 # Interpose libc for a single process
-LD_PRELOAD=/usr/lib/glibc-rust/libc.so ./my_program
+LD_PRELOAD=/usr/lib/glibc-rust/libglibc_rs_abi.so ./my_program
 
 # Or go hardened: catch and repair unsafe operations instead of crashing
-GLIBC_RUST_MODE=hardened LD_PRELOAD=/usr/lib/glibc-rust/libc.so ./my_program
+GLIBC_RUST_MODE=hardened LD_PRELOAD=/usr/lib/glibc-rust/libglibc_rs_abi.so ./my_program
 ```
 
 ---
@@ -38,6 +38,19 @@ Known stubs:
 - `getnameinfo`
 - `localeconv`
 - `setlocale`
+
+## Packaging Artifacts (Interpose vs Replace)
+
+Source of truth: `tests/conformance/packaging_spec.json`.
+
+| Artifact | Build command | Output path | Host glibc required | Allowed statuses | Replacement level |
+|---|---|---|---|---|---|
+| `Interpose` | `cargo build -p glibc-rs-abi --release` | `target/release/libglibc_rs_abi.so` | Yes | `Implemented`, `RawSyscall`, `GlibcCallThrough`, `Stub` | `L0`, `L1` |
+| `Replace` (planned) | `cargo build -p glibc-rs-abi --release --features=standalone` | `target/release/libglibc_rs_replace.so` | No | `Implemented`, `RawSyscall` | `L2`, `L3` |
+
+Support-matrix applicability rule:
+- `Implemented` + `RawSyscall` symbols apply to both artifacts.
+- `GlibcCallThrough` + `Stub` symbols apply to `Interpose` only.
 
 ---
 
@@ -182,14 +195,14 @@ Two runtime modes let you choose your trade-off:
 ## Quick Example
 
 ```bash
-# 1. Build libc.so
+# 1. Build the Interpose artifact
 cargo build --release -p glibc-rs-abi
 
 # 2. Run a candidate program with glibc_rust interposed
-LD_PRELOAD=target/release/libc.so ls -la
+LD_PRELOAD=target/release/libglibc_rs_abi.so ls -la
 
 # 3. Enable hardened mode to catch unsafe patterns
-GLIBC_RUST_MODE=hardened LD_PRELOAD=target/release/libc.so ./legacy_c_server
+GLIBC_RUST_MODE=hardened LD_PRELOAD=target/release/libglibc_rs_abi.so ./legacy_c_server
 
 # 4. Check what the membrane caught
 cat /tmp/glibc_rust_metrics.log
@@ -239,19 +252,19 @@ Every safety decision the membrane makes is auditable. Validation counts, repair
 git clone https://github.com/anthropics/glibc_rust.git
 cd glibc_rust
 cargo build --release -p glibc-rs-abi
-# Output: target/release/libc.so
+# Output: target/release/libglibc_rs_abi.so
 ```
 
 ### System-wide install
 
 ```bash
-sudo install -m 755 target/release/libc.so /usr/lib/glibc-rust/libc.so
+sudo install -m 755 target/release/libglibc_rs_abi.so /usr/lib/glibc-rust/libglibc_rs_abi.so
 ```
 
 ### Per-process use
 
 ```bash
-LD_PRELOAD=/usr/lib/glibc-rust/libc.so ./your_program
+LD_PRELOAD=/usr/lib/glibc-rust/libglibc_rs_abi.so ./your_program
 ```
 
 ### Requirements
@@ -292,13 +305,13 @@ GLIBC_RUST_EXTENDED_GATES=1 scripts/ci.sh
 **3. Run a program in strict mode (default):**
 
 ```bash
-LD_PRELOAD=target/release/libc.so ./my_app
+LD_PRELOAD=target/release/libglibc_rs_abi.so ./my_app
 ```
 
 **4. Run a program in hardened mode:**
 
 ```bash
-GLIBC_RUST_MODE=hardened LD_PRELOAD=target/release/libc.so ./my_app
+GLIBC_RUST_MODE=hardened LD_PRELOAD=target/release/libglibc_rs_abi.so ./my_app
 ```
 
 **5. Benchmark overhead:**
@@ -354,7 +367,7 @@ scripts/profile_pipeline.sh
 |-------|------|---------------|
 | `glibc-rs-membrane` | TSM validation pipeline, lattice, arena, bloom filter, fingerprints | `#![deny(unsafe_code)]` with scoped exceptions |
 | `glibc-rs-core` | Safe Rust implementations of all libc functions | `#![deny(unsafe_code)]` |
-| `glibc-rs-abi` | `extern "C"` cdylib producing `libc.so` | `#![allow(unsafe_code)]` (ABI boundary) |
+| `glibc-rs-abi` | `extern "C"` cdylib producing `libglibc_rs_abi.so` | `#![allow(unsafe_code)]` (ABI boundary) |
 | `glibc-rs-harness` | Conformance testing framework | `#![forbid(unsafe_code)]` |
 | `glibc-rs-bench` | Criterion benchmarks | `#![allow(unsafe_code)]` |
 | `glibc-rs-fuzz` | cargo-fuzz targets | `#![allow(unsafe_code)]` |
@@ -439,7 +452,7 @@ This project must leverage:
 - `/dp/asupersync` for deterministic conformance orchestration and traceability/reporting primitives.
 - `/dp/frankentui` for deterministic diff/snapshot-oriented harness output and TUI-driven analysis tooling.
 
-These are build/test tooling dependencies only, not production runtime dependencies of `libc.so`.
+These are build/test tooling dependencies only, not production runtime dependencies of `libglibc_rs_abi.so`.
 
 ---
 
@@ -449,7 +462,7 @@ These are build/test tooling dependencies only, not production runtime dependenc
 
 ```bash
 # No env var needed -- strict is the default
-LD_PRELOAD=target/release/libc.so ./my_app
+LD_PRELOAD=target/release/libglibc_rs_abi.so ./my_app
 ```
 
 - ABI-compatible for the currently supported/classified symbol set
@@ -460,7 +473,7 @@ LD_PRELOAD=target/release/libc.so ./my_app
 ### `hardened`
 
 ```bash
-GLIBC_RUST_MODE=hardened LD_PRELOAD=target/release/libc.so ./my_app
+GLIBC_RUST_MODE=hardened LD_PRELOAD=target/release/libglibc_rs_abi.so ./my_app
 ```
 
 - Catches and repairs unsafe operations instead of allowing corruption
@@ -562,7 +575,7 @@ The program's existing libc initialization ran before `LD_PRELOAD` took effect. 
 
 ```bash
 mkdir -p /tmp/glibc-rust-lib
-ln -sf $(realpath target/release/libc.so) /tmp/glibc-rust-lib/libc.so.6
+ln -sf $(realpath target/release/libglibc_rs_abi.so) /tmp/glibc-rust-lib/libc.so.6
 LD_LIBRARY_PATH=/tmp/glibc-rust-lib ./my_app
 ```
 

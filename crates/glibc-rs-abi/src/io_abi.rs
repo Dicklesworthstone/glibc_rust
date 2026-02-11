@@ -6,6 +6,7 @@ use std::ffi::c_int;
 
 use glibc_rs_core::errno;
 use glibc_rs_core::io as io_core;
+use glibc_rs_core::syscall;
 use glibc_rs_membrane::runtime_math::{ApiFamily, MembraneAction};
 
 use crate::runtime_policy;
@@ -34,13 +35,17 @@ pub unsafe extern "C" fn dup(oldfd: c_int) -> c_int {
         return -1;
     }
 
-    let rc = unsafe { libc::dup(oldfd) };
-    let adverse = rc < 0;
-    if adverse {
-        unsafe { set_abi_errno(errno::EBADF) };
+    match syscall::sys_dup(oldfd) {
+        Ok(new_fd) => {
+            runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, false);
+            new_fd
+        }
+        Err(e) => {
+            unsafe { set_abi_errno(e) };
+            runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, true);
+            -1
+        }
     }
-    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, adverse);
-    rc
 }
 
 // ---------------------------------------------------------------------------
@@ -61,13 +66,17 @@ pub unsafe extern "C" fn dup2(oldfd: c_int, newfd: c_int) -> c_int {
         return -1;
     }
 
-    let rc = unsafe { libc::dup2(oldfd, newfd) };
-    let adverse = rc < 0;
-    if adverse {
-        unsafe { set_abi_errno(errno::EBADF) };
+    match syscall::sys_dup2(oldfd, newfd) {
+        Ok(fd) => {
+            runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, false);
+            fd
+        }
+        Err(e) => {
+            unsafe { set_abi_errno(e) };
+            runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, true);
+            -1
+        }
     }
-    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, adverse);
-    rc
 }
 
 // ---------------------------------------------------------------------------
@@ -92,9 +101,14 @@ pub unsafe extern "C" fn pipe(pipefd: *mut c_int) -> c_int {
         return -1;
     }
 
-    let rc = unsafe { libc::pipe(pipefd) };
-    let adverse = rc != 0;
-    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, adverse);
+    let rc = match unsafe { syscall::sys_pipe2(pipefd, 0) } {
+        Ok(()) => 0,
+        Err(e) => {
+            unsafe { set_abi_errno(e) };
+            -1
+        }
+    };
+    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, rc != 0);
     rc
 }
 
@@ -116,8 +130,15 @@ pub unsafe extern "C" fn fcntl(fd: c_int, cmd: c_int, arg: libc::c_long) -> c_in
         return -1;
     }
 
-    let rc = unsafe { libc::fcntl(fd, cmd, arg) };
-    let adverse = rc < 0;
-    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, adverse);
-    rc
+    match unsafe { syscall::sys_fcntl(fd, cmd, arg as usize) } {
+        Ok(val) => {
+            runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, false);
+            val
+        }
+        Err(e) => {
+            unsafe { set_abi_errno(e) };
+            runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, true);
+            -1
+        }
+    }
 }

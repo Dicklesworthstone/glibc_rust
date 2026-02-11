@@ -142,6 +142,7 @@ pub fn large_realloc(_alloc: &LargeAllocation, new_size: usize) -> Option<LargeA
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashSet;
 
     #[test]
     fn test_large_alloc_basic() {
@@ -192,6 +193,15 @@ mod tests {
     }
 
     #[test]
+    fn test_large_realloc_zero_removes_original() {
+        let mut allocator = LargeAllocator::new();
+        let alloc = allocator.alloc(8192).unwrap();
+        assert!(allocator.realloc(alloc.base, 0).is_none());
+        assert_eq!(allocator.active_count(), 0);
+        assert_eq!(allocator.total_mapped(), 0);
+    }
+
+    #[test]
     fn test_page_alignment() {
         assert_eq!(page_align(1), 4096);
         assert_eq!(page_align(4096), 4096);
@@ -225,5 +235,64 @@ mod tests {
 
         let new_alloc = large_realloc(&alloc, 200000).unwrap();
         assert_eq!(new_alloc.user_size, 200000);
+    }
+
+    #[test]
+    fn test_large_allocator_accounting_invariant_under_trace() {
+        fn lcg(state: &mut u64) -> u64 {
+            *state = state
+                .wrapping_mul(2862933555777941757)
+                .wrapping_add(3037000493);
+            *state
+        }
+
+        let mut allocator = LargeAllocator::new();
+        let mut live: Vec<usize> = Vec::new();
+        let mut rng = 0xD00D_F00D_1234_5678u64;
+
+        for _ in 0..1200 {
+            let r = lcg(&mut rng);
+            match r % 3 {
+                0 => {
+                    let size = ((r >> 11) as usize % 200_000).max(1);
+                    if let Some(alloc) = allocator.alloc(size) {
+                        live.push(alloc.base);
+                    }
+                }
+                1 if !live.is_empty() => {
+                    let idx = (r as usize) % live.len();
+                    let base = live.swap_remove(idx);
+                    assert!(allocator.free(base));
+                }
+                2 if !live.is_empty() => {
+                    let idx = (r as usize) % live.len();
+                    let base = live[idx];
+                    let new_size = (r >> 17) as usize % 200_000;
+                    let next = allocator.realloc(base, new_size);
+                    if new_size == 0 {
+                        assert!(next.is_none());
+                        live.swap_remove(idx);
+                    } else if let Some(new_alloc) = next {
+                        live[idx] = new_alloc.base;
+                    }
+                }
+                _ => {}
+            }
+
+            let observed_total: usize = live
+                .iter()
+                .map(|&base| {
+                    allocator
+                        .lookup(base)
+                        .expect("live base must exist")
+                        .mapped_size
+                })
+                .sum();
+            assert_eq!(allocator.active_count(), live.len());
+            assert_eq!(allocator.total_mapped(), observed_total);
+
+            let unique: HashSet<usize> = live.iter().copied().collect();
+            assert_eq!(unique.len(), live.len());
+        }
     }
 }

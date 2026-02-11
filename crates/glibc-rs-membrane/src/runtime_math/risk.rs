@@ -154,4 +154,20 @@ mod tests {
         let pointer = risk.upper_bound_ppm(ApiFamily::PointerValidation);
         assert!(allocator > pointer);
     }
+
+    #[test]
+    fn higher_adverse_rate_yields_higher_bound_for_same_volume() {
+        let risk = ConformalRiskEngine::new(1_000, 3.0);
+
+        for i in 0..512 {
+            risk.observe(ApiFamily::Allocator, i % 2 == 0);
+            risk.observe(ApiFamily::Resolver, i % 64 == 0);
+        }
+
+        let high_rate = risk.upper_bound_ppm(ApiFamily::Allocator);
+        let low_rate = risk.upper_bound_ppm(ApiFamily::Resolver);
+        assert!(high_rate > low_rate);
+        assert!(high_rate <= 1_000_000);
+        assert!(low_rate <= 1_000_000);
+    }
 }

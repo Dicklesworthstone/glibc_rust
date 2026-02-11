@@ -1,0 +1,192 @@
+{
+  "schema_version": 1,
+  "bead": "bd-3tc",
+  "description": "Change-point drift policy: codifies the BOCPD integration for regime-shift-aware control routing. Defines freeze/escalate policies under detected regime shifts, thresholds for drift and change-point detection, and integration with the anytime-valid monitor ensemble.",
+  "bocpd_parameters": {
+    "description": "Bayesian Online Change-Point Detection (Adams & MacKay 2007) parameters. Maintains posterior over run-length r_t with Beta-Bernoulli conjugate model and geometric hazard prior.",
+    "implementation": "crates/glibc-rs-membrane/src/runtime_math/changepoint.rs",
+    "parameters": {
+      "warmup_count": {
+        "value": 32,
+        "description": "Minimum observations before leaving Calibrating state.",
+        "rationale": "Prevents premature drift/change-point detection on startup transients."
+      },
+      "hazard_lambda": {
+        "value": 200.0,
+        "description": "Geometric prior mean run length. Hazard H(r) = 1/(r + lambda).",
+        "rationale": "Expects regime changes approximately every 200 observations."
+      },
+      "short_window": {
+        "value": 16,
+        "description": "Run-lengths below this threshold are considered 'short' (recent change-point)."
+      },
+      "drift_threshold": {
+        "value": 0.30,
+        "description": "Posterior mass on short run-lengths (r < short_window) required for Drift state.",
+        "rationale": "Moderate evidence that a regime shift has occurred recently."
+      },
+      "changepoint_threshold": {
+        "value": 0.60,
+        "description": "Posterior mass on short run-lengths required for ChangePoint state.",
+        "rationale": "Strong evidence of regime shift; triggers escalation."
+      },
+      "max_run_length": {
+        "value": 256,
+        "description": "Truncation horizon for the run-length distribution array.",
+        "rationale": "Bounded memory; longer runs are negligible for change-point detection."
+      },
+      "ewma_alpha": {
+        "value": 0.03,
+        "description": "EWMA smoothing factor for adverse-rate estimation.",
+        "rationale": "Slow decay (~33 obs half-life) for stable rate tracking."
+      },
+      "beta_prior": {
+        "alpha0": 1.0,
+        "beta0": 1.0,
+        "description": "Beta(1,1) = Uniform[0,1] prior on adverse rate per run-length segment."
+      }
+    },
+    "states": [
+      {"state": "Calibrating", "description": "Fewer than warmup_count observations received."},
+      {"state": "Stable", "description": "Posterior mass on short runs < drift_threshold. No regime shift detected."},
+      {"state": "Drift", "description": "Posterior mass >= drift_threshold but < changepoint_threshold. Moderate evidence of shift."},
+      {"state": "ChangePoint", "description": "Posterior mass >= changepoint_threshold. Strong evidence of regime shift."}
+    ],
+    "mathematical_properties": {
+      "conjugate_model": "Beta-Bernoulli with per-run-length sufficient statistics.",
+      "predictive_likelihood": "P(x=1|data_r) = (alpha0 + k_r) / (alpha0 + beta0 + n_r)",
+      "growth_probability": "P(r_t=r+1) proportional to P(x_t|r) * (1 - H(r)) * P(r_{t-1})",
+      "reset_probability": "P(r_t=0) proportional to sum_r P(x_t|r) * H(r) * P(r)",
+      "renormalization": "Full posterior renormalized after each observation.",
+      "memory_bounded": "Fixed array of MAX_RUN_LENGTH=256 entries; no dynamic allocation."
+    }
+  },
+  "routing_policy": {
+    "description": "How detected regime shifts affect the membrane decision pipeline routing.",
+    "policies": [
+      {
+        "id": "RP-1",
+        "state": "Stable",
+        "action": "normal_routing",
+        "description": "Use standard decision controller with existing risk estimates and thresholds.",
+        "escalation_level": 0
+      },
+      {
+        "id": "RP-2",
+        "state": "Drift",
+        "action": "cautious_routing",
+        "description": "Increase validation frequency by widening the bloom filter admission criteria. Suppress optimization shortcuts. Raise e-process observation cadence.",
+        "escalation_level": 1,
+        "effects": [
+          "Bloom filter: widen admission (more pointers validated)",
+          "Validation: skip fast-path bypass for next 128 calls",
+          "Monitoring: double e-process observation cadence",
+          "Logging: emit structured drift_detected event"
+        ]
+      },
+      {
+        "id": "RP-3",
+        "state": "ChangePoint",
+        "action": "freeze_and_escalate",
+        "description": "Freeze current risk thresholds. Escalate to full validation for affected API family. Alert alpha-investing controller with severity=3 evidence.",
+        "escalation_level": 2,
+        "effects": [
+          "Thresholds: freeze current values (no adaptive updates until recovery)",
+          "Validation: full validation for affected API family",
+          "Alpha-investing: submit severity=3 alarm for FDR-controlled acceptance",
+          "Evidence: emit chain-hashed evidence record with change-point metadata",
+          "Logging: emit structured changepoint_detected event with posterior_short_mass"
+        ]
+      },
+      {
+        "id": "RP-4",
+        "state": "Recovery",
+        "action": "gradual_deescalation",
+        "description": "After sustained Stable state following a ChangePoint, gradually restore normal routing over a decay window.",
+        "escalation_level": 0,
+        "recovery_window_observations": 500,
+        "effects": [
+          "Validation: gradually reduce from full to standard over recovery window",
+          "Thresholds: unfreeze and allow adaptive updates",
+          "Logging: emit recovery_complete event when fully deescalated"
+        ]
+      }
+    ]
+  },
+  "integration_with_monitors": {
+    "description": "How the change-point detector integrates with the anytime-valid monitor ensemble defined in bd-182.",
+    "upstream_feeds": [
+      {
+        "source": "eprocess",
+        "feed": "Per-family adverse/clean observations drive the BOCPD Bernoulli model.",
+        "integration": "Each observe(family, adverse) also feeds ChangepointController.observe(adverse)."
+      },
+      {
+        "source": "alpha_investing",
+        "feed": "ChangePoint state submits severity=3 alarms to the FDR controller.",
+        "integration": "Alarm accepted only if wealth budget permits (prevents alarm cascade)."
+      }
+    ],
+    "downstream_consumers": [
+      {
+        "consumer": "decision_controller",
+        "receives": "Routing policy (normal/cautious/freeze_and_escalate) based on ChangepointState.",
+        "integration": "RuntimeMathKernel queries ChangepointController.state() during decide()."
+      },
+      {
+        "consumer": "evidence_ring",
+        "receives": "Change-point metadata (posterior_short_mass, change_point_count, ewma_adverse_rate).",
+        "integration": "Embedded in evidence record payload when state transitions occur."
+      },
+      {
+        "consumer": "diagnostics_snapshot",
+        "receives": "changepoint_count exported via RuntimeKernelSnapshot.",
+        "integration": "Visible in crash bundle evidence_snapshot.jsonl."
+      }
+    ],
+    "monitor_spec_ref": "tests/conformance/anytime_valid_monitor_spec.json",
+    "crash_bundle_ref": "tests/conformance/crash_bundle_spec.json"
+  },
+  "false_positive_control": {
+    "description": "Ensuring non-drift runs remain stable with low false positive rate.",
+    "targets": {
+      "stable_traffic_fp_rate": {
+        "target": 0.01,
+        "description": "Under consistent traffic (2% adverse rate, no drift), probability of entering Drift state should be < 1%.",
+        "calibration_method": "Run 10,000 observations at 2% adverse rate; measure fraction entering Drift or ChangePoint."
+      },
+      "noise_resilience": {
+        "description": "Moderate noise in adverse rate (2% +/- 1%) should not trigger Drift.",
+        "calibration_method": "Run 10,000 observations with random adverse rate in [0.01, 0.03]; verify no Drift entry."
+      },
+      "recovery_time": {
+        "target_observations": 500,
+        "description": "After a genuine ChangePoint + recovery phase, system should return to Stable within 500 clean observations."
+      }
+    },
+    "unit_test_coverage": {
+      "status": "comprehensive",
+      "tests": [
+        "starts_calibrating",
+        "stable_with_consistent_traffic",
+        "drift_on_moderate_regime_shift",
+        "changepoint_on_sudden_regime_shift",
+        "recovery_after_changepoint",
+        "change_point_count_increments",
+        "summary_fields_bounded",
+        "ewma_tracks_adverse_rate",
+        "default_impl_matches_new"
+      ],
+      "location": "crates/glibc-rs-membrane/src/runtime_math/changepoint.rs (module tests)"
+    }
+  },
+  "summary": {
+    "bocpd_parameters": 8,
+    "bocpd_states": 4,
+    "routing_policies": 4,
+    "upstream_feeds": 2,
+    "downstream_consumers": 3,
+    "false_positive_targets": 3,
+    "unit_tests": 9
+  }
+}

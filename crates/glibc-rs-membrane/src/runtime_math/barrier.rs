@@ -162,4 +162,76 @@ mod tests {
         );
         assert!(ok);
     }
+
+    #[test]
+    fn request_size_limit_is_inclusive() {
+        let oracle = BarrierOracle::new();
+        let ok = oracle.admissible(
+            &RuntimeContext {
+                family: ApiFamily::StringMemory,
+                addr_hint: 0x5000,
+                requested_bytes: 4096,
+                is_write: false,
+                contention_hint: 0,
+                bloom_negative: false,
+            },
+            SafetyLevel::Strict,
+            ValidationProfile::Fast,
+            50_000,
+            ControlLimits {
+                full_validation_trigger_ppm: 90_000,
+                repair_trigger_ppm: 140_000,
+                max_request_bytes: 4096,
+            },
+        );
+        assert!(ok);
+    }
+
+    #[test]
+    fn strict_pointer_bypass_does_not_override_request_size_guard() {
+        let oracle = BarrierOracle::new();
+        let ok = oracle.admissible(
+            &RuntimeContext {
+                family: ApiFamily::PointerValidation,
+                addr_hint: 0x6000,
+                requested_bytes: 4097,
+                is_write: false,
+                contention_hint: 0,
+                bloom_negative: true,
+            },
+            SafetyLevel::Strict,
+            ValidationProfile::Fast,
+            100_000,
+            ControlLimits {
+                full_validation_trigger_ppm: 220_000,
+                repair_trigger_ppm: 1_000_000,
+                max_request_bytes: 4096,
+            },
+        );
+        assert!(!ok);
+    }
+
+    #[test]
+    fn strict_pointer_bypass_turns_off_at_high_risk_and_rejects_fast_write() {
+        let oracle = BarrierOracle::new();
+        let ok = oracle.admissible(
+            &RuntimeContext {
+                family: ApiFamily::PointerValidation,
+                addr_hint: 0x7000,
+                requested_bytes: 128,
+                is_write: true,
+                contention_hint: 0,
+                bloom_negative: true,
+            },
+            SafetyLevel::Strict,
+            ValidationProfile::Fast,
+            900_000,
+            ControlLimits {
+                full_validation_trigger_ppm: 200_000,
+                repair_trigger_ppm: 800_000,
+                max_request_bytes: 4096,
+            },
+        );
+        assert!(!ok);
+    }
 }

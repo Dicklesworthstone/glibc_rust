@@ -29,6 +29,9 @@ pub mod socket;
 pub mod stdio;
 pub mod stdlib;
 pub mod string;
+#[allow(unsafe_code)]
+#[cfg(target_arch = "x86_64")]
+pub mod syscall;
 pub mod termios;
 pub mod time;
 pub mod unistd;

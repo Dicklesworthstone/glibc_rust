@@ -36,6 +36,11 @@ fn load_matrix() -> serde_json::Value {
     serde_json::from_str(&content).expect("support_matrix.json should be valid JSON")
 }
 
+fn load_readme() -> String {
+    let path = workspace_root().join("README.md");
+    std::fs::read_to_string(&path).expect("README.md should exist")
+}
+
 #[test]
 fn spec_exists_and_valid() {
     let spec = load_spec();
@@ -271,6 +276,57 @@ fn feature_gates_documented() {
 }
 
 #[test]
+fn support_matrix_artifact_applicability_matches_spec() {
+    let spec = load_spec();
+    let matrix = load_matrix();
+
+    let app = matrix["taxonomy"]["artifact_applicability"]
+        .as_object()
+        .expect("support_matrix.taxonomy.artifact_applicability should exist");
+
+    let interpose_decl: HashSet<String> = app["Interpose"]
+        .as_array()
+        .expect("artifact_applicability.Interpose should be an array")
+        .iter()
+        .filter_map(|v| v.as_str().map(String::from))
+        .collect();
+    let replace_decl: HashSet<String> = app["Replace"]
+        .as_array()
+        .expect("artifact_applicability.Replace should be an array")
+        .iter()
+        .filter_map(|v| v.as_str().map(String::from))
+        .collect();
+
+    let interpose_expected: HashSet<String> = spec["artifacts"]["interpose"]["allowed_statuses"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|v| v.as_str().map(String::from))
+        .collect();
+    let replace_expected: HashSet<String> = spec["artifacts"]["replace"]["allowed_statuses"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|v| v.as_str().map(String::from))
+        .collect();
+
+    assert_eq!(
+        interpose_decl, interpose_expected,
+        "support_matrix Interpose applicability must match packaging spec"
+    );
+    assert_eq!(
+        replace_decl, replace_expected,
+        "support_matrix Replace applicability must match packaging spec"
+    );
+
+    let rule = app["rule"].as_str().unwrap_or("");
+    assert!(
+        !rule.trim().is_empty(),
+        "support_matrix artifact applicability rule should be non-empty"
+    );
+}
+
+#[test]
 fn matrix_applicability_rule_correct() {
     let spec = load_spec();
     let matrix = load_matrix();
@@ -309,6 +365,55 @@ fn matrix_applicability_rule_correct() {
                 "{name}: replace-applicable status should be Implemented or RawSyscall, got {status}"
             );
         }
+    }
+}
+
+#[test]
+fn readme_aligns_with_packaging_spec() {
+    let spec = load_spec();
+    let readme = load_readme();
+
+    let interpose = &spec["artifacts"]["interpose"];
+    let replace = &spec["artifacts"]["replace"];
+
+    let required_literals = [
+        interpose["build_command"].as_str().unwrap(),
+        interpose["output_path"].as_str().unwrap(),
+        interpose["artifact_name"].as_str().unwrap(),
+        replace["artifact_name"].as_str().unwrap(),
+    ];
+
+    for lit in required_literals {
+        assert!(
+            readme.contains(lit),
+            "README should contain packaging literal: {lit}"
+        );
+    }
+
+    let interpose_deploy = interpose["deployment"].as_str().unwrap();
+    if let Some((preload_prefix, _)) = interpose_deploy.split_once(' ') {
+        assert!(
+            readme.contains(preload_prefix),
+            "README missing deployment prefix: {preload_prefix}"
+        );
+    }
+
+    let hardened_deploy = interpose["deployment_modes"]["hardened"].as_str().unwrap();
+    if let Some((hardened_prefix, _)) = hardened_deploy.split_once(' ') {
+        assert!(
+            readme.contains(hardened_prefix),
+            "README missing hardened prefix: {hardened_prefix}"
+        );
+    }
+
+    for rule_fragment in [
+        "`Implemented` + `RawSyscall` symbols apply to both artifacts.",
+        "`GlibcCallThrough` + `Stub` symbols apply to `Interpose` only.",
+    ] {
+        assert!(
+            readme.contains(rule_fragment),
+            "README missing applicability fragment: {rule_fragment}"
+        );
     }
 }
 

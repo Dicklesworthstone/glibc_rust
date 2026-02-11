@@ -1,0 +1,202 @@
+{
+  "schema_version": 1,
+  "bead": "bd-6yd",
+  "description": "Crash bundle specification: deterministic, bounded evidence capture on any smoke/fixture failure. Defines the required artifacts, size bounds, and format for reproducible failure diagnostics.",
+  "bundle_format": {
+    "version": 1,
+    "root_pattern": "<output_dir>/<run_id>/<mode>/<case_label>/",
+    "required_artifacts": [
+      {
+        "filename": "bundle.meta",
+        "description": "Key=value metadata for the failed case.",
+        "format": "key=value, one per line",
+        "required_keys": [
+          "mode",
+          "case",
+          "exit_code",
+          "signal",
+          "timestamp_utc",
+          "lib_path",
+          "timeout_seconds",
+          "kernel",
+          "bundle_version"
+        ],
+        "max_size_bytes": 4096,
+        "deterministic": true
+      },
+      {
+        "filename": "env.txt",
+        "description": "Sorted environment variables at time of failure.",
+        "format": "env | sort output, one KEY=VALUE per line",
+        "max_size_bytes": 65536,
+        "deterministic": true,
+        "filtering": "Exclude RANDOM, SRANDOM, BASHPID, BASH_SUBSHELL (non-deterministic vars)"
+      },
+      {
+        "filename": "proc_self_maps.txt",
+        "description": "/proc/self/maps excerpt for pointer provenance debugging.",
+        "format": "Raw /proc/self/maps output with address ranges, permissions, offsets, devices, inodes, pathnames.",
+        "max_size_bytes": 262144,
+        "deterministic": false,
+        "note": "ASLR makes addresses non-deterministic; layout and library paths are the useful signal."
+      },
+      {
+        "filename": "backtrace.txt",
+        "description": "Rust backtrace captured via RUST_BACKTRACE=1 or RUST_BACKTRACE=full.",
+        "format": "Rust panic backtrace (stderr lines matching backtrace frames) or 'no_backtrace: <reason>'.",
+        "max_size_bytes": 131072,
+        "deterministic": false,
+        "capture_method": "Set RUST_BACKTRACE=1 in environment; extract backtrace frames from stderr after failure.",
+        "note": "Frame addresses vary per run (ASLR); symbol names and file:line locations are the useful signal."
+      },
+      {
+        "filename": "evidence_snapshot.jsonl",
+        "description": "Evidence ledger snapshot: recent TSM repairs and denials from the membrane evidence ring buffer.",
+        "format": "JSONL, one record per line, conforming to log_schema.json event format.",
+        "required_fields_per_record": ["timestamp", "trace_id", "level", "event"],
+        "event_types": ["tsm_repair", "tsm_deny", "tsm_allow", "tsm_validate"],
+        "max_records": 256,
+        "max_size_bytes": 262144,
+        "deterministic": true,
+        "note": "Bounded by evidence ring buffer capacity (K_MAX=256). Records are sequence-ordered and chain-hashed."
+      },
+      {
+        "filename": "allocator_stats.json",
+        "description": "Allocator statistics snapshot: arena and quarantine state at time of failure.",
+        "format": "JSON object with standardized fields.",
+        "required_fields": {
+          "snapshot_utc": "ISO-8601 timestamp",
+          "arena": {
+            "total_allocated_bytes": "Total bytes currently allocated",
+            "total_freed_bytes": "Total bytes freed since init",
+            "peak_allocated_bytes": "High-water mark",
+            "allocation_count": "Number of live allocations",
+            "free_count": "Number of free operations since init"
+          },
+          "quarantine": {
+            "quarantined_count": "Number of allocations held in quarantine",
+            "quarantined_bytes": "Total bytes in quarantine",
+            "max_quarantine_slots": "Quarantine capacity"
+          }
+        },
+        "max_size_bytes": 8192,
+        "deterministic": true,
+        "note": "If membrane not initialized (passthrough mode), emit stub with 'status: passthrough'."
+      },
+      {
+        "filename": "command.shline",
+        "description": "Exact shell command that was run (printf %q quoted).",
+        "format": "Single line, shell-safe quoted arguments.",
+        "max_size_bytes": 4096,
+        "deterministic": true
+      },
+      {
+        "filename": "stdout.txt",
+        "description": "Standard output captured from the failed process.",
+        "format": "Raw text.",
+        "max_size_bytes": 1048576,
+        "deterministic": false,
+        "truncation": "Truncate at 1MB with trailer '... [truncated at 1MB]'"
+      },
+      {
+        "filename": "stderr.txt",
+        "description": "Standard error captured from the failed process.",
+        "format": "Raw text.",
+        "max_size_bytes": 1048576,
+        "deterministic": false,
+        "truncation": "Truncate at 1MB with trailer '... [truncated at 1MB]'"
+      }
+    ],
+    "optional_artifacts": [
+      {
+        "filename": "core_dump_ref.txt",
+        "description": "Path to core dump if RLIMIT_CORE was nonzero and a core file was produced.",
+        "format": "Absolute path to core file, or 'no_core: <reason>'.",
+        "max_size_bytes": 256
+      },
+      {
+        "filename": "evidence_ring_raw.bin",
+        "description": "Raw binary dump of the evidence ring buffer (256-byte fixed-size records).",
+        "format": "Concatenated EVR1 records, each 256 bytes.",
+        "max_size_bytes": 65536,
+        "note": "Available only when membrane is initialized and ring buffer is accessible via shared memory."
+      }
+    ]
+  },
+  "determinism_requirements": {
+    "description": "The bundle must be deterministic and bounded. No unbounded logs, no growing files, no wall-clock-dependent content beyond timestamps.",
+    "rules": [
+      {
+        "id": "DR-1",
+        "rule": "All required artifacts must have a declared max_size_bytes.",
+        "rationale": "Prevents unbounded growth; ensures CI disk usage is predictable."
+      },
+      {
+        "id": "DR-2",
+        "rule": "Evidence snapshot is bounded by ring buffer capacity (K_MAX=256 records).",
+        "rationale": "Ring buffer overwrites oldest records; snapshot is always <= 256 entries."
+      },
+      {
+        "id": "DR-3",
+        "rule": "Allocator stats are a single JSON object, not a stream.",
+        "rationale": "Point-in-time snapshot, not a time series."
+      },
+      {
+        "id": "DR-4",
+        "rule": "Env snapshot filters non-deterministic variables (RANDOM, SRANDOM, BASHPID, BASH_SUBSHELL).",
+        "rationale": "Ensures same env on same machine produces identical env.txt (modulo PIDs)."
+      },
+      {
+        "id": "DR-5",
+        "rule": "stdout/stderr are truncated at 1MB each.",
+        "rationale": "Prevents runaway output from consuming unbounded disk."
+      },
+      {
+        "id": "DR-6",
+        "rule": "Bundle total size must not exceed 4MB.",
+        "rationale": "Sum of all required + optional artifacts. Hard limit enforced by runner."
+      }
+    ]
+  },
+  "reproduction_requirements": {
+    "description": "The bundle must contain sufficient information to reproduce the failure locally.",
+    "checklist": [
+      "command.shline provides the exact command to re-run",
+      "env.txt provides the environment to restore",
+      "bundle.meta provides the mode, lib path, and timeout",
+      "backtrace.txt provides the crash location (if panic)",
+      "evidence_snapshot.jsonl provides the membrane decision trail",
+      "allocator_stats.json provides memory state context",
+      "proc_self_maps.txt provides the address space layout"
+    ]
+  },
+  "integration": {
+    "runners": [
+      {
+        "script": "scripts/ld_preload_smoke.sh",
+        "status": "partial",
+        "captures": ["bundle.meta", "env.txt", "proc_self_maps.txt", "command.shline", "stdout.txt", "stderr.txt"],
+        "missing": ["backtrace.txt", "evidence_snapshot.jsonl", "allocator_stats.json"],
+        "note": "Existing record_failure_bundle() captures 6/9 required artifacts. Needs RUST_BACKTRACE=1 env and evidence/allocator stubs."
+      },
+      {
+        "script": "scripts/c_fixture_suite.sh",
+        "status": "partial",
+        "captures": ["stdout.txt", "stderr.txt"],
+        "missing": ["bundle.meta", "env.txt", "proc_self_maps.txt", "backtrace.txt", "evidence_snapshot.jsonl", "allocator_stats.json", "command.shline"],
+        "note": "Currently captures only stdout/stderr. Needs full bundle emission on failure."
+      }
+    ],
+    "log_schema_ref": "tests/conformance/log_schema.json",
+    "evidence_system_ref": "crates/glibc-rs-membrane/src/runtime_math/evidence.rs",
+    "artifact_kinds_used": ["backtrace", "snapshot", "log"]
+  },
+  "summary": {
+    "required_artifacts": 9,
+    "optional_artifacts": 2,
+    "determinism_rules": 6,
+    "reproduction_checklist_items": 7,
+    "max_bundle_size_bytes": 4194304,
+    "runners_integrated": 2
+  }
+}
