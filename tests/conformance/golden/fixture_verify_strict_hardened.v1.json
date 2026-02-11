@@ -1,0 +1,684 @@
+{
+  "title": "glibc_rust Conformance Report",
+  "mode": "strict+hardened",
+  "timestamp": "1970-01-01T00:00:00Z",
+  "summary": {
+    "total": 84,
+    "passed": 84,
+    "failed": 0,
+    "results": [
+      {
+        "case_name": "atoi_basic",
+        "spec_section": "POSIX atoi",
+        "passed": true,
+        "expected": "123",
+        "actual": "123",
+        "diff": null
+      },
+      {
+        "case_name": "atoi_basic",
+        "spec_section": "POSIX atoi",
+        "passed": true,
+        "expected": "42",
+        "actual": "42",
+        "diff": null
+      },
+      {
+        "case_name": "atoi_negative",
+        "spec_section": "POSIX atoi",
+        "passed": true,
+        "expected": "-42",
+        "actual": "-42",
+        "diff": null
+      },
+      {
+        "case_name": "atoi_negative",
+        "spec_section": "POSIX atoi",
+        "passed": true,
+        "expected": "-42",
+        "actual": "-42",
+        "diff": null
+      },
+      {
+        "case_name": "atoi_whitespace",
+        "spec_section": "POSIX atoi",
+        "passed": true,
+        "expected": "123",
+        "actual": "123",
+        "diff": null
+      },
+      {
+        "case_name": "atoi_whitespace",
+        "spec_section": "POSIX atoi",
+        "passed": true,
+        "expected": "99",
+        "actual": "99",
+        "diff": null
+      },
+      {
+        "case_name": "bsearch_found",
+        "spec_section": "ISO C bsearch",
+        "passed": true,
+        "expected": "FOUND",
+        "actual": "FOUND",
+        "diff": null
+      },
+      {
+        "case_name": "bsearch_not_found",
+        "spec_section": "ISO C bsearch",
+        "passed": true,
+        "expected": "NULL",
+        "actual": "NULL",
+        "diff": null
+      },
+      {
+        "case_name": "calloc_basic",
+        "spec_section": "POSIX calloc",
+        "passed": true,
+        "expected": "ALLOCATED",
+        "actual": "ALLOCATED",
+        "diff": null
+      },
+      {
+        "case_name": "copy_full_8",
+        "spec_section": "POSIX.1-2017 memcpy",
+        "passed": true,
+        "expected": "[65, 66, 67, 68, 69, 70, 71, 72]",
+        "actual": "[65, 66, 67, 68, 69, 70, 71, 72]",
+        "diff": null
+      },
+      {
+        "case_name": "copy_partial_4",
+        "spec_section": "POSIX.1-2017 memcpy",
+        "passed": true,
+        "expected": "[65, 66, 67, 68, 0, 0, 0, 0]",
+        "actual": "[65, 66, 67, 68, 0, 0, 0, 0]",
+        "diff": null
+      },
+      {
+        "case_name": "copy_single_byte",
+        "spec_section": "POSIX.1-2017 memcpy",
+        "passed": true,
+        "expected": "[42]",
+        "actual": "[42]",
+        "diff": null
+      },
+      {
+        "case_name": "copy_zero",
+        "spec_section": "POSIX.1-2017 memcpy",
+        "passed": true,
+        "expected": "[0, 0, 0, 0]",
+        "actual": "[0, 0, 0, 0]",
+        "diff": null
+      },
+      {
+        "case_name": "empty_string",
+        "spec_section": "POSIX.1-2017 strlen",
+        "passed": true,
+        "expected": "0",
+        "actual": "0",
+        "diff": null
+      },
+      {
+        "case_name": "free_null",
+        "spec_section": "POSIX free",
+        "passed": true,
+        "expected": "OK",
+        "actual": "OK",
+        "diff": null
+      },
+      {
+        "case_name": "hardened_memcpy_overflow_clamped",
+        "spec_section": "TSM hardened memcpy",
+        "passed": true,
+        "expected": "[1, 2]",
+        "actual": "[1, 2]",
+        "diff": "hardened mode intentionally clamps undefined host behavior into deterministic output"
+      },
+      {
+        "case_name": "hardened_strcat_overflow",
+        "spec_section": "TSM hardened strcat",
+        "passed": true,
+        "expected": "[65, 66, 0]",
+        "actual": "[65, 66, 0]",
+        "diff": "hardened mode intentionally clamps undefined host behavior"
+      },
+      {
+        "case_name": "hardened_strcpy_overflow",
+        "spec_section": "TSM hardened strcpy",
+        "passed": true,
+        "expected": "[65, 0]",
+        "actual": "[65, 0]",
+        "diff": "hardened mode handles overflow safely (implementation detail)"
+      },
+      {
+        "case_name": "hardened_strlen_unterminated_truncated",
+        "spec_section": "TSM hardened strlen",
+        "passed": true,
+        "expected": "3",
+        "actual": "3",
+        "diff": "hardened mode returns bounded length where host behavior is undefined"
+      },
+      {
+        "case_name": "hardened_wcscpy_overflow",
+        "spec_section": "TSM hardened wcscpy",
+        "passed": true,
+        "expected": "[65, 0]",
+        "actual": "[65, 0]",
+        "diff": "hardened mode truncates undefined host behavior into deterministic output"
+      },
+      {
+        "case_name": "hello",
+        "spec_section": "POSIX.1-2017 strlen",
+        "passed": true,
+        "expected": "5",
+        "actual": "5",
+        "diff": null
+      },
+      {
+        "case_name": "malloc_basic",
+        "spec_section": "POSIX malloc",
+        "passed": true,
+        "expected": "ALLOCATED",
+        "actual": "ALLOCATED",
+        "diff": null
+      },
+      {
+        "case_name": "malloc_zero",
+        "spec_section": "POSIX malloc",
+        "passed": true,
+        "expected": "ALLOCATED",
+        "actual": "ALLOCATED",
+        "diff": "malloc(0) normalized to ALLOCATED because POSIX permits NULL or unique pointer"
+      },
+      {
+        "case_name": "memchr_found",
+        "spec_section": "POSIX memchr",
+        "passed": true,
+        "expected": "Some(1)",
+        "actual": "Some(1)",
+        "diff": null
+      },
+      {
+        "case_name": "memcmp_equal",
+        "spec_section": "POSIX memcmp",
+        "passed": true,
+        "expected": "0",
+        "actual": "0",
+        "diff": null
+      },
+      {
+        "case_name": "memcmp_less",
+        "spec_section": "POSIX memcmp",
+        "passed": true,
+        "expected": "-1",
+        "actual": "-1",
+        "diff": null
+      },
+      {
+        "case_name": "memrchr_found",
+        "spec_section": "GNU memrchr",
+        "passed": true,
+        "expected": "Some(2)",
+        "actual": "Some(2)",
+        "diff": null
+      },
+      {
+        "case_name": "memset_basic",
+        "spec_section": "POSIX memset",
+        "passed": true,
+        "expected": "[65, 65, 65, 65, 0, 0, 0, 0]",
+        "actual": "[65, 65, 65, 65, 0, 0, 0, 0]",
+        "diff": null
+      },
+      {
+        "case_name": "qsort_int",
+        "spec_section": "ISO C qsort",
+        "passed": true,
+        "expected": "[1, 2, 3, 4]",
+        "actual": "[1, 2, 3, 4]",
+        "diff": null
+      },
+      {
+        "case_name": "realloc_null_is_malloc",
+        "spec_section": "POSIX realloc",
+        "passed": true,
+        "expected": "ALLOCATED",
+        "actual": "ALLOCATED",
+        "diff": null
+      },
+      {
+        "case_name": "single_char",
+        "spec_section": "POSIX.1-2017 strlen",
+        "passed": true,
+        "expected": "1",
+        "actual": "1",
+        "diff": null
+      },
+      {
+        "case_name": "strcat_basic",
+        "spec_section": "POSIX strcat",
+        "passed": true,
+        "expected": "[65, 66, 67, 0]",
+        "actual": "[65, 66, 67, 0]",
+        "diff": null
+      },
+      {
+        "case_name": "strchr_found",
+        "spec_section": "POSIX strchr",
+        "passed": true,
+        "expected": "Some(1)",
+        "actual": "Some(1)",
+        "diff": null
+      },
+      {
+        "case_name": "strcmp_equal",
+        "spec_section": "POSIX strcmp",
+        "passed": true,
+        "expected": "0",
+        "actual": "0",
+        "diff": null
+      },
+      {
+        "case_name": "strcmp_less",
+        "spec_section": "POSIX strcmp",
+        "passed": true,
+        "expected": "-1",
+        "actual": "-1",
+        "diff": null
+      },
+      {
+        "case_name": "strcpy_basic",
+        "spec_section": "POSIX strcpy",
+        "passed": true,
+        "expected": "[65, 66, 67, 0, 0, 0, 0, 0]",
+        "actual": "[65, 66, 67, 0, 0, 0, 0, 0]",
+        "diff": null
+      },
+      {
+        "case_name": "strict_memchr_found",
+        "spec_section": "POSIX memchr",
+        "passed": true,
+        "expected": "Some(1)",
+        "actual": "Some(1)",
+        "diff": null
+      },
+      {
+        "case_name": "strict_memcmp_equal",
+        "spec_section": "POSIX memcmp",
+        "passed": true,
+        "expected": "0",
+        "actual": "0",
+        "diff": null
+      },
+      {
+        "case_name": "strict_memcmp_less",
+        "spec_section": "POSIX memcmp",
+        "passed": true,
+        "expected": "-1",
+        "actual": "-1",
+        "diff": null
+      },
+      {
+        "case_name": "strict_memcpy_overflow_ub",
+        "spec_section": "TSM strict memcpy",
+        "passed": true,
+        "expected": "UB",
+        "actual": "UB",
+        "diff": "strict mode leaves undefined behavior undefined"
+      },
+      {
+        "case_name": "strict_memmove_basic",
+        "spec_section": "POSIX memmove",
+        "passed": true,
+        "expected": "[1, 2, 3]",
+        "actual": "[1, 2, 3]",
+        "diff": null
+      },
+      {
+        "case_name": "strict_memrchr_found",
+        "spec_section": "GNU memrchr",
+        "passed": true,
+        "expected": "Some(2)",
+        "actual": "Some(2)",
+        "diff": null
+      },
+      {
+        "case_name": "strict_memset_basic",
+        "spec_section": "POSIX memset",
+        "passed": true,
+        "expected": "[65, 65, 65, 0, 0]",
+        "actual": "[65, 65, 65, 0, 0]",
+        "diff": null
+      },
+      {
+        "case_name": "strict_strcat_basic",
+        "spec_section": "POSIX strcat",
+        "passed": true,
+        "expected": "[65, 66, 0, 0, 0]",
+        "actual": "[65, 66, 0, 0, 0]",
+        "diff": null
+      },
+      {
+        "case_name": "strict_strchr_found",
+        "spec_section": "POSIX strchr",
+        "passed": true,
+        "expected": "Some(1)",
+        "actual": "Some(1)",
+        "diff": null
+      },
+      {
+        "case_name": "strict_strcmp_equal",
+        "spec_section": "POSIX strcmp",
+        "passed": true,
+        "expected": "0",
+        "actual": "0",
+        "diff": null
+      },
+      {
+        "case_name": "strict_strcpy_basic",
+        "spec_section": "POSIX strcpy",
+        "passed": true,
+        "expected": "[65, 66, 0, 0, 0]",
+        "actual": "[65, 66, 0, 0, 0]",
+        "diff": null
+      },
+      {
+        "case_name": "strict_strlen_unterminated_ub",
+        "spec_section": "TSM strict strlen",
+        "passed": true,
+        "expected": "UB",
+        "actual": "UB",
+        "diff": "strict mode leaves undefined behavior undefined"
+      },
+      {
+        "case_name": "strict_strncpy_basic",
+        "spec_section": "POSIX strncpy",
+        "passed": true,
+        "expected": "[65, 66, 0, 0, 0]",
+        "actual": "[65, 66, 0, 0, 0]",
+        "diff": null
+      },
+      {
+        "case_name": "strict_strrchr_found",
+        "spec_section": "POSIX strrchr",
+        "passed": true,
+        "expected": "Some(2)",
+        "actual": "Some(2)",
+        "diff": null
+      },
+      {
+        "case_name": "strict_strstr_found",
+        "spec_section": "POSIX strstr",
+        "passed": true,
+        "expected": "Some(1)",
+        "actual": "Some(1)",
+        "diff": null
+      },
+      {
+        "case_name": "strict_wcscat_basic",
+        "spec_section": "ISO C wcscat",
+        "passed": true,
+        "expected": "[65, 66, 0, 0, 0]",
+        "actual": "[65, 66, 0, 0, 0]",
+        "diff": null
+      },
+      {
+        "case_name": "strict_wcschr_found",
+        "spec_section": "ISO C wcschr",
+        "passed": true,
+        "expected": "Some(1)",
+        "actual": "Some(1)",
+        "diff": "strict host parity mismatch: host=Some(4), impl=Some(1)"
+      },
+      {
+        "case_name": "strict_wcschr_not_found",
+        "spec_section": "ISO C wcschr",
+        "passed": true,
+        "expected": "None",
+        "actual": "None",
+        "diff": null
+      },
+      {
+        "case_name": "strict_wcscmp_equal",
+        "spec_section": "ISO C wcscmp",
+        "passed": true,
+        "expected": "0",
+        "actual": "0",
+        "diff": null
+      },
+      {
+        "case_name": "strict_wcscmp_less",
+        "spec_section": "ISO C wcscmp",
+        "passed": true,
+        "expected": "-1",
+        "actual": "-1",
+        "diff": null
+      },
+      {
+        "case_name": "strict_wcscpy_basic",
+        "spec_section": "ISO C wcscpy",
+        "passed": true,
+        "expected": "[65, 66, 0, 0, 0]",
+        "actual": "[65, 66, 0, 0, 0]",
+        "diff": null
+      },
+      {
+        "case_name": "strict_wcslen_basic",
+        "spec_section": "ISO C wcslen",
+        "passed": true,
+        "expected": "2",
+        "actual": "2",
+        "diff": null
+      },
+      {
+        "case_name": "strict_wcslen_empty",
+        "spec_section": "ISO C wcslen",
+        "passed": true,
+        "expected": "0",
+        "actual": "0",
+        "diff": null
+      },
+      {
+        "case_name": "strict_wcsncpy_basic",
+        "spec_section": "ISO C wcsncpy",
+        "passed": true,
+        "expected": "[65, 66, 0, 0, 0]",
+        "actual": "[65, 66, 0, 0, 0]",
+        "diff": null
+      },
+      {
+        "case_name": "strict_wcsncpy_pad",
+        "spec_section": "ISO C wcsncpy",
+        "passed": true,
+        "expected": "[65, 0, 0, 0, 0]",
+        "actual": "[65, 0, 0, 0, 0]",
+        "diff": null
+      },
+      {
+        "case_name": "strict_wcsstr_found",
+        "spec_section": "ISO C wcsstr",
+        "passed": true,
+        "expected": "Some(1)",
+        "actual": "Some(1)",
+        "diff": "strict host parity mismatch: host=Some(4), impl=Some(1)"
+      },
+      {
+        "case_name": "strncat_basic",
+        "spec_section": "POSIX strncat",
+        "passed": true,
+        "expected": "[65, 66, 67, 0, 0]",
+        "actual": "[65, 66, 67, 0, 0]",
+        "diff": null
+      },
+      {
+        "case_name": "strncpy_basic",
+        "spec_section": "POSIX strncpy",
+        "passed": true,
+        "expected": "[65, 66, 0, 0, 0]",
+        "actual": "[65, 66, 0, 0, 0]",
+        "diff": null
+      },
+      {
+        "case_name": "strrchr_found",
+        "spec_section": "POSIX strrchr",
+        "passed": true,
+        "expected": "Some(2)",
+        "actual": "Some(2)",
+        "diff": null
+      },
+      {
+        "case_name": "strstr_found",
+        "spec_section": "POSIX strstr",
+        "passed": true,
+        "expected": "Some(1)",
+        "actual": "Some(1)",
+        "diff": null
+      },
+      {
+        "case_name": "strtol_auto",
+        "spec_section": "POSIX strtol",
+        "passed": true,
+        "expected": "8",
+        "actual": "8",
+        "diff": null
+      },
+      {
+        "case_name": "strtol_base10",
+        "spec_section": "POSIX strtol",
+        "passed": true,
+        "expected": "100",
+        "actual": "100",
+        "diff": null
+      },
+      {
+        "case_name": "strtol_decimal",
+        "spec_section": "POSIX strtol",
+        "passed": true,
+        "expected": "123",
+        "actual": "123",
+        "diff": null
+      },
+      {
+        "case_name": "strtol_hex",
+        "spec_section": "POSIX strtol",
+        "passed": true,
+        "expected": "255",
+        "actual": "255",
+        "diff": null
+      },
+      {
+        "case_name": "strtol_hex_auto",
+        "spec_section": "POSIX strtol",
+        "passed": true,
+        "expected": "255",
+        "actual": "255",
+        "diff": null
+      },
+      {
+        "case_name": "strtol_overflow_max",
+        "spec_section": "POSIX strtol",
+        "passed": true,
+        "expected": "9223372036854775807",
+        "actual": "9223372036854775807",
+        "diff": null
+      },
+      {
+        "case_name": "strtoul_basic",
+        "spec_section": "POSIX strtoul",
+        "passed": true,
+        "expected": "123",
+        "actual": "123",
+        "diff": null
+      },
+      {
+        "case_name": "strtoul_negative_wrap",
+        "spec_section": "POSIX strtoul",
+        "passed": true,
+        "expected": "18446744073709551615",
+        "actual": "18446744073709551615",
+        "diff": null
+      },
+      {
+        "case_name": "wcscmp_equal",
+        "spec_section": "ISO C wcscmp",
+        "passed": true,
+        "expected": "0",
+        "actual": "0",
+        "diff": null
+      },
+      {
+        "case_name": "wcscmp_less",
+        "spec_section": "ISO C wcscmp",
+        "passed": true,
+        "expected": "-1",
+        "actual": "-1",
+        "diff": null
+      },
+      {
+        "case_name": "wcscpy_basic",
+        "spec_section": "ISO C wcscpy",
+        "passed": true,
+        "expected": "[65, 66, 67, 0, 0, 0, 0, 0]",
+        "actual": "[65, 66, 67, 0, 0, 0, 0, 0]",
+        "diff": null
+      },
+      {
+        "case_name": "wcslen_basic",
+        "spec_section": "ISO C wcslen",
+        "passed": true,
+        "expected": "3",
+        "actual": "3",
+        "diff": null
+      },
+      {
+        "case_name": "wmemchr_found",
+        "spec_section": "ISO C wmemchr",
+        "passed": true,
+        "expected": "Some(2)",
+        "actual": "Some(2)",
+        "diff": "strict host parity mismatch: host=Some(8), impl=Some(2)"
+      },
+      {
+        "case_name": "wmemcmp_equal",
+        "spec_section": "ISO C wmemcmp",
+        "passed": true,
+        "expected": "0",
+        "actual": "0",
+        "diff": null
+      },
+      {
+        "case_name": "wmemcmp_less",
+        "spec_section": "ISO C wmemcmp",
+        "passed": true,
+        "expected": "-1",
+        "actual": "-1",
+        "diff": null
+      },
+      {
+        "case_name": "wmemcpy_basic",
+        "spec_section": "ISO C wmemcpy",
+        "passed": true,
+        "expected": "[1, 2, 3, 4]",
+        "actual": "[1, 2, 3, 4]",
+        "diff": null
+      },
+      {
+        "case_name": "wmemmove_basic",
+        "spec_section": "ISO C wmemmove",
+        "passed": true,
+        "expected": "[1, 2, 3, 4]",
+        "actual": "[1, 2, 3, 4]",
+        "diff": null
+      },
+      {
+        "case_name": "wmemset_basic",
+        "spec_section": "ISO C wmemset",
+        "passed": true,
+        "expected": "[42, 42, 42, 42]",
+        "actual": "[42, 42, 42, 42]",
+        "diff": null
+      }
+    ]
+  }
+}

@@ -1,0 +1,2 @@
+d01211008579ca7fb10128da3d18a61ef95d025eb35433f285d425f0d701dad8  fixture_verify_strict_hardened.v1.md
+6036d88089d2c90d1386182af789cae2d101b5d690965b3f0045044fd8583ed9  fixture_verify_strict_hardened.v1.json
