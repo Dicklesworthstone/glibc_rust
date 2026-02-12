@@ -108,6 +108,15 @@ pub struct LogEntry {
     /// actions do not require schema churn; stable families should still use a bounded vocab.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub healing_action: Option<String>,
+    /// Runtime controller identity for decision explainability.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub controller_id: Option<String>,
+    /// Action selected by the decision controller (`Allow|FullValidate|Repair|Deny`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub decision_action: Option<String>,
+    /// Decision risk/context inputs required for explainability joins.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub risk_inputs: Option<serde_json::Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub decision: Option<Decision>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -147,6 +156,9 @@ impl LogEntry {
             parent_span_id: None,
             profile: None,
             healing_action: None,
+            controller_id: None,
+            decision_action: None,
+            risk_inputs: None,
             decision: None,
             outcome: None,
             errno: None,
@@ -213,6 +225,41 @@ impl LogEntry {
     #[must_use]
     pub fn with_healing_action(mut self, action: impl Into<String>) -> Self {
         self.healing_action = Some(action.into());
+        self
+    }
+
+    /// Set runtime controller identifier.
+    #[must_use]
+    pub fn with_controller_id(mut self, controller_id: impl Into<String>) -> Self {
+        self.controller_id = Some(controller_id.into());
+        self
+    }
+
+    /// Set explainability action (`Allow|FullValidate|Repair|Deny`).
+    #[must_use]
+    pub fn with_decision_action(mut self, action: impl Into<String>) -> Self {
+        self.decision_action = Some(action.into());
+        self
+    }
+
+    /// Set explainability risk/context inputs.
+    #[must_use]
+    pub fn with_risk_inputs(mut self, risk_inputs: serde_json::Value) -> Self {
+        self.risk_inputs = Some(risk_inputs);
+        self
+    }
+
+    /// Set the complete explainability tuple for decision events.
+    #[must_use]
+    pub fn with_decision_explainability(
+        mut self,
+        controller_id: impl Into<String>,
+        action: impl Into<String>,
+        risk_inputs: serde_json::Value,
+    ) -> Self {
+        self.controller_id = Some(controller_id.into());
+        self.decision_action = Some(action.into());
+        self.risk_inputs = Some(risk_inputs);
         self
     }
 
@@ -516,6 +563,53 @@ pub fn validate_log_line(
             field: "decision".to_string(),
             message: format!("invalid decision: '{decision}'"),
         });
+    }
+
+    // Validate decision_action enum if present
+    if let Some(action) = obj.get("decision_action").and_then(|v| v.as_str())
+        && !["Allow", "FullValidate", "Repair", "Deny"].contains(&action)
+    {
+        errors.push(LogValidationError {
+            line_number,
+            field: "decision_action".to_string(),
+            message: format!("invalid decision_action: '{action}'"),
+        });
+    }
+
+    // Decision explainability contract:
+    // if `decision` is present, all explainability fields must be present too.
+    if obj.get("decision").is_some() {
+        match obj.get("controller_id").and_then(|v| v.as_str()) {
+            Some(controller) if !controller.trim().is_empty() => {}
+            _ => errors.push(LogValidationError {
+                line_number,
+                field: "controller_id".to_string(),
+                message:
+                    "decision events must include non-empty controller_id explainability".to_string(),
+            }),
+        }
+
+        match obj.get("decision_action").and_then(|v| v.as_str()) {
+            Some(action) if ["Allow", "FullValidate", "Repair", "Deny"].contains(&action) => {}
+            Some(action) => errors.push(LogValidationError {
+                line_number,
+                field: "decision_action".to_string(),
+                message: format!("invalid decision_action for decision event: '{action}'"),
+            }),
+            None => errors.push(LogValidationError {
+                line_number,
+                field: "decision_action".to_string(),
+                message: "decision events must include decision_action explainability".to_string(),
+            }),
+        }
+
+        if !obj.get("risk_inputs").is_some_and(serde_json::Value::is_object) {
+            errors.push(LogValidationError {
+                line_number,
+                field: "risk_inputs".to_string(),
+                message: "decision events must include risk_inputs object".to_string(),
+            });
+        }
     }
 
     // Validate stream enum if present
