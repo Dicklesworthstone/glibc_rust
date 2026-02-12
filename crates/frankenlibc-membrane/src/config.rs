@@ -1,6 +1,6 @@
 //! Runtime mode configuration.
 //!
-//! The runtime mode is set via the `GLIBC_RUST_MODE` environment variable:
+//! The runtime mode is set via the `FRANKENLIBC_MODE` environment variable:
 //! - `strict` (default): ABI-compatible behavior with POSIX-correct errno/return
 //!   semantics. The membrane validates but does NOT silently rewrite operations.
 //!   Invalid operations produce the same errors a conformant libc would.
@@ -130,7 +130,7 @@ pub fn safety_level() -> SafetyLevel {
 
     // We own the resolution. Read env var (may trigger reentrant calls to our
     // exported functions like strlen — those will see RESOLVING and return Strict).
-    let level = std::env::var("GLIBC_RUST_MODE")
+    let level = std::env::var("FRANKENLIBC_MODE")
         .map(|v| parse_runtime_mode_env(&v))
         .unwrap_or_default();
     CACHED_LEVEL.store(level_to_u8(level), Ordering::Release);

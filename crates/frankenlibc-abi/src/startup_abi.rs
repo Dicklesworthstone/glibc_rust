@@ -7,7 +7,7 @@
 use std::ffi::{c_char, c_int, c_void};
 use std::sync::atomic::{AtomicU8, AtomicUsize, Ordering};
 
-use glibc_rs_membrane::runtime_math::{ApiFamily, MembraneAction};
+use frankenlibc_membrane::runtime_math::{ApiFamily, MembraneAction};
 
 use crate::runtime_policy;
 use crate::startup_helpers::{
@@ -58,7 +58,7 @@ fn store_invariants(inv: StartupInvariants) {
 }
 
 fn startup_phase0_env_enabled() -> bool {
-    matches!(std::env::var("GLIBC_RS_STARTUP_PHASE0"), Ok(v) if v == "1")
+    matches!(std::env::var("FRANKENLIBC_STARTUP_PHASE0"), Ok(v) if v == "1")
 }
 
 unsafe fn delegate_to_host_libc_start_main(
@@ -253,7 +253,7 @@ pub unsafe extern "C" fn __libc_start_main(
 
 /// Test-hook alias that always executes the phase-0 startup path.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn __glibc_rs_startup_phase0(
+pub unsafe extern "C" fn __frankenlibc_startup_phase0(
     main: Option<MainFn>,
     argc: c_int,
     ubp_av: *mut *mut c_char,
@@ -268,7 +268,7 @@ pub unsafe extern "C" fn __glibc_rs_startup_phase0(
 
 /// Returns the last captured startup invariants from `startup_phase0_impl`.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn __glibc_rs_startup_snapshot(out: *mut StartupInvariantSnapshot) -> c_int {
+pub unsafe extern "C" fn __frankenlibc_startup_snapshot(out: *mut StartupInvariantSnapshot) -> c_int {
     if out.is_null() {
         // SAFETY: writes TLS errno.
         unsafe { set_abi_errno(libc::EFAULT) };

@@ -1,5 +1,5 @@
 [package]
-name = "glibc-rs-fuzz"
+name = "frankenlibc-fuzz"
 version = "0.0.0"
 edition = "2024"
 publish = false
@@ -9,8 +9,8 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
-glibc-rs-membrane = { path = "../glibc-rs-membrane" }
-glibc-rs-core = { path = "../glibc-rs-core" }
+frankenlibc-membrane = { path = "../frankenlibc-membrane" }
+frankenlibc-core = { path = "../frankenlibc-core" }
 
 [[bin]]
 name = "fuzz_string"

@@ -1,5 +1,5 @@
 [package]
-name = "glibc_rust_conformance"
+name = "frankenlibc_conformance"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -15,7 +15,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "2.0"
 libc = "0.2"
-glibc_rust = { path = "../glibc_rust" }
-glibc-rs-core = { path = "../glibc-rs-core" }
+frankenlibc = { path = "../frankenlibc" }
+frankenlibc-core = { path = "../frankenlibc-core" }
 asupersync_conformance = { package = "asupersync-conformance", path = "/dp/asupersync/conformance", optional = true }
 ftui_harness = { package = "ftui-harness", path = "/dp/frankentui/crates/ftui-harness", optional = true }

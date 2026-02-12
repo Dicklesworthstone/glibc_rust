@@ -1,9 +1,9 @@
 [package]
-name = "glibc-rs-abi"
+name = "frankenlibc-abi"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "ABI-compatible extern C boundary for glibc_rust (produces libc.so)"
+description = "ABI-compatible extern C boundary for FrankenLibC (produces libc.so)"
 build = "build.rs"
 
 [lib]
@@ -13,8 +13,8 @@ crate-type = ["cdylib", "rlib"]
 unsafe_code = "allow"
 
 [dependencies]
-glibc-rs-membrane = { workspace = true }
-glibc-rs-core = { workspace = true }
+frankenlibc-membrane = { workspace = true }
+frankenlibc-core = { workspace = true }
 libc = { workspace = true }
 
 [dev-dependencies]

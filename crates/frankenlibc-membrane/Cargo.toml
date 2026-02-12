@@ -1,9 +1,9 @@
 [package]
-name = "glibc-rs-membrane"
+name = "frankenlibc-membrane"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "Transparent Safety Membrane for glibc_rust"
+description = "Transparent Safety Membrane for FrankenLibC"
 
 [features]
 default = ["runtime-math-production"]

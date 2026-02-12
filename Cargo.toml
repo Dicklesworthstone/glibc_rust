@@ -1,14 +1,14 @@
 [workspace]
 resolver = "2"
 members = [
-  "crates/glibc-rs-membrane",
-  "crates/glibc-rs-core",
-  "crates/glibc-rs-abi",
-  "crates/glibc-rs-harness",
-  "crates/glibc-rs-bench",
+  "crates/frankenlibc-membrane",
+  "crates/frankenlibc-core",
+  "crates/frankenlibc-abi",
+  "crates/frankenlibc-harness",
+  "crates/frankenlibc-bench",
   # Legacy crates (kept for migration compatibility)
-  "crates/glibc_rust",
-  "crates/glibc_rust_conformance",
+  "crates/frankenlibc",
+  "crates/frankenlibc_conformance",
 ]
 
 [workspace.package]
@@ -31,9 +31,9 @@ criterion = "0.5"
 libc = "0.2"
 
 # Internal crates
-glibc-rs-membrane = { path = "crates/glibc-rs-membrane" }
-glibc-rs-core = { path = "crates/glibc-rs-core" }
-glibc-rs-abi = { path = "crates/glibc-rs-abi" }
+frankenlibc-membrane = { path = "crates/frankenlibc-membrane" }
+frankenlibc-core = { path = "crates/frankenlibc-core" }
+frankenlibc-abi = { path = "crates/frankenlibc-abi" }
 
 # Companion crates (build tooling only)
 asupersync-conformance = { path = "/dp/asupersync/conformance" }

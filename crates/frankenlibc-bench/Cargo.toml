@@ -1,17 +1,17 @@
 [package]
-name = "glibc-rs-bench"
+name = "frankenlibc-bench"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "Benchmarks for glibc_rust"
+description = "Benchmarks for FrankenLibC"
 
 [lints.rust]
 unsafe_code = "allow"
 
 [dependencies]
-glibc-rs-membrane = { workspace = true }
-glibc-rs-core = { workspace = true }
-glibc-rs-abi = { workspace = true }
+frankenlibc-membrane = { workspace = true }
+frankenlibc-core = { workspace = true }
+frankenlibc-abi = { workspace = true }
 
 [dev-dependencies]
 criterion = { workspace = true }
