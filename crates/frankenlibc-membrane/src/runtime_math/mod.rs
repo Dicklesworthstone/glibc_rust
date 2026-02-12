@@ -287,6 +287,8 @@ pub struct RuntimeDecision {
     pub action: MembraneAction,
     pub policy_id: u32,
     pub risk_upper_bound_ppm: u32,
+    /// Evidence ring-buffer seqno linked to this decision (0 when not sampled).
+    pub evidence_seqno: u64,
 }
 
 impl RuntimeDecision {
@@ -1847,11 +1849,12 @@ impl RuntimeMathKernel {
         };
         self.cached_policy_action_dist[action_idx].fetch_add(1, Ordering::Relaxed);
 
-        let decision = RuntimeDecision {
+        let mut decision = RuntimeDecision {
             profile,
             action,
             policy_id: compute_policy_id(mode, ctx.family, profile, action),
             risk_upper_bound_ppm,
+            evidence_seqno: 0,
         };
 
         // Evidence recording is intentionally cadence-gated:
@@ -1895,6 +1898,7 @@ impl RuntimeMathKernel {
                 0,
                 None,
             );
+            decision.evidence_seqno = seqno;
             self.cached_evidence_seqno.store(seqno, Ordering::Relaxed);
         }
 
