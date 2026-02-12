@@ -729,6 +729,9 @@ mod tests {
         assert!(parsed.get("stream").is_none());
         assert!(parsed.get("gate").is_none());
         assert!(parsed.get("mode").is_none());
+        assert!(parsed.get("controller_id").is_none());
+        assert!(parsed.get("decision_action").is_none());
+        assert!(parsed.get("risk_inputs").is_none());
     }
 
     #[test]
@@ -742,6 +745,11 @@ mod tests {
             .with_span("span-1", None)
             .with_profile(ValidationProfile::Full)
             .with_healing_action("ClampSize")
+            .with_decision_explainability(
+                "runtime_math_kernel.v1",
+                "Deny",
+                serde_json::json!({"requested_bytes": 4096, "bloom_negative": true}),
+            )
             .with_outcome(Outcome::Fail)
             .with_decision(Decision::Deny)
             .with_errno(12)
@@ -762,6 +770,9 @@ mod tests {
         assert_eq!(parsed["span_id"], "span-1");
         assert_eq!(parsed["profile"], "Full");
         assert_eq!(parsed["healing_action"], "ClampSize");
+        assert_eq!(parsed["controller_id"], "runtime_math_kernel.v1");
+        assert_eq!(parsed["decision_action"], "Deny");
+        assert!(parsed["risk_inputs"].is_object());
         assert_eq!(parsed["outcome"], "fail");
         assert_eq!(parsed["decision"], "Deny");
         assert_eq!(parsed["errno"], 12);
@@ -816,6 +827,17 @@ mod tests {
         assert!(result.is_err());
         let errors = result.unwrap_err();
         assert!(errors.iter().any(|e| e.field == "trace_id"));
+    }
+
+    #[test]
+    fn validate_decision_requires_explainability_fields() {
+        let json = r#"{"timestamp":"2026-02-12T00:00:00Z","trace_id":"bd-test::run::001","level":"error","event":"runtime_decision","decision":"Deny"}"#;
+        let result = validate_log_line(json, 1);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors.iter().any(|e| e.field == "controller_id"));
+        assert!(errors.iter().any(|e| e.field == "decision_action"));
+        assert!(errors.iter().any(|e| e.field == "risk_inputs"));
     }
 
     #[test]

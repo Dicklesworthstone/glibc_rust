@@ -207,11 +207,18 @@ fn valid_log_line_accepts_minimal_entry() {
 
 #[test]
 fn valid_log_line_accepts_full_entry() {
-    let line = r#"{"timestamp":"2026-02-11T00:00:00Z","trace_id":"bd-144::run-1::005","level":"error","event":"test_failure","bead_id":"bd-144","mode":"hardened","api_family":"malloc","symbol":"realloc","decision":"Deny","outcome":"fail","errno":12,"latency_ns":150,"artifact_refs":["path/bt"],"details":{"note":"oom"}}"#;
+    let line = r#"{"timestamp":"2026-02-11T00:00:00Z","trace_id":"bd-144::run-1::005","level":"error","event":"test_failure","bead_id":"bd-144","mode":"hardened","api_family":"malloc","symbol":"realloc","decision":"Deny","controller_id":"runtime_math_kernel.v1","decision_action":"Deny","risk_inputs":{"requested_bytes":4096,"bloom_negative":true},"outcome":"fail","errno":12,"latency_ns":150,"artifact_refs":["path/bt"],"details":{"note":"oom"}}"#;
     let result = validate_log_line(line, 1);
     assert!(
         result.is_ok(),
         "Full entry should validate: {:?}",
         result.err()
     );
+}
+
+#[test]
+fn decision_event_without_explainability_is_rejected() {
+    let line = r#"{"timestamp":"2026-02-11T00:00:00Z","trace_id":"bd-144::run-1::006","level":"error","event":"runtime_decision","decision":"Deny","outcome":"fail"}"#;
+    let result = validate_log_line(line, 1);
+    assert!(result.is_err(), "Missing explainability should fail");
 }
