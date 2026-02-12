@@ -293,8 +293,9 @@ pub(crate) fn observe(
     estimated_cost_ns: u64,
     adverse: bool,
 ) {
+    let mode = safety_level();
     if let Some(k) = kernel() {
-        k.observe_validation_result(family, profile, estimated_cost_ns, adverse);
+        k.observe_validation_result(mode, family, profile, estimated_cost_ns, adverse);
     }
 }
 
@@ -317,8 +318,9 @@ pub(crate) fn note_check_order_outcome(
     ordering_used: &[CheckStage; 7],
     exit_stage: Option<usize>,
 ) {
+    let mode = safety_level();
     if let Some(k) = kernel() {
-        k.note_check_order_outcome(family, aligned, recent_page, ordering_used, exit_stage);
+        k.note_check_order_outcome(mode, family, aligned, recent_page, ordering_used, exit_stage);
     }
 }
 

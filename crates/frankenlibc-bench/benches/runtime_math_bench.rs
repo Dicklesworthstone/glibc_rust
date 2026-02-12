@@ -168,6 +168,7 @@ fn bench_runtime_math(c: &mut Criterion) {
         // Warmup: ensure any internal caches/tables initialize deterministically.
         for _ in 0..10_000 {
             kernel.observe_validation_result(
+                mode,
                 ApiFamily::PointerValidation,
                 frankenlibc_membrane::ValidationProfile::Fast,
                 12,
@@ -183,6 +184,7 @@ fn bench_runtime_math(c: &mut Criterion) {
                 let start = Instant::now();
                 for _ in 0..iters {
                     kernel.observe_validation_result(
+                        mode,
                         ApiFamily::PointerValidation,
                         frankenlibc_membrane::ValidationProfile::Fast,
                         12,
@@ -205,7 +207,7 @@ fn bench_runtime_math(c: &mut Criterion) {
             let d = kernel.decide(mode, ctx);
             let cost = if d.profile.requires_full() { 120 } else { 12 };
             let adverse = matches!(d.action, MembraneAction::Repair(_) | MembraneAction::Deny);
-            kernel.observe_validation_result(ctx.family, d.profile, cost, adverse);
+            kernel.observe_validation_result(mode, ctx.family, d.profile, cost, adverse);
         }
 
         let stats = RefCell::new(BenchStats::default());
@@ -219,7 +221,7 @@ fn bench_runtime_math(c: &mut Criterion) {
                     let cost = if d.profile.requires_full() { 120 } else { 12 };
                     let adverse =
                         matches!(d.action, MembraneAction::Repair(_) | MembraneAction::Deny);
-                    kernel.observe_validation_result(ctx.family, d.profile, cost, adverse);
+                    kernel.observe_validation_result(mode, ctx.family, d.profile, cost, adverse);
                     black_box(d.policy_id);
                 }
                 let dur = start.elapsed().max(Duration::from_nanos(1));

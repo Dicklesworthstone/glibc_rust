@@ -869,11 +869,19 @@ impl RuntimeMathKernel {
     /// Create a new runtime kernel.
     #[must_use]
     pub fn new() -> Self {
+        Self::new_for_mode(crate::config::safety_level())
+    }
+
+    /// Create a new runtime kernel with an explicit mode.
+    ///
+    /// This avoids relying on global env-backed config during tests and other
+    /// deterministic harness scenarios.
+    #[must_use]
+    pub fn new_for_mode(mode: SafetyLevel) -> Self {
         // The observe() hot path uses a cached probe mask to decide which heavy
         // monitors should run. The microbench for observe() constructs a fresh
         // kernel and never calls decide(), so we must seed a budget-feasible
         // probe plan here (instead of defaulting to all probes).
-        let mode = crate::config::safety_level();
         let risk_prior_ppm = 20_000_u32;
         let mut design = OptimalDesignController::new();
         let plan = design.choose_plan(mode, risk_prior_ppm, false, false);
@@ -1932,13 +1940,13 @@ impl RuntimeMathKernel {
     /// exits so the oracle learns from true hot-path behavior.
     pub fn note_check_order_outcome(
         &self,
+        mode: SafetyLevel,
         family: ApiFamily,
         aligned: bool,
         recent_page: bool,
         ordering_used: &[CheckStage; 7],
         exit_stage: Option<usize>,
     ) {
-        let mode = crate::config::safety_level();
         let ctx = CheckContext {
             family: family as u8,
             aligned,
@@ -1954,12 +1962,12 @@ impl RuntimeMathKernel {
     /// Feed observed runtime outcome back into online controllers.
     pub fn observe_validation_result(
         &self,
+        mode: SafetyLevel,
         family: ApiFamily,
         profile: ValidationProfile,
         estimated_cost_ns: u64,
         adverse: bool,
     ) {
-        let mode = crate::config::safety_level();
         let probe_mask = self.cached_probe_mask.load(Ordering::Relaxed) as u32;
         self.risk.observe(family, adverse);
         self.router
@@ -4197,19 +4205,22 @@ mod tests {
     #[test]
     fn observe_updates_snapshot() {
         let kernel = RuntimeMathKernel::new();
+        let mode = SafetyLevel::Hardened;
         kernel.observe_validation_result(
+            mode,
             ApiFamily::PointerValidation,
             ValidationProfile::Fast,
             7,
             false,
         );
         kernel.observe_validation_result(
+            mode,
             ApiFamily::PointerValidation,
             ValidationProfile::Full,
             45,
             true,
         );
-        let snap = kernel.snapshot(SafetyLevel::Hardened);
+        let snap = kernel.snapshot(mode);
         assert!(snap.decisions <= 2);
         assert!(snap.full_validation_trigger_ppm > 0);
     }
@@ -4217,8 +4228,10 @@ mod tests {
     #[test]
     fn explicit_oracle_feedback_updates_bias_cache() {
         let kernel = RuntimeMathKernel::new();
+        let mode = SafetyLevel::Strict;
         let ordering = kernel.check_ordering(ApiFamily::PointerValidation, true, true);
         kernel.note_check_order_outcome(
+            mode,
             ApiFamily::PointerValidation,
             true,
             true,

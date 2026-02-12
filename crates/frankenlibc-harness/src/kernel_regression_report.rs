@@ -185,7 +185,7 @@ pub fn collect_mode_metrics(
         // Exercise the regret controller (Pareto) and other observe-driven kernels.
         let estimated_cost_ns = if d.profile.requires_full() { 120 } else { 12 };
         let adverse = matches!(d.action, MembraneAction::Repair(_) | MembraneAction::Deny);
-        kernel.observe_validation_result(ctx.family, d.profile, estimated_cost_ns, adverse);
+        kernel.observe_validation_result(mode, ctx.family, d.profile, estimated_cost_ns, adverse);
 
         // Deterministically exercise overlap-consistency monitoring.
         if i % 17 == 0 {
@@ -554,7 +554,7 @@ fn bench_decide_observe(mode: SafetyLevel, cfg: MicrobenchConfig) -> LatencyStat
         let d = kernel.decide(mode, ctx);
         let cost = if d.profile.requires_full() { 120 } else { 12 };
         let adverse = matches!(d.action, MembraneAction::Repair(_) | MembraneAction::Deny);
-        kernel.observe_validation_result(ctx.family, d.profile, cost, adverse);
+        kernel.observe_validation_result(mode, ctx.family, d.profile, cost, adverse);
     }
 
     let mut samples = Vec::with_capacity(cfg.sample_count);
@@ -564,7 +564,7 @@ fn bench_decide_observe(mode: SafetyLevel, cfg: MicrobenchConfig) -> LatencyStat
             let d = kernel.decide(mode, ctx);
             let cost = if d.profile.requires_full() { 120 } else { 12 };
             let adverse = matches!(d.action, MembraneAction::Repair(_) | MembraneAction::Deny);
-            kernel.observe_validation_result(ctx.family, d.profile, cost, adverse);
+            kernel.observe_validation_result(mode, ctx.family, d.profile, cost, adverse);
         }
         let dur = start.elapsed().max(Duration::from_nanos(1));
         samples.push(dur.as_nanos() as f64 / cfg.sample_iters as f64);

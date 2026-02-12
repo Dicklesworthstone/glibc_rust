@@ -114,6 +114,7 @@ impl ValidationPipeline {
         // Stage 1: Null check (~1ns)
         if addr == 0 {
             self.runtime_math.observe_validation_result(
+                mode,
                 ApiFamily::PointerValidation,
                 ValidationProfile::Fast,
                 1,
@@ -152,6 +153,7 @@ impl ValidationPipeline {
                             cv.generation,
                         );
                         self.runtime_math.note_check_order_outcome(
+                            mode,
                             ApiFamily::PointerValidation,
                             aligned,
                             recent_page,
@@ -159,6 +161,7 @@ impl ValidationPipeline {
                             Some(idx),
                         );
                         self.runtime_math.observe_validation_result(
+                            mode,
                             ApiFamily::PointerValidation,
                             ValidationProfile::Fast,
                             elapsed_ns,
@@ -184,6 +187,7 @@ impl ValidationPipeline {
                         // Runtime-math selected fast path for foreign pointers.
                         if !pre_decision.requires_full_validation() && !mode.heals_enabled() {
                             self.runtime_math.note_check_order_outcome(
+                                mode,
                                 ApiFamily::PointerValidation,
                                 aligned,
                                 recent_page,
@@ -191,6 +195,7 @@ impl ValidationPipeline {
                                 Some(idx),
                             );
                             self.runtime_math.observe_validation_result(
+                                mode,
                                 ApiFamily::PointerValidation,
                                 pre_decision.profile,
                                 elapsed_ns,
@@ -203,6 +208,7 @@ impl ValidationPipeline {
                         if !self.page_oracle.query(addr) {
                             elapsed_ns = elapsed_ns.saturating_add(6);
                             self.runtime_math.note_check_order_outcome(
+                                mode,
                                 ApiFamily::PointerValidation,
                                 aligned,
                                 recent_page,
@@ -210,6 +216,7 @@ impl ValidationPipeline {
                                 Some(idx),
                             );
                             self.runtime_math.observe_validation_result(
+                                mode,
                                 ApiFamily::PointerValidation,
                                 pre_decision.profile,
                                 elapsed_ns,
@@ -229,6 +236,7 @@ impl ValidationPipeline {
                     MembraneMetrics::inc(&metrics.arena_lookups);
                     let Some(found) = self.arena.lookup(addr) else {
                         self.runtime_math.note_check_order_outcome(
+                            mode,
                             ApiFamily::PointerValidation,
                             aligned,
                             recent_page,
@@ -236,6 +244,7 @@ impl ValidationPipeline {
                             Some(idx),
                         );
                         self.runtime_math.observe_validation_result(
+                            mode,
                             ApiFamily::PointerValidation,
                             ValidationProfile::Fast,
                             elapsed_ns,
@@ -246,6 +255,7 @@ impl ValidationPipeline {
                     if !found.state.is_live() {
                         let abs = self.abstraction_from_slot(addr, &found);
                         self.runtime_math.note_check_order_outcome(
+                            mode,
                             ApiFamily::PointerValidation,
                             aligned,
                             recent_page,
@@ -253,6 +263,7 @@ impl ValidationPipeline {
                             Some(idx),
                         );
                         self.runtime_math.observe_validation_result(
+                            mode,
                             ApiFamily::PointerValidation,
                             ValidationProfile::Full,
                             elapsed_ns,
@@ -289,6 +300,7 @@ impl ValidationPipeline {
 
         let Some(slot) = slot else {
             self.runtime_math.note_check_order_outcome(
+                mode,
                 ApiFamily::PointerValidation,
                 aligned,
                 recent_page,
@@ -296,6 +308,7 @@ impl ValidationPipeline {
                 None,
             );
             self.runtime_math.observe_validation_result(
+                mode,
                 ApiFamily::PointerValidation,
                 ValidationProfile::Fast,
                 elapsed_ns,
@@ -314,6 +327,7 @@ impl ValidationPipeline {
             let abs = self.abstraction_from_slot(addr, &slot);
             self.cache_validation(addr, &slot);
             self.runtime_math.note_check_order_outcome(
+                mode,
                 ApiFamily::PointerValidation,
                 aligned,
                 recent_page,
@@ -321,6 +335,7 @@ impl ValidationPipeline {
                 None,
             );
             self.runtime_math.observe_validation_result(
+                mode,
                 ApiFamily::PointerValidation,
                 deep_decision.profile,
                 elapsed_ns,
@@ -343,6 +358,7 @@ impl ValidationPipeline {
         let abs = self.abstraction_from_slot(addr, &slot);
         self.cache_validation(addr, &slot);
         self.runtime_math.note_check_order_outcome(
+            mode,
             ApiFamily::PointerValidation,
             aligned,
             recent_page,
@@ -350,6 +366,7 @@ impl ValidationPipeline {
             None,
         );
         self.runtime_math.observe_validation_result(
+            mode,
             ApiFamily::PointerValidation,
             deep_decision.profile,
             elapsed_ns,

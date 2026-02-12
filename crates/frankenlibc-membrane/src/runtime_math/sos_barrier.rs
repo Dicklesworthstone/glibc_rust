@@ -917,6 +917,7 @@ mod tests {
         for _ in 0..256 {
             let _ = kernel.decide(mode, ctx);
             kernel.observe_validation_result(
+                mode,
                 ApiFamily::PointerValidation,
                 ValidationProfile::Fast,
                 15,

@@ -23,6 +23,7 @@ pub mod kernel_snapshot;
 pub mod membrane_tests;
 pub mod report;
 pub mod runner;
+pub mod runtime_math_determinism_proofs;
 pub mod runtime_math_linkage_proofs;
 pub mod snapshot_diff;
 pub mod structured_log;

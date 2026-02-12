@@ -207,6 +207,24 @@ enum Command {
         )]
         report: PathBuf,
     },
+    /// Validate runtime_math determinism + invariants for decide/observe integration.
+    RuntimeMathDeterminismProofs {
+        /// Workspace root used for resolving canonical artifacts.
+        #[arg(long, default_value = ".")]
+        workspace_root: PathBuf,
+        /// Structured JSONL log output path.
+        #[arg(
+            long,
+            default_value = "target/conformance/runtime_math_determinism_proofs.log.jsonl"
+        )]
+        log: PathBuf,
+        /// JSON report output path.
+        #[arg(
+            long,
+            default_value = "target/conformance/runtime_math_determinism_proofs.report.json"
+        )]
+        report: PathBuf,
+    },
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -630,6 +648,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             eprintln!(
                 "OK: runtime_math linkage proofs passed for {} modules (log: {}, report: {})",
                 rep.summary.total_modules,
+                log.display(),
+                report.display()
+            );
+        }
+        Command::RuntimeMathDeterminismProofs {
+            workspace_root,
+            log,
+            report,
+        } => {
+            let rep = frankenlibc_harness::runtime_math_determinism_proofs::run_and_write(
+                &workspace_root,
+                &log,
+                &report,
+            )?;
+            if rep.summary.failed != 0 {
+                return Err(std::io::Error::other(format!(
+                    "runtime_math determinism proofs FAILED: {} mode(s) failed (report: {})",
+                    rep.summary.failed,
+                    report.display()
+                ))
+                .into());
+            }
+            eprintln!(
+                "OK: runtime_math determinism proofs passed for {} modes (log: {}, report: {})",
+                rep.summary.modes,
                 log.display(),
                 report.display()
             );
