@@ -90,6 +90,11 @@ if [[ "${FRANKENLIBC_EXTENDED_GATES:-0}" == "1" ]]; then
     echo "PASS"
     echo ""
 
+    echo "--- symbol fixture coverage matrix drift check ---"
+    scripts/check_symbol_fixture_coverage.sh
+    echo "PASS"
+    echo ""
+
     echo "--- math governance gate ---"
     scripts/check_math_governance.sh
     echo "PASS"

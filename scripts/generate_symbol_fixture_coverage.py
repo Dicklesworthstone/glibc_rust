@@ -18,7 +18,6 @@ import argparse
 import glob
 import json
 import os
-import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any
@@ -205,8 +204,7 @@ def generate_matrix(
     workload_matrix_path: str,
     emit_logs: bool,
 ) -> dict[str, Any]:
-    started = time.time()
-    trace_id = f"bd-15n.1-{int(started * 1000)}"
+    trace_id = "bd-15n.1-symbol-fixture-coverage-v1"
 
     support = _load_json(support_matrix_path)
     symbols = support.get("symbols", [])
@@ -399,8 +397,6 @@ def generate_matrix(
             "coverage_pct": _pct(int(info["covered"]), int(info["total"])),
         }
 
-    finished = time.time()
-    timing_ms = int((finished - started) * 1000)
     generated_at = str(support.get("generated_at_utc", "unknown"))
 
     return {
@@ -412,7 +408,6 @@ def generate_matrix(
         ),
         "trace_id": trace_id,
         "generated_at_utc": generated_at,
-        "timing_ms": timing_ms,
         "inputs": {
             "support_matrix": support_matrix_path,
             "fixtures_dir": fixtures_dir,
