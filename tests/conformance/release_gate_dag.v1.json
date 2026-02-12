@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "bead": "bd-5fw.2",
+  "description": "Canonical deterministic gate DAG for release dry-runs. Defines one fixed topological order, explicit gate dependencies, and fail-fast/resume semantics.",
+  "gate_ordering_policy": {
+    "strategy": "topological_then_declared",
+    "determinism": "Given identical DAG + mode + inputs, gate execution order is identical.",
+    "fail_fast": true,
+    "resume_token_format": "v1:<prereq_hash_12>:<start_index>"
+  },
+  "gates": [
+    {
+      "gate_name": "lint",
+      "depends_on": [],
+      "command": "cargo fmt --check && cargo check --workspace --all-targets && cargo clippy --workspace --all-targets -- -D warnings",
+      "inputs": [
+        "Cargo.toml",
+        "Cargo.lock",
+        "scripts/ci.sh"
+      ],
+      "outputs": [
+        "target/"
+      ]
+    },
+    {
+      "gate_name": "unit",
+      "depends_on": [
+        "lint"
+      ],
+      "command": "cargo test --workspace",
+      "inputs": [
+        "crates/",
+        "tests/"
+      ],
+      "outputs": [
+        "target/"
+      ]
+    },
+    {
+      "gate_name": "conformance",
+      "depends_on": [
+        "unit"
+      ],
+      "command": "scripts/conformance_golden_gate.sh",
+      "inputs": [
+        "tests/conformance/golden/"
+      ],
+      "outputs": [
+        "tests/conformance/golden/sha256sums.txt"
+      ]
+    },
+    {
+      "gate_name": "e2e",
+      "depends_on": [
+        "conformance"
+      ],
+      "command": "scripts/check_e2e_suite.sh",
+      "inputs": [
+        "scripts/e2e_suite.sh",
+        "tests/conformance/e2e_suite.json"
+      ],
+      "outputs": [
+        "tests/cve_arena/results/"
+      ]
+    },
+    {
+      "gate_name": "perf",
+      "depends_on": [
+        "e2e"
+      ],
+      "command": "scripts/perf_gate.sh",
+      "inputs": [
+        "scripts/perf_gate.sh",
+        "scripts/perf_baseline.json"
+      ],
+      "outputs": [
+        "target/criterion/"
+      ]
+    },
+    {
+      "gate_name": "docs_reports",
+      "depends_on": [
+        "perf"
+      ],
+      "command": "scripts/check_support_matrix_drift.sh && scripts/check_replacement_levels.sh && scripts/check_closure_contract.sh",
+      "inputs": [
+        "README.md",
+        "support_matrix.json",
+        "tests/conformance/replacement_levels.json",
+        "tests/conformance/closure_contract.v1.json"
+      ],
+      "outputs": [
+        "tests/conformance/reality_report.v1.json"
+      ]
+    },
+    {
+      "gate_name": "release_dossier",
+      "depends_on": [
+        "docs_reports"
+      ],
+      "command": "scripts/check_closure_gate.sh",
+      "inputs": [
+        "tests/conformance/verification_matrix.json",
+        "tests/conformance/closure_evidence_schema.json"
+      ],
+      "outputs": [
+        "/tmp/frankenlibc_release_dry_run_dossier.json"
+      ]
+    }
+  ],
+  "resume_policy": {
+    "state_file_default": "/tmp/frankenlibc_release_resume_state.json",
+    "resume_behavior": "On failure, emit deterministic resume token. Resume skips completed gates and restarts at start_index from token.",
+    "auditability": "Every gate emits prereq_hash and resume_token for replayability."
+  },
+  "structured_log_requirements": {
+    "format": "jsonl",
+    "required_fields": [
+      "trace_id",
+      "gate_name",
+      "prereq_hash",
+      "status",
+      "duration_ms",
+      "resume_token"
+    ],
+    "default_log_path": "/tmp/frankenlibc_release_gate_dry_run.log.jsonl"
+  }
+}
