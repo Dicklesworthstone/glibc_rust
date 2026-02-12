@@ -1,0 +1,15 @@
+
+running 10 tests
+test runtime_math::loss_minimizer::tests::balanced_under_uniform_outcomes ... ok
+test runtime_math::loss_minimizer::tests::default_impl_matches_new ... ok
+test runtime_math::loss_minimizer::tests::family_loss_matrices_are_explicitly_distinct ... ok
+test runtime_math::loss_minimizer::tests::evidence_includes_posterior_and_competing_costs ... ok
+test runtime_math::loss_minimizer::tests::starts_calibrating ... ok
+test runtime_math::loss_minimizer::tests::loss_values_bounded ... ok
+test runtime_math::loss_minimizer::tests::deny_bias_detection ... ok
+test runtime_math::loss_minimizer::tests::cost_explosion_detection ... ok
+test runtime_math::loss_minimizer::tests::repair_bias_detection ... ok
+test runtime_math::loss_minimizer::tests::recommendation_changes_with_conditions ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 823 filtered out; finished in 0.00s
+

@@ -1,0 +1,1 @@
+OK: expected-loss matrix validated for 20 families with posterior/assumption/sensitivity sections.

@@ -1,0 +1,2 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running unittests src/lib.rs (/data/tmp/cargo-target/debug/deps/glibc_rs_membrane-9b7f129abfd6e21a)

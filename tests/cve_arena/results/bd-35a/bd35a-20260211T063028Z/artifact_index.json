@@ -1,0 +1,155 @@
+{
+  "index_version": 1,
+  "run_id": "bd35a-20260211T063028Z",
+  "bead_id": "bd-35a",
+  "generated_utc": "2026-02-11T06:30:47.893Z",
+  "artifacts": [
+    {
+      "path": "tests/cve_arena/results/bd-35a/bd35a-20260211T063028Z/hardened/evidence_payload_test/stderr.txt",
+      "kind": "report",
+      "sha256": "8c8a2b1b31ca94a51cef1850b6589f265aaf0d5afbb0d715dca8a975de4d10d5",
+      "size_bytes": 178,
+      "description": "bd-35a evidence artifact"
+    },
+    {
+      "path": "tests/cve_arena/results/bd-35a/bd35a-20260211T063028Z/hardened/evidence_payload_test/stdout.txt",
+      "kind": "report",
+      "sha256": "2abfd564a564c929d6be1ada59acda4074ffaf6f0262ed5db2cbaf9bd1a2ac53",
+      "size_bytes": 208,
+      "description": "bd-35a evidence artifact"
+    },
+    {
+      "path": "tests/cve_arena/results/bd-35a/bd35a-20260211T063028Z/hardened/expected_loss_matrix_gate/stderr.txt",
+      "kind": "report",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0,
+      "description": "bd-35a evidence artifact"
+    },
+    {
+      "path": "tests/cve_arena/results/bd-35a/bd35a-20260211T063028Z/hardened/expected_loss_matrix_gate/stdout.txt",
+      "kind": "report",
+      "sha256": "0263cbe2a3f8677260aad15db3db8b61978bcc974f44c2e54e3f06e92fbc56bf",
+      "size_bytes": 99,
+      "description": "bd-35a evidence artifact"
+    },
+    {
+      "path": "tests/cve_arena/results/bd-35a/bd35a-20260211T063028Z/hardened/loss_minimizer_tests/stderr.txt",
+      "kind": "report",
+      "sha256": "42e02e9708206b8a38d2c97a6204497f629fbc2a578e9ac311cb2a2b553085f5",
+      "size_bytes": 236,
+      "description": "bd-35a evidence artifact"
+    },
+    {
+      "path": "tests/cve_arena/results/bd-35a/bd35a-20260211T063028Z/hardened/loss_minimizer_tests/stdout.txt",
+      "kind": "report",
+      "sha256": "a6d7c9b425b89fc217e7c1ce599a59306114e0743ac4013249ecb9415bd12224",
+      "size_bytes": 902,
+      "description": "bd-35a evidence artifact"
+    },
+    {
+      "path": "tests/cve_arena/results/bd-35a/bd35a-20260211T063028Z/hardened/runtime_math_linkage_gate/stderr.txt",
+      "kind": "report",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0,
+      "description": "bd-35a evidence artifact"
+    },
+    {
+      "path": "tests/cve_arena/results/bd-35a/bd35a-20260211T063028Z/hardened/runtime_math_linkage_gate/stdout.txt",
+      "kind": "report",
+      "sha256": "df69a627afe164d0f1abc0e136f16ad9831fe94d6e90234375186dd52d605bd5",
+      "size_bytes": 83,
+      "description": "bd-35a evidence artifact"
+    },
+    {
+      "path": "tests/cve_arena/results/bd-35a/bd35a-20260211T063028Z/hardened/snapshot_fields_test/stderr.txt",
+      "kind": "report",
+      "sha256": "8c8a2b1b31ca94a51cef1850b6589f265aaf0d5afbb0d715dca8a975de4d10d5",
+      "size_bytes": 178,
+      "description": "bd-35a evidence artifact"
+    },
+    {
+      "path": "tests/cve_arena/results/bd-35a/bd35a-20260211T063028Z/hardened/snapshot_fields_test/stdout.txt",
+      "kind": "report",
+      "sha256": "bd09016a0e1421ee9efd88cbb1561db64a65862aea423698bfa8f54e111ff3fc",
+      "size_bytes": 180,
+      "description": "bd-35a evidence artifact"
+    },
+    {
+      "path": "tests/cve_arena/results/bd-35a/bd35a-20260211T063028Z/strict/evidence_payload_test/stderr.txt",
+      "kind": "report",
+      "sha256": "8c8a2b1b31ca94a51cef1850b6589f265aaf0d5afbb0d715dca8a975de4d10d5",
+      "size_bytes": 178,
+      "description": "bd-35a evidence artifact"
+    },
+    {
+      "path": "tests/cve_arena/results/bd-35a/bd35a-20260211T063028Z/strict/evidence_payload_test/stdout.txt",
+      "kind": "report",
+      "sha256": "2abfd564a564c929d6be1ada59acda4074ffaf6f0262ed5db2cbaf9bd1a2ac53",
+      "size_bytes": 208,
+      "description": "bd-35a evidence artifact"
+    },
+    {
+      "path": "tests/cve_arena/results/bd-35a/bd35a-20260211T063028Z/strict/expected_loss_matrix_gate/stderr.txt",
+      "kind": "report",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0,
+      "description": "bd-35a evidence artifact"
+    },
+    {
+      "path": "tests/cve_arena/results/bd-35a/bd35a-20260211T063028Z/strict/expected_loss_matrix_gate/stdout.txt",
+      "kind": "report",
+      "sha256": "0263cbe2a3f8677260aad15db3db8b61978bcc974f44c2e54e3f06e92fbc56bf",
+      "size_bytes": 99,
+      "description": "bd-35a evidence artifact"
+    },
+    {
+      "path": "tests/cve_arena/results/bd-35a/bd35a-20260211T063028Z/strict/loss_minimizer_tests/stderr.txt",
+      "kind": "report",
+      "sha256": "8c8a2b1b31ca94a51cef1850b6589f265aaf0d5afbb0d715dca8a975de4d10d5",
+      "size_bytes": 178,
+      "description": "bd-35a evidence artifact"
+    },
+    {
+      "path": "tests/cve_arena/results/bd-35a/bd35a-20260211T063028Z/strict/loss_minimizer_tests/stdout.txt",
+      "kind": "report",
+      "sha256": "eaa52b6d1ddca24a753b6f3d4c5b86d6229fad712583453e0024fc540c7d25ff",
+      "size_bytes": 902,
+      "description": "bd-35a evidence artifact"
+    },
+    {
+      "path": "tests/cve_arena/results/bd-35a/bd35a-20260211T063028Z/strict/runtime_math_linkage_gate/stderr.txt",
+      "kind": "report",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0,
+      "description": "bd-35a evidence artifact"
+    },
+    {
+      "path": "tests/cve_arena/results/bd-35a/bd35a-20260211T063028Z/strict/runtime_math_linkage_gate/stdout.txt",
+      "kind": "report",
+      "sha256": "df69a627afe164d0f1abc0e136f16ad9831fe94d6e90234375186dd52d605bd5",
+      "size_bytes": 83,
+      "description": "bd-35a evidence artifact"
+    },
+    {
+      "path": "tests/cve_arena/results/bd-35a/bd35a-20260211T063028Z/strict/snapshot_fields_test/stderr.txt",
+      "kind": "report",
+      "sha256": "8c8a2b1b31ca94a51cef1850b6589f265aaf0d5afbb0d715dca8a975de4d10d5",
+      "size_bytes": 178,
+      "description": "bd-35a evidence artifact"
+    },
+    {
+      "path": "tests/cve_arena/results/bd-35a/bd35a-20260211T063028Z/strict/snapshot_fields_test/stdout.txt",
+      "kind": "report",
+      "sha256": "bd09016a0e1421ee9efd88cbb1561db64a65862aea423698bfa8f54e111ff3fc",
+      "size_bytes": 180,
+      "description": "bd-35a evidence artifact"
+    },
+    {
+      "path": "tests/cve_arena/results/bd-35a/bd35a-20260211T063028Z/trace.jsonl",
+      "kind": "log",
+      "sha256": "9e61e2b902d7af47911ca7c0ada7e252dfec951edaeaf39f54b6c01acfa2145c",
+      "size_bytes": 10106,
+      "description": "bd-35a evidence artifact"
+    }
+  ]
+}
