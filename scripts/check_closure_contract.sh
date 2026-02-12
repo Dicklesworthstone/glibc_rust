@@ -1,0 +1,398 @@
+#!/usr/bin/env bash
+# check_closure_contract.sh — closure_contract.v1 validator (bd-5fw.1)
+#
+# Validates the closure contract schema and evaluates invariant predicates for
+# the selected replacement level (default: current_level from replacement_levels).
+#
+# Structured JSONL logs are emitted for each invariant evaluation with:
+# trace_id, level, invariant_id, check_cmd, result, artifact_ref.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CONTRACT="${FRANKENLIBC_CLOSURE_CONTRACT_PATH:-${ROOT}/tests/conformance/closure_contract.v1.json}"
+LOG_PATH="${FRANKENLIBC_CLOSURE_LOG:-/tmp/frankenlibc_closure_contract.log.jsonl}"
+TARGET_LEVEL="${FRANKENLIBC_CLOSURE_LEVEL:-}"
+
+python3 - "$ROOT" "$CONTRACT" "$LOG_PATH" "$TARGET_LEVEL" <<'PY'
+import json
+import os
+import pathlib
+import subprocess
+import sys
+import time
+from datetime import datetime, timezone
+from typing import Any
+
+
+def load_json(path: pathlib.Path) -> Any:
+    with path.open(encoding="utf-8") as f:
+        return json.load(f)
+
+
+def resolve_query(value: Any, query: str) -> Any:
+    if not query:
+        return value
+    current = value
+    for segment in query.split("."):
+        if isinstance(current, list):
+            try:
+                idx = int(segment)
+            except ValueError as exc:
+                raise KeyError(
+                    f"query segment '{segment}' is not a list index for query '{query}'"
+                ) from exc
+            if idx < 0 or idx >= len(current):
+                raise KeyError(f"list index '{idx}' out of bounds for query '{query}'")
+            current = current[idx]
+        elif isinstance(current, dict):
+            if segment not in current:
+                raise KeyError(f"missing key '{segment}' in query '{query}'")
+            current = current[segment]
+        else:
+            raise KeyError(f"cannot descend through non-container at segment '{segment}'")
+    return current
+
+
+def make_abs(root: pathlib.Path, p: str) -> pathlib.Path:
+    path = pathlib.Path(p)
+    if path.is_absolute():
+        return path
+    return root / path
+
+
+def level_rank(level: str) -> int:
+    table = {"L0": 0, "L1": 1, "L2": 2, "L3": 3}
+    if level not in table:
+        raise ValueError(f"unknown level '{level}'")
+    return table[level]
+
+
+def validate_schema(contract: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+
+    required_root = [
+        "schema_version",
+        "contract_id",
+        "bead",
+        "description",
+        "contract_sources",
+        "level_order",
+        "default_target_level",
+        "levels",
+        "transition_requirements",
+        "structured_log_requirements",
+    ]
+    for key in required_root:
+        if key not in contract:
+            errors.append(f"missing root field '{key}'")
+
+    if contract.get("schema_version") != 1:
+        errors.append("schema_version must be 1")
+
+    level_order = contract.get("level_order")
+    if not isinstance(level_order, list) or level_order != ["L0", "L1", "L2", "L3"]:
+        errors.append("level_order must be exactly ['L0', 'L1', 'L2', 'L3']")
+
+    levels = contract.get("levels")
+    if not isinstance(levels, list) or len(levels) != 4:
+        errors.append("levels must contain exactly 4 entries")
+        levels = []
+
+    ids_seen: set[str] = set()
+    level_ids: list[str] = []
+    predicate_types = {
+        "path_exists",
+        "paths_exist",
+        "json_eq",
+        "json_lte",
+        "json_gte",
+        "command_exit_zero",
+        "level_at_least",
+    }
+
+    for level in levels:
+        if not isinstance(level, dict):
+            errors.append("each level entry must be an object")
+            continue
+        lid = level.get("level")
+        if lid not in {"L0", "L1", "L2", "L3"}:
+            errors.append(f"invalid level id '{lid}'")
+            continue
+        level_ids.append(lid)
+
+        obligations = level.get("obligations")
+        if not isinstance(obligations, list) or not obligations:
+            errors.append(f"{lid}: obligations must be a non-empty array")
+            continue
+
+        for obligation in obligations:
+            if not isinstance(obligation, dict):
+                errors.append(f"{lid}: each obligation must be an object")
+                continue
+            oid = obligation.get("invariant_id")
+            if not isinstance(oid, str) or not oid:
+                errors.append(f"{lid}: obligation missing invariant_id")
+                continue
+            if oid in ids_seen:
+                errors.append(f"duplicate invariant_id '{oid}'")
+            ids_seen.add(oid)
+
+            for field in ["description", "check_cmd", "failure_message"]:
+                if not isinstance(obligation.get(field), str) or not obligation.get(field):
+                    errors.append(f"{oid}: missing non-empty '{field}'")
+
+            artifacts = obligation.get("artifact_paths")
+            if not isinstance(artifacts, list) or not artifacts:
+                errors.append(f"{oid}: artifact_paths must be a non-empty array")
+
+            predicate = obligation.get("predicate")
+            if not isinstance(predicate, dict):
+                errors.append(f"{oid}: predicate must be an object")
+                continue
+            ptype = predicate.get("type")
+            if ptype not in predicate_types:
+                errors.append(f"{oid}: unsupported predicate type '{ptype}'")
+                continue
+
+            if ptype == "path_exists":
+                if not isinstance(predicate.get("path"), str) or not predicate.get("path"):
+                    errors.append(f"{oid}: path_exists requires 'path'")
+            elif ptype == "paths_exist":
+                paths = predicate.get("paths")
+                if not isinstance(paths, list) or not paths:
+                    errors.append(f"{oid}: paths_exist requires non-empty 'paths'")
+            elif ptype in {"json_eq", "json_lte", "json_gte"}:
+                for field in ["file", "query"]:
+                    if not isinstance(predicate.get(field), str) or not predicate.get(field):
+                        errors.append(f"{oid}: {ptype} requires '{field}'")
+                value_key = {
+                    "json_eq": "expected",
+                    "json_lte": "max",
+                    "json_gte": "min",
+                }[ptype]
+                if value_key not in predicate:
+                    errors.append(f"{oid}: {ptype} requires '{value_key}'")
+            elif ptype == "command_exit_zero":
+                if not isinstance(predicate.get("cmd"), str) or not predicate.get("cmd"):
+                    errors.append(f"{oid}: command_exit_zero requires 'cmd'")
+            elif ptype == "level_at_least":
+                for field in ["observed_level_file", "observed_level_query", "min_level"]:
+                    if not isinstance(predicate.get(field), str) or not predicate.get(field):
+                        errors.append(f"{oid}: level_at_least requires '{field}'")
+                min_level = predicate.get("min_level")
+                if min_level not in {"L0", "L1", "L2", "L3"}:
+                    errors.append(f"{oid}: level_at_least.min_level must be L0-L3")
+
+    if sorted(level_ids) != ["L0", "L1", "L2", "L3"]:
+        errors.append("levels must define exactly L0, L1, L2, L3")
+
+    transitions = contract.get("transition_requirements")
+    if not isinstance(transitions, dict):
+        errors.append("transition_requirements must be an object")
+    else:
+        for key in ["L0_to_L1", "L1_to_L2", "L2_to_L3"]:
+            ids = transitions.get(key)
+            if not isinstance(ids, list) or not ids:
+                errors.append(f"transition_requirements.{key} must be a non-empty array")
+                continue
+            for oid in ids:
+                if oid not in ids_seen:
+                    errors.append(f"transition_requirements.{key} references unknown '{oid}'")
+
+    log_req = contract.get("structured_log_requirements")
+    if not isinstance(log_req, dict):
+        errors.append("structured_log_requirements must be an object")
+    else:
+        required_fields = log_req.get("required_fields")
+        if not isinstance(required_fields, list) or not required_fields:
+            errors.append("structured_log_requirements.required_fields must be non-empty array")
+
+    return errors
+
+
+def evaluate_predicate(root: pathlib.Path, predicate: dict[str, Any]) -> tuple[bool, str, int]:
+    ptype = predicate["type"]
+
+    if ptype == "path_exists":
+        p = make_abs(root, predicate["path"])
+        ok = p.exists()
+        return ok, f"path_exists:{predicate['path']} -> {ok}", 0 if ok else 1
+
+    if ptype == "paths_exist":
+        missing = []
+        for p in predicate["paths"]:
+            if not make_abs(root, p).exists():
+                missing.append(p)
+        ok = not missing
+        detail = "all paths exist" if ok else f"missing paths: {', '.join(missing)}"
+        return ok, detail, 0 if ok else 1
+
+    if ptype in {"json_eq", "json_lte", "json_gte"}:
+        data = load_json(make_abs(root, predicate["file"]))
+        observed = resolve_query(data, predicate["query"])
+        if ptype == "json_eq":
+            expected = predicate["expected"]
+            ok = observed == expected
+            return ok, f"observed={observed!r}, expected={expected!r}", 0 if ok else 1
+        if ptype == "json_lte":
+            max_value = predicate["max"]
+            ok = observed <= max_value
+            return ok, f"observed={observed!r}, max={max_value!r}", 0 if ok else 1
+        min_value = predicate["min"]
+        ok = observed >= min_value
+        return ok, f"observed={observed!r}, min={min_value!r}", 0 if ok else 1
+
+    if ptype == "command_exit_zero":
+        cmd = predicate["cmd"]
+        proc = subprocess.run(  # noqa: S602
+            cmd,
+            shell=True,
+            cwd=root,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+        ok = proc.returncode == 0
+        detail = f"command_exit={proc.returncode}"
+        if not ok:
+            stderr = proc.stderr.strip()
+            stdout = proc.stdout.strip()
+            tail = stderr.splitlines()[-1] if stderr else (stdout.splitlines()[-1] if stdout else "")
+            if tail:
+                detail = f"{detail}, tail={tail}"
+        return ok, detail, proc.returncode
+
+    if ptype == "level_at_least":
+        data = load_json(make_abs(root, predicate["observed_level_file"]))
+        observed = resolve_query(data, predicate["observed_level_query"])
+        min_level = predicate["min_level"]
+        ok = level_rank(observed) >= level_rank(min_level)
+        return ok, f"observed_level={observed}, min_level={min_level}", 0 if ok else 1
+
+    raise ValueError(f"unsupported predicate type '{ptype}'")
+
+
+def main() -> int:
+    root = pathlib.Path(sys.argv[1]).resolve()
+    contract_path = pathlib.Path(sys.argv[2]).resolve()
+    log_path = pathlib.Path(sys.argv[3])
+    target_level_arg = sys.argv[4]
+
+    if not contract_path.exists():
+        print("=== Closure Contract Gate (bd-5fw.1) ===")
+        print(f"FAIL: contract file not found: {contract_path}")
+        print("check_closure_contract: FAILED")
+        return 1
+
+    contract = load_json(contract_path)
+    schema_errors = validate_schema(contract)
+
+    print("=== Closure Contract Gate (bd-5fw.1) ===")
+    print("")
+    print("--- Check 1: Contract schema validity ---")
+    if schema_errors:
+        print(f"FAIL: schema has {len(schema_errors)} error(s)")
+        for err in schema_errors:
+            print(f"  - {err}")
+        print("")
+        print("check_closure_contract: FAILED")
+        return 1
+    print("PASS: closure_contract.v1 schema is valid")
+    print("")
+
+    target_level = target_level_arg.strip()
+    if not target_level:
+        source = contract["default_target_level"]
+        source_data = load_json(make_abs(root, source["source_file"]))
+        target_level = str(resolve_query(source_data, source["source_query"]))
+
+    levels = {entry["level"]: entry for entry in contract["levels"]}
+    if target_level not in levels:
+        print("--- Check 2: Target level selection ---")
+        print(f"FAIL: target level '{target_level}' not present in contract levels")
+        print("")
+        print("check_closure_contract: FAILED")
+        return 1
+
+    print("--- Check 2: Target level selection ---")
+    print(f"PASS: evaluating target level {target_level}")
+    print("")
+
+    obligations = levels[target_level]["obligations"]
+    trace_id = (
+        f"closure-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}"
+        f"-{os.getpid()}"
+    )
+    mode = os.environ.get("FRANKENLIBC_MODE", "strict")
+    results: list[dict[str, Any]] = []
+    failures: list[str] = []
+
+    print("--- Check 3: Invariant evaluation ---")
+    for obligation in obligations:
+        invariant_id = obligation["invariant_id"]
+        check_cmd = obligation["check_cmd"]
+        artifacts = obligation["artifact_paths"]
+        predicate = obligation["predicate"]
+        started = time.perf_counter()
+
+        try:
+            ok, detail, exit_code = evaluate_predicate(root, predicate)
+        except Exception as exc:  # noqa: BLE001
+            ok = False
+            detail = f"exception={exc}"
+            exit_code = 1
+
+        duration_ms = int((time.perf_counter() - started) * 1000)
+        failure_reason = ""
+        if not ok:
+            failure_reason = f"{obligation['failure_message']} ({detail})"
+            failures.append(f"{invariant_id}: {failure_reason}")
+
+        record = {
+            "trace_id": trace_id,
+            "mode": mode,
+            "gate_name": "closure_contract",
+            "level": target_level,
+            "invariant_id": invariant_id,
+            "check_cmd": check_cmd,
+            "result": "pass" if ok else "fail",
+            "exit_code": exit_code,
+            "duration_ms": duration_ms,
+            "artifact_ref": artifacts[0] if artifacts else "",
+            "artifact_refs": artifacts,
+            "detail": detail,
+            "failure_reason": failure_reason,
+        }
+        results.append(record)
+
+        status = "PASS" if ok else "FAIL"
+        print(f"{status}: {invariant_id} ({detail})")
+
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    with log_path.open("w", encoding="utf-8") as f:
+        for record in results:
+            f.write(json.dumps(record, sort_keys=True))
+            f.write("\n")
+
+    print("")
+    print(f"Evaluated invariants: {len(obligations)}")
+    print(f"Failures: {len(failures)}")
+    print(f"Structured log: {log_path}")
+    print("")
+
+    if failures:
+        print("Deterministic failure reasons:")
+        for failure in failures:
+            print(f"  - {failure}")
+        print("")
+        print("check_closure_contract: FAILED")
+        return 1
+
+    print("check_closure_contract: PASS")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+PY

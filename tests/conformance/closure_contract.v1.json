@@ -1,0 +1,338 @@
+{
+  "schema_version": 1,
+  "contract_id": "closure_contract.v1",
+  "bead": "bd-5fw.1",
+  "description": "Objective release-closure contract for FrankenLibC replacement levels. The validator must be able to parse and evaluate these invariants without manual interpretation.",
+  "contract_sources": [
+    {
+      "path": "PLAN_TO_PORT_GLIBC_TO_RUST.md",
+      "purpose": "Primary spec-first migration plan and closure criteria source"
+    },
+    {
+      "path": "EXISTING_GLIBC_STRUCTURE.md",
+      "purpose": "Legacy subsystem pressure-map baseline"
+    },
+    {
+      "path": "PROPOSED_ARCHITECTURE.md",
+      "purpose": "Target architecture and ownership boundaries"
+    },
+    {
+      "path": "FEATURE_PARITY.md",
+      "purpose": "Status accounting for implemented/remaining subsystem behavior"
+    },
+    {
+      "path": "README.md",
+      "purpose": "Public release claim and operational contract"
+    }
+  ],
+  "level_order": [
+    "L0",
+    "L1",
+    "L2",
+    "L3"
+  ],
+  "default_target_level": {
+    "source_file": "tests/conformance/replacement_levels.json",
+    "source_query": "current_level"
+  },
+  "levels": [
+    {
+      "level": "L0",
+      "name": "Interpose release closure",
+      "obligations": [
+        {
+          "invariant_id": "l0.contract_sources_present",
+          "description": "Spec-first contract sources required by process policy are present.",
+          "predicate": {
+            "type": "paths_exist",
+            "paths": [
+              "PLAN_TO_PORT_GLIBC_TO_RUST.md",
+              "EXISTING_GLIBC_STRUCTURE.md",
+              "PROPOSED_ARCHITECTURE.md",
+              "FEATURE_PARITY.md"
+            ]
+          },
+          "check_cmd": "test -f PLAN_TO_PORT_GLIBC_TO_RUST.md && test -f EXISTING_GLIBC_STRUCTURE.md && test -f PROPOSED_ARCHITECTURE.md && test -f FEATURE_PARITY.md",
+          "artifact_paths": [
+            "PLAN_TO_PORT_GLIBC_TO_RUST.md",
+            "EXISTING_GLIBC_STRUCTURE.md",
+            "PROPOSED_ARCHITECTURE.md",
+            "FEATURE_PARITY.md"
+          ],
+          "failure_message": "Missing one or more mandatory spec-source documents."
+        },
+        {
+          "invariant_id": "l0.replacement_level_claim_consistent",
+          "description": "Replacement-level maturity claim and README declaration are aligned.",
+          "predicate": {
+            "type": "command_exit_zero",
+            "cmd": "scripts/check_replacement_levels.sh"
+          },
+          "check_cmd": "scripts/check_replacement_levels.sh",
+          "artifact_paths": [
+            "tests/conformance/replacement_levels.json",
+            "README.md",
+            "scripts/check_replacement_levels.sh"
+          ],
+          "failure_message": "Replacement-level claim drift or policy inconsistency detected."
+        },
+        {
+          "invariant_id": "l0.closure_evidence_gate",
+          "description": "Closure evidence matrix gate succeeds for non-exempt critique beads.",
+          "predicate": {
+            "type": "command_exit_zero",
+            "cmd": "scripts/check_closure_gate.sh"
+          },
+          "check_cmd": "scripts/check_closure_gate.sh",
+          "artifact_paths": [
+            "tests/conformance/closure_evidence_schema.json",
+            "tests/conformance/verification_matrix.json",
+            "scripts/check_closure_gate.sh"
+          ],
+          "failure_message": "Closure evidence gate failed; non-exempt critique bead evidence is incomplete."
+        },
+        {
+          "invariant_id": "l0.reality_report_exists",
+          "description": "Canonical reality report is present for objective symbol-status accounting.",
+          "predicate": {
+            "type": "path_exists",
+            "path": "tests/conformance/reality_report.v1.json"
+          },
+          "check_cmd": "test -f tests/conformance/reality_report.v1.json",
+          "artifact_paths": [
+            "tests/conformance/reality_report.v1.json"
+          ],
+          "failure_message": "Reality report missing; closure cannot be evaluated deterministically."
+        }
+      ]
+    },
+    {
+      "level": "L1",
+      "name": "Hardened interpose closure",
+      "obligations": [
+        {
+          "invariant_id": "l1.level_declared",
+          "description": "Declared replacement level has reached at least L1.",
+          "predicate": {
+            "type": "level_at_least",
+            "observed_level_file": "tests/conformance/replacement_levels.json",
+            "observed_level_query": "current_level",
+            "min_level": "L1"
+          },
+          "check_cmd": "scripts/check_replacement_levels.sh",
+          "artifact_paths": [
+            "tests/conformance/replacement_levels.json",
+            "scripts/check_replacement_levels.sh"
+          ],
+          "failure_message": "current_level is below L1."
+        },
+        {
+          "invariant_id": "l1.stub_pct_zero",
+          "description": "Stub percentage must be zero at L1 and above.",
+          "predicate": {
+            "type": "json_lte",
+            "file": "tests/conformance/replacement_levels.json",
+            "query": "current_assessment.stub_pct",
+            "max": 0
+          },
+          "check_cmd": "scripts/check_replacement_levels.sh",
+          "artifact_paths": [
+            "tests/conformance/replacement_levels.json"
+          ],
+          "failure_message": "stub_pct exceeds L1 threshold (must be 0)."
+        },
+        {
+          "invariant_id": "l1.mode_semantics_gate",
+          "description": "Strict/hardened semantic contract gate succeeds.",
+          "predicate": {
+            "type": "command_exit_zero",
+            "cmd": "scripts/check_mode_semantics.sh"
+          },
+          "check_cmd": "scripts/check_mode_semantics.sh",
+          "artifact_paths": [
+            "tests/conformance/mode_semantics.json",
+            "scripts/check_mode_semantics.sh"
+          ],
+          "failure_message": "Mode semantics gate failed for strict/hardened behavior."
+        },
+        {
+          "invariant_id": "l1.e2e_suite_gate",
+          "description": "Deterministic strict/hardened e2e suite gate succeeds.",
+          "predicate": {
+            "type": "command_exit_zero",
+            "cmd": "scripts/check_e2e_suite.sh"
+          },
+          "check_cmd": "scripts/check_e2e_suite.sh",
+          "artifact_paths": [
+            "tests/conformance/e2e_suite.json",
+            "scripts/check_e2e_suite.sh"
+          ],
+          "failure_message": "E2E suite gate failed for L1 closure."
+        }
+      ]
+    },
+    {
+      "level": "L2",
+      "name": "Partial replacement closure",
+      "obligations": [
+        {
+          "invariant_id": "l2.level_declared",
+          "description": "Declared replacement level has reached at least L2.",
+          "predicate": {
+            "type": "level_at_least",
+            "observed_level_file": "tests/conformance/replacement_levels.json",
+            "observed_level_query": "current_level",
+            "min_level": "L2"
+          },
+          "check_cmd": "scripts/check_replacement_levels.sh",
+          "artifact_paths": [
+            "tests/conformance/replacement_levels.json",
+            "scripts/check_replacement_levels.sh"
+          ],
+          "failure_message": "current_level is below L2."
+        },
+        {
+          "invariant_id": "l2.callthrough_budget",
+          "description": "Call-through percentage must satisfy L2 threshold (<= 15%).",
+          "predicate": {
+            "type": "json_lte",
+            "file": "tests/conformance/replacement_levels.json",
+            "query": "current_assessment.callthrough_pct",
+            "max": 15
+          },
+          "check_cmd": "scripts/check_replacement_levels.sh",
+          "artifact_paths": [
+            "tests/conformance/replacement_levels.json"
+          ],
+          "failure_message": "callthrough_pct exceeds L2 threshold."
+        },
+        {
+          "invariant_id": "l2.replacement_guard_gate",
+          "description": "Replacement guard passes with policy-allowed call-through surface only.",
+          "predicate": {
+            "type": "command_exit_zero",
+            "cmd": "scripts/check_replacement_guard.sh"
+          },
+          "check_cmd": "scripts/check_replacement_guard.sh",
+          "artifact_paths": [
+            "tests/conformance/replacement_profile.json",
+            "scripts/check_replacement_guard.sh"
+          ],
+          "failure_message": "Replacement guard detected forbidden call-through behavior."
+        },
+        {
+          "invariant_id": "l2.c_fixture_suite_gate",
+          "description": "C fixture compile/link/run gate succeeds for replacement track.",
+          "predicate": {
+            "type": "command_exit_zero",
+            "cmd": "scripts/check_c_fixture_suite.sh"
+          },
+          "check_cmd": "scripts/check_c_fixture_suite.sh",
+          "artifact_paths": [
+            "tests/conformance/c_fixture_suite.json",
+            "scripts/check_c_fixture_suite.sh"
+          ],
+          "failure_message": "C fixture suite gate failed."
+        }
+      ]
+    },
+    {
+      "level": "L3",
+      "name": "Full replacement closure",
+      "obligations": [
+        {
+          "invariant_id": "l3.level_declared",
+          "description": "Declared replacement level has reached L3.",
+          "predicate": {
+            "type": "level_at_least",
+            "observed_level_file": "tests/conformance/replacement_levels.json",
+            "observed_level_query": "current_level",
+            "min_level": "L3"
+          },
+          "check_cmd": "scripts/check_replacement_levels.sh",
+          "artifact_paths": [
+            "tests/conformance/replacement_levels.json",
+            "scripts/check_replacement_levels.sh"
+          ],
+          "failure_message": "current_level is below L3."
+        },
+        {
+          "invariant_id": "l3.callthrough_zero",
+          "description": "No GlibcCallThrough symbols remain at L3.",
+          "predicate": {
+            "type": "json_eq",
+            "file": "tests/conformance/replacement_levels.json",
+            "query": "current_assessment.callthrough",
+            "expected": 0
+          },
+          "check_cmd": "scripts/check_replacement_levels.sh",
+          "artifact_paths": [
+            "tests/conformance/replacement_levels.json"
+          ],
+          "failure_message": "callthrough count is non-zero at L3."
+        },
+        {
+          "invariant_id": "l3.stub_zero",
+          "description": "No Stub symbols remain at L3.",
+          "predicate": {
+            "type": "json_eq",
+            "file": "tests/conformance/replacement_levels.json",
+            "query": "current_assessment.stub",
+            "expected": 0
+          },
+          "check_cmd": "scripts/check_replacement_levels.sh",
+          "artifact_paths": [
+            "tests/conformance/replacement_levels.json"
+          ],
+          "failure_message": "stub count is non-zero at L3."
+        },
+        {
+          "invariant_id": "l3.workload_matrix_gate",
+          "description": "Real workload matrix gate succeeds for full replacement claim.",
+          "predicate": {
+            "type": "command_exit_zero",
+            "cmd": "scripts/check_workload_matrix.sh"
+          },
+          "check_cmd": "scripts/check_workload_matrix.sh",
+          "artifact_paths": [
+            "tests/conformance/workload_matrix.json",
+            "scripts/check_workload_matrix.sh"
+          ],
+          "failure_message": "Workload matrix gate failed."
+        }
+      ]
+    }
+  ],
+  "transition_requirements": {
+    "L0_to_L1": [
+      "l1.level_declared",
+      "l1.stub_pct_zero",
+      "l1.mode_semantics_gate",
+      "l1.e2e_suite_gate"
+    ],
+    "L1_to_L2": [
+      "l2.level_declared",
+      "l2.callthrough_budget",
+      "l2.replacement_guard_gate",
+      "l2.c_fixture_suite_gate"
+    ],
+    "L2_to_L3": [
+      "l3.level_declared",
+      "l3.callthrough_zero",
+      "l3.stub_zero",
+      "l3.workload_matrix_gate"
+    ]
+  },
+  "structured_log_requirements": {
+    "format": "jsonl",
+    "required_fields": [
+      "trace_id",
+      "level",
+      "invariant_id",
+      "check_cmd",
+      "result",
+      "artifact_ref"
+    ],
+    "default_log_path": "/tmp/frankenlibc_closure_contract.log.jsonl"
+  }
+}
