@@ -120,6 +120,21 @@ if [[ "${FRANKENLIBC_EXTENDED_GATES:-0}" == "1" ]]; then
     echo "PASS"
     echo ""
 
+    echo "--- evidence compliance gate ---"
+    scripts/check_evidence_compliance.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- closure contract gate ---"
+    scripts/check_closure_contract.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- release gate dry-run orchestration ---"
+    scripts/release_dry_run.sh --mode dry-run
+    echo "PASS"
+    echo ""
+
     echo "--- replacement levels gate ---"
     scripts/check_replacement_levels.sh
     echo "PASS"
