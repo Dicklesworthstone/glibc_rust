@@ -46,6 +46,11 @@ if [[ "${FRANKENLIBC_EXTENDED_GATES:-0}" == "1" ]]; then
     echo "PASS"
     echo ""
 
+    echo "--- runtime_math decision-law linkage proofs (production controllers) ---"
+    scripts/check_runtime_math_linkage_proofs.sh
+    echo "PASS"
+    echo ""
+
     echo "--- runtime_math production kernel manifest check ---"
     scripts/check_runtime_math_manifest.sh
     echo "PASS"

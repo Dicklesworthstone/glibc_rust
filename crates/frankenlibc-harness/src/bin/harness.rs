@@ -189,6 +189,24 @@ enum Command {
         #[arg(long, default_value_t = 32)]
         trend_stride: u32,
     },
+    /// Validate runtime_math decision-law linkage for all production controllers.
+    RuntimeMathLinkageProofs {
+        /// Workspace root used for resolving canonical artifacts.
+        #[arg(long, default_value = ".")]
+        workspace_root: PathBuf,
+        /// Structured JSONL log output path.
+        #[arg(
+            long,
+            default_value = "target/conformance/runtime_math_linkage_proofs.log.jsonl"
+        )]
+        log: PathBuf,
+        /// JSON report output path.
+        #[arg(
+            long,
+            default_value = "target/conformance/runtime_math_linkage_proofs.report.json"
+        )]
+        report: PathBuf,
+    },
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -590,6 +608,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let body = serde_json::to_string_pretty(&metrics)?;
             print!("{body}");
+        }
+        Command::RuntimeMathLinkageProofs {
+            workspace_root,
+            log,
+            report,
+        } => {
+            let rep = frankenlibc_harness::runtime_math_linkage_proofs::run_and_write(
+                &workspace_root,
+                &log,
+                &report,
+            )?;
+            if rep.summary.failed != 0 {
+                return Err(std::io::Error::other(format!(
+                    "runtime_math linkage proofs FAILED: {} module(s) failed (report: {})",
+                    rep.summary.failed,
+                    report.display()
+                ))
+                .into());
+            }
+            eprintln!(
+                "OK: runtime_math linkage proofs passed for {} modules (log: {}, report: {})",
+                rep.summary.total_modules,
+                log.display(),
+                report.display()
+            );
         }
     }
 
