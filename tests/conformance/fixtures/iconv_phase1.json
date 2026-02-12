@@ -1,0 +1,105 @@
+{
+  "version": "v1",
+  "family": "iconv/phase1",
+  "captured_at": "2026-02-11T00:00:00Z",
+  "cases": [
+    {
+      "name": "strict_utf8_to_utf16le_basic",
+      "function": "iconv",
+      "spec_section": "POSIX iconv",
+      "inputs": {
+        "tocode": "UTF-16LE",
+        "fromcode": "UTF-8",
+        "input": [65, 66],
+        "out_len": 8
+      },
+      "expected_output": "ok nonrev=0 in_left=0 out_left=4 out=[65, 0, 66, 0]",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strict_latin1_to_utf8_multibyte",
+      "function": "iconv",
+      "spec_section": "POSIX iconv",
+      "inputs": {
+        "tocode": "UTF-8",
+        "fromcode": "ISO-8859-1",
+        "input": [72, 233],
+        "out_len": 4
+      },
+      "expected_output": "ok nonrev=0 in_left=0 out_left=1 out=[72, 195, 169]",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "strict_e2big_preserves_progress",
+      "function": "iconv",
+      "spec_section": "POSIX iconv",
+      "inputs": {
+        "tocode": "UTF-16LE",
+        "fromcode": "UTF-8",
+        "input": [65, 66],
+        "out_len": 3
+      },
+      "expected_output": "err errno=7 in_left=1 out_left=1 out=[65, 0]",
+      "expected_errno": 7,
+      "mode": "strict"
+    },
+    {
+      "name": "strict_eilseq_invalid_utf8",
+      "function": "iconv",
+      "spec_section": "POSIX iconv",
+      "inputs": {
+        "tocode": "UTF-16LE",
+        "fromcode": "UTF-8",
+        "input": [195, 40],
+        "out_len": 8
+      },
+      "expected_output": "err errno=84 in_left=2 out_left=8 out=[]",
+      "expected_errno": 84,
+      "mode": "strict"
+    },
+    {
+      "name": "strict_einval_incomplete_utf8",
+      "function": "iconv",
+      "spec_section": "POSIX iconv",
+      "inputs": {
+        "tocode": "UTF-16LE",
+        "fromcode": "UTF-8",
+        "input": [226, 130],
+        "out_len": 8
+      },
+      "expected_output": "err errno=22 in_left=2 out_left=8 out=[]",
+      "expected_errno": 22,
+      "mode": "strict"
+    },
+    {
+      "name": "strict_unsupported_encoding",
+      "function": "iconv",
+      "spec_section": "POSIX iconv",
+      "inputs": {
+        "tocode": "UTF-32",
+        "fromcode": "UTF-8",
+        "input": [65],
+        "out_len": 8
+      },
+      "expected_output": "open_err errno=22",
+      "expected_errno": 22,
+      "mode": "strict"
+    },
+    {
+      "name": "hardened_utf16le_to_utf8",
+      "function": "iconv",
+      "spec_section": "TSM hardened iconv",
+      "inputs": {
+        "tocode": "UTF-8",
+        "fromcode": "UTF-16LE",
+        "input": [172, 32],
+        "out_len": 4
+      },
+      "expected_output": "ok nonrev=0 in_left=0 out_left=1 out=[226, 130, 172]",
+      "expected_errno": 0,
+      "mode": "hardened"
+    }
+  ]
+}
