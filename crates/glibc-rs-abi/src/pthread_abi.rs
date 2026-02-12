@@ -71,7 +71,7 @@ fn mutex_word_ptr(mutex: *mut libc::pthread_mutex_t) -> Option<*mut AtomicI32> {
         return None;
     }
     let align = std::mem::align_of::<AtomicI32>();
-    if (mutex as usize) % align != 0 {
+    if !(mutex as usize).is_multiple_of(align) {
         return None;
     }
     Some(mutex.cast::<AtomicI32>())
@@ -86,7 +86,7 @@ fn mutex_magic_ptr(mutex: *mut libc::pthread_mutex_t) -> Option<*mut AtomicU32> 
     // SAFETY: `base` comes from non-null `mutex`; adding a small in-object offset.
     let ptr = unsafe { base.add(offset) };
     let align = std::mem::align_of::<AtomicU32>();
-    if (ptr as usize) % align != 0 {
+    if !(ptr as usize).is_multiple_of(align) {
         return None;
     }
     Some(ptr.cast::<AtomicU32>())
@@ -541,14 +541,14 @@ pub unsafe extern "C" fn pthread_mutex_init(
     if mutex.is_null() {
         return libc::EINVAL;
     }
-    if attr.is_null() {
-        if let Some(word_ptr) = mutex_word_ptr(mutex) {
-            // SAFETY: `word_ptr` is alignment-checked and points to caller-owned mutex storage.
-            let word = unsafe { &*word_ptr };
-            word.store(0, Ordering::Release);
-            if mark_managed_mutex(mutex) {
-                return 0;
-            }
+    if attr.is_null()
+        && let Some(word_ptr) = mutex_word_ptr(mutex)
+    {
+        // SAFETY: `word_ptr` is alignment-checked and points to caller-owned mutex storage.
+        let word = unsafe { &*word_ptr };
+        word.store(0, Ordering::Release);
+        if mark_managed_mutex(mutex) {
+            return 0;
         }
     }
 
