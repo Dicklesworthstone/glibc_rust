@@ -1,12 +1,12 @@
 /* fixture_string.c — memcpy/memmove/memset/strlen/strcmp under LD_PRELOAD
- * Part of glibc_rust C fixture suite (bd-3jh).
+ * Part of frankenlibc C fixture suite (bd-3jh).
  * Exit 0 = PASS, nonzero = FAIL with diagnostic to stderr.
  */
 #include <stdio.h>
 #include <string.h>
 
 static int test_memcpy(void) {
-    char src[32] = "glibc_rust memcpy test";
+    char src[32] = "frankenlibc memcpy test";
     char dst[32] = {0};
     memcpy(dst, src, sizeof(src));
     if (memcmp(dst, src, sizeof(src)) != 0) {

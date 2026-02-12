@@ -25,7 +25,7 @@
 
 ## Objective
 
-The CVE Arena test suite validates that the glibc_rust Transparent Safety Membrane
+The CVE Arena test suite validates that the frankenlibc Transparent Safety Membrane
 (TSM) can detect, contain, or neutralize real-world memory safety vulnerabilities
 when deployed via `LD_PRELOAD` against unmodified C binaries. This document
 catalogs external software CVEs selected for reproduction, analyzes the
@@ -47,7 +47,7 @@ Each candidate was selected based on four criteria:
 ## TSM Capabilities Under Test
 
 The following TSM mechanisms are relevant to the selected CVEs. Each is
-implemented in `crates/glibc-rs-membrane/src/` and exposed via the `libc.so`
+implemented in `crates/frankenlibc-membrane/src/` and exposed via the `libc.so`
 LD_PRELOAD shim.
 
 | Mechanism | Source Module | Detection/Healing |
@@ -185,7 +185,7 @@ cd sudo-1.9.5p1
 make -j$(nproc)
 
 # Trigger with TSM LD_PRELOAD
-LD_PRELOAD=/path/to/glibc_rust/target/release/libglibc_rs.so \
+LD_PRELOAD=/path/to/frankenlibc/target/release/libfrankenlibc.so \
   /opt/sudo-vuln/bin/sudoedit -s '\' $(python3 -c 'print("A"*65536)')
 ```
 
@@ -329,7 +329,7 @@ cd curl-8.6.0
 make -j$(nproc)
 
 # Run with TSM (test server must be running on localhost:4433)
-LD_PRELOAD=/path/to/glibc_rust/target/release/libglibc_rs.so \
+LD_PRELOAD=/path/to/frankenlibc/target/release/libfrankenlibc.so \
   /opt/curl-vuln/bin/curl https://localhost:4433/ --insecure
 ```
 
@@ -449,7 +449,7 @@ cd perl-5.38.2
 make -j$(nproc)
 
 # Trigger with TSM
-LD_PRELOAD=/path/to/glibc_rust/target/release/libglibc_rs.so \
+LD_PRELOAD=/path/to/frankenlibc/target/release/libfrankenlibc.so \
   /opt/perl-vuln/bin/perl -e '$_ = "\x{FF}" x 100000; tr/\xFF/\x{100}/;'
 ```
 
@@ -581,7 +581,7 @@ This means writing a binary generator for the malformed MMS data:
 3. Launch VLC in headless mode against the crafted input.
 
 ```bash
-LD_PRELOAD=/path/to/glibc_rust/target/release/libglibc_rs.so \
+LD_PRELOAD=/path/to/frankenlibc/target/release/libfrankenlibc.so \
   /opt/vlc-vuln/bin/vlc --intf dummy --no-video --no-audio \
   mms://localhost:1755/crafted_stream
 ```
@@ -720,7 +720,7 @@ cd redis-7.4.1
 make MALLOC=libc -j$(nproc)
 
 # Start Redis with TSM
-LD_PRELOAD=/path/to/glibc_rust/target/release/libglibc_rs.so \
+LD_PRELOAD=/path/to/frankenlibc/target/release/libfrankenlibc.so \
   ./src/redis-server --protected-mode no &
 
 # Send crafted Lua script

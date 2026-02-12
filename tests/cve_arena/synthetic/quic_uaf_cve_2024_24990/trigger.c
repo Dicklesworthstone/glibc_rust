@@ -19,7 +19,7 @@
  *
  * Stock glibc: freed memory may be immediately reused; UAF reads stale or
  *              attacker-controlled data; function pointer hijack possible
- * glibc_rust:  generational arena detects generation mismatch on the freed
+ * frankenlibc:  generational arena detects generation mismatch on the freed
  *              pointer; quarantine prevents immediate memory reuse; bloom
  *              filter provides fast "is this still valid?" check
  *
@@ -203,7 +203,7 @@ static void close_connection(struct connection *conn)
  * including a crafted function pointer at the on_close offset.
  *
  * With stock glibc: the freed chunk is immediately available for reuse.
- * With glibc_rust: quarantine holds the chunk, preventing immediate reuse.
+ * With frankenlibc: quarantine holds the chunk, preventing immediate reuse.
  * --------------------------------------------------------------------------- */
 static void *simulate_attacker_realloc(void)
 {
@@ -328,7 +328,7 @@ int main(void)
     printf("           on_close function pointer is 0xDEADBEEF;\n");
     printf("           calling on_close would jump to attacker-controlled address\n");
     printf("\n");
-    printf("Expected with glibc_rust TSM:\n");
+    printf("Expected with frankenlibc TSM:\n");
     printf("  Phase 3: Quarantine holds freed connection; attacker allocation\n");
     printf("           returns a DIFFERENT address (no immediate reuse)\n");
     printf("  Phase 4: Generational arena detects generation mismatch when\n");

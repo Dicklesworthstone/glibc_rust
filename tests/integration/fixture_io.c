@@ -1,5 +1,5 @@
 /* fixture_io.c — read/write/open/close under LD_PRELOAD
- * Part of glibc_rust C fixture suite (bd-3jh).
+ * Part of frankenlibc C fixture suite (bd-3jh).
  * Exit 0 = PASS, nonzero = FAIL with diagnostic to stderr.
  */
 #include <stdio.h>
@@ -56,7 +56,7 @@ static int test_write_to_devnull(void) {
 }
 
 static int test_open_create_write_read(void) {
-    char path[] = "/tmp/glibc_rust_fixture_XXXXXX";
+    char path[] = "/tmp/frankenlibc_fixture_XXXXXX";
     int fd = mkstemp(path);
     if (fd < 0) {
         fprintf(stderr, "FAIL: mkstemp: %s\n", strerror(errno));
@@ -93,7 +93,7 @@ static int test_open_create_write_read(void) {
 }
 
 static int test_open_nonexistent(void) {
-    int fd = open("/nonexistent_glibc_rust_fixture_path", O_RDONLY);
+    int fd = open("/nonexistent_frankenlibc_fixture_path", O_RDONLY);
     if (fd >= 0) {
         fprintf(stderr, "FAIL: open nonexistent succeeded\n");
         close(fd); return 1;

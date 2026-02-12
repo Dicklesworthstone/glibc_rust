@@ -328,7 +328,7 @@ for s in fork _exit execve execvp waitpid wait; do
 done
 
 # startup_abi: Implemented (phase-0 startup skeleton for controlled fixtures)
-for s in __libc_start_main __glibc_rs_startup_phase0 __glibc_rs_startup_snapshot; do
+for s in __libc_start_main __frankenlibc_startup_phase0 __frankenlibc_startup_snapshot; do
   SYM_STATUS[$s]="Implemented"
   SYM_MODULE[$s]="startup_abi"
   SYM_PERF[$s]="coldpath"

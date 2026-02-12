@@ -15,7 +15,7 @@
  *
  * Stock glibc: heap metadata is silently corrupted; crash may occur later
  *              at free() or on subsequent allocation, far from the root cause
- * glibc_rust:  trailing canary detects the overflow at free() time;
+ * frankenlibc:  trailing canary detects the overflow at free() time;
  *              ClampSize would prevent the oversized copy entirely
  *
  * Build: cc -o trigger trigger.c -Wall -Wextra
@@ -101,8 +101,8 @@ static void build_malicious_packet(struct network_packet *pkt)
  *
  * Returns:
  *   0 = success (overflow occurred silently -- VULNERABLE)
- *   1 = overflow detected before copy (glibc_rust ClampSize)
- *   2 = overflow detected at free (glibc_rust canary)
+ *   1 = overflow detected before copy (frankenlibc ClampSize)
+ *   2 = overflow detected at free (frankenlibc canary)
  *  -1 = error
  * --------------------------------------------------------------------------- */
 static int process_dcerpc_packet(const struct network_packet *pkt)
@@ -141,7 +141,7 @@ static int process_dcerpc_packet(const struct network_packet *pkt)
      *   point the attacker may have gained code execution via corrupted
      *   function pointers or vtable entries.
      *
-     * With glibc_rust:
+     * With frankenlibc:
      *   Option A (proactive): If the TSM intercepts memcpy and applies
      *     ClampSize, the copy is reduced to min(copy_len, alloc_len)
      *     = 64 bytes.  No overflow occurs.
@@ -193,7 +193,7 @@ static int process_dcerpc_packet(const struct network_packet *pkt)
         free(adjacent);
     }
 
-    /* Free the overflowed buffer -- canary check happens here in glibc_rust */
+    /* Free the overflowed buffer -- canary check happens here in frankenlibc */
     printf("  Freeing overflowed buffer...\n");
     free(buffer);
     printf("  free() returned without error\n");
@@ -283,7 +283,7 @@ int main(void)
     printf("           free() may crash or silently succeed with corrupted heap;\n");
     printf("           subsequent allocations may return attacker-controlled data\n");
     printf("\n");
-    printf("Expected with glibc_rust TSM:\n");
+    printf("Expected with frankenlibc TSM:\n");
     printf("  Phase 2: ClampSize prevents the oversized copy (clamped to 64 bytes)\n");
     printf("           OR trailing canary detects overflow at free() and reports\n");
     printf("           FreedWithCanaryCorruption healing event\n");

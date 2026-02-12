@@ -6,7 +6,7 @@
  * directly as format string to printf-family function.
  *
  * Stock glibc: Format string enables stack data leakage, crash, or arbitrary write
- * glibc_rust: UpgradeToSafeVariant detects and neutralizes the format string attack
+ * frankenlibc: UpgradeToSafeVariant detects and neutralizes the format string attack
  *
  * Build: cc -o trigger trigger.c -Wall -Wextra
  * Run:   ./trigger
@@ -72,7 +72,7 @@ static int process_message(const char *user_input, char *out, size_t out_sz)
  * happen to follow the format string pointer).
  *
  * On stock glibc this silently succeeds and leaks 16 bytes of stack data.
- * On glibc_rust, UpgradeToSafeVariant detects that the format string is not
+ * On frankenlibc, UpgradeToSafeVariant detects that the format string is not
  * a compile-time literal (or contains specifiers not matched by arguments)
  * and rewrites the call to treat user_input as a plain string argument.
  * --------------------------------------------------------------------------- */
@@ -97,7 +97,7 @@ static void attack_info_leak(void)
      * (e.g. "deadbeef.0000007f.00000002.bfff1234") then the format string
      * was interpreted and stack data was leaked.
      *
-     * If glibc_rust's UpgradeToSafeVariant fired, the output should be the
+     * If frankenlibc's UpgradeToSafeVariant fired, the output should be the
      * literal string "%08x.%08x.%08x.%08x" (treated as plain text).
      */
     if (strcmp(heap_out, payload) == 0) {
@@ -126,7 +126,7 @@ static void attack_info_leak(void)
  * always results in SIGSEGV.
  *
  * Stock glibc: crashes (SIGSEGV)
- * glibc_rust:  UpgradeToSafeVariant prevents the crash
+ * frankenlibc:  UpgradeToSafeVariant prevents the crash
  * --------------------------------------------------------------------------- */
 static void attack_crash(void)
 {
@@ -198,7 +198,7 @@ static void attack_crash(void)
  * supports it.  We simulate the write attempt and detect the outcome.
  *
  * Stock glibc (without fortify): %n writes to a stack-derived address
- * glibc_rust:  UpgradeToSafeVariant strips %n from untrusted format strings
+ * frankenlibc:  UpgradeToSafeVariant strips %n from untrusted format strings
  * --------------------------------------------------------------------------- */
 static void attack_write(void)
 {
@@ -311,7 +311,7 @@ int main(void)
     printf("  Attack 2: VULNERABLE (SIGSEGV crash)\n");
     printf("  Attack 3: VULNERABLE (%%n write or crash)\n");
     printf("\n");
-    printf("Expected with glibc_rust TSM:\n");
+    printf("Expected with frankenlibc TSM:\n");
     printf("  Attack 1: SAFE (UpgradeToSafeVariant neutralizes format)\n");
     printf("  Attack 2: SAFE (UpgradeToSafeVariant neutralizes format)\n");
     printf("  Attack 3: SAFE (UpgradeToSafeVariant strips %%n)\n");

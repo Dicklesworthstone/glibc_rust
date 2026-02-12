@@ -1,11 +1,11 @@
 {
   "census_version": 1,
-  "generated_utc": "2026-02-11T19:14:29Z",
-  "workspace_root": "/data/projects/frankenlibc",
+  "generated_utc": "2026-02-12T08:37:08Z",
+  "workspace_root": "/data/projects/glibc_rust",
   "total_todo_occurrences": 15,
   "total_unique_stub_symbols": 14,
   "total_abi_exports": 247,
-  "total_matrix_symbols": 249,
+  "total_matrix_symbols": 250,
   "stubs": [
     {
       "symbol": "longjmp",

@@ -1,5 +1,5 @@
-/* Integration test: compile and link against glibc_rust's libc.so */
-/* Build: cc -o link_test link_test.c -L../../target/release -lglibc_rs_abi */
+/* Integration test: compile and link against frankenlibc's libc.so */
+/* Build: cc -o link_test link_test.c -L../../target/release -lfrankenlibc_abi */
 
 #include <stdio.h>
 #include <string.h>
@@ -7,7 +7,7 @@
 
 int main(void) {
     /* Test memcpy */
-    char src[] = "Hello, glibc_rust!";
+    char src[] = "Hello, frankenlibc!";
     char dst[32] = {0};
     memcpy(dst, src, strlen(src) + 1);
 

@@ -26,7 +26,7 @@
  *   - In older glibc or with tcache disabled, this causes heap corruption
  *     that can be exploited for arbitrary write.
  *
- * glibc_rust TSM behavior:
+ * frankenlibc TSM behavior:
  *   - The generational arena detects that the pointer's generation has
  *     been incremented (it is in the quarantine queue).
  *   - IgnoreDoubleFree absorbs the second free: logged, not crashed.

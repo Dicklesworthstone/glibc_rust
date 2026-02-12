@@ -142,18 +142,18 @@ for s in stubs:
             with open(abi_path) as f:
                 abi_content = f.read()
             # Check if ABI calls core stub: look for explicit
-            # glibc_rs_core::<module>::<fn>() or <alias>::<fn>() patterns
+            # frankenlibc_core::<module>::<fn>() or <alias>::<fn>() patterns
             # Must find the function name as a *call* (followed by '('),
             # not just as an extern "C" fn definition.
             import_aliases = re.findall(
-                r'use glibc_rs_core::(\w+)(?:\s+as\s+(\w+))?', abi_content)
+                r'use frankenlibc_core::(\w+)(?:\s+as\s+(\w+))?', abi_content)
             for (mod_name, alias) in import_aliases:
                 prefix = alias if alias else mod_name
-                # e.g. "termios_core::tcgetattr(" or "glibc_rs_core::termios::tcgetattr("
+                # e.g. "termios_core::tcgetattr(" or "frankenlibc_core::termios::tcgetattr("
                 if f"{prefix}::{fn}(" in abi_content:
                     calls_core = True
                     break
-            if f"glibc_rs_core::{fn}(" in abi_content:
+            if f"frankenlibc_core::{fn}(" in abi_content:
                 calls_core = True
 
     enriched.append({

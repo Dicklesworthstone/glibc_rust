@@ -1,5 +1,5 @@
 /* fixture_malloc.c — malloc/free/realloc/calloc under LD_PRELOAD
- * Part of glibc_rust C fixture suite (bd-3jh).
+ * Part of frankenlibc C fixture suite (bd-3jh).
  * Exit 0 = PASS, nonzero = FAIL with diagnostic to stderr.
  */
 #include <stdio.h>

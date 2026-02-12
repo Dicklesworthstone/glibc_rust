@@ -9,7 +9,7 @@
  * heap buffer overflows of varying severity.
  *
  * Stock glibc behavior: heap corruption, potential local privilege escalation
- * glibc_rust TSM behavior: canary detection, ClampSize, TruncateWithNull
+ * frankenlibc TSM behavior: canary detection, ClampSize, TruncateWithNull
  */
 
 #include <stdio.h>

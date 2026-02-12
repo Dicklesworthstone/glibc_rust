@@ -27,7 +27,7 @@
  *   - Depending on heap layout, this may crash at free(), cause silent
  *     corruption, or enable arbitrary code execution via heap feng shui.
  *
- * glibc_rust TSM behavior:
+ * frankenlibc TSM behavior:
  *   - Trailing canary at buffer end detects the overwrite immediately.
  *   - ClampSize would prevent the overwrite in iconv's internal memcpy.
  *   - At free(), canary verification catches any corruption that slipped
@@ -104,7 +104,7 @@ static int test_iconv_overflow(void)
 
     /* At this point, bytes at outbuf[32] through outbuf[37] are corrupted.
      * With stock glibc, this overwrites heap metadata or trailing padding.
-     * With glibc_rust, the trailing canary has been overwritten. */
+     * With frankenlibc, the trailing canary has been overwritten. */
 
     printf("  Wrote %d bytes at offset %zu (overflow: %d bytes past end)\n",
            OVERFLOW_BYTES, write_offset,
@@ -112,7 +112,7 @@ static int test_iconv_overflow(void)
 
     /* Step 4: Free the buffer.
      * Stock glibc: may crash here, may succeed (heap corruption is silent).
-     * glibc_rust: canary check at free() detects the overwrite. */
+     * frankenlibc: canary check at free() detects the overwrite. */
     printf("  Freeing buffer (canary check happens here)...\n");
     free(outbuf);
 

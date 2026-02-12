@@ -1,7 +1,7 @@
 # R1: glibc-Internal CVE Candidates for Reproduction
 
 **Document:** CVE Arena Research -- glibc-Internal Vulnerability Candidates
-**Project:** glibc_rust Transparent Safety Membrane (TSM)
+**Project:** frankenlibc Transparent Safety Membrane (TSM)
 **Author:** CVE Arena Research Phase
 **Date:** 2026-02-10
 **Status:** Research Complete -- Ready for Implementation Planning
@@ -27,7 +27,7 @@ unsafe condition and **healed** the operation before memory corruption could pro
 ## 2. TSM Capabilities Reference
 
 For clarity, this section summarizes the TSM features referenced throughout the
-analysis. Source modules are in `crates/glibc-rs-membrane/src/`.
+analysis. Source modules are in `crates/frankenlibc-membrane/src/`.
 
 ### 2.1 Detection Mechanisms
 

@@ -16,7 +16,7 @@ FRANKENLIBC_MODE=hardened LD_PRELOAD=/usr/lib/frankenlibc/libfrankenlibc_abi.so 
 
 ## Current Implementation Reality (Machine-Generated)
 
-Source of truth: `tests/conformance/reality_report.v1.json` (generated `2026-02-11T19:14:41Z`).
+Source of truth: `tests/conformance/reality_report.v1.json` (generated `2026-02-11T19:17:31Z`).
 Reality snapshot: total_exported=250, implemented=113, raw_syscall=83, glibc_call_through=54, stub=0.
 Counts below reflect that generated snapshot and will change as matrix drift fixes land.
 

@@ -3,7 +3,7 @@
 **Document:** CVE Arena Test Suite -- Sandbox Design
 **Date:** 2026-02-10
 **Status:** Feasibility Report
-**Scope:** glibc_rust Transparent Safety Membrane (TSM) validation against real-world CVEs
+**Scope:** frankenlibc Transparent Safety Membrane (TSM) validation against real-world CVEs
 
 ---
 
@@ -26,15 +26,15 @@ The resolution order for a dynamically linked executable is:
 5. ld-linux.so (dynamic linker internals)
 ```
 
-When our `glibc-rs-abi` crate produces its `cdylib` artifact (hereafter referred to
-as `libglibc_rs_abi.so`), setting `LD_PRELOAD=/path/to/libglibc_rs_abi.so` causes
+When our `frankenlibc-abi` crate produces its `cdylib` artifact (hereafter referred to
+as `libfrankenlibc_abi.so`), setting `LD_PRELOAD=/path/to/libfrankenlibc_abi.so` causes
 the dynamic linker to bind calls to `malloc`, `memcpy`, `strlen`, etc. to our
 implementations rather than the system glibc.
 
 ### 1.2 Interceptable Functions
 
-Based on the current `glibc-rs-abi` version script (`version_scripts/libc.map`)
-and the ABI modules in `crates/glibc-rs-abi/src/`, the following function families
+Based on the current `frankenlibc-abi` version script (`version_scripts/libc.map`)
+and the ABI modules in `crates/frankenlibc-abi/src/`, the following function families
 can be interposed:
 
 | Family | Symbols | ABI Module | CVE Relevance |
@@ -128,13 +128,13 @@ own code directly.
 **Build approach:**
 
 ```bash
-# Build the glibc_rust cdylib
-cargo build -p glibc-rs-abi --release
+# Build the frankenlibc cdylib
+cargo build -p frankenlibc-abi --release
 
 # Compile a C test harness against our libc.so
 gcc -o test_cve_2024_2961 test_cve_2024_2961.c \
     -L target/release \
-    -lglibc_rs_abi \
+    -lfrankenlibc_abi \
     -Wl,-rpath,target/release
 
 # Or use LD_LIBRARY_PATH at runtime
@@ -146,7 +146,7 @@ LD_LIBRARY_PATH=target/release ./test_cve_2024_2961
 | Phase | libc | Expected Behavior |
 |-------|------|-------------------|
 | Phase 1 (baseline) | System glibc | Crash, corruption, or exploitable condition |
-| Phase 2 (glibc_rust) | `libglibc_rs_abi.so` | Safe handling via TSM healing |
+| Phase 2 (frankenlibc) | `libfrankenlibc_abi.so` | Safe handling via TSM healing |
 
 **Applicable CVEs:**
 
@@ -179,7 +179,7 @@ git clone --branch <vulnerable-tag> <repo>
 cd <repo> && make
 
 # Run with our libc interposed
-LD_PRELOAD=/path/to/libglibc_rs_abi.so ./vulnerable_binary <trigger_input>
+LD_PRELOAD=/path/to/libfrankenlibc_abi.so ./vulnerable_binary <trigger_input>
 ```
 
 **Candidate software and feasibility:**
@@ -371,7 +371,7 @@ bwrap \
     --dev /dev \
     --proc /proc \
     --clearenv \
-    --setenv LD_PRELOAD /path/to/libglibc_rs_abi.so \
+    --setenv LD_PRELOAD /path/to/libfrankenlibc_abi.so \
     --setenv HOME /tmp \
     -- /path/to/test_harness
 ```
@@ -400,8 +400,8 @@ runner.sh <CVE_ID> [--mode A|B] [--verbose]
     |     captures: exit code, stdout, stderr, signal, core dump (if any)
     |     timeout: 30 seconds (configurable per CVE)
     |
-    +-- Phase 3: Run under glibc_rust (treatment)
-    |     docker run ... -e LD_PRELOAD=/test/libglibc_rs_abi.so --entrypoint /test/run_treatment.sh
+    +-- Phase 3: Run under frankenlibc (treatment)
+    |     docker run ... -e LD_PRELOAD=/test/libfrankenlibc_abi.so --entrypoint /test/run_treatment.sh
     |     captures: exit code, stdout, stderr, signal, TSM healing log
     |     timeout: 30 seconds (configurable per CVE)
     |
@@ -444,7 +444,7 @@ exit_code = 139                      # SIGSEGV
 signal = "SIGSEGV"
 exploitable = true
 
-[expected.glibc_rust]
+[expected.frankenlibc]
 exit_code = 0
 signal = "none"
 exploitable = false
@@ -468,7 +468,7 @@ The test runner uses multiple signals to determine the outcome:
    known canary pattern after the vulnerable buffer. If the canary is intact after
    the operation, no overflow occurred.
 
-4. **TSM healing log.** When running under glibc_rust in hardened mode, the
+4. **TSM healing log.** When running under frankenlibc in hardened mode, the
    membrane logs every healing action to stderr (or a dedicated file descriptor).
    The runner captures this log and parses it for the specific healing action
    applied.
@@ -528,7 +528,7 @@ result file per CVE test execution.
         "category",
         "timestamp",
         "stock_glibc",
-        "glibc_rust",
+        "frankenlibc",
         "verdict"
     ],
     "properties": {
@@ -557,7 +557,7 @@ result file per CVE test execution.
             "description": "ISO 8601 timestamp of test execution."
         },
         "stock_glibc": { "$ref": "#/$defs/execution_result" },
-        "glibc_rust": { "$ref": "#/$defs/execution_result_with_healing" },
+        "frankenlibc": { "$ref": "#/$defs/execution_result_with_healing" },
         "verdict": {
             "type": "string",
             "enum": ["PREVENTED", "MITIGATED", "NOT_PREVENTED", "INCONCLUSIVE", "SKIPPED"],
@@ -638,7 +638,7 @@ result file per CVE test execution.
         "duration_ms": 12,
         "canary_intact": false
     },
-    "glibc_rust": {
+    "frankenlibc": {
         "exit_code": 0,
         "signal": null,
         "stdout": "",
@@ -659,7 +659,7 @@ result file per CVE test execution.
 
 The verdict is computed from the two execution results:
 
-| stock_glibc.exploitable | glibc_rust.exploitable | glibc_rust.healing_action | Verdict |
+| stock_glibc.exploitable | frankenlibc.exploitable | frankenlibc.healing_action | Verdict |
 |------------------------|----------------------|--------------------------|---------|
 | true | false | any healing action | `PREVENTED` |
 | true | false | None | `MITIGATED` (safe behavior without explicit healing) |
@@ -713,7 +713,7 @@ setarch $(uname -m) -R /test/trigger_binary
 
 Note: disabling ASLR makes exploitation easier, which is desirable for the
 baseline (stock glibc) run -- we want to reliably trigger the vulnerability. The
-glibc_rust run should prevent exploitation regardless of ASLR state.
+frankenlibc run should prevent exploitation regardless of ASLR state.
 
 ### 6.3 Signal Handling and Silent Corruption
 
@@ -733,7 +733,7 @@ signal.
    trigger with `-fsanitize=address` to get reliable crash-on-overflow behavior.
    This makes the baseline more deterministic.
 
-4. **TSM healing counters.** After the glibc_rust run, query the healing policy
+4. **TSM healing counters.** After the frankenlibc run, query the healing policy
    counters (`total_heals`, `size_clamps`, etc.) to verify that the membrane
    actively intervened, even if the output looks normal.
 
@@ -780,7 +780,7 @@ cdylib uses the general-dynamic TLS model by default. If the target binary
 expects initial-exec TLS layout for libc globals (e.g., `errno`), loading our
 library via LD_PRELOAD may cause TLS allocation failures.
 
-**Mitigation:** The `glibc-rs-abi` crate already handles `errno` via
+**Mitigation:** The `frankenlibc-abi` crate already handles `errno` via
 `errno_abi.rs`. For LD_PRELOAD mode, ensure our TLS usage is minimal and uses
 `#[thread_local]` (which compiles to initial-exec on Linux). Monitor for
 `dlopen` failures that mention TLS.
@@ -800,7 +800,7 @@ slow. VLC, for instance, can take 30+ minutes to build.
    private registry. CI pulls the cached image instead of building from source.
 
 3. **Build once, test twice.** The same container image is used for both the
-   stock glibc and glibc_rust runs; only the LD_PRELOAD environment variable
+   stock glibc and frankenlibc runs; only the LD_PRELOAD environment variable
    differs.
 
 ---
@@ -814,7 +814,7 @@ confidence and infrastructure incrementally.
 
 **Target:** Weeks 1-2
 **Complexity:** Low
-**Dependencies:** glibc-rs-abi cdylib builds successfully
+**Dependencies:** frankenlibc-abi cdylib builds successfully
 
 | Priority | CVE | Function | Healing Action |
 |----------|-----|----------|---------------|
@@ -934,7 +934,7 @@ tests/cve_arena/
 
 ## Appendix B: Mapping HealingAction to CVE Classes
 
-The `HealingAction` variants defined in `crates/glibc-rs-membrane/src/heal.rs`
+The `HealingAction` variants defined in `crates/frankenlibc-membrane/src/heal.rs`
 map to CVE vulnerability classes as follows:
 
 | HealingAction | Vulnerability Class | Example CVEs |
@@ -950,17 +950,17 @@ map to CVE vulnerability classes as follows:
 ## Appendix C: Quick Reference Commands
 
 ```bash
-# Build the glibc_rust cdylib
-cargo build -p glibc-rs-abi --release
+# Build the frankenlibc cdylib
+cargo build -p frankenlibc-abi --release
 
 # Verify exported symbols
-nm -D target/release/libglibc_rs_abi.so | grep ' T '
+nm -D target/release/libfrankenlibc_abi.so | grep ' T '
 
 # Check symbol versions
-objdump -T target/release/libglibc_rs_abi.so | head -40
+objdump -T target/release/libfrankenlibc_abi.so | head -40
 
 # Run a simple interposition test
-LD_PRELOAD=target/release/libglibc_rs_abi.so /bin/ls
+LD_PRELOAD=target/release/libfrankenlibc_abi.so /bin/ls
 
 # Inspect a target binary's glibc version requirements
 readelf -V /usr/bin/sudo

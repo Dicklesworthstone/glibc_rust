@@ -66,8 +66,8 @@ Notes:
 ### RuntimeMathKernel::decide (strict)
 
 ```bash
-GLIBC_RUST_MODE=strict CARGO_PROFILE_BENCH_DEBUG=true \
-  cargo flamegraph -p glibc-rs-bench --bench runtime_math_bench --deterministic \
+FRANKENLIBC_MODE=strict CARGO_PROFILE_BENCH_DEBUG=true \
+  cargo flamegraph -p frankenlibc-bench --bench runtime_math_bench --deterministic \
   -o /tmp/flamegraph-runtime-math-decide-strict.svg -- \
   --bench --profile-time 10 --exact 'runtime_math/decide/strict'
 ```
@@ -75,8 +75,8 @@ GLIBC_RUST_MODE=strict CARGO_PROFILE_BENCH_DEBUG=true \
 ### RuntimeMathKernel::observe_validation_result (strict)
 
 ```bash
-GLIBC_RUST_MODE=strict CARGO_PROFILE_BENCH_DEBUG=true \
-  cargo flamegraph -F 199 -p glibc-rs-bench --bench runtime_math_bench --deterministic \
+FRANKENLIBC_MODE=strict CARGO_PROFILE_BENCH_DEBUG=true \
+  cargo flamegraph -F 199 -p frankenlibc-bench --bench runtime_math_bench --deterministic \
   -o /tmp/flamegraph-runtime-math-observe-fast-strict.svg -- \
   --bench --profile-time 10 --exact 'runtime_math/observe_fast/strict'
 ```
@@ -84,8 +84,8 @@ GLIBC_RUST_MODE=strict CARGO_PROFILE_BENCH_DEBUG=true \
 ### decide + observe loop (strict)
 
 ```bash
-GLIBC_RUST_MODE=strict CARGO_PROFILE_BENCH_DEBUG=true \
-  cargo flamegraph -F 199 -p glibc-rs-bench --bench runtime_math_bench --deterministic \
+FRANKENLIBC_MODE=strict CARGO_PROFILE_BENCH_DEBUG=true \
+  cargo flamegraph -F 199 -p frankenlibc-bench --bench runtime_math_bench --deterministic \
   -o /tmp/flamegraph-runtime-math-decide-observe-strict.svg -- \
   --bench --profile-time 10 --exact 'runtime_math/decide_observe/strict'
 ```
@@ -93,8 +93,8 @@ GLIBC_RUST_MODE=strict CARGO_PROFILE_BENCH_DEBUG=true \
 ### Pointer Validation (validate_known)
 
 ```bash
-GLIBC_RUST_MODE=strict CARGO_PROFILE_BENCH_DEBUG=true \
-  cargo flamegraph -F 199 -p glibc-rs-bench --bench membrane_bench --deterministic \
+FRANKENLIBC_MODE=strict CARGO_PROFILE_BENCH_DEBUG=true \
+  cargo flamegraph -F 199 -p frankenlibc-bench --bench membrane_bench --deterministic \
   -o /tmp/flamegraph-pointer-validate-known-strict.svg -- \
   --bench --profile-time 10 --exact validate_known
 ```
@@ -102,7 +102,7 @@ GLIBC_RUST_MODE=strict CARGO_PROFILE_BENCH_DEBUG=true \
 ### Hardened Mode
 
 Repeat the same commands with:
-- `GLIBC_RUST_MODE=hardened`
+- `FRANKENLIBC_MODE=hardened`
 - the `.../hardened` benchmark ids (for runtime_math_bench): `runtime_math/decide/hardened`, etc.
 
 ## Hotspot Extraction (Top-5)
@@ -114,14 +114,14 @@ Repeat the same commands with:
 Example:
 
 ```bash
-mkdir -p /tmp/glibc_rust_profiles
-mv perf.data /tmp/glibc_rust_profiles/perf_runtime_math_decide_strict.data
+mkdir -p /tmp/frankenlibc_profiles
+mv perf.data /tmp/frankenlibc_profiles/perf_runtime_math_decide_strict.data
 ```
 
 Then extract the top-5 self-cost symbols:
 
 ```bash
-perf report -i /tmp/glibc_rust_profiles/perf_runtime_math_decide_strict.data \
+perf report -i /tmp/frankenlibc_profiles/perf_runtime_math_decide_strict.data \
   --stdio --no-children --sort=symbol \
   | awk '/^ *[0-9]+\\.[0-9]+%/ {print; c++; if (c==5) exit}'
 ```
@@ -147,21 +147,21 @@ These are example top-5 self-cost symbols captured from this workspace environme
 
 RuntimeMathKernel::decide:
 - `__ieee754_log_fma`
-- `glibc_rs_membrane::runtime_math::design::logdet_spd`
-- `<glibc_rs_membrane::runtime_math::design::OptimalDesignController>::choose_plan`
+- `frankenlibc_membrane::runtime_math::design::logdet_spd`
+- `<frankenlibc_membrane::runtime_math::design::OptimalDesignController>::choose_plan`
 - `core::slice::sort::shared::smallsort::insertion_sort_shift_left::<...>`
-- `<glibc_rs_membrane::runtime_math::RuntimeMathKernel>::decide`
+- `<frankenlibc_membrane::runtime_math::RuntimeMathKernel>::decide`
 
 RuntimeMathKernel::observe_validation_result (observe_fast):
-- `<glibc_rs_membrane::runtime_math::changepoint::ChangepointController>::observe`
-- `<glibc_rs_membrane::spectral_monitor::SpectralMonitor>::observe`
-- `<glibc_rs_membrane::runtime_math::RuntimeMathKernel>::observe_validation_result`
-- `<glibc_rs_membrane::runtime_math::fusion::KernelFusionController>::observe`
-- `<glibc_rs_membrane::persistence::PersistenceDetector>::observe`
+- `<frankenlibc_membrane::runtime_math::changepoint::ChangepointController>::observe`
+- `<frankenlibc_membrane::spectral_monitor::SpectralMonitor>::observe`
+- `<frankenlibc_membrane::runtime_math::RuntimeMathKernel>::observe_validation_result`
+- `<frankenlibc_membrane::runtime_math::fusion::KernelFusionController>::observe`
+- `<frankenlibc_membrane::persistence::PersistenceDetector>::observe`
 
 Pointer validation (validate_known):
-- `<glibc_rs_membrane::runtime_math::changepoint::ChangepointController>::observe`
-- `<glibc_rs_membrane::runtime_math::fusion::KernelFusionController>::observe`
-- `<glibc_rs_membrane::runtime_math::RuntimeMathKernel>::observe_validation_result`
+- `<frankenlibc_membrane::runtime_math::changepoint::ChangepointController>::observe`
+- `<frankenlibc_membrane::runtime_math::fusion::KernelFusionController>::observe`
+- `<frankenlibc_membrane::runtime_math::RuntimeMathKernel>::observe_validation_result`
 - `core::slice::sort::unstable::ipnsort::<...>`
 - `__ieee754_log_fma`

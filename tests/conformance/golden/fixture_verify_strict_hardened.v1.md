@@ -1,4 +1,4 @@
-# glibc_rust Conformance Report
+# frankenlibc Conformance Report
 
 - Mode: strict+hardened
 - Timestamp: 1970-01-01T00:00:00Z

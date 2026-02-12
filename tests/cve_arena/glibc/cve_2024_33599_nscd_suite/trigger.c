@@ -11,7 +11,7 @@
  * Stock glibc behavior: memory corruption, denial of service, potential
  * code execution as the nscd daemon user.
  *
- * glibc_rust TSM behavior: canary, bounds checking, safe defaults,
+ * frankenlibc TSM behavior: canary, bounds checking, safe defaults,
  * quarantine detection.
  */
 

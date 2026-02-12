@@ -2,7 +2,7 @@
 
 **Document**: R4 -- CVE Arena Synthetic Patterns
 **Component**: Transparent Safety Membrane (TSM) validation
-**Crate**: `glibc-rs-membrane`
+**Crate**: `frankenlibc-membrane`
 **Status**: Active research artifact
 
 ---
@@ -15,7 +15,7 @@ CVEs. Each synthetic program isolates the root CWE class without referencing,
 decompiling, or otherwise incorporating any proprietary code. The goal is to
 validate that the TSM's healing actions, generational arena, canary detection,
 and validation pipeline correctly detect and neutralize each corruption pattern
-when glibc_rust is used as the system C library.
+when frankenlibc is used as the system C library.
 
 ### TSM Features Under Test
 
@@ -232,7 +232,7 @@ echo 'AAAA%08x.%08x.%08x.%n' | nc 127.0.0.1 9134
 | `%08x.%08x...` | Server prints hex-encoded stack contents. Attacker learns stack layout, pointer values, and potentially canary values from the process. |
 | `AAAA...%n` | Server writes a 4-byte integer to whatever address sits at the corresponding stack position. Likely crashes with SIGSEGV; a crafted exploit chains this into arbitrary write and then code execution. |
 
-### Expected Behavior: glibc_rust with TSM
+### Expected Behavior: frankenlibc with TSM
 
 | TSM component | Action |
 |---|---|
@@ -544,7 +544,7 @@ Byte breakdown:
 | `free(buf)` | glibc's `free()` reads corrupted chunk metadata. Depending on the overwrite pattern, this can cause: (a) heap unlink exploit leading to arbitrary write, (b) crash in `__libc_free` due to metadata consistency checks, or (c) silent corruption leading to exploitable state later. |
 | **Net result** | Heap corruption. With a crafted payload (not just 0x41), an attacker achieves arbitrary write and then code execution. |
 
-### Expected Behavior: glibc_rust with TSM
+### Expected Behavior: frankenlibc with TSM
 
 | TSM component | Action |
 |---|---|
@@ -771,7 +771,7 @@ int main(void)
 
     /*
      * At this point, stream->conn is a dangling pointer. The freed memory
-     * is in the free list (stock glibc) or quarantine (glibc_rust).
+     * is in the free list (stock glibc) or quarantine (frankenlibc).
      */
 
     /* Step 3b: Simulate attacker reusing the freed memory. */
@@ -800,7 +800,7 @@ int main(void)
 # driver_quic_uaf.sh
 #
 # Build and run the synthetic QUIC UAF trigger. Compare behavior with
-# stock glibc vs glibc_rust.
+# stock glibc vs frankenlibc.
 
 set -euo pipefail
 
@@ -819,13 +819,13 @@ echo "=== Running with stock glibc ==="
 ./"$BIN" || echo "[!] Process crashed (exit code $?)"
 
 echo ""
-echo "=== Running with glibc_rust (LD_PRELOAD) ==="
-# Under glibc_rust, the TSM's generational arena detects the UAF:
+echo "=== Running with frankenlibc (LD_PRELOAD) ==="
+# Under frankenlibc, the TSM's generational arena detects the UAF:
 #   - stream->conn points to a quarantined allocation
 #   - generation mismatch prevents the dereference
 #   - process continues safely (IgnoreDoubleFree / ReturnSafeDefault)
-# LD_PRELOAD=libglibc_rust.so ./"$BIN"
-echo "(Set LD_PRELOAD=libglibc_rust.so to test with TSM)"
+# LD_PRELOAD=libfrankenlibc.so ./"$BIN"
+echo "(Set LD_PRELOAD=libfrankenlibc.so to test with TSM)"
 ```
 
 ### Expected Behavior: Stock glibc
@@ -837,7 +837,7 @@ echo "(Set LD_PRELOAD=libglibc_rust.so to test with TSM)"
 | `stream->cleanup(stream)` | The cleanup handler reads `s->conn->on_close` from the reallocated (attacker-controlled) memory. If the spray succeeded, `on_close` = `0x4141414141414141`. Calling this address causes SIGSEGV (or, with a real exploit payload, jumps to attacker shellcode). |
 | **Net result** | Use-after-free leading to control-flow hijack. The attacker controls the function pointer called through the stale reference. |
 
-### Expected Behavior: glibc_rust with TSM
+### Expected Behavior: frankenlibc with TSM
 
 | TSM component | Action |
 |---|---|
@@ -881,7 +881,7 @@ ensures strict standard conformance.
 
 1. **Baseline run**: Compile and run against stock glibc. Document the crash
    mode, ASAN output (if applicable), and any observable corruption.
-2. **TSM run**: Compile the same source and run under glibc_rust (via
+2. **TSM run**: Compile the same source and run under frankenlibc (via
    `LD_PRELOAD` or full system library replacement). Verify that:
    - No crash occurs.
    - The healing action fires (check `HealingPolicy` counters).

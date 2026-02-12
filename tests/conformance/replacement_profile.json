@@ -102,7 +102,8 @@
       "resource_abi",
       "dirent_abi",
       "unistd_abi",
-      "process_abi"
+      "process_abi",
+      "startup_abi"
     ],
     "rationale": "These modules delegate to host glibc for operations not yet reimplemented as RawSyscall or Implemented. They are safe in interpose mode because the host glibc is still loaded."
   },
