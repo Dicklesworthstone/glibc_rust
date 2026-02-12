@@ -38,13 +38,16 @@ PY
 tmp="$(mktemp)"
 trap 'rm -f "${tmp}"' EXIT
 
-python3 "${GEN}" \
-  --support-matrix "${SUPPORT_MATRIX}" \
-  --fixtures-dir "${FIXTURES_DIR}" \
-  --c-fixture-spec "${C_FIXTURE_SPEC}" \
-  --workload-matrix "${WORKLOAD_MATRIX}" \
-  --output "${tmp}" \
-  --quiet >/dev/null
+(
+    cd "${ROOT}"
+    python3 "scripts/generate_symbol_fixture_coverage.py" \
+      --support-matrix "support_matrix.json" \
+      --fixtures-dir "tests/conformance/fixtures" \
+      --c-fixture-spec "tests/conformance/c_fixture_spec.json" \
+      --workload-matrix "tests/conformance/workload_matrix.json" \
+      --output "${tmp}" \
+      --quiet >/dev/null
+)
 
 python3 - "${CANONICAL}" "${tmp}" "${TRACE_ID}" "${START_NS}" <<'PY'
 import json

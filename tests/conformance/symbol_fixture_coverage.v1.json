@@ -1,0 +1,5852 @@
+{
+  "bead": "bd-15n.1",
+  "description": "Exported symbol <-> conformance fixture coverage matrix. Targets Implemented/RawSyscall coverage gaps and maps them to subsystem tracks.",
+  "families": [
+    {
+      "covered_symbols": 5,
+      "milestone_beads": [],
+      "module": "unistd_abi",
+      "recommended_bead": null,
+      "severity": "high",
+      "severity_score": 2202,
+      "status_breakdown": {
+        "RawSyscall": 27
+      },
+      "target_coverage_pct": 18.52,
+      "target_covered": 5,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 27,
+      "target_uncovered": 22,
+      "target_uncovered_symbols": [
+        "access",
+        "chdir",
+        "fchdir",
+        "fdatasync",
+        "fstat",
+        "fsync",
+        "getcwd",
+        "getegid",
+        "geteuid",
+        "getgid",
+        "getpid",
+        "getppid",
+        "getuid",
+        "isatty",
+        "link",
+        "lstat",
+        "readlink",
+        "rmdir",
+        "sleep",
+        "stat",
+        "symlink",
+        "usleep"
+      ],
+      "total_symbols": 27,
+      "track": "unistd/syscall",
+      "uncovered_symbols": 22,
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "covered_symbols": 0,
+      "milestone_beads": [],
+      "module": "math_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "severity_score": 1903,
+      "status_breakdown": {
+        "Implemented": 19
+      },
+      "target_coverage_pct": 0.0,
+      "target_covered": 0,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 19,
+      "target_uncovered": 19,
+      "target_uncovered_symbols": [
+        "acos",
+        "asin",
+        "atan",
+        "atan2",
+        "ceil",
+        "cos",
+        "erf",
+        "exp",
+        "fabs",
+        "floor",
+        "fmod",
+        "lgamma",
+        "log",
+        "log10",
+        "pow",
+        "round",
+        "sin",
+        "tan",
+        "tgamma"
+      ],
+      "total_symbols": 19,
+      "track": "math",
+      "uncovered_symbols": 19,
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "covered_symbols": 0,
+      "milestone_beads": [],
+      "module": "socket_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "severity_score": 1403,
+      "status_breakdown": {
+        "RawSyscall": 14
+      },
+      "target_coverage_pct": 0.0,
+      "target_covered": 0,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 14,
+      "target_uncovered": 14,
+      "target_uncovered_symbols": [
+        "accept",
+        "bind",
+        "connect",
+        "getpeername",
+        "getsockname",
+        "getsockopt",
+        "listen",
+        "recv",
+        "recvfrom",
+        "send",
+        "sendto",
+        "setsockopt",
+        "shutdown",
+        "socket"
+      ],
+      "total_symbols": 14,
+      "track": "network/socket",
+      "uncovered_symbols": 14,
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "covered_symbols": 0,
+      "milestone_beads": [],
+      "module": "ctype_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "severity_score": 1103,
+      "status_breakdown": {
+        "Implemented": 11
+      },
+      "target_coverage_pct": 0.0,
+      "target_covered": 0,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 11,
+      "target_uncovered": 11,
+      "target_uncovered_symbols": [
+        "isalnum",
+        "isalpha",
+        "isdigit",
+        "islower",
+        "isprint",
+        "ispunct",
+        "isspace",
+        "isupper",
+        "isxdigit",
+        "tolower",
+        "toupper"
+      ],
+      "total_symbols": 11,
+      "track": "ctype",
+      "uncovered_symbols": 11,
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "covered_symbols": 0,
+      "milestone_beads": [],
+      "module": "termios_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "severity_score": 1003,
+      "status_breakdown": {
+        "RawSyscall": 10
+      },
+      "target_coverage_pct": 0.0,
+      "target_covered": 0,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 10,
+      "target_uncovered": 10,
+      "target_uncovered_symbols": [
+        "cfgetispeed",
+        "cfgetospeed",
+        "cfsetispeed",
+        "cfsetospeed",
+        "tcdrain",
+        "tcflow",
+        "tcflush",
+        "tcgetattr",
+        "tcsendbreak",
+        "tcsetattr"
+      ],
+      "total_symbols": 10,
+      "track": "termios",
+      "uncovered_symbols": 10,
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "covered_symbols": 0,
+      "milestone_beads": [],
+      "module": "grp_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "severity_score": 703,
+      "status_breakdown": {
+        "Implemented": 7
+      },
+      "target_coverage_pct": 0.0,
+      "target_covered": 0,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 7,
+      "target_uncovered": 7,
+      "target_uncovered_symbols": [
+        "endgrent",
+        "getgrent",
+        "getgrgid",
+        "getgrgid_r",
+        "getgrnam",
+        "getgrnam_r",
+        "setgrent"
+      ],
+      "total_symbols": 7,
+      "track": "identity",
+      "uncovered_symbols": 7,
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "covered_symbols": 0,
+      "milestone_beads": [],
+      "module": "inet_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "severity_score": 703,
+      "status_breakdown": {
+        "Implemented": 7
+      },
+      "target_coverage_pct": 0.0,
+      "target_covered": 0,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 7,
+      "target_uncovered": 7,
+      "target_uncovered_symbols": [
+        "htonl",
+        "htons",
+        "inet_addr",
+        "inet_ntop",
+        "inet_pton",
+        "ntohl",
+        "ntohs"
+      ],
+      "total_symbols": 7,
+      "track": "network/inet",
+      "uncovered_symbols": 7,
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "covered_symbols": 0,
+      "milestone_beads": [],
+      "module": "pwd_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "severity_score": 703,
+      "status_breakdown": {
+        "Implemented": 7
+      },
+      "target_coverage_pct": 0.0,
+      "target_covered": 0,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 7,
+      "target_uncovered": 7,
+      "target_uncovered_symbols": [
+        "endpwent",
+        "getpwent",
+        "getpwnam",
+        "getpwnam_r",
+        "getpwuid",
+        "getpwuid_r",
+        "setpwent"
+      ],
+      "total_symbols": 7,
+      "track": "identity",
+      "uncovered_symbols": 7,
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "covered_symbols": 0,
+      "milestone_beads": [],
+      "module": "process_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "severity_score": 603,
+      "status_breakdown": {
+        "RawSyscall": 6
+      },
+      "target_coverage_pct": 0.0,
+      "target_covered": 0,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 6,
+      "target_uncovered": 6,
+      "target_uncovered_symbols": [
+        "_exit",
+        "execve",
+        "execvp",
+        "fork",
+        "wait",
+        "waitpid"
+      ],
+      "total_symbols": 6,
+      "track": "process",
+      "uncovered_symbols": 6,
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "covered_symbols": 5,
+      "milestone_beads": [],
+      "module": "stdlib_abi",
+      "recommended_bead": null,
+      "severity": "high",
+      "severity_score": 602,
+      "status_breakdown": {
+        "Implemented": 11
+      },
+      "target_coverage_pct": 45.45,
+      "target_covered": 5,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 11,
+      "target_uncovered": 6,
+      "target_uncovered_symbols": [
+        "atexit",
+        "atol",
+        "exit",
+        "getenv",
+        "setenv",
+        "unsetenv"
+      ],
+      "total_symbols": 11,
+      "track": "stdlib",
+      "uncovered_symbols": 6,
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "covered_symbols": 0,
+      "milestone_beads": [],
+      "module": "mmap_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "severity_score": 503,
+      "status_breakdown": {
+        "RawSyscall": 5
+      },
+      "target_coverage_pct": 0.0,
+      "target_covered": 0,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 5,
+      "target_uncovered": 5,
+      "target_uncovered_symbols": [
+        "madvise",
+        "mmap",
+        "mprotect",
+        "msync",
+        "munmap"
+      ],
+      "total_symbols": 5,
+      "track": "vm/mmap",
+      "uncovered_symbols": 5,
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "covered_symbols": 0,
+      "milestone_beads": [],
+      "module": "poll_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "severity_score": 403,
+      "status_breakdown": {
+        "RawSyscall": 4
+      },
+      "target_coverage_pct": 0.0,
+      "target_covered": 0,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 4,
+      "target_uncovered": 4,
+      "target_uncovered_symbols": [
+        "poll",
+        "ppoll",
+        "pselect",
+        "select"
+      ],
+      "total_symbols": 4,
+      "track": "poll",
+      "uncovered_symbols": 4,
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "covered_symbols": 0,
+      "milestone_beads": [],
+      "module": "signal_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "severity_score": 403,
+      "status_breakdown": {
+        "RawSyscall": 4
+      },
+      "target_coverage_pct": 0.0,
+      "target_covered": 0,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 4,
+      "target_uncovered": 4,
+      "target_uncovered_symbols": [
+        "kill",
+        "raise",
+        "sigaction",
+        "signal"
+      ],
+      "total_symbols": 4,
+      "track": "signal",
+      "uncovered_symbols": 4,
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "covered_symbols": 0,
+      "milestone_beads": [],
+      "module": "time_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "severity_score": 403,
+      "status_breakdown": {
+        "RawSyscall": 4
+      },
+      "target_coverage_pct": 0.0,
+      "target_covered": 0,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 4,
+      "target_uncovered": 4,
+      "target_uncovered_symbols": [
+        "clock",
+        "clock_gettime",
+        "localtime_r",
+        "time"
+      ],
+      "total_symbols": 4,
+      "track": "time",
+      "uncovered_symbols": 4,
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "covered_symbols": 1,
+      "milestone_beads": [
+        "bd-66s"
+      ],
+      "module": "resolv_abi",
+      "recommended_bead": "bd-66s",
+      "severity": "high",
+      "severity_score": 342,
+      "status_breakdown": {
+        "Implemented": 4
+      },
+      "target_coverage_pct": 25.0,
+      "target_covered": 1,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 4,
+      "target_uncovered": 3,
+      "target_uncovered_symbols": [
+        "freeaddrinfo",
+        "gai_strerror",
+        "getnameinfo"
+      ],
+      "total_symbols": 4,
+      "track": "resolver",
+      "uncovered_symbols": 3,
+      "workload_blocked_count": 4,
+      "workload_ids": [
+        "wl-002",
+        "wl-003",
+        "wl-004",
+        "wl-005"
+      ]
+    },
+    {
+      "covered_symbols": 0,
+      "milestone_beads": [],
+      "module": "dirent_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "severity_score": 303,
+      "status_breakdown": {
+        "RawSyscall": 3
+      },
+      "target_coverage_pct": 0.0,
+      "target_covered": 0,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 3,
+      "target_uncovered": 3,
+      "target_uncovered_symbols": [
+        "closedir",
+        "opendir",
+        "readdir"
+      ],
+      "total_symbols": 3,
+      "track": "dirent",
+      "uncovered_symbols": 3,
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "covered_symbols": 1,
+      "milestone_beads": [],
+      "module": "io_abi",
+      "recommended_bead": null,
+      "severity": "high",
+      "severity_score": 302,
+      "status_breakdown": {
+        "RawSyscall": 4
+      },
+      "target_coverage_pct": 25.0,
+      "target_covered": 1,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 4,
+      "target_uncovered": 3,
+      "target_uncovered_symbols": [
+        "dup",
+        "dup2",
+        "fcntl"
+      ],
+      "total_symbols": 4,
+      "track": "io",
+      "uncovered_symbols": 3,
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "covered_symbols": 4,
+      "milestone_beads": [],
+      "module": "malloc_abi",
+      "recommended_bead": null,
+      "severity": "high",
+      "severity_score": 302,
+      "status_breakdown": {
+        "Implemented": 7
+      },
+      "target_coverage_pct": 57.14,
+      "target_covered": 4,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 7,
+      "target_uncovered": 3,
+      "target_uncovered_symbols": [
+        "aligned_alloc",
+        "memalign",
+        "posix_memalign"
+      ],
+      "total_symbols": 7,
+      "track": "allocator",
+      "uncovered_symbols": 3,
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "covered_symbols": 0,
+      "milestone_beads": [
+        "bd-3pe"
+      ],
+      "module": "locale_abi",
+      "recommended_bead": "bd-3pe",
+      "severity": "critical",
+      "severity_score": 223,
+      "status_breakdown": {
+        "Implemented": 2
+      },
+      "target_coverage_pct": 0.0,
+      "target_covered": 0,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 2,
+      "target_uncovered": 2,
+      "target_uncovered_symbols": [
+        "localeconv",
+        "setlocale"
+      ],
+      "total_symbols": 2,
+      "track": "locale",
+      "uncovered_symbols": 2,
+      "workload_blocked_count": 2,
+      "workload_ids": [
+        "wl-002",
+        "wl-006"
+      ]
+    },
+    {
+      "covered_symbols": 0,
+      "milestone_beads": [],
+      "module": "resource_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "severity_score": 203,
+      "status_breakdown": {
+        "RawSyscall": 2
+      },
+      "target_coverage_pct": 0.0,
+      "target_covered": 0,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 2,
+      "target_uncovered": 2,
+      "target_uncovered_symbols": [
+        "getrlimit",
+        "setrlimit"
+      ],
+      "total_symbols": 2,
+      "track": "resource",
+      "uncovered_symbols": 2,
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "covered_symbols": 1,
+      "milestone_beads": [],
+      "module": "iconv_abi",
+      "recommended_bead": null,
+      "severity": "high",
+      "severity_score": 202,
+      "status_breakdown": {
+        "Implemented": 3
+      },
+      "target_coverage_pct": 33.33,
+      "target_covered": 1,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 3,
+      "target_uncovered": 2,
+      "target_uncovered_symbols": [
+        "iconv_close",
+        "iconv_open"
+      ],
+      "total_symbols": 3,
+      "track": "i18n/iconv",
+      "uncovered_symbols": 2,
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "covered_symbols": 1,
+      "milestone_beads": [],
+      "module": "startup_abi",
+      "recommended_bead": null,
+      "severity": "high",
+      "severity_score": 202,
+      "status_breakdown": {
+        "Implemented": 3
+      },
+      "target_coverage_pct": 33.33,
+      "target_covered": 1,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 3,
+      "target_uncovered": 2,
+      "target_uncovered_symbols": [
+        "__frankenlibc_startup_snapshot",
+        "__libc_start_main"
+      ],
+      "total_symbols": 3,
+      "track": "startup",
+      "uncovered_symbols": 2,
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "covered_symbols": 15,
+      "milestone_beads": [],
+      "module": "string_abi",
+      "recommended_bead": null,
+      "severity": "medium",
+      "severity_score": 201,
+      "status_breakdown": {
+        "Implemented": 17
+      },
+      "target_coverage_pct": 88.24,
+      "target_covered": 15,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 17,
+      "target_uncovered": 2,
+      "target_uncovered_symbols": [
+        "strtok",
+        "strtok_r"
+      ],
+      "total_symbols": 17,
+      "track": "string",
+      "uncovered_symbols": 2,
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "covered_symbols": 12,
+      "milestone_beads": [],
+      "module": "wchar_abi",
+      "recommended_bead": null,
+      "severity": "medium",
+      "severity_score": 201,
+      "status_breakdown": {
+        "Implemented": 14
+      },
+      "target_coverage_pct": 85.71,
+      "target_covered": 12,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 14,
+      "target_uncovered": 2,
+      "target_uncovered_symbols": [
+        "wcsncmp",
+        "wcsrchr"
+      ],
+      "total_symbols": 14,
+      "track": "string/wide",
+      "uncovered_symbols": 2,
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "covered_symbols": 0,
+      "milestone_beads": [],
+      "module": "errno_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "severity_score": 103,
+      "status_breakdown": {
+        "Implemented": 1
+      },
+      "target_coverage_pct": 0.0,
+      "target_covered": 0,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 1,
+      "target_uncovered": 1,
+      "target_uncovered_symbols": [
+        "__errno_location"
+      ],
+      "total_symbols": 1,
+      "track": "errno",
+      "uncovered_symbols": 1,
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "covered_symbols": 0,
+      "milestone_beads": [],
+      "module": "stdio_abi",
+      "recommended_bead": null,
+      "severity": "n/a",
+      "severity_score": 70,
+      "status_breakdown": {
+        "GlibcCallThrough": 30
+      },
+      "target_coverage_pct": 100.0,
+      "target_covered": 0,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 0,
+      "target_uncovered": 0,
+      "target_uncovered_symbols": [],
+      "total_symbols": 30,
+      "track": "stdio",
+      "uncovered_symbols": 30,
+      "workload_blocked_count": 7,
+      "workload_ids": [
+        "wl-001",
+        "wl-002",
+        "wl-003",
+        "wl-004",
+        "wl-006",
+        "wl-007",
+        "wl-009"
+      ]
+    },
+    {
+      "covered_symbols": 9,
+      "milestone_beads": [
+        "bd-yos",
+        "bd-z84"
+      ],
+      "module": "pthread_abi",
+      "recommended_bead": "bd-yos",
+      "severity": "n/a",
+      "severity_score": 40,
+      "status_breakdown": {
+        "GlibcCallThrough": 20
+      },
+      "target_coverage_pct": 100.0,
+      "target_covered": 0,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 0,
+      "target_uncovered": 0,
+      "target_uncovered_symbols": [],
+      "total_symbols": 20,
+      "track": "threading",
+      "uncovered_symbols": 11,
+      "workload_blocked_count": 4,
+      "workload_ids": [
+        "wl-002",
+        "wl-003",
+        "wl-005",
+        "wl-010"
+      ]
+    },
+    {
+      "covered_symbols": 0,
+      "milestone_beads": [
+        "bd-3rn"
+      ],
+      "module": "dlfcn_abi",
+      "recommended_bead": "bd-3rn",
+      "severity": "n/a",
+      "severity_score": 20,
+      "status_breakdown": {
+        "GlibcCallThrough": 4
+      },
+      "target_coverage_pct": 100.0,
+      "target_covered": 0,
+      "target_statuses": [
+        "Implemented",
+        "RawSyscall"
+      ],
+      "target_total": 0,
+      "target_uncovered": 0,
+      "target_uncovered_symbols": [],
+      "total_symbols": 4,
+      "track": "rtld/dlfcn",
+      "uncovered_symbols": 4,
+      "workload_blocked_count": 2,
+      "workload_ids": [
+        "wl-002",
+        "wl-004"
+      ]
+    }
+  ],
+  "fixture_inventory": {
+    "c_fixture_spec_fixtures": 5,
+    "c_fixture_spec_symbol_mentions": 28,
+    "c_fixture_spec_unique_symbols": 27,
+    "fixture_json_cases": 123,
+    "fixture_json_files": 15,
+    "fixture_json_unique_functions": 50,
+    "non_symbol_fixture_function_count": 13,
+    "non_symbol_fixture_functions": [
+      "DnsHeader::new_query",
+      "Elf64Header::parse",
+      "ProgramFlags::to_mmap_prot",
+      "ResolverConfig::default",
+      "ResolverConfig::parse",
+      "SymbolBinding::from",
+      "SymbolType::from",
+      "compute_relocation",
+      "elf_hash",
+      "encode_domain_name",
+      "gnu_hash",
+      "lookup_hosts",
+      "open"
+    ],
+    "unique_fixture_functions_total": 67
+  },
+  "generated_at_utc": "2026-02-11T19:17:31Z",
+  "inputs": {
+    "c_fixture_spec": "tests/conformance/c_fixture_spec.json",
+    "fixtures_dir": "tests/conformance/fixtures",
+    "support_matrix": "support_matrix.json",
+    "workload_matrix": "tests/conformance/workload_matrix.json"
+  },
+  "ownership_map": [
+    {
+      "milestone_beads": [],
+      "module": "unistd_abi",
+      "recommended_bead": null,
+      "severity": "high",
+      "target_uncovered_count": 22,
+      "target_uncovered_symbols": [
+        "access",
+        "chdir",
+        "fchdir",
+        "fdatasync",
+        "fstat",
+        "fsync",
+        "getcwd",
+        "getegid",
+        "geteuid",
+        "getgid",
+        "getpid",
+        "getppid",
+        "getuid",
+        "isatty",
+        "link",
+        "lstat",
+        "readlink",
+        "rmdir",
+        "sleep",
+        "stat",
+        "symlink",
+        "usleep"
+      ],
+      "track": "unistd/syscall",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "milestone_beads": [],
+      "module": "math_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 19,
+      "target_uncovered_symbols": [
+        "acos",
+        "asin",
+        "atan",
+        "atan2",
+        "ceil",
+        "cos",
+        "erf",
+        "exp",
+        "fabs",
+        "floor",
+        "fmod",
+        "lgamma",
+        "log",
+        "log10",
+        "pow",
+        "round",
+        "sin",
+        "tan",
+        "tgamma"
+      ],
+      "track": "math",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "milestone_beads": [],
+      "module": "socket_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 14,
+      "target_uncovered_symbols": [
+        "accept",
+        "bind",
+        "connect",
+        "getpeername",
+        "getsockname",
+        "getsockopt",
+        "listen",
+        "recv",
+        "recvfrom",
+        "send",
+        "sendto",
+        "setsockopt",
+        "shutdown",
+        "socket"
+      ],
+      "track": "network/socket",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "milestone_beads": [],
+      "module": "ctype_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 11,
+      "target_uncovered_symbols": [
+        "isalnum",
+        "isalpha",
+        "isdigit",
+        "islower",
+        "isprint",
+        "ispunct",
+        "isspace",
+        "isupper",
+        "isxdigit",
+        "tolower",
+        "toupper"
+      ],
+      "track": "ctype",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "milestone_beads": [],
+      "module": "termios_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 10,
+      "target_uncovered_symbols": [
+        "cfgetispeed",
+        "cfgetospeed",
+        "cfsetispeed",
+        "cfsetospeed",
+        "tcdrain",
+        "tcflow",
+        "tcflush",
+        "tcgetattr",
+        "tcsendbreak",
+        "tcsetattr"
+      ],
+      "track": "termios",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "milestone_beads": [],
+      "module": "grp_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 7,
+      "target_uncovered_symbols": [
+        "endgrent",
+        "getgrent",
+        "getgrgid",
+        "getgrgid_r",
+        "getgrnam",
+        "getgrnam_r",
+        "setgrent"
+      ],
+      "track": "identity",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "milestone_beads": [],
+      "module": "inet_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 7,
+      "target_uncovered_symbols": [
+        "htonl",
+        "htons",
+        "inet_addr",
+        "inet_ntop",
+        "inet_pton",
+        "ntohl",
+        "ntohs"
+      ],
+      "track": "network/inet",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "milestone_beads": [],
+      "module": "pwd_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 7,
+      "target_uncovered_symbols": [
+        "endpwent",
+        "getpwent",
+        "getpwnam",
+        "getpwnam_r",
+        "getpwuid",
+        "getpwuid_r",
+        "setpwent"
+      ],
+      "track": "identity",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "milestone_beads": [],
+      "module": "process_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 6,
+      "target_uncovered_symbols": [
+        "_exit",
+        "execve",
+        "execvp",
+        "fork",
+        "wait",
+        "waitpid"
+      ],
+      "track": "process",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "milestone_beads": [],
+      "module": "stdlib_abi",
+      "recommended_bead": null,
+      "severity": "high",
+      "target_uncovered_count": 6,
+      "target_uncovered_symbols": [
+        "atexit",
+        "atol",
+        "exit",
+        "getenv",
+        "setenv",
+        "unsetenv"
+      ],
+      "track": "stdlib",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "milestone_beads": [],
+      "module": "mmap_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 5,
+      "target_uncovered_symbols": [
+        "madvise",
+        "mmap",
+        "mprotect",
+        "msync",
+        "munmap"
+      ],
+      "track": "vm/mmap",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "milestone_beads": [],
+      "module": "poll_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 4,
+      "target_uncovered_symbols": [
+        "poll",
+        "ppoll",
+        "pselect",
+        "select"
+      ],
+      "track": "poll",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "milestone_beads": [],
+      "module": "signal_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 4,
+      "target_uncovered_symbols": [
+        "kill",
+        "raise",
+        "sigaction",
+        "signal"
+      ],
+      "track": "signal",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "milestone_beads": [],
+      "module": "time_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 4,
+      "target_uncovered_symbols": [
+        "clock",
+        "clock_gettime",
+        "localtime_r",
+        "time"
+      ],
+      "track": "time",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "milestone_beads": [
+        "bd-66s"
+      ],
+      "module": "resolv_abi",
+      "recommended_bead": "bd-66s",
+      "severity": "high",
+      "target_uncovered_count": 3,
+      "target_uncovered_symbols": [
+        "freeaddrinfo",
+        "gai_strerror",
+        "getnameinfo"
+      ],
+      "track": "resolver",
+      "workload_blocked_count": 4,
+      "workload_ids": [
+        "wl-002",
+        "wl-003",
+        "wl-004",
+        "wl-005"
+      ]
+    },
+    {
+      "milestone_beads": [],
+      "module": "dirent_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 3,
+      "target_uncovered_symbols": [
+        "closedir",
+        "opendir",
+        "readdir"
+      ],
+      "track": "dirent",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "milestone_beads": [],
+      "module": "io_abi",
+      "recommended_bead": null,
+      "severity": "high",
+      "target_uncovered_count": 3,
+      "target_uncovered_symbols": [
+        "dup",
+        "dup2",
+        "fcntl"
+      ],
+      "track": "io",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "milestone_beads": [],
+      "module": "malloc_abi",
+      "recommended_bead": null,
+      "severity": "high",
+      "target_uncovered_count": 3,
+      "target_uncovered_symbols": [
+        "aligned_alloc",
+        "memalign",
+        "posix_memalign"
+      ],
+      "track": "allocator",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "milestone_beads": [
+        "bd-3pe"
+      ],
+      "module": "locale_abi",
+      "recommended_bead": "bd-3pe",
+      "severity": "critical",
+      "target_uncovered_count": 2,
+      "target_uncovered_symbols": [
+        "localeconv",
+        "setlocale"
+      ],
+      "track": "locale",
+      "workload_blocked_count": 2,
+      "workload_ids": [
+        "wl-002",
+        "wl-006"
+      ]
+    },
+    {
+      "milestone_beads": [],
+      "module": "iconv_abi",
+      "recommended_bead": null,
+      "severity": "high",
+      "target_uncovered_count": 2,
+      "target_uncovered_symbols": [
+        "iconv_close",
+        "iconv_open"
+      ],
+      "track": "i18n/iconv",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "milestone_beads": [],
+      "module": "resource_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 2,
+      "target_uncovered_symbols": [
+        "getrlimit",
+        "setrlimit"
+      ],
+      "track": "resource",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "milestone_beads": [],
+      "module": "startup_abi",
+      "recommended_bead": null,
+      "severity": "high",
+      "target_uncovered_count": 2,
+      "target_uncovered_symbols": [
+        "__frankenlibc_startup_snapshot",
+        "__libc_start_main"
+      ],
+      "track": "startup",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "milestone_beads": [],
+      "module": "string_abi",
+      "recommended_bead": null,
+      "severity": "medium",
+      "target_uncovered_count": 2,
+      "target_uncovered_symbols": [
+        "strtok",
+        "strtok_r"
+      ],
+      "track": "string",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "milestone_beads": [],
+      "module": "wchar_abi",
+      "recommended_bead": null,
+      "severity": "medium",
+      "target_uncovered_count": 2,
+      "target_uncovered_symbols": [
+        "wcsncmp",
+        "wcsrchr"
+      ],
+      "track": "string/wide",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "milestone_beads": [],
+      "module": "errno_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 1,
+      "target_uncovered_symbols": [
+        "__errno_location"
+      ],
+      "track": "errno",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    }
+  ],
+  "schema_version": 1,
+  "status_coverage": {
+    "GlibcCallThrough": {
+      "coverage_pct": 16.67,
+      "covered": 9,
+      "total": 54,
+      "uncovered": 45
+    },
+    "Implemented": {
+      "coverage_pct": 34.51,
+      "covered": 39,
+      "total": 113,
+      "uncovered": 74
+    },
+    "RawSyscall": {
+      "coverage_pct": 7.23,
+      "covered": 6,
+      "total": 83,
+      "uncovered": 77
+    }
+  },
+  "summary": {
+    "coverage_pct": 21.6,
+    "covered_exported_symbols": 54,
+    "target_coverage_pct": 22.96,
+    "target_covered_symbols": 45,
+    "target_statuses": [
+      "Implemented",
+      "RawSyscall"
+    ],
+    "target_total_symbols": 196,
+    "target_uncovered_symbols": 151,
+    "total_exported_symbols": 250,
+    "uncovered_exported_symbols": 196,
+    "uncovered_target_families": 16,
+    "weak_family_threshold_pct": 80.0,
+    "weak_target_families": 7
+  },
+  "symbols": [
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "ctype_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "isalnum"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "ctype_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "isalpha"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "ctype_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "isdigit"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "ctype_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "islower"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "ctype_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "isprint"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "ctype_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "ispunct"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "ctype_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "isspace"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "ctype_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "isupper"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "ctype_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "isxdigit"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "ctype_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "tolower"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "ctype_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "toupper"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "dirent_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "closedir"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "dirent_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "opendir"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "dirent_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "readdir"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "dlfcn_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "dlclose"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "dlfcn_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "dlerror"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "dlfcn_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "dlopen"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "dlfcn_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "dlsym"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "errno_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "__errno_location"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "grp_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "endgrent"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "grp_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "getgrent"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "grp_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "getgrgid"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "grp_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "getgrgid_r"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "grp_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "getgrnam"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "grp_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "getgrnam_r"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "grp_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "setgrent"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 7,
+      "fixture_families": [
+        "iconv/phase1"
+      ],
+      "fixture_files": [
+        "iconv_phase1.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "hardened",
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "iconv_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "iconv"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "iconv_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "iconv_close"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "iconv_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "iconv_open"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "inet_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "htonl"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "inet_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "htons"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "inet_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "inet_addr"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "inet_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "inet_ntop"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "inet_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "inet_pton"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "inet_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "ntohl"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "inet_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "ntohs"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "io_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "dup"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "io_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "dup2"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "io_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "fcntl"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 0,
+      "fixture_families": [
+        "c_fixture_suite"
+      ],
+      "fixture_files": [],
+      "fixture_ids": [
+        "fixture_io"
+      ],
+      "fixture_modes": [],
+      "fixture_sources": [
+        "c_fixture_spec"
+      ],
+      "module": "io_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "pipe"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "locale_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "localeconv"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "locale_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "setlocale"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "malloc_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "aligned_alloc"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 1,
+      "fixture_families": [
+        "allocator",
+        "c_fixture_suite"
+      ],
+      "fixture_files": [
+        "allocator.json"
+      ],
+      "fixture_ids": [
+        "fixture_malloc"
+      ],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "c_fixture_spec",
+        "fixture_json"
+      ],
+      "module": "malloc_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "calloc"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 1,
+      "fixture_families": [
+        "allocator",
+        "c_fixture_suite"
+      ],
+      "fixture_files": [
+        "allocator.json"
+      ],
+      "fixture_ids": [
+        "fixture_malloc"
+      ],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "c_fixture_spec",
+        "fixture_json"
+      ],
+      "module": "malloc_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "free"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 2,
+      "fixture_families": [
+        "allocator",
+        "c_fixture_suite"
+      ],
+      "fixture_files": [
+        "allocator.json"
+      ],
+      "fixture_ids": [
+        "fixture_malloc"
+      ],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "c_fixture_spec",
+        "fixture_json"
+      ],
+      "module": "malloc_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "malloc"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "malloc_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "memalign"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "malloc_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "posix_memalign"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 1,
+      "fixture_families": [
+        "allocator",
+        "c_fixture_suite"
+      ],
+      "fixture_files": [
+        "allocator.json"
+      ],
+      "fixture_ids": [
+        "fixture_malloc"
+      ],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "c_fixture_spec",
+        "fixture_json"
+      ],
+      "module": "malloc_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "realloc"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "math_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "acos"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "math_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "asin"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "math_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "atan"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "math_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "atan2"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "math_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "ceil"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "math_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "cos"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "math_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "erf"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "math_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "exp"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "math_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "fabs"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "math_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "floor"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "math_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "fmod"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "math_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "lgamma"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "math_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "log"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "math_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "log10"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "math_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "pow"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "math_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "round"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "math_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "sin"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "math_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "tan"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "math_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "tgamma"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "mmap_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "madvise"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "mmap_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "mmap"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "mmap_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "mprotect"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "mmap_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "msync"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "mmap_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "munmap"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "poll_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "poll"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "poll_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "ppoll"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "poll_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "pselect"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "poll_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "select"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "process_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "_exit"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "process_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "execve"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "process_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "execvp"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "process_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "fork"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "process_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "wait"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "process_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "waitpid"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "pthread_abi",
+      "perf_class": "strict_hotpath",
+      "status": "GlibcCallThrough",
+      "symbol": "pthread_cond_broadcast"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "pthread_abi",
+      "perf_class": "strict_hotpath",
+      "status": "GlibcCallThrough",
+      "symbol": "pthread_cond_destroy"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "pthread_abi",
+      "perf_class": "strict_hotpath",
+      "status": "GlibcCallThrough",
+      "symbol": "pthread_cond_init"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "pthread_abi",
+      "perf_class": "strict_hotpath",
+      "status": "GlibcCallThrough",
+      "symbol": "pthread_cond_signal"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "pthread_abi",
+      "perf_class": "strict_hotpath",
+      "status": "GlibcCallThrough",
+      "symbol": "pthread_cond_wait"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 0,
+      "fixture_families": [
+        "c_fixture_suite"
+      ],
+      "fixture_files": [],
+      "fixture_ids": [
+        "fixture_pthread"
+      ],
+      "fixture_modes": [],
+      "fixture_sources": [
+        "c_fixture_spec"
+      ],
+      "module": "pthread_abi",
+      "perf_class": "strict_hotpath",
+      "status": "GlibcCallThrough",
+      "symbol": "pthread_create"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "pthread_abi",
+      "perf_class": "strict_hotpath",
+      "status": "GlibcCallThrough",
+      "symbol": "pthread_detach"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 0,
+      "fixture_families": [
+        "c_fixture_suite"
+      ],
+      "fixture_files": [],
+      "fixture_ids": [
+        "fixture_pthread"
+      ],
+      "fixture_modes": [],
+      "fixture_sources": [
+        "c_fixture_spec"
+      ],
+      "module": "pthread_abi",
+      "perf_class": "strict_hotpath",
+      "status": "GlibcCallThrough",
+      "symbol": "pthread_equal"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 0,
+      "fixture_families": [
+        "c_fixture_suite"
+      ],
+      "fixture_files": [],
+      "fixture_ids": [
+        "fixture_pthread"
+      ],
+      "fixture_modes": [],
+      "fixture_sources": [
+        "c_fixture_spec"
+      ],
+      "module": "pthread_abi",
+      "perf_class": "strict_hotpath",
+      "status": "GlibcCallThrough",
+      "symbol": "pthread_join"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 0,
+      "fixture_families": [
+        "c_fixture_suite"
+      ],
+      "fixture_files": [],
+      "fixture_ids": [
+        "fixture_pthread"
+      ],
+      "fixture_modes": [],
+      "fixture_sources": [
+        "c_fixture_spec"
+      ],
+      "module": "pthread_abi",
+      "perf_class": "strict_hotpath",
+      "status": "GlibcCallThrough",
+      "symbol": "pthread_mutex_destroy"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 0,
+      "fixture_families": [
+        "c_fixture_suite"
+      ],
+      "fixture_files": [],
+      "fixture_ids": [
+        "fixture_pthread"
+      ],
+      "fixture_modes": [],
+      "fixture_sources": [
+        "c_fixture_spec"
+      ],
+      "module": "pthread_abi",
+      "perf_class": "strict_hotpath",
+      "status": "GlibcCallThrough",
+      "symbol": "pthread_mutex_init"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 0,
+      "fixture_families": [
+        "c_fixture_suite"
+      ],
+      "fixture_files": [],
+      "fixture_ids": [
+        "fixture_pthread"
+      ],
+      "fixture_modes": [],
+      "fixture_sources": [
+        "c_fixture_spec"
+      ],
+      "module": "pthread_abi",
+      "perf_class": "strict_hotpath",
+      "status": "GlibcCallThrough",
+      "symbol": "pthread_mutex_lock"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 0,
+      "fixture_families": [
+        "c_fixture_suite"
+      ],
+      "fixture_files": [],
+      "fixture_ids": [
+        "fixture_pthread"
+      ],
+      "fixture_modes": [],
+      "fixture_sources": [
+        "c_fixture_spec"
+      ],
+      "module": "pthread_abi",
+      "perf_class": "strict_hotpath",
+      "status": "GlibcCallThrough",
+      "symbol": "pthread_mutex_trylock"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 0,
+      "fixture_families": [
+        "c_fixture_suite"
+      ],
+      "fixture_files": [],
+      "fixture_ids": [
+        "fixture_pthread"
+      ],
+      "fixture_modes": [],
+      "fixture_sources": [
+        "c_fixture_spec"
+      ],
+      "module": "pthread_abi",
+      "perf_class": "strict_hotpath",
+      "status": "GlibcCallThrough",
+      "symbol": "pthread_mutex_unlock"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "pthread_abi",
+      "perf_class": "strict_hotpath",
+      "status": "GlibcCallThrough",
+      "symbol": "pthread_rwlock_destroy"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "pthread_abi",
+      "perf_class": "strict_hotpath",
+      "status": "GlibcCallThrough",
+      "symbol": "pthread_rwlock_init"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "pthread_abi",
+      "perf_class": "strict_hotpath",
+      "status": "GlibcCallThrough",
+      "symbol": "pthread_rwlock_rdlock"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "pthread_abi",
+      "perf_class": "strict_hotpath",
+      "status": "GlibcCallThrough",
+      "symbol": "pthread_rwlock_unlock"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "pthread_abi",
+      "perf_class": "strict_hotpath",
+      "status": "GlibcCallThrough",
+      "symbol": "pthread_rwlock_wrlock"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 0,
+      "fixture_families": [
+        "c_fixture_suite"
+      ],
+      "fixture_files": [],
+      "fixture_ids": [
+        "fixture_pthread"
+      ],
+      "fixture_modes": [],
+      "fixture_sources": [
+        "c_fixture_spec"
+      ],
+      "module": "pthread_abi",
+      "perf_class": "strict_hotpath",
+      "status": "GlibcCallThrough",
+      "symbol": "pthread_self"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "pwd_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "endpwent"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "pwd_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "getpwent"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "pwd_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "getpwnam"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "pwd_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "getpwnam_r"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "pwd_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "getpwuid"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "pwd_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "getpwuid_r"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "pwd_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "setpwent"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "resolv_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "freeaddrinfo"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "resolv_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "gai_strerror"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 3,
+      "fixture_families": [
+        "resolv/dns"
+      ],
+      "fixture_files": [
+        "resolver.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "resolv_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "getaddrinfo"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "resolv_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "getnameinfo"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "resource_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "getrlimit"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "resource_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "setrlimit"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "signal_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "kill"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "signal_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "raise"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "signal_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "sigaction"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "signal_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "signal"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "socket_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "accept"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "socket_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "bind"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "socket_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "connect"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "socket_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "getpeername"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "socket_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "getsockname"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "socket_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "getsockopt"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "socket_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "listen"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "socket_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "recv"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "socket_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "recvfrom"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "socket_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "send"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "socket_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "sendto"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "socket_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "setsockopt"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "socket_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "shutdown"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "socket_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "socket"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 0,
+      "fixture_families": [
+        "c_fixture_suite"
+      ],
+      "fixture_files": [],
+      "fixture_ids": [
+        "fixture_startup"
+      ],
+      "fixture_modes": [],
+      "fixture_sources": [
+        "c_fixture_spec"
+      ],
+      "module": "startup_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "__frankenlibc_startup_phase0"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "startup_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "__frankenlibc_startup_snapshot"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "startup_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "__libc_start_main"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "clearerr"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "fclose"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "feof"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "ferror"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "fflush"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "fgetc"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "fgets"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "fileno"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "fopen"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "fprintf"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "fputc"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "fputs"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "fread"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "fseek"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "ftell"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "fwrite"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "getchar"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "perror"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "printf"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "putchar"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "puts"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "rewind"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "setbuf"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "setvbuf"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "snprintf"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "sprintf"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "stderr"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "stdin"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "stdout"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "GlibcCallThrough",
+      "symbol": "ungetc"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdlib_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "atexit"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 6,
+      "fixture_families": [
+        "stdlib/conversion",
+        "stdlib/numeric"
+      ],
+      "fixture_files": [
+        "stdlib_conversion.json",
+        "stdlib_numeric.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "stdlib_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "atoi"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdlib_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "atol"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 2,
+      "fixture_families": [
+        "stdlib/sort"
+      ],
+      "fixture_files": [
+        "stdlib_sort.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "stdlib_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "bsearch"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdlib_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "exit"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdlib_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "getenv"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 1,
+      "fixture_families": [
+        "stdlib/sort"
+      ],
+      "fixture_files": [
+        "stdlib_sort.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "stdlib_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "qsort"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdlib_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "setenv"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 6,
+      "fixture_families": [
+        "stdlib/conversion",
+        "stdlib/numeric"
+      ],
+      "fixture_files": [
+        "stdlib_conversion.json",
+        "stdlib_numeric.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "stdlib_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "strtol"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 2,
+      "fixture_families": [
+        "stdlib/numeric"
+      ],
+      "fixture_files": [
+        "stdlib_numeric.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "stdlib_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "strtoul"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "stdlib_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "unsetenv"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 2,
+      "fixture_families": [
+        "string/memory",
+        "string/narrow"
+      ],
+      "fixture_files": [
+        "string_memory_full.json",
+        "string_ops.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "string_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "memchr"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 4,
+      "fixture_families": [
+        "c_fixture_suite",
+        "string/memory",
+        "string/narrow"
+      ],
+      "fixture_files": [
+        "string_memory_full.json",
+        "string_ops.json"
+      ],
+      "fixture_ids": [
+        "fixture_string"
+      ],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "c_fixture_spec",
+        "fixture_json"
+      ],
+      "module": "string_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "memcmp"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 6,
+      "fixture_families": [
+        "c_fixture_suite",
+        "membrane/mode-split",
+        "string/memcpy"
+      ],
+      "fixture_files": [
+        "membrane_mode_split.json",
+        "memcpy_strict.json"
+      ],
+      "fixture_ids": [
+        "fixture_string"
+      ],
+      "fixture_modes": [
+        "hardened",
+        "strict"
+      ],
+      "fixture_sources": [
+        "c_fixture_spec",
+        "fixture_json"
+      ],
+      "module": "string_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "memcpy"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 1,
+      "fixture_families": [
+        "c_fixture_suite",
+        "string/narrow"
+      ],
+      "fixture_files": [
+        "string_ops.json"
+      ],
+      "fixture_ids": [
+        "fixture_string"
+      ],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "c_fixture_spec",
+        "fixture_json"
+      ],
+      "module": "string_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "memmove"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 2,
+      "fixture_families": [
+        "string/memory",
+        "string/narrow"
+      ],
+      "fixture_files": [
+        "string_memory_full.json",
+        "string_ops.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "string_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "memrchr"
+    },
+    {
+      "c_fixture_mentions": 2,
+      "covered": true,
+      "fixture_case_count": 2,
+      "fixture_families": [
+        "c_fixture_suite",
+        "string/memory",
+        "string/narrow"
+      ],
+      "fixture_files": [
+        "string_memory_full.json",
+        "string_ops.json"
+      ],
+      "fixture_ids": [
+        "fixture_malloc",
+        "fixture_string"
+      ],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "c_fixture_spec",
+        "fixture_json"
+      ],
+      "module": "string_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "memset"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 3,
+      "fixture_families": [
+        "string/memory",
+        "string/narrow"
+      ],
+      "fixture_files": [
+        "string_memory_full.json",
+        "string_ops.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "hardened",
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "string_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "strcat"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 2,
+      "fixture_families": [
+        "string/memory",
+        "string/narrow"
+      ],
+      "fixture_files": [
+        "string_memory_full.json",
+        "string_ops.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "string_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "strchr"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 3,
+      "fixture_families": [
+        "c_fixture_suite",
+        "string/memory",
+        "string/narrow"
+      ],
+      "fixture_files": [
+        "string_memory_full.json",
+        "string_ops.json"
+      ],
+      "fixture_ids": [
+        "fixture_string"
+      ],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "c_fixture_spec",
+        "fixture_json"
+      ],
+      "module": "string_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "strcmp"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 3,
+      "fixture_families": [
+        "string/memory",
+        "string/narrow"
+      ],
+      "fixture_files": [
+        "string_memory_full.json",
+        "string_ops.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "hardened",
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "string_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "strcpy"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 5,
+      "fixture_families": [
+        "c_fixture_suite",
+        "membrane/mode-split",
+        "string/strlen"
+      ],
+      "fixture_files": [
+        "membrane_mode_split.json",
+        "strlen_strict.json"
+      ],
+      "fixture_ids": [
+        "fixture_string"
+      ],
+      "fixture_modes": [
+        "hardened",
+        "strict"
+      ],
+      "fixture_sources": [
+        "c_fixture_spec",
+        "fixture_json"
+      ],
+      "module": "string_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "strlen"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 1,
+      "fixture_families": [
+        "string/memory"
+      ],
+      "fixture_files": [
+        "string_memory_full.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "string_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "strncat"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 2,
+      "fixture_families": [
+        "string/memory",
+        "string/narrow"
+      ],
+      "fixture_files": [
+        "string_memory_full.json",
+        "string_ops.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "string_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "strncpy"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 2,
+      "fixture_families": [
+        "string/memory",
+        "string/narrow"
+      ],
+      "fixture_files": [
+        "string_memory_full.json",
+        "string_ops.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "string_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "strrchr"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 2,
+      "fixture_families": [
+        "string/memory",
+        "string/narrow"
+      ],
+      "fixture_files": [
+        "string_memory_full.json",
+        "string_ops.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "string_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "strstr"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "string_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "strtok"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "string_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "strtok_r"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "termios_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "cfgetispeed"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "termios_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "cfgetospeed"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "termios_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "cfsetispeed"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "termios_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "cfsetospeed"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "termios_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "tcdrain"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "termios_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "tcflow"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "termios_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "tcflush"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "termios_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "tcgetattr"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "termios_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "tcsendbreak"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "termios_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "tcsetattr"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "time_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "clock"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "time_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "clock_gettime"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "time_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "localtime_r"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "time_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "time"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "access"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "chdir"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 0,
+      "fixture_families": [
+        "c_fixture_suite"
+      ],
+      "fixture_files": [],
+      "fixture_ids": [
+        "fixture_io"
+      ],
+      "fixture_modes": [],
+      "fixture_sources": [
+        "c_fixture_spec"
+      ],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "close"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "fchdir"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "fdatasync"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "fstat"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "fsync"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "getcwd"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "getegid"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "geteuid"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "getgid"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "getpid"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "getppid"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "getuid"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "isatty"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "link"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 0,
+      "fixture_families": [
+        "c_fixture_suite"
+      ],
+      "fixture_files": [],
+      "fixture_ids": [
+        "fixture_io"
+      ],
+      "fixture_modes": [],
+      "fixture_sources": [
+        "c_fixture_spec"
+      ],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "lseek"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "lstat"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 0,
+      "fixture_families": [
+        "c_fixture_suite"
+      ],
+      "fixture_files": [],
+      "fixture_ids": [
+        "fixture_io"
+      ],
+      "fixture_modes": [],
+      "fixture_sources": [
+        "c_fixture_spec"
+      ],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "read"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "readlink"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "rmdir"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "sleep"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "stat"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "symlink"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 0,
+      "fixture_families": [
+        "c_fixture_suite"
+      ],
+      "fixture_files": [],
+      "fixture_ids": [
+        "fixture_io"
+      ],
+      "fixture_modes": [],
+      "fixture_sources": [
+        "c_fixture_spec"
+      ],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "unlink"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "usleep"
+    },
+    {
+      "c_fixture_mentions": 1,
+      "covered": true,
+      "fixture_case_count": 0,
+      "fixture_families": [
+        "c_fixture_suite"
+      ],
+      "fixture_files": [],
+      "fixture_ids": [
+        "fixture_io"
+      ],
+      "fixture_modes": [],
+      "fixture_sources": [
+        "c_fixture_spec"
+      ],
+      "module": "unistd_abi",
+      "perf_class": "coldpath",
+      "status": "RawSyscall",
+      "symbol": "write"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 1,
+      "fixture_families": [
+        "string/wide"
+      ],
+      "fixture_files": [
+        "wide_string_ops.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "wchar_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "wcscat"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 2,
+      "fixture_families": [
+        "string/wide"
+      ],
+      "fixture_files": [
+        "wide_string_ops.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "wchar_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "wcschr"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 4,
+      "fixture_families": [
+        "string/wide"
+      ],
+      "fixture_files": [
+        "wide_string.json",
+        "wide_string_ops.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "wchar_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "wcscmp"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 3,
+      "fixture_families": [
+        "string/wide"
+      ],
+      "fixture_files": [
+        "wide_string.json",
+        "wide_string_ops.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "hardened",
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "wchar_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "wcscpy"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 3,
+      "fixture_families": [
+        "string/wide"
+      ],
+      "fixture_files": [
+        "wide_string.json",
+        "wide_string_ops.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "wchar_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "wcslen"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "wchar_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "wcsncmp"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 2,
+      "fixture_families": [
+        "string/wide"
+      ],
+      "fixture_files": [
+        "wide_string_ops.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "wchar_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "wcsncpy"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": false,
+      "fixture_case_count": 0,
+      "fixture_families": [],
+      "fixture_files": [],
+      "fixture_ids": [],
+      "fixture_modes": [],
+      "fixture_sources": [],
+      "module": "wchar_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "wcsrchr"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 1,
+      "fixture_families": [
+        "string/wide"
+      ],
+      "fixture_files": [
+        "wide_string_ops.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "wchar_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "wcsstr"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 1,
+      "fixture_families": [
+        "string/wide_memory"
+      ],
+      "fixture_files": [
+        "wide_memory.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "wchar_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "wmemchr"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 2,
+      "fixture_families": [
+        "string/wide_memory"
+      ],
+      "fixture_files": [
+        "wide_memory.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "wchar_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "wmemcmp"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 1,
+      "fixture_families": [
+        "string/wide_memory"
+      ],
+      "fixture_files": [
+        "wide_memory.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "wchar_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "wmemcpy"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 1,
+      "fixture_families": [
+        "string/wide_memory"
+      ],
+      "fixture_files": [
+        "wide_memory.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "wchar_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "wmemmove"
+    },
+    {
+      "c_fixture_mentions": 0,
+      "covered": true,
+      "fixture_case_count": 1,
+      "fixture_families": [
+        "string/wide_memory"
+      ],
+      "fixture_files": [
+        "wide_memory.json"
+      ],
+      "fixture_ids": [],
+      "fixture_modes": [
+        "strict"
+      ],
+      "fixture_sources": [
+        "fixture_json"
+      ],
+      "module": "wchar_abi",
+      "perf_class": "strict_hotpath",
+      "status": "Implemented",
+      "symbol": "wmemset"
+    }
+  ],
+  "trace_id": "bd-15n.1-symbol-fixture-coverage-v1",
+  "uncovered_target_families": [
+    {
+      "module": "ctype_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 11,
+      "target_uncovered_symbols": [
+        "isalnum",
+        "isalpha",
+        "isdigit",
+        "islower",
+        "isprint",
+        "ispunct",
+        "isspace",
+        "isupper",
+        "isxdigit",
+        "tolower",
+        "toupper"
+      ],
+      "track": "ctype",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "module": "dirent_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 3,
+      "target_uncovered_symbols": [
+        "closedir",
+        "opendir",
+        "readdir"
+      ],
+      "track": "dirent",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "module": "errno_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 1,
+      "target_uncovered_symbols": [
+        "__errno_location"
+      ],
+      "track": "errno",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "module": "grp_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 7,
+      "target_uncovered_symbols": [
+        "endgrent",
+        "getgrent",
+        "getgrgid",
+        "getgrgid_r",
+        "getgrnam",
+        "getgrnam_r",
+        "setgrent"
+      ],
+      "track": "identity",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "module": "inet_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 7,
+      "target_uncovered_symbols": [
+        "htonl",
+        "htons",
+        "inet_addr",
+        "inet_ntop",
+        "inet_pton",
+        "ntohl",
+        "ntohs"
+      ],
+      "track": "network/inet",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "module": "locale_abi",
+      "recommended_bead": "bd-3pe",
+      "severity": "critical",
+      "target_uncovered_count": 2,
+      "target_uncovered_symbols": [
+        "localeconv",
+        "setlocale"
+      ],
+      "track": "locale",
+      "workload_blocked_count": 2,
+      "workload_ids": [
+        "wl-002",
+        "wl-006"
+      ]
+    },
+    {
+      "module": "math_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 19,
+      "target_uncovered_symbols": [
+        "acos",
+        "asin",
+        "atan",
+        "atan2",
+        "ceil",
+        "cos",
+        "erf",
+        "exp",
+        "fabs",
+        "floor",
+        "fmod",
+        "lgamma",
+        "log",
+        "log10",
+        "pow",
+        "round",
+        "sin",
+        "tan",
+        "tgamma"
+      ],
+      "track": "math",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "module": "mmap_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 5,
+      "target_uncovered_symbols": [
+        "madvise",
+        "mmap",
+        "mprotect",
+        "msync",
+        "munmap"
+      ],
+      "track": "vm/mmap",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "module": "poll_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 4,
+      "target_uncovered_symbols": [
+        "poll",
+        "ppoll",
+        "pselect",
+        "select"
+      ],
+      "track": "poll",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "module": "process_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 6,
+      "target_uncovered_symbols": [
+        "_exit",
+        "execve",
+        "execvp",
+        "fork",
+        "wait",
+        "waitpid"
+      ],
+      "track": "process",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "module": "pwd_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 7,
+      "target_uncovered_symbols": [
+        "endpwent",
+        "getpwent",
+        "getpwnam",
+        "getpwnam_r",
+        "getpwuid",
+        "getpwuid_r",
+        "setpwent"
+      ],
+      "track": "identity",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "module": "resource_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 2,
+      "target_uncovered_symbols": [
+        "getrlimit",
+        "setrlimit"
+      ],
+      "track": "resource",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "module": "signal_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 4,
+      "target_uncovered_symbols": [
+        "kill",
+        "raise",
+        "sigaction",
+        "signal"
+      ],
+      "track": "signal",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "module": "socket_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 14,
+      "target_uncovered_symbols": [
+        "accept",
+        "bind",
+        "connect",
+        "getpeername",
+        "getsockname",
+        "getsockopt",
+        "listen",
+        "recv",
+        "recvfrom",
+        "send",
+        "sendto",
+        "setsockopt",
+        "shutdown",
+        "socket"
+      ],
+      "track": "network/socket",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "module": "termios_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 10,
+      "target_uncovered_symbols": [
+        "cfgetispeed",
+        "cfgetospeed",
+        "cfsetispeed",
+        "cfsetospeed",
+        "tcdrain",
+        "tcflow",
+        "tcflush",
+        "tcgetattr",
+        "tcsendbreak",
+        "tcsetattr"
+      ],
+      "track": "termios",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "module": "time_abi",
+      "recommended_bead": null,
+      "severity": "critical",
+      "target_uncovered_count": 4,
+      "target_uncovered_symbols": [
+        "clock",
+        "clock_gettime",
+        "localtime_r",
+        "time"
+      ],
+      "track": "time",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    }
+  ],
+  "weak_target_families": [
+    {
+      "module": "iconv_abi",
+      "recommended_bead": null,
+      "severity": "high",
+      "target_coverage_pct": 33.33,
+      "target_uncovered_count": 2,
+      "target_uncovered_symbols": [
+        "iconv_close",
+        "iconv_open"
+      ],
+      "track": "i18n/iconv",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "module": "io_abi",
+      "recommended_bead": null,
+      "severity": "high",
+      "target_coverage_pct": 25.0,
+      "target_uncovered_count": 3,
+      "target_uncovered_symbols": [
+        "dup",
+        "dup2",
+        "fcntl"
+      ],
+      "track": "io",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "module": "malloc_abi",
+      "recommended_bead": null,
+      "severity": "high",
+      "target_coverage_pct": 57.14,
+      "target_uncovered_count": 3,
+      "target_uncovered_symbols": [
+        "aligned_alloc",
+        "memalign",
+        "posix_memalign"
+      ],
+      "track": "allocator",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "module": "resolv_abi",
+      "recommended_bead": "bd-66s",
+      "severity": "high",
+      "target_coverage_pct": 25.0,
+      "target_uncovered_count": 3,
+      "target_uncovered_symbols": [
+        "freeaddrinfo",
+        "gai_strerror",
+        "getnameinfo"
+      ],
+      "track": "resolver",
+      "workload_blocked_count": 4,
+      "workload_ids": [
+        "wl-002",
+        "wl-003",
+        "wl-004",
+        "wl-005"
+      ]
+    },
+    {
+      "module": "startup_abi",
+      "recommended_bead": null,
+      "severity": "high",
+      "target_coverage_pct": 33.33,
+      "target_uncovered_count": 2,
+      "target_uncovered_symbols": [
+        "__frankenlibc_startup_snapshot",
+        "__libc_start_main"
+      ],
+      "track": "startup",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "module": "stdlib_abi",
+      "recommended_bead": null,
+      "severity": "high",
+      "target_coverage_pct": 45.45,
+      "target_uncovered_count": 6,
+      "target_uncovered_symbols": [
+        "atexit",
+        "atol",
+        "exit",
+        "getenv",
+        "setenv",
+        "unsetenv"
+      ],
+      "track": "stdlib",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    },
+    {
+      "module": "unistd_abi",
+      "recommended_bead": null,
+      "severity": "high",
+      "target_coverage_pct": 18.52,
+      "target_uncovered_count": 22,
+      "target_uncovered_symbols": [
+        "access",
+        "chdir",
+        "fchdir",
+        "fdatasync",
+        "fstat",
+        "fsync",
+        "getcwd",
+        "getegid",
+        "geteuid",
+        "getgid",
+        "getpid",
+        "getppid",
+        "getuid",
+        "isatty",
+        "link",
+        "lstat",
+        "readlink",
+        "rmdir",
+        "sleep",
+        "stat",
+        "symlink",
+        "usleep"
+      ],
+      "track": "unistd/syscall",
+      "workload_blocked_count": 0,
+      "workload_ids": []
+    }
+  ]
+}

@@ -44,6 +44,8 @@ emit_log() {
     --arg level "${level}" \
     --arg event "${event}" \
     --arg bead_id "bd-35a" \
+    --arg stream "e2e" \
+    --arg gate "bd35a_evidence_run" \
     --arg mode "${mode}" \
     --arg api_family "runtime_math" \
     --arg symbol "${symbol}" \
@@ -58,6 +60,8 @@ emit_log() {
       level: $level,
       event: $event,
       bead_id: $bead_id,
+      stream: $stream,
+      gate: $gate,
       mode: $mode,
       api_family: $api_family,
       symbol: $symbol,

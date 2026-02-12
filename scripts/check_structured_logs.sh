@@ -2,7 +2,7 @@
 # check_structured_logs.sh — CI gate for bd-144
 #
 # Validates:
-# 1. Log schema definition (tests/conformance/log_schema.json) exists and is valid.
+# 1. Log schema definition (tests/conformance/log_schema.json) exists and is valid (schema_version >= 2).
 # 2. The structured_log module compiles and its unit tests pass.
 # 3. Any JSONL log files found in test output conform to the schema.
 #
@@ -40,6 +40,11 @@ errors = []
 for key in ['schema_version', 'required_fields', 'optional_fields', 'artifact_index_schema', 'examples']:
     if key not in s:
         errors.append(f'Missing key: {key}')
+sv = s.get('schema_version', 0)
+if not isinstance(sv, int):
+    errors.append('schema_version must be an integer')
+elif sv < 2:
+    errors.append('schema_version must be >= 2')
 for field in ['timestamp', 'trace_id', 'level', 'event']:
     if field not in s.get('required_fields', {}):
         errors.append(f'Missing required field def: {field}')

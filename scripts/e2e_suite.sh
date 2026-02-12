@@ -91,7 +91,7 @@ emit_log() {
     local ts
     ts="$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
 
-    local json="{\"timestamp\":\"${ts}\",\"trace_id\":\"${trace_id}\",\"level\":\"${level}\",\"event\":\"${event}\",\"bead_id\":\"bd-2ez\""
+    local json="{\"timestamp\":\"${ts}\",\"trace_id\":\"${trace_id}\",\"level\":\"${level}\",\"event\":\"${event}\",\"bead_id\":\"bd-2ez\",\"stream\":\"e2e\",\"gate\":\"e2e_suite\""
 
     [[ -n "${mode}" ]] && json="${json},\"mode\":\"${mode}\""
     [[ -n "${api_family}" ]] && json="${json},\"api_family\":\"${api_family}\""
