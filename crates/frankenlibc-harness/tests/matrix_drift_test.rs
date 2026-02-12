@@ -6,7 +6,7 @@
 //! 3. Dashboard stats are consistent with entries.
 //! 4. The drift guard script exists and is executable.
 //!
-//! Run: cargo test -p glibc-rs-harness --test matrix_drift_test
+//! Run: cargo test -p frankenlibc-harness --test matrix_drift_test
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};

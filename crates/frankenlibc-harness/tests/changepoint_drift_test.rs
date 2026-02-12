@@ -9,7 +9,7 @@
 //! 6. Summary statistics are consistent.
 //! 7. Gate script exists and is executable.
 //!
-//! Run: cargo test -p glibc-rs-harness --test changepoint_drift_test
+//! Run: cargo test -p frankenlibc-harness --test changepoint_drift_test
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};

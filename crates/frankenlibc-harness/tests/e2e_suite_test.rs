@@ -9,7 +9,7 @@
 //! Note: This tests the E2E *infrastructure*, not program pass rates.
 //! LD_PRELOAD timeouts are expected during the interpose phase.
 //!
-//! Run: cargo test -p glibc-rs-harness --test e2e_suite_test
+//! Run: cargo test -p frankenlibc-harness --test e2e_suite_test
 
 use std::path::{Path, PathBuf};
 use std::process::Command;

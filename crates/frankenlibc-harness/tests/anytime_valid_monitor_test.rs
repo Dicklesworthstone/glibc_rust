@@ -10,7 +10,7 @@
 //! 7. Summary statistics are consistent.
 //! 8. Gate script exists and is executable.
 //!
-//! Run: cargo test -p glibc-rs-harness --test anytime_valid_monitor_test
+//! Run: cargo test -p frankenlibc-harness --test anytime_valid_monitor_test
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};

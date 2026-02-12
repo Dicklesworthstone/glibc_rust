@@ -8,7 +8,7 @@
 //! 5. Summary statistics are consistent.
 //! 6. The CI gate script exists and is executable.
 //!
-//! Run: cargo test -p glibc-rs-harness --test workload_matrix_test
+//! Run: cargo test -p frankenlibc-harness --test workload_matrix_test
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};

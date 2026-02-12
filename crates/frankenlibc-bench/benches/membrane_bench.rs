@@ -66,7 +66,7 @@ fn percentile_sorted(sorted: &[f64], p: f64) -> f64 {
 }
 
 fn maybe_pin_thread() {
-    if std::env::var("GLIBC_RUST_BENCH_PIN").ok().as_deref() != Some("1") {
+    if std::env::var("FRANKENLIBC_BENCH_PIN").ok().as_deref() != Some("1") {
         return;
     }
 

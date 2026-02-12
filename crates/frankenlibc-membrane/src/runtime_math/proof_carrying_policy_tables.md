@@ -210,7 +210,7 @@ The runtime artifact carries only:
 - hashes + proof digest + manifest of invariants checked and tool versions.
 
 Tooling integration points:
-- `glibc-rs-harness` verifies artifacts during CI and renders diffs with FrankentUI.
+- `frankenlibc-harness` verifies artifacts during CI and renders diffs with FrankentUI.
 - `/dp/asupersync` orchestrates deterministic proof runs and attaches traceability metadata.
 
 ## Legacy Anchors (Grounding)

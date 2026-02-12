@@ -6,7 +6,7 @@
 //! 3. Support matrix is present and all Implemented/RawSyscall symbols
 //!    do not have reachable todo!() on their code paths.
 //!
-//! Run: cargo test -p glibc-rs-harness --test stub_guard_test
+//! Run: cargo test -p frankenlibc-harness --test stub_guard_test
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -24,7 +24,7 @@ fn workspace_root() -> PathBuf {
 #[test]
 fn no_todo_in_abi_crate() {
     let root = workspace_root();
-    let abi_src = root.join("crates/glibc-rs-abi/src");
+    let abi_src = root.join("crates/frankenlibc-abi/src");
 
     let output = Command::new("grep")
         .args([
@@ -164,7 +164,7 @@ fn support_matrix_exists_and_valid() {
 fn implemented_symbols_have_abi_exports() {
     let root = workspace_root();
     let matrix_path = root.join("support_matrix.json");
-    let abi_src = root.join("crates/glibc-rs-abi/src");
+    let abi_src = root.join("crates/frankenlibc-abi/src");
 
     let content = std::fs::read_to_string(&matrix_path).unwrap();
     let matrix: serde_json::Value = serde_json::from_str(&content).unwrap();

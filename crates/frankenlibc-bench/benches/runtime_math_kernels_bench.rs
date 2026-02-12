@@ -5,8 +5,8 @@
 //! - Catch regressions when a kernel implementation changes.
 //!
 //! Usage (run twice; mode is read once by membrane config):
-//! - `GLIBC_RUST_MODE=strict cargo bench -p glibc-rs-bench --bench runtime_math_kernels_bench`
-//! - `GLIBC_RUST_MODE=hardened cargo bench -p glibc-rs-bench --bench runtime_math_kernels_bench`
+//! - `FRANKENLIBC_MODE=strict cargo bench -p frankenlibc-bench --bench runtime_math_kernels_bench`
+//! - `FRANKENLIBC_MODE=hardened cargo bench -p frankenlibc-bench --bench runtime_math_kernels_bench`
 //!
 //! Output:
 //! - Machine-readable `RUNTIME_MATH_KERNEL_BENCH ... p50_ns_op=...` lines for perf gating.
@@ -83,10 +83,10 @@ fn percentile_sorted(sorted: &[f64], p: f64) -> f64 {
 fn print_env_metadata_once() {
     static ONCE: std::sync::Once = std::sync::Once::new();
     ONCE.call_once(|| {
-        let mode_raw = std::env::var("GLIBC_RUST_MODE").unwrap_or_else(|_| "<unset>".to_string());
+        let mode_raw = std::env::var("FRANKENLIBC_MODE").unwrap_or_else(|_| "<unset>".to_string());
         let rustflags = std::env::var("RUSTFLAGS").unwrap_or_else(|_| "<unset>".to_string());
         let cpu = cpu_model().unwrap_or_else(|| "<unknown>".to_string());
-        println!("RUNTIME_MATH_KERNEL_BENCH_META glibc_rust_mode_env={mode_raw}");
+        println!("RUNTIME_MATH_KERNEL_BENCH_META frankenlibc_mode_env={mode_raw}");
         println!("RUNTIME_MATH_KERNEL_BENCH_META rustflags={rustflags}");
         println!("RUNTIME_MATH_KERNEL_BENCH_META cpu_model={cpu}");
     });
@@ -107,7 +107,7 @@ fn cpu_model() -> Option<String> {
 }
 
 fn maybe_pin_thread() {
-    if std::env::var("GLIBC_RUST_BENCH_PIN").ok().as_deref() != Some("1") {
+    if std::env::var("FRANKENLIBC_BENCH_PIN").ok().as_deref() != Some("1") {
         return;
     }
 

@@ -12,7 +12,7 @@ policy, etc.) MUST follow this pattern.
 
 ### Step 1: Create Module File
 
-Create `crates/glibc-rs-membrane/src/runtime_math/<controller_name>.rs`.
+Create `crates/frankenlibc-membrane/src/runtime_math/<controller_name>.rs`.
 
 **Required exports:**
 ```rust

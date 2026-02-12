@@ -9,7 +9,7 @@
 //! 6. Matrix applicability rule is correct.
 //! 7. The CI gate script exists and is executable.
 //!
-//! Run: cargo test -p glibc-rs-harness --test packaging_test
+//! Run: cargo test -p frankenlibc-harness --test packaging_test
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};

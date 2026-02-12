@@ -7,7 +7,7 @@
 //! the core printf formatting engine with manual va_list extraction.
 //!
 //! Architecture: A global stream registry maps opaque `FILE*` addresses to
-//! `StdioStream` instances from glibc-rs-core. stdin/stdout/stderr are
+//! `StdioStream` instances from frankenlibc-core. stdin/stdout/stderr are
 //! pre-registered at well-known sentinel addresses.
 
 use std::collections::HashMap;

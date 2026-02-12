@@ -35,7 +35,7 @@ pub struct OrchestratedRun {
 #[must_use]
 pub fn run_fixture_verification(campaign: &str, fixture_sets: &[FixtureSet]) -> OrchestratedRun {
     let suite_start = Instant::now();
-    let mut suite = SuiteResult::new(format!("glibc-rs-harness:{campaign}"));
+    let mut suite = SuiteResult::new(format!("frankenlibc-harness:{campaign}"));
     let mut verification_results = Vec::new();
 
     let mut sets: Vec<&FixtureSet> = fixture_sets.iter().collect();

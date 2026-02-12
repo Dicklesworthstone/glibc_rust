@@ -2,7 +2,7 @@
 # F2: CVE Arena comparison reporter.
 #
 # Consumes JSON results from the CVE Arena runner and produces:
-#   1. Per-CVE pass/fail table (stock glibc: exploitable? glibc_rust: prevented?)
+#   1. Per-CVE pass/fail table (stock glibc: exploitable? FrankenLibC: prevented?)
 #   2. TSM feature attribution (which healing action fired per CVE)
 #   3. Aggregate coverage matrix (CVE category vs TSM feature)
 #   4. Markdown report suitable for docs (REPORT.md)
@@ -172,7 +172,7 @@ echo ""
 
 # Print per-CVE table.
 printf "${BOLD}%-18s %-18s %6s  %-24s %-24s %-30s %s${RESET}\n" \
-    "CVE" "Category" "CVSS" "Stock glibc" "glibc_rust" "TSM Features" "Verdict"
+    "CVE" "Category" "CVSS" "Stock glibc" "FrankenLibC" "TSM Features" "Verdict"
 printf "%-18s %-18s %6s  %-24s %-24s %-30s %s\n" \
     "---" "--------" "----" "-----------" "----------" "------------" "-------"
 
@@ -215,7 +215,7 @@ Generated: ${TIMESTAMP}
 
 ## Per-CVE Results
 
-| CVE | Category | CVSS | Stock glibc | glibc_rust | TSM Feature | Verdict |
+| CVE | Category | CVSS | Stock glibc | FrankenLibC | TSM Feature | Verdict |
 |-----|----------|------|-------------|------------|-------------|---------|
 MDHEADER
 
@@ -258,7 +258,7 @@ echo "${MERGED}" | jq -r '.[] |
     (if .stock_signal then "SIG\(.stock_signal) (exit \(.stock_exit))"
      elif .stock_exit then "exit \(.stock_exit)"
      else "N/A" end) + "  \n" +
-  "**glibc_rust:** " +
+  "**FrankenLibC:** " +
     (if .rust_exit == 0 then "Clean (exit 0)"
      elif .rust_signal then "SIG\(.rust_signal) (exit \(.rust_exit))"
      elif .rust_exit then "exit \(.rust_exit)"

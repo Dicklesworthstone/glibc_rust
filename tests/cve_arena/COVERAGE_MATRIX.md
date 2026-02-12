@@ -5,7 +5,7 @@ Generated: 2026-02-10 (initial template — regenerate with `tests/cve_arena/rep
 ## Overview
 
 This matrix maps each TSM (Transparent Safety Membrane) feature to the real-world
-CVEs it prevents, providing concrete evidence for the security value of glibc_rust.
+CVEs it prevents, providing concrete evidence for the security value of FrankenLibC.
 
 ## Feature-to-CVE Mapping
 
@@ -144,7 +144,7 @@ SipHash-based integrity verification of allocation metadata.
 Each CVE reproduction has been validated in three modes:
 
 1. **Stock glibc**: Vulnerability confirmed (crash, corruption, or exploit succeeds)
-2. **glibc_rust strict mode**: Detection confirmed (metrics increment, operation flagged)
-3. **glibc_rust hardened mode**: Prevention confirmed (healing action fires, operation continues safely)
+2. **FrankenLibC strict mode**: Detection confirmed (metrics increment, operation flagged)
+3. **FrankenLibC hardened mode**: Prevention confirmed (healing action fires, operation continues safely)
 
 All reproductions are deterministic and included in the CI regression suite.

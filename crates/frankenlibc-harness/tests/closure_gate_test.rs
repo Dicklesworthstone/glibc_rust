@@ -8,7 +8,7 @@
 //! 5. The CI gate script exists and is executable.
 //! 6. Matrix rows have the evidence fields the schema requires.
 //!
-//! Run: cargo test -p glibc-rs-harness --test closure_gate_test
+//! Run: cargo test -p frankenlibc-harness --test closure_gate_test
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};

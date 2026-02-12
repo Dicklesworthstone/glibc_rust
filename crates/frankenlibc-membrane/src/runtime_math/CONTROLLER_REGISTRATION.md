@@ -21,7 +21,7 @@ Before implementing a new controller:
 
 ### Step 1: Create the Module File
 
-Create `crates/glibc-rs-membrane/src/runtime_math/<name>.rs`.
+Create `crates/frankenlibc-membrane/src/runtime_math/<name>.rs`.
 
 **Required exports:**
 

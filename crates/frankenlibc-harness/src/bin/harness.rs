@@ -7,7 +7,7 @@ use clap::{Parser, Subcommand};
 
 /// Conformance tooling for frankenlibc.
 #[derive(Debug, Parser)]
-#[command(name = "glibc-rs-harness")]
+#[command(name = "frankenlibc-harness")]
 #[command(about = "Conformance testing harness for frankenlibc")]
 struct Cli {
     #[command(subcommand)]
@@ -150,7 +150,7 @@ enum Command {
     },
     /// Internal: emit per-mode JSON metrics for the regression report.
     ///
-    /// This is a separate command because GLIBC_RUST_MODE is process-immutable.
+    /// This is a separate command because FRANKENLIBC_MODE is process-immutable.
     KernelRegressionMode {
         /// Expected mode (`strict` or `hardened`) for cross-checking env config.
         #[arg(long)]
@@ -463,7 +463,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             trend_stride,
         } => {
             // NOTE: mode is process-immutable (cached from env). To avoid cross-contamination,
-            // spawn two subprocesses with different GLIBC_RUST_MODE values.
+            // spawn two subprocesses with different FRANKENLIBC_MODE values.
             let exe = std::env::current_exe()?;
             let seed_num = parse_seed(&seed)?;
             let cfg = KernelRegressionCliConfig {
@@ -573,7 +573,7 @@ fn run_kernel_mode_subprocess(
         .arg(cfg.iters.to_string())
         .arg("--trend-stride")
         .arg(cfg.trend_stride.to_string())
-        .env("GLIBC_RUST_MODE", mode)
+        .env("FRANKENLIBC_MODE", mode)
         .output()?;
 
     if !output.status.success() {

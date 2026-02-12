@@ -8,7 +8,7 @@
 //! Design reference: `runtime_math/raptorq_runtime_architecture.md`.
 //!
 //! ## No-unsafe policy
-//! `glibc-rs-membrane` is `#![deny(unsafe_code)]`. All encoding/decoding is done via
+//! `frankenlibc-membrane` is `#![deny(unsafe_code)]`. All encoding/decoding is done via
 //! explicit little-endian byte writes into a `[u8; N]` backing array.
 
 use core::fmt;

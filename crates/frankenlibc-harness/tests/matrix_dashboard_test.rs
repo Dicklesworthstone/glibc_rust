@@ -6,7 +6,7 @@
 //! 3. JSON output is valid and contains summary + rows.
 //! 4. Row counts match matrix entries.
 //!
-//! Run: cargo test -p glibc-rs-harness --test matrix_dashboard_test
+//! Run: cargo test -p frankenlibc-harness --test matrix_dashboard_test
 
 use std::path::{Path, PathBuf};
 use std::process::Command;

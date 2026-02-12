@@ -3,7 +3,7 @@
 # CVE Arena Test Runner
 # =============================================================================
 #
-# Runs CVE reproduction tests against both stock glibc and glibc_rust (TSM)
+# Runs CVE reproduction tests against both stock glibc and FrankenLibC (TSM)
 # to verify that the membrane prevents or detects known vulnerabilities.
 #
 # Usage:
@@ -13,7 +13,7 @@
 #   ./runner.sh --category=glibc --no-docker
 #
 # Environment:
-#   GLIBC_RUST_LIB   Path to libglibc_rs_abi.so (default: auto-detected)
+#   FRANKENLIBC_LIB   Path to libfrankenlibc_abi.so (default: auto-detected)
 #   CVE_ARENA_TIMEOUT Per-test timeout in seconds (default: 30)
 #   CVE_ARENA_IMAGE   Docker image name (default: glibc-rust-cve-arena)
 #
@@ -217,34 +217,34 @@ parse_args() {
 }
 
 # ---------------------------------------------------------------------------
-# Locate the glibc_rust shared library
+# Locate the FrankenLibC shared library
 # ---------------------------------------------------------------------------
 
-resolve_glibc_rust_lib() {
-    if [[ -n "${GLIBC_RUST_LIB:-}" ]]; then
-        if [[ ! -f "${GLIBC_RUST_LIB}" ]]; then
-            log_fatal "GLIBC_RUST_LIB points to missing file: ${GLIBC_RUST_LIB}"
+resolve_FrankenLibC_lib() {
+    if [[ -n "${FRANKENLIBC_LIB:-}" ]]; then
+        if [[ ! -f "${FRANKENLIBC_LIB}" ]]; then
+            log_fatal "FRANKENLIBC_LIB points to missing file: ${FRANKENLIBC_LIB}"
         fi
-        echo "${GLIBC_RUST_LIB}"
+        echo "${FRANKENLIBC_LIB}"
         return
     fi
 
     # Default: project build output.
-    local default_path="${PROJECT_ROOT}/target/release/libglibc_rs_abi.so"
+    local default_path="${PROJECT_ROOT}/target/release/libfrankenlibc_abi.so"
     if [[ -f "${default_path}" ]]; then
         echo "${default_path}"
         return
     fi
 
     # Fallback: check debug build.
-    local debug_path="${PROJECT_ROOT}/target/debug/libglibc_rs_abi.so"
+    local debug_path="${PROJECT_ROOT}/target/debug/libfrankenlibc_abi.so"
     if [[ -f "${debug_path}" ]]; then
-        log_warn "Using debug build of libglibc_rs_abi.so (consider building release)"
+        log_warn "Using debug build of libfrankenlibc_abi.so (consider building release)"
         echo "${debug_path}"
         return
     fi
 
-    log_fatal "Cannot find libglibc_rs_abi.so. Build with: cargo build --release -p glibc-rs-abi"
+    log_fatal "Cannot find libfrankenlibc_abi.so. Build with: cargo build --release -p frankenlibc-abi"
 }
 
 # ---------------------------------------------------------------------------
@@ -395,7 +395,7 @@ extract_healing_actions() {
 #   $2 - mode:       "stock" or "tsm"
 #   $3 - run_cmd:    command to execute (from manifest)
 #   $4 - build_cmd:  build command (from manifest)
-#   $5 - glibc_lib:  path to libglibc_rs_abi.so (only used in tsm mode)
+#   $5 - glibc_lib:  path to libfrankenlibc_abi.so (only used in tsm mode)
 run_single_mode() {
     local test_dir="$1"
     local mode="$2"
@@ -439,7 +439,7 @@ run_single_mode() {
             cd "${test_dir}"
             if [[ "${mode}" == "tsm" && -n "${glibc_lib}" ]]; then
                 export LD_PRELOAD="${glibc_lib}"
-                export GLIBC_RUST_MODE="hardened"
+                export FRANKENLIBC_MODE="hardened"
             fi
             timeout "${OPT_TIMEOUT}" bash -c "${run_cmd}" \
                 >"${stdout_file}" 2>"${stderr_file}"
@@ -466,12 +466,12 @@ run_single_mode() {
             -w /cve_arena/test
         )
 
-        # In TSM mode, mount the glibc_rust library and set environment.
+        # In TSM mode, mount the FrankenLibC library and set environment.
         if [[ "${mode}" == "tsm" && -n "${glibc_lib}" ]]; then
             docker_args+=(
-                -v "${glibc_lib}:/cve_arena/libglibc_rs_abi.so:ro"
-                -e "LD_PRELOAD=/cve_arena/libglibc_rs_abi.so"
-                -e "GLIBC_RUST_MODE=hardened"
+                -v "${glibc_lib}:/cve_arena/libfrankenlibc_abi.so:ro"
+                -e "LD_PRELOAD=/cve_arena/libfrankenlibc_abi.so"
+                -e "FRANKENLIBC_MODE=hardened"
             )
         fi
 
@@ -589,12 +589,12 @@ EOFJSON
 # Verdict determination
 # ---------------------------------------------------------------------------
 
-# Compute the verdict based on stock and glibc_rust results.
+# Compute the verdict based on stock and FrankenLibC results.
 #
 # Verdicts:
-#   PREVENTED  - Stock crashes/exploits, glibc_rust succeeds (exit 0)
-#   DETECTED   - Stock crashes/exploits, glibc_rust catches it (exit non-zero, no crash signal)
-#   REGRESSION - glibc_rust crashes with a signal (bug in our implementation)
+#   PREVENTED  - Stock crashes/exploits, FrankenLibC succeeds (exit 0)
+#   DETECTED   - Stock crashes/exploits, FrankenLibC catches it (exit non-zero, no crash signal)
+#   REGRESSION - FrankenLibC crashes with a signal (bug in our implementation)
 #   BASELINE   - Stock also succeeds (test may not be triggering the bug)
 compute_verdict() {
     local stock_exit="$1"
@@ -606,13 +606,13 @@ compute_verdict() {
     stock_exploitable=$(is_exploitable_exit "${stock_exit}")
     tsm_exploitable=$(is_exploitable_exit "${tsm_exit}")
 
-    # Case 1: glibc_rust itself crashes -- always a regression regardless of stock.
+    # Case 1: FrankenLibC itself crashes -- always a regression regardless of stock.
     if [[ "${tsm_exploitable}" == "true" ]]; then
         echo "REGRESSION"
         return
     fi
 
-    # Case 2: Stock crashes/exploits, glibc_rust does not crash.
+    # Case 2: Stock crashes/exploits, FrankenLibC does not crash.
     if [[ "${stock_exploitable}" == "true" ]]; then
         if [[ ${tsm_exit} -eq 0 ]]; then
             # Cleanly handled: the vulnerability was prevented.
@@ -624,7 +624,7 @@ compute_verdict() {
         return
     fi
 
-    # Case 3: Stock exits non-zero (but no crash signal), glibc_rust succeeds.
+    # Case 3: Stock exits non-zero (but no crash signal), FrankenLibC succeeds.
     if [[ ${stock_exit} -ne 0 && ${tsm_exit} -eq 0 ]]; then
         echo "PREVENTED"
         return
@@ -683,7 +683,7 @@ run_cve_test() {
     log_info "  Stock exit code: ${stock_exit}"
 
     # Run TSM mode.
-    log_info "Running glibc_rust (TSM) mode..."
+    log_info "Running FrankenLibC (TSM) mode..."
     local tsm_json
     tsm_json=$(run_single_mode "${test_dir}" "tsm" "${run_cmd_tsm}" "${build_cmd}" "${glibc_lib}")
     local tsm_exit
@@ -725,7 +725,7 @@ run_cve_test() {
             category: $category,
             timestamp: $timestamp,
             stock_glibc: $stock,
-            glibc_rust: $tsm,
+            FrankenLibC: $tsm,
             verdict: $verdict,
             metadata: {
                 cwe_ids: $cwe_ids,
@@ -854,10 +854,10 @@ main() {
     # Create results directory.
     mkdir -p "${RESULTS_DIR}"
 
-    # Resolve the glibc_rust library.
+    # Resolve the FrankenLibC library.
     local glibc_lib
-    glibc_lib=$(resolve_glibc_rust_lib)
-    log_info "glibc_rust library: ${glibc_lib}"
+    glibc_lib=$(resolve_FrankenLibC_lib)
+    log_info "FrankenLibC library: ${glibc_lib}"
 
     # Build Docker image if needed.
     ensure_docker_image

@@ -369,7 +369,7 @@ pub fn verify_memcpy_fixture_set(fixture: &MemcpyFixtureSet) -> VerificationRepo
             let mut dst = vec![0_u8; case.dst_len];
             // SAFETY: Case vectors are intentionally valid and bounded.
             unsafe {
-                frankenlibc::glibc_rust_memcpy_preview(
+                frankenlibc::frankenlibc_memcpy_preview(
                     dst.as_mut_ptr().cast::<c_void>(),
                     case.src.as_ptr().cast::<c_void>(),
                     case.requested_len,
@@ -2440,10 +2440,10 @@ fn execute_malloc_case(
     }
 
     let size = parse_usize(inputs, "size")?;
-    let impl_ptr = unsafe { frankenlibc::glibc_rust_malloc_preview(size) };
+    let impl_ptr = unsafe { frankenlibc::frankenlibc_malloc_preview(size) };
     let impl_valid = size == 0 || !impl_ptr.is_null();
     if !impl_ptr.is_null() {
-        unsafe { frankenlibc::glibc_rust_free_preview(impl_ptr, size.max(1)) };
+        unsafe { frankenlibc::frankenlibc_free_preview(impl_ptr, size.max(1)) };
     }
 
     let host_valid = run_host_malloc(size);
@@ -2477,16 +2477,16 @@ fn execute_free_case(
     if ptr_val == 0 {
         unsafe {
             libc::free(std::ptr::null_mut());
-            frankenlibc::glibc_rust_free_preview(std::ptr::null_mut(), 0);
+            frankenlibc::frankenlibc_free_preview(std::ptr::null_mut(), 0);
         }
     } else {
         let host_ptr = unsafe { libc::malloc(ptr_val.max(1)) };
         if !host_ptr.is_null() {
             unsafe { libc::free(host_ptr) };
         }
-        let impl_ptr = unsafe { frankenlibc::glibc_rust_malloc_preview(ptr_val.max(1)) };
+        let impl_ptr = unsafe { frankenlibc::frankenlibc_malloc_preview(ptr_val.max(1)) };
         if !impl_ptr.is_null() {
-            unsafe { frankenlibc::glibc_rust_free_preview(impl_ptr, ptr_val.max(1)) };
+            unsafe { frankenlibc::frankenlibc_free_preview(impl_ptr, ptr_val.max(1)) };
         }
     }
     Ok(DifferentialExecution {
@@ -2532,7 +2532,7 @@ fn execute_calloc_case(
     let size = parse_usize(inputs, "size")?;
     let total = nmemb.checked_mul(size).unwrap_or(0);
 
-    let impl_ptr = unsafe { frankenlibc::glibc_rust_calloc_preview(nmemb, size) };
+    let impl_ptr = unsafe { frankenlibc::frankenlibc_calloc_preview(nmemb, size) };
     let impl_valid = total == 0 || !impl_ptr.is_null();
     let impl_zeroed = if impl_ptr.is_null() || total == 0 {
         true
@@ -2542,7 +2542,7 @@ fn execute_calloc_case(
         probe.iter().all(|&b| b == 0)
     };
     if !impl_ptr.is_null() {
-        unsafe { frankenlibc::glibc_rust_free_preview(impl_ptr, total.max(1)) };
+        unsafe { frankenlibc::frankenlibc_free_preview(impl_ptr, total.max(1)) };
     }
 
     let (host_valid, host_zeroed) = run_host_calloc(nmemb, size);
@@ -2604,21 +2604,21 @@ fn execute_realloc_case(
     let old_size = parse_usize_any(inputs, &["old_size", "old_size_hint"]).unwrap_or(ptr_val);
 
     let impl_valid = if ptr_val == 0 {
-        let ptr = unsafe { frankenlibc::glibc_rust_realloc_preview(std::ptr::null_mut(), size, 0) };
+        let ptr = unsafe { frankenlibc::frankenlibc_realloc_preview(std::ptr::null_mut(), size, 0) };
         let valid = size == 0 || !ptr.is_null();
         if !ptr.is_null() {
-            unsafe { frankenlibc::glibc_rust_free_preview(ptr, size.max(1)) };
+            unsafe { frankenlibc::frankenlibc_free_preview(ptr, size.max(1)) };
         }
         valid
     } else {
-        let src = unsafe { frankenlibc::glibc_rust_malloc_preview(old_size.max(1)) };
+        let src = unsafe { frankenlibc::frankenlibc_malloc_preview(old_size.max(1)) };
         if src.is_null() {
             false
         } else {
-            let ptr = unsafe { frankenlibc::glibc_rust_realloc_preview(src, size, old_size.max(1)) };
+            let ptr = unsafe { frankenlibc::frankenlibc_realloc_preview(src, size, old_size.max(1)) };
             let valid = size == 0 || !ptr.is_null();
             if !ptr.is_null() {
-                unsafe { frankenlibc::glibc_rust_free_preview(ptr, size.max(1)) };
+                unsafe { frankenlibc::frankenlibc_free_preview(ptr, size.max(1)) };
             }
             valid
         }

@@ -7,7 +7,7 @@
 //! 4. LogEmitter writes correct JSONL to files.
 //! 5. ArtifactIndex serializes correctly.
 //!
-//! Run: cargo test -p glibc-rs-harness --test structured_log_test
+//! Run: cargo test -p frankenlibc-harness --test structured_log_test
 
 use std::path::{Path, PathBuf};
 
@@ -86,7 +86,7 @@ fn schema_examples_validate() {
 
 #[test]
 fn emitter_writes_valid_jsonl() {
-    let dir = std::env::temp_dir().join("glibc_rust_log_test");
+    let dir = std::env::temp_dir().join("frankenlibc_log_test");
     std::fs::create_dir_all(&dir).unwrap();
     let log_path = dir.join("test_output.jsonl");
 

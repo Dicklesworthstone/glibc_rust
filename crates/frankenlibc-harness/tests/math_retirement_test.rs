@@ -9,7 +9,7 @@
 //! 6. Summary statistics are consistent.
 //! 7. The CI gate script exists and is executable.
 //!
-//! Run: cargo test -p glibc-rs-harness --test math_retirement_test
+//! Run: cargo test -p frankenlibc-harness --test math_retirement_test
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};

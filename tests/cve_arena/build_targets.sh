@@ -2,7 +2,7 @@
 # F3: CVE Arena container build system for external targets.
 #
 # Builds Docker images for each external software target with both
-# stock glibc and glibc_rust support. Images are cached and only
+# stock glibc and FrankenLibC support. Images are cached and only
 # rebuilt when Dockerfiles or build scripts change.
 #
 # Usage:
@@ -16,7 +16,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TARGETS_DIR="${SCRIPT_DIR}/targets"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-GLIBC_RUST_LIB="${PROJECT_ROOT}/target/release/libglibc_rs_abi.so"
+FRANKENLIBC_LIB="${PROJECT_ROOT}/target/release/libfrankenlibc_abi.so"
 IMAGE_PREFIX="cve-arena"
 
 # Colors
@@ -80,13 +80,13 @@ build_target() {
 
     log_info "Building target: ${target_name}"
 
-    # Check if glibc_rust library exists
-    if [ -f "${GLIBC_RUST_LIB}" ]; then
-        log_info "  glibc_rust library: ${GLIBC_RUST_LIB}"
+    # Check if FrankenLibC library exists
+    if [ -f "${FRANKENLIBC_LIB}" ]; then
+        log_info "  FrankenLibC library: ${FRANKENLIBC_LIB}"
         # Copy library into build context for Docker
-        cp "${GLIBC_RUST_LIB}" "${target_dir}/libglibc_rs_abi.so"
+        cp "${FRANKENLIBC_LIB}" "${target_dir}/libfrankenlibc_abi.so"
     else
-        log_warn "  glibc_rust library not found at ${GLIBC_RUST_LIB}"
+        log_warn "  FrankenLibC library not found at ${FRANKENLIBC_LIB}"
         log_warn "  Building without TSM support (stock glibc only)"
     fi
 
@@ -109,7 +109,7 @@ build_target() {
     fi
 
     # Clean up copied library
-    rm -f "${target_dir}/libglibc_rs_abi.so"
+    rm -f "${target_dir}/libfrankenlibc_abi.so"
 }
 
 verify_prerequisites() {

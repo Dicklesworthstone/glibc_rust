@@ -10,7 +10,7 @@
 //! 7. Evidence snapshot record limit matches membrane K_MAX.
 //! 8. Gate script exists and is executable.
 //!
-//! Run: cargo test -p glibc-rs-harness --test crash_bundle_test
+//! Run: cargo test -p frankenlibc-harness --test crash_bundle_test
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};

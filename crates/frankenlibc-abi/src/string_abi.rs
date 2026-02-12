@@ -3,7 +3,7 @@
 //! Each function is an `extern "C"` entry point that:
 //! 1. Validates pointer arguments through the membrane pipeline
 //! 2. In hardened mode, applies healing (bounds clamping, null truncation)
-//! 3. Delegates to `glibc-rs-core` safe implementations or inline unsafe primitives
+//! 3. Delegates to `frankenlibc-core` safe implementations or inline unsafe primitives
 
 use std::ffi::{c_char, c_int, c_void};
 

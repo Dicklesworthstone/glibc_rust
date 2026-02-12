@@ -50,7 +50,7 @@ thresholding into 0/1.
 ### Source: `RuntimeMathKernel` cached states
 
 The runtime already builds a 25-element `base_severity` vector (see
-`crates/glibc-rs-membrane/src/runtime_math/mod.rs`). We define one boolean atom per entry:
+`crates/frankenlibc-membrane/src/runtime_math/mod.rs`). We define one boolean atom per entry:
 
 Rule: `atom_i := base_severity[i] >= 2` ("warning-or-worse") unless otherwise noted.
 

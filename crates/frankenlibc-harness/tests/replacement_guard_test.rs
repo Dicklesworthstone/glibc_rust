@@ -7,7 +7,7 @@
 //! 4. The call-through census in the profile matches reality.
 //! 5. The replacement guard script exists and is executable.
 //!
-//! Run: cargo test -p glibc-rs-harness --test replacement_guard_test
+//! Run: cargo test -p frankenlibc-harness --test replacement_guard_test
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -123,7 +123,7 @@ fn guard_script_exists_and_executable() {
 #[test]
 fn interpose_allowlist_covers_all_call_through_modules() {
     let profile = load_profile();
-    let abi_src = workspace_root().join("crates/glibc-rs-abi/src");
+    let abi_src = workspace_root().join("crates/frankenlibc-abi/src");
 
     let allowlist: HashSet<String> = profile["interpose_allowlist"]["modules"]
         .as_array()
@@ -164,7 +164,7 @@ fn interpose_allowlist_covers_all_call_through_modules() {
 
 #[test]
 fn no_pthread_calls_outside_pthread_abi() {
-    let abi_src = workspace_root().join("crates/glibc-rs-abi/src");
+    let abi_src = workspace_root().join("crates/frankenlibc-abi/src");
     let mut violations = Vec::new();
 
     for entry in std::fs::read_dir(&abi_src).unwrap() {
@@ -200,7 +200,7 @@ fn no_pthread_calls_outside_pthread_abi() {
 #[test]
 fn call_through_census_matches_reality() {
     let profile = load_profile();
-    let abi_src = workspace_root().join("crates/glibc-rs-abi/src");
+    let abi_src = workspace_root().join("crates/frankenlibc-abi/src");
     let census = &profile["call_through_census"]["modules"];
 
     for entry in std::fs::read_dir(&abi_src).unwrap() {
@@ -263,7 +263,7 @@ fn replacement_profile_has_both_modes() {
 
 #[test]
 fn raw_syscalls_are_not_flagged() {
-    let abi_src = workspace_root().join("crates/glibc-rs-abi/src");
+    let abi_src = workspace_root().join("crates/frankenlibc-abi/src");
     let mut syscall_count = 0;
 
     for entry in std::fs::read_dir(&abi_src).unwrap() {

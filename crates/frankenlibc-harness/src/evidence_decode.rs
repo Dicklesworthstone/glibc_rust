@@ -4,7 +4,7 @@
 //!
 //! This is tooling-only: it ingests exported `EvidenceSymbolRecord` blobs and attempts to
 //! reconstruct missing systematic symbols using the v1 deterministic XOR repair schedule
-//! implemented in `glibc-rs-membrane` (`runtime_math/evidence.rs`).
+//! implemented in `frankenlibc-membrane` (`runtime_math/evidence.rs`).
 //!
 //! The decoder emits an explainable, deterministic `DecodeProof` suitable for diffs.
 

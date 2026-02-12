@@ -6,11 +6,11 @@
 //! - the combined decide+observe loop
 //!
 //! Notes:
-//! - `GLIBC_RUST_MODE=strict|hardened` is read once (cached) by the membrane config.
+//! - `FRANKENLIBC_MODE=strict|hardened` is read once (cached) by the membrane config.
 //!   To collect both strict and hardened numbers, run this bench twice:
-//!   `GLIBC_RUST_MODE=strict cargo bench -p glibc-rs-bench --bench runtime_math_bench`
-//!   `GLIBC_RUST_MODE=hardened cargo bench -p glibc-rs-bench --bench runtime_math_bench`
-//! - Optional CPU pinning: set `GLIBC_RUST_BENCH_PIN=1` (Linux only).
+//!   `FRANKENLIBC_MODE=strict cargo bench -p frankenlibc-bench --bench runtime_math_bench`
+//!   `FRANKENLIBC_MODE=hardened cargo bench -p frankenlibc-bench --bench runtime_math_bench`
+//! - Optional CPU pinning: set `FRANKENLIBC_BENCH_PIN=1` (Linux only).
 
 use std::cell::RefCell;
 use std::time::{Duration, Instant};
@@ -77,10 +77,10 @@ fn percentile_sorted(sorted: &[f64], p: f64) -> f64 {
 fn print_env_metadata_once() {
     static ONCE: std::sync::Once = std::sync::Once::new();
     ONCE.call_once(|| {
-        let mode_raw = std::env::var("GLIBC_RUST_MODE").unwrap_or_else(|_| "<unset>".to_string());
+        let mode_raw = std::env::var("FRANKENLIBC_MODE").unwrap_or_else(|_| "<unset>".to_string());
         let rustflags = std::env::var("RUSTFLAGS").unwrap_or_else(|_| "<unset>".to_string());
         let cpu = cpu_model().unwrap_or_else(|| "<unknown>".to_string());
-        println!("RUNTIME_MATH_BENCH_META glibc_rust_mode_env={mode_raw}");
+        println!("RUNTIME_MATH_BENCH_META frankenlibc_mode_env={mode_raw}");
         println!("RUNTIME_MATH_BENCH_META rustflags={rustflags}");
         println!("RUNTIME_MATH_BENCH_META cpu_model={cpu}");
     });
@@ -101,7 +101,7 @@ fn cpu_model() -> Option<String> {
 }
 
 fn maybe_pin_thread() {
-    if std::env::var("GLIBC_RUST_BENCH_PIN").ok().as_deref() != Some("1") {
+    if std::env::var("FRANKENLIBC_BENCH_PIN").ok().as_deref() != Some("1") {
         return;
     }
 

@@ -1,4 +1,4 @@
-//! Deterministic snapshot capture for `glibc-rs-membrane` runtime_math kernels.
+//! Deterministic snapshot capture for `frankenlibc-membrane` runtime_math kernels.
 //!
 //! Output is intended for fixture diffing and sha256 gating:
 //! - no timestamps

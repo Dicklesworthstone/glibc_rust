@@ -8,7 +8,7 @@
 //! 5. Every contracted symbol exists in the ABI source.
 //! 6. Summary statistics are consistent with contract entries.
 //!
-//! Run: cargo test -p glibc-rs-harness --test stub_contract_test
+//! Run: cargo test -p frankenlibc-harness --test stub_contract_test
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -144,7 +144,7 @@ fn no_panics_or_todo() {
 fn contracted_symbols_exist_in_abi_source() {
     let contracts = load_contracts();
     let entries = contracts["contracts"].as_array().unwrap();
-    let abi_src = workspace_root().join("crates/glibc-rs-abi/src");
+    let abi_src = workspace_root().join("crates/frankenlibc-abi/src");
 
     for entry in entries {
         let sym = entry["symbol"].as_str().unwrap();

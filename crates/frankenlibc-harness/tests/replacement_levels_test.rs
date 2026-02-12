@@ -11,7 +11,7 @@
 //! 8. README replacement-level claim matches current_level.
 //! 9. Release tag policy is aligned with current_level.
 //!
-//! Run: cargo test -p glibc-rs-harness --test replacement_levels_test
+//! Run: cargo test -p frankenlibc-harness --test replacement_levels_test
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};

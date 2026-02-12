@@ -7,7 +7,7 @@
 //! plus multi-syscall workflows (pipe+read+write, mmap+mprotect+munmap,
 //! openat+write+lseek+read+close).
 //!
-//! Run: cargo test -p glibc-rs-core --test syscall_veneer_test
+//! Run: cargo test -p frankenlibc-core --test syscall_veneer_test
 
 #![allow(unsafe_code)]
 
@@ -81,7 +81,7 @@ mod x86_64_tests {
     fn file_lifecycle_via_tmp() {
         // Create a temp file unique to this PID.
         let pid = sys_getpid();
-        let unique = format!("/tmp/glibc_rust_syscall_test_{}\0", pid);
+        let unique = format!("/tmp/frankenlibc_syscall_test_{}\0", pid);
         let path_buf = unique.into_bytes();
 
         let fd = unsafe {

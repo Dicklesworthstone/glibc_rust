@@ -3,7 +3,7 @@
 Bead: `bd-kom`
 
 This document defines the byte-stable v1 evidence symbol format implemented in:
-- `crates/glibc-rs-membrane/src/runtime_math/evidence.rs`
+- `crates/frankenlibc-membrane/src/runtime_math/evidence.rs`
 
 It is intentionally explicit (offset-based, little-endian) to avoid any `repr(packed)` / alignment pitfalls and to keep the runtime free of `unsafe`.
 

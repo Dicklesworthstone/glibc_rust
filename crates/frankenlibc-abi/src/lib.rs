@@ -2,13 +2,13 @@
 // All extern "C" ABI exports accept raw pointers from C callers; the membrane
 // validates at runtime, so per-function safety docs would be redundant boilerplate.
 #![allow(clippy::missing_safety_doc)]
-//! # glibc-rs-abi
+//! # frankenlibc-abi
 //!
 //! ABI-compatible extern "C" boundary layer for frankenlibc.
 //!
 //! This crate produces a `cdylib` (`libc.so`) that exposes POSIX/C standard library
 //! functions via `extern "C"` symbols. Each function passes through the membrane
-//! validation pipeline before delegating to the safe implementations in `glibc-rs-core`.
+//! validation pipeline before delegating to the safe implementations in `frankenlibc-core`.
 //!
 //! # Architecture
 //!

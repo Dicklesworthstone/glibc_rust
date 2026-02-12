@@ -7,7 +7,7 @@
 //! 4. Coverage counts per entry are self-consistent.
 //! 5. Matrix regeneration is deterministic (excluding timestamp).
 //!
-//! Run: cargo test -p glibc-rs-harness --test verification_matrix_test
+//! Run: cargo test -p frankenlibc-harness --test verification_matrix_test
 
 use std::path::{Path, PathBuf};
 

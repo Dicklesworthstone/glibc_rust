@@ -149,7 +149,7 @@ pub fn collect_mode_metrics(
     let mode = safety_level();
     if mode != expected_mode {
         return Err(format!(
-            "expected GLIBC_RUST_MODE={expected:?} but config resolved to {got:?}",
+            "expected FRANKENLIBC_MODE={expected:?} but config resolved to {got:?}",
             expected = expected_mode,
             got = mode
         ));

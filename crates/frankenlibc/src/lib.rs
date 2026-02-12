@@ -23,7 +23,7 @@ use safety::{
 ///   copied bytes under C ABI expectations.
 /// - The membrane may clamp the requested length if metadata is available.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn glibc_rust_memcpy_preview(
+pub unsafe extern "C" fn frankenlibc_memcpy_preview(
     dst: *mut c_void,
     src: *const c_void,
     requested_len: usize,
@@ -76,7 +76,7 @@ pub unsafe extern "C" fn glibc_rust_memcpy_preview(
 ///
 /// Allocates memory via system allocator and registers it with the membrane.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn glibc_rust_malloc_preview(size: usize) -> *mut c_void {
+pub unsafe extern "C" fn frankenlibc_malloc_preview(size: usize) -> *mut c_void {
     if size == 0 {
         return std::ptr::null_mut();
     }
@@ -99,7 +99,7 @@ pub unsafe extern "C" fn glibc_rust_malloc_preview(size: usize) -> *mut c_void {
 ///
 /// Frees memory via system allocator and updates membrane state.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn glibc_rust_free_preview(ptr: *mut c_void, size_hint: usize) {
+pub unsafe extern "C" fn frankenlibc_free_preview(ptr: *mut c_void, size_hint: usize) {
     if ptr.is_null() {
         return;
     }
@@ -121,7 +121,7 @@ pub unsafe extern "C" fn glibc_rust_free_preview(ptr: *mut c_void, size_hint: us
 
 /// Preview entrypoint for TSM-mediated calloc.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn glibc_rust_calloc_preview(nmemb: usize, size: usize) -> *mut c_void {
+pub unsafe extern "C" fn frankenlibc_calloc_preview(nmemb: usize, size: usize) -> *mut c_void {
     let total = match nmemb.checked_mul(size) {
         Some(t) => t,
         None => return std::ptr::null_mut(),
@@ -144,16 +144,16 @@ pub unsafe extern "C" fn glibc_rust_calloc_preview(nmemb: usize, size: usize) ->
 
 /// Preview entrypoint for TSM-mediated realloc.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn glibc_rust_realloc_preview(
+pub unsafe extern "C" fn frankenlibc_realloc_preview(
     ptr: *mut c_void,
     new_size: usize,
     old_size_hint: usize,
 ) -> *mut c_void {
     if ptr.is_null() {
-        return unsafe { glibc_rust_malloc_preview(new_size) };
+        return unsafe { frankenlibc_malloc_preview(new_size) };
     }
     if new_size == 0 {
-        unsafe { glibc_rust_free_preview(ptr, old_size_hint) };
+        unsafe { frankenlibc_free_preview(ptr, old_size_hint) };
         return std::ptr::null_mut();
     }
 
@@ -199,7 +199,7 @@ mod tests {
 
         // SAFETY: test uses valid pointers and len=0.
         let result = unsafe {
-            glibc_rust_memcpy_preview(
+            frankenlibc_memcpy_preview(
                 dst.as_mut_ptr().cast::<c_void>(),
                 src.as_ptr().cast::<c_void>(),
                 0,
@@ -217,7 +217,7 @@ mod tests {
 
         // SAFETY: test uses valid pointers and bounded len.
         let _result = unsafe {
-            glibc_rust_memcpy_preview(
+            frankenlibc_memcpy_preview(
                 dst.as_mut_ptr().cast::<c_void>(),
                 src.as_ptr().cast::<c_void>(),
                 src.len(),

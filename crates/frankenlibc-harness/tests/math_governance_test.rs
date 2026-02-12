@@ -9,7 +9,7 @@
 //! 6. Summary statistics match actual classifications.
 //! 7. The CI gate script exists and is executable.
 //!
-//! Run: cargo test -p glibc-rs-harness --test math_governance_test
+//! Run: cargo test -p frankenlibc-harness --test math_governance_test
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};

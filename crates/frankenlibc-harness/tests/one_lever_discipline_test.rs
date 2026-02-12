@@ -8,7 +8,7 @@
 //! 5. The gate script exists and is executable.
 //! 6. Category taxonomy covers standard optimization types.
 //!
-//! Run: cargo test -p glibc-rs-harness --test one_lever_discipline_test
+//! Run: cargo test -p frankenlibc-harness --test one_lever_discipline_test
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};

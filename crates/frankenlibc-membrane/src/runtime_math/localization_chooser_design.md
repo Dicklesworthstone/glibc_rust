@@ -275,7 +275,7 @@ selects the active version at initialization.
 
 ### Step 1: Controller Module
 
-Create `crates/glibc-rs-membrane/src/runtime_math/localization_chooser.rs`.
+Create `crates/frankenlibc-membrane/src/runtime_math/localization_chooser.rs`.
 
 Following the 8-step registration pattern from bd-2vf:
 

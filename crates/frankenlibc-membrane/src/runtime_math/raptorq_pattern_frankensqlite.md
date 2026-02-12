@@ -1,4 +1,4 @@
-# RaptorQ Pattern (FrankenSQLite) Restated For glibc_rust
+# RaptorQ Pattern (FrankenSQLite) Restated For frankenlibc
 
 Bead: `bd-11g`
 
@@ -18,7 +18,7 @@ The key idea is **appendable redundancy**:
 - optionally emit deterministic *repair* symbols on a cadence,
 - decode and generate proofs offline (harness/tooling), never on the strict hot path.
 
-## Constraints (glibc_rust-Specific)
+## Constraints (frankenlibc-Specific)
 
 - Runtime must not depend on `/dp/asupersync` (tooling only).
 - Strict mode must not pay codec costs on the hot path.
@@ -102,7 +102,7 @@ Offline decode emits a `DecodeProof` describing:
 Portable rule:
 - `seed = xxh3_64(id_bytes)` in FrankenSQLite-like systems
 
-glibc_rust mapping recommendation:
+frankenlibc mapping recommendation:
 - define a stable `epoch_id` including a monotonic counter,
 - derive `seed` from a stable tuple:
 

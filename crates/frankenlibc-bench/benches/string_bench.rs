@@ -13,7 +13,7 @@ fn bench_memcpy_sizes(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::new("frankenlibc", size), &size, |b, &sz| {
             b.iter(|| {
                 let mut dst = vec![0u8; sz];
-                // TODO: call glibc-rs-abi memcpy when wired
+                // TODO: call frankenlibc-abi memcpy when wired
                 dst.copy_from_slice(&src[..sz]);
                 black_box(dst);
             });

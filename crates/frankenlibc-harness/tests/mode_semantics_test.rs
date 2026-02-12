@@ -8,7 +8,7 @@
 //! 5. Summary statistics are consistent with family entries.
 //! 6. The CI gate script exists and is executable.
 //!
-//! Run: cargo test -p glibc-rs-harness --test mode_semantics_test
+//! Run: cargo test -p frankenlibc-harness --test mode_semantics_test
 
 use std::path::{Path, PathBuf};
 
@@ -80,7 +80,7 @@ fn all_families_have_required_fields() {
 fn family_modules_exist_in_abi_source() {
     let m = load_matrix();
     let families = m["families"].as_array().unwrap();
-    let abi_src = workspace_root().join("crates/glibc-rs-abi/src");
+    let abi_src = workspace_root().join("crates/frankenlibc-abi/src");
 
     for fam in families {
         let name = fam["family"].as_str().unwrap_or("<unknown>");
@@ -97,7 +97,7 @@ fn family_modules_exist_in_abi_source() {
 fn heals_call_sites_match_source() {
     let m = load_matrix();
     let families = m["families"].as_array().unwrap();
-    let abi_src = workspace_root().join("crates/glibc-rs-abi/src");
+    let abi_src = workspace_root().join("crates/frankenlibc-abi/src");
 
     let mut mismatches = Vec::new();
     for fam in families {

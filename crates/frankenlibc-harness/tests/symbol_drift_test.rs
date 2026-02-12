@@ -8,7 +8,7 @@
 //! 5. All statuses are valid taxonomy values.
 //! 6. The CI gate script exists and is executable.
 //!
-//! Run: cargo test -p glibc-rs-harness --test symbol_drift_test
+//! Run: cargo test -p frankenlibc-harness --test symbol_drift_test
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -33,7 +33,7 @@ fn load_matrix() -> serde_json::Value {
 fn matrix_symbols_have_valid_modules() {
     let matrix = load_matrix();
     let symbols = matrix["symbols"].as_array().unwrap();
-    let abi_src = workspace_root().join("crates/glibc-rs-abi/src");
+    let abi_src = workspace_root().join("crates/frankenlibc-abi/src");
 
     let mut missing_modules = Vec::new();
     for entry in symbols {
@@ -56,7 +56,7 @@ fn matrix_symbols_have_valid_modules() {
 fn matrix_symbols_exist_in_source() {
     let matrix = load_matrix();
     let symbols = matrix["symbols"].as_array().unwrap();
-    let abi_src = workspace_root().join("crates/glibc-rs-abi/src");
+    let abi_src = workspace_root().join("crates/frankenlibc-abi/src");
 
     // Data symbols (statics, not functions)
     let data_syms: HashSet<&str> = ["stdin", "stdout", "stderr"].into_iter().collect();
@@ -93,7 +93,7 @@ fn matrix_symbols_exist_in_source() {
 #[test]
 fn abi_source_fns_have_matrix_entries() {
     let matrix = load_matrix();
-    let abi_src = workspace_root().join("crates/glibc-rs-abi/src");
+    let abi_src = workspace_root().join("crates/frankenlibc-abi/src");
 
     let matrix_syms: HashSet<String> = matrix["symbols"]
         .as_array()

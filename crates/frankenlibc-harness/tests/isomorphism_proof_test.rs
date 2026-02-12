@@ -9,7 +9,7 @@
 //! 6. Summary statistics are consistent.
 //! 7. The CI gate script exists and is executable.
 //!
-//! Run: cargo test -p glibc-rs-harness --test isomorphism_proof_test
+//! Run: cargo test -p frankenlibc-harness --test isomorphism_proof_test
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};

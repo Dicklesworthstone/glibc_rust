@@ -1,4 +1,4 @@
-//! # glibc-rs-core
+//! # frankenlibc-core
 //!
 //! Safe Rust implementations of C standard library (libc) functions.
 //!

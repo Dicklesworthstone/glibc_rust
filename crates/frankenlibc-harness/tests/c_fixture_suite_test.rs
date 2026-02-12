@@ -9,7 +9,7 @@
 //! 6. Summary statistics are consistent.
 //! 7. Gate and runner scripts exist and are executable.
 //!
-//! Run: cargo test -p glibc-rs-harness --test c_fixture_suite_test
+//! Run: cargo test -p frankenlibc-harness --test c_fixture_suite_test
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};

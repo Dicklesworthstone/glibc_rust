@@ -10,7 +10,7 @@
 //! 7. Variance guardrails are reasonable.
 //! 8. The CI gate script exists and is executable.
 //!
-//! Run: cargo test -p glibc-rs-harness --test perf_budget_test
+//! Run: cargo test -p frankenlibc-harness --test perf_budget_test
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};

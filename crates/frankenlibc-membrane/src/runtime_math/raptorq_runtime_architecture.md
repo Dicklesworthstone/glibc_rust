@@ -28,7 +28,7 @@ Hard constraints:
    - encoding uses XOR-only LT-like repair symbols derived from a deterministic schedule.
    - no GF(256) Gaussian solve (ever) in libc runtime.
 4. Decode + proof verification are **tooling-only**:
-   - `glibc-rs-harness` depends on `/dp/asupersync` and performs decode/proof generation,
+   - `frankenlibc-harness` depends on `/dp/asupersync` and performs decode/proof generation,
      rendering deterministic diffs via FrankentUI.
 
 Rationale:
@@ -160,7 +160,7 @@ Tooling may depend on `/dp/asupersync` and `/dp/frankentui`:
 
 ## Consequences
 
-- We will implement a small XOR-only encoder in `glibc-rs-membrane` (cadence-only).
+- We will implement a small XOR-only encoder in `frankenlibc-membrane` (cadence-only).
 - Harness will own decoding/proof generation and may iterate independently.
 - If later we want RFC6330 compatibility, we can version-bump the record format and
   introduce a different `codec_id` while keeping the same envelope.
