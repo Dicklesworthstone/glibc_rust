@@ -1,0 +1,195 @@
+//! Integration tests: evidence compliance gate (bd-33p.3)
+//!
+//! Validates:
+//! 1. Index completeness + structured-log schema checks pass on valid bundles.
+//! 2. Failure events without `artifact_refs` fail deterministically.
+//! 3. Schema defects produce actionable `log.schema_violation` diagnostics.
+//! 4. CLI triage output includes violation_code/offending_event/expected_fields/remediation_hint.
+
+use std::path::{Path, PathBuf};
+use std::process::Command;
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use frankenlibc_harness::evidence_compliance::validate_evidence_bundle;
+use frankenlibc_harness::structured_log::{ArtifactIndex, LogEntry, LogLevel, Outcome, StreamKind};
+use sha2::Digest;
+
+fn unique_tmp_dir(prefix: &str) -> PathBuf {
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time should be after UNIX_EPOCH")
+        .as_nanos();
+    let dir = std::env::temp_dir().join(format!("{prefix}-{}-{nanos}", std::process::id()));
+    std::fs::create_dir_all(&dir).expect("create temp dir");
+    dir
+}
+
+fn sha256_hex(path: &Path) -> String {
+    let bytes = std::fs::read(path).expect("read artifact for sha");
+    let digest = sha2::Sha256::digest(&bytes);
+    digest.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+fn write_valid_index(run_dir: &Path, artifact_rel: &str, run_id: &str, bead_id: &str) -> PathBuf {
+    let artifact_path = run_dir.join(artifact_rel);
+    std::fs::write(&artifact_path, "diagnostic-bytes").expect("write artifact");
+    let sha = sha256_hex(&artifact_path);
+
+    let mut index = ArtifactIndex::new(run_id, bead_id);
+    index.add(artifact_rel, "diagnostic", sha);
+    let index_path = run_dir.join("artifact_index.json");
+    std::fs::write(&index_path, index.to_json().expect("serialize index")).expect("write index");
+    index_path
+}
+
+#[test]
+fn valid_bundle_passes() {
+    let run_dir = unique_tmp_dir("evidence-compliance-valid");
+    let log_path = run_dir.join("log.jsonl");
+    let index_path = write_valid_index(&run_dir, "diag.txt", "run-valid", "bd-33p.3");
+
+    let line = LogEntry::new("bd-33p.3::run-valid::001", LogLevel::Info, "gate_result")
+        .with_stream(StreamKind::Release)
+        .with_gate("evidence_compliance")
+        .with_outcome(Outcome::Pass)
+        .with_artifacts(vec!["diag.txt".to_string()])
+        .to_jsonl()
+        .expect("serialize log entry");
+    std::fs::write(&log_path, format!("{line}\n")).expect("write log");
+
+    let report = validate_evidence_bundle(&run_dir, &log_path, &index_path);
+    assert!(report.ok, "valid evidence bundle should pass: {report:?}");
+    assert!(
+        report.violations.is_empty(),
+        "valid evidence bundle should have no violations"
+    );
+
+    let _ = std::fs::remove_dir_all(run_dir);
+}
+
+#[test]
+fn failure_event_without_artifacts_fails_deterministically() {
+    let run_dir = unique_tmp_dir("evidence-compliance-missing-refs");
+    let log_path = run_dir.join("log.jsonl");
+    let index_path = write_valid_index(&run_dir, "diag.txt", "run-fail", "bd-33p.3");
+
+    let line = LogEntry::new("bd-33p.3::run-fail::001", LogLevel::Error, "test_failure")
+        .with_stream(StreamKind::E2e)
+        .with_gate("e2e_suite")
+        .with_outcome(Outcome::Fail)
+        .to_jsonl()
+        .expect("serialize log entry");
+    std::fs::write(&log_path, format!("{line}\n")).expect("write log");
+
+    let report = validate_evidence_bundle(&run_dir, &log_path, &index_path);
+    assert!(
+        !report.ok,
+        "bundle should fail when failure refs are missing"
+    );
+    let found = report
+        .violations
+        .iter()
+        .find(|v| v.code == "failure_event.missing_artifact_refs")
+        .expect("expected failure_event.missing_artifact_refs");
+    assert!(
+        found
+            .remediation_hint
+            .as_deref()
+            .is_some_and(|h| h.contains("artifact_refs")),
+        "remediation_hint should mention artifact_refs"
+    );
+
+    let _ = std::fs::remove_dir_all(run_dir);
+}
+
+#[test]
+fn malformed_log_line_reports_schema_violation() {
+    let run_dir = unique_tmp_dir("evidence-compliance-schema");
+    let log_path = run_dir.join("log.jsonl");
+    let index_path = write_valid_index(&run_dir, "diag.txt", "run-schema", "bd-33p.3");
+
+    std::fs::write(&log_path, "{}\n").expect("write malformed log line");
+
+    let report = validate_evidence_bundle(&run_dir, &log_path, &index_path);
+    assert!(!report.ok, "malformed log line should fail compliance");
+
+    let violations: Vec<_> = report
+        .violations
+        .iter()
+        .filter(|v| v.code == "log.schema_violation")
+        .collect();
+    assert!(
+        !violations.is_empty(),
+        "expected at least one log.schema_violation entry"
+    );
+    assert!(
+        violations
+            .iter()
+            .any(|v| v.message.contains("required field missing")),
+        "schema violation should include missing required field diagnostics"
+    );
+
+    let _ = std::fs::remove_dir_all(run_dir);
+}
+
+#[test]
+fn cli_emits_triage_format_with_required_fields() {
+    let run_dir = unique_tmp_dir("evidence-compliance-cli");
+    let log_path = run_dir.join("log.jsonl");
+    let index_path = write_valid_index(&run_dir, "diag.txt", "run-cli", "bd-33p.3");
+
+    let line = LogEntry::new("bd-33p.3::run-cli::001", LogLevel::Error, "test_failure")
+        .with_stream(StreamKind::E2e)
+        .with_gate("e2e_suite")
+        .with_outcome(Outcome::Fail)
+        .with_artifacts(vec!["missing.txt".to_string()])
+        .to_jsonl()
+        .expect("serialize log entry");
+    std::fs::write(&log_path, format!("{line}\n")).expect("write log");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_harness"))
+        .arg("evidence-compliance")
+        .arg("--workspace-root")
+        .arg(&run_dir)
+        .arg("--log")
+        .arg(&log_path)
+        .arg("--artifact-index")
+        .arg(&index_path)
+        .output()
+        .expect("harness evidence-compliance should execute");
+
+    assert!(
+        !output.status.success(),
+        "bad evidence bundle should return non-zero"
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let triage: serde_json::Value =
+        serde_json::from_str(&stdout).expect("CLI should emit JSON triage report");
+    assert_eq!(triage["ok"].as_bool(), Some(false));
+    assert!(
+        triage["violation_count"].as_u64().unwrap_or(0) > 0,
+        "expected non-zero violation_count"
+    );
+
+    let violations = triage["violations"]
+        .as_array()
+        .expect("violations should be an array");
+    assert!(!violations.is_empty(), "violations must not be empty");
+
+    let first = &violations[0];
+    for key in [
+        "violation_code",
+        "offending_event",
+        "expected_fields",
+        "remediation_hint",
+        "artifact_pointer",
+    ] {
+        assert!(
+            first.get(key).is_some(),
+            "triage violation is missing required key '{key}'"
+        );
+    }
+
+    let _ = std::fs::remove_dir_all(run_dir);
+}

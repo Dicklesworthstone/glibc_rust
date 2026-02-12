@@ -61,6 +61,21 @@ enum Command {
         #[arg(long, default_value = "strict")]
         mode: String,
     },
+    /// Validate a structured-log + artifact-index evidence bundle.
+    EvidenceCompliance {
+        /// Workspace root used for fallback artifact resolution.
+        #[arg(long, default_value = ".")]
+        workspace_root: PathBuf,
+        /// Structured JSONL log path.
+        #[arg(long)]
+        log: PathBuf,
+        /// Artifact index JSON path.
+        #[arg(long)]
+        artifact_index: PathBuf,
+        /// Optional output path for triage JSON report (if omitted, prints to stdout).
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
     /// Decode exported evidence symbol records and emit an explainable proof report.
     DecodeEvidence {
         /// Input path containing concatenated 256-byte `EvidenceSymbolRecord` blobs.
@@ -337,6 +352,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             eprintln!("Membrane verification spec checks completed");
         }
+        Command::EvidenceCompliance {
+            workspace_root,
+            log,
+            artifact_index,
+            output,
+        } => {
+            let report = frankenlibc_harness::evidence_compliance::validate_evidence_bundle(
+                &workspace_root,
+                &log,
+                &artifact_index,
+            );
+            let triage = evidence_report_to_triage_json(&report, &log, &artifact_index);
+            let body = serde_json::to_string_pretty(&triage)?;
+
+            if let Some(path) = output {
+                if let Some(parent) = path.parent() {
+                    std::fs::create_dir_all(parent)?;
+                }
+                std::fs::write(&path, body)?;
+            } else {
+                print!("{body}");
+            }
+
+            if !report.ok {
+                return Err(format!(
+                    "Evidence compliance failed: {} violation(s)",
+                    report.violations.len()
+                )
+                .into());
+            }
+        }
         Command::DecodeEvidence {
             input,
             epoch_id,
@@ -595,6 +641,87 @@ fn run_kernel_mode_subprocess(
     let metrics: frankenlibc_harness::kernel_regression_report::KernelModeMetrics =
         serde_json::from_slice(&output.stdout)?;
     Ok(metrics)
+}
+
+fn expected_fields_for_violation(
+    v: &frankenlibc_harness::evidence_compliance::EvidenceViolation,
+) -> Vec<String> {
+    match v.code.as_str() {
+        "log.schema_violation" => {
+            if let Some(hint) = &v.remediation_hint
+                && let Some(start) = hint.find("field '")
+            {
+                let rem = &hint[start + 7..];
+                if let Some(end) = rem.find('\'') {
+                    let field = &rem[..end];
+                    if !field.trim().is_empty() {
+                        return vec![field.to_string()];
+                    }
+                }
+            }
+            Vec::new()
+        }
+        "failure_event.missing_artifact_refs" => vec!["artifact_refs".to_string()],
+        "failure_artifact_ref.missing" => vec!["artifact_refs".to_string()],
+        "failure_artifact_ref.not_indexed" => {
+            vec![
+                "artifact_refs".to_string(),
+                "artifact_index.artifacts".to_string(),
+            ]
+        }
+        "artifact_index.bad_version" => vec!["index_version".to_string()],
+        "artifact_index.invalid_json" => vec![
+            "index_version".to_string(),
+            "run_id".to_string(),
+            "bead_id".to_string(),
+            "artifacts".to_string(),
+        ],
+        "artifact_index.missing" => vec!["artifact_index".to_string()],
+        "log.missing" => vec![
+            "timestamp".to_string(),
+            "trace_id".to_string(),
+            "level".to_string(),
+            "event".to_string(),
+        ],
+        _ => Vec::new(),
+    }
+}
+
+fn evidence_report_to_triage_json(
+    report: &frankenlibc_harness::evidence_compliance::EvidenceComplianceReport,
+    log_path: &PathBuf,
+    artifact_index: &PathBuf,
+) -> serde_json::Value {
+    let violations: Vec<serde_json::Value> = report
+        .violations
+        .iter()
+        .map(|v| {
+            let offending_event = v
+                .trace_id
+                .clone()
+                .or_else(|| v.line_number.map(|line| format!("line:{line}")))
+                .or_else(|| v.path.clone())
+                .unwrap_or_else(|| "unknown".to_string());
+
+            serde_json::json!({
+                "violation_code": v.code,
+                "offending_event": offending_event,
+                "expected_fields": expected_fields_for_violation(v),
+                "remediation_hint": v.remediation_hint,
+                "artifact_pointer": v.path,
+                "line_number": v.line_number,
+                "message": v.message,
+            })
+        })
+        .collect();
+
+    serde_json::json!({
+        "ok": report.ok,
+        "violation_count": report.violations.len(),
+        "log_path": log_path,
+        "artifact_index_path": artifact_index,
+        "violations": violations
+    })
 }
 
 fn parse_seed(raw: &str) -> Result<u64, Box<dyn std::error::Error>> {
