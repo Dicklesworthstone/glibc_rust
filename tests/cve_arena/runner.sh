@@ -15,7 +15,7 @@
 # Environment:
 #   FRANKENLIBC_LIB   Path to libfrankenlibc_abi.so (default: auto-detected)
 #   CVE_ARENA_TIMEOUT Per-test timeout in seconds (default: 30)
-#   CVE_ARENA_IMAGE   Docker image name (default: glibc-rust-cve-arena)
+#   CVE_ARENA_IMAGE   Docker image name (default: frankenlibc-cve-arena)
 #
 # Exit codes:
 #   0  All tests produced expected verdicts
@@ -36,7 +36,7 @@ readonly SIGNAL_WRAPPER="${SCRIPT_DIR}/signal_wrapper.sh"
 readonly DOCKERFILE="${SCRIPT_DIR}/Dockerfile"
 
 readonly DEFAULT_TIMEOUT=30
-readonly DEFAULT_IMAGE="glibc-rust-cve-arena"
+readonly DEFAULT_IMAGE="frankenlibc-cve-arena"
 
 readonly VALID_CATEGORIES=("glibc-internal" "external" "synthetic")
 
@@ -128,7 +128,7 @@ Options:
   --no-docker            Skip Docker; run glibc-internal tests directly on host
   --verbose              Show full stdout/stderr from test programs
   --timeout=SECONDS      Per-test timeout (default: 30)
-  --image=NAME           Docker image name (default: glibc-rust-cve-arena)
+  --image=NAME           Docker image name (default: frankenlibc-cve-arena)
   --help                 Show this help message
 USAGE
     exit 0

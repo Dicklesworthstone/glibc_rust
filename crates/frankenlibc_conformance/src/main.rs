@@ -12,7 +12,7 @@ use frankenlibc_conformance::{
 
 /// CLI for traceability/diff tooling around frankenlibc conformance.
 #[derive(Debug, Parser)]
-#[command(name = "glibc-rust-conformance")]
+#[command(name = "frankenlibc-conformance")]
 #[command(about = "Conformance tooling for frankenlibc")]
 struct Cli {
     #[command(subcommand)]

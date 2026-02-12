@@ -7,7 +7,7 @@
 # freed userdata is subsequently accessed.
 #
 # Build vulnerable Redis version with system allocator (not jemalloc)
-# so LD_PRELOAD of our glibc_rust libc.so intercepts all allocations.
+# so LD_PRELOAD of our FrankenLibC libc.so intercepts all allocations.
 
 FROM debian:bookworm-slim AS builder
 

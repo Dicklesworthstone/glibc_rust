@@ -2,6 +2,17 @@
 //!
 //! Implements `<netdb.h>` functions for hostname resolution.
 //! Supports numeric addresses and file-based backends (/etc/hosts, /etc/services).
+//!
+//! # Submodules
+//!
+//! - `config`: Parses /etc/resolv.conf configuration
+//! - `dns`: DNS protocol message encoding/decoding
+
+pub mod config;
+pub mod dns;
+
+pub use config::ResolverConfig;
+pub use dns::{DnsHeader, DnsMessage, DnsQuestion, DnsRecord};
 
 use std::net::{Ipv4Addr, Ipv6Addr};
 

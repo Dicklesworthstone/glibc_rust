@@ -13,7 +13,7 @@
 # The mismatch causes a write past the end of the heap buffer.
 #
 # With stock glibc: heap metadata corruption -> SIGSEGV or SIGABRT
-# With glibc_rust:  canary detects the overflow, ClampSize healing
+# With FrankenLibC: canary detects the overflow, ClampSize healing
 #                   prevents the corruption from propagating
 
 use strict;

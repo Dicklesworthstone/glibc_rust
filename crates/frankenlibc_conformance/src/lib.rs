@@ -2604,7 +2604,8 @@ fn execute_realloc_case(
     let old_size = parse_usize_any(inputs, &["old_size", "old_size_hint"]).unwrap_or(ptr_val);
 
     let impl_valid = if ptr_val == 0 {
-        let ptr = unsafe { frankenlibc::frankenlibc_realloc_preview(std::ptr::null_mut(), size, 0) };
+        let ptr =
+            unsafe { frankenlibc::frankenlibc_realloc_preview(std::ptr::null_mut(), size, 0) };
         let valid = size == 0 || !ptr.is_null();
         if !ptr.is_null() {
             unsafe { frankenlibc::frankenlibc_free_preview(ptr, size.max(1)) };
@@ -2615,7 +2616,8 @@ fn execute_realloc_case(
         if src.is_null() {
             false
         } else {
-            let ptr = unsafe { frankenlibc::frankenlibc_realloc_preview(src, size, old_size.max(1)) };
+            let ptr =
+                unsafe { frankenlibc::frankenlibc_realloc_preview(src, size, old_size.max(1)) };
             let valid = size == 0 || !ptr.is_null();
             if !ptr.is_null() {
                 unsafe { frankenlibc::frankenlibc_free_preview(ptr, size.max(1)) };

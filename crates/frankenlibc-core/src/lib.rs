@@ -10,6 +10,7 @@
 pub mod ctype;
 pub mod dirent;
 pub mod dlfcn;
+pub mod elf;
 pub mod errno;
 pub mod grp;
 pub mod iconv;

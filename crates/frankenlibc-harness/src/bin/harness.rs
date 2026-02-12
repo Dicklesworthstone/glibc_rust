@@ -219,7 +219,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             #[cfg(not(feature = "asupersync-tooling"))]
             let mut results = {
-                let strict_runner = frankenlibc_harness::TestRunner::new("fixture-verify", "strict");
+                let strict_runner =
+                    frankenlibc_harness::TestRunner::new("fixture-verify", "strict");
                 let hardened_runner =
                     frankenlibc_harness::TestRunner::new("fixture-verify", "hardened");
 
@@ -291,8 +292,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             support_matrix,
             output,
         } => {
-            let report = frankenlibc_harness::RealityReport::from_support_matrix_path(&support_matrix)
-                .map_err(|err| format!("failed generating reality report: {err}"))?;
+            let report =
+                frankenlibc_harness::RealityReport::from_support_matrix_path(&support_matrix)
+                    .map_err(|err| format!("failed generating reality report: {err}"))?;
             let body = report.to_json();
             if let Some(path) = output {
                 if let Some(parent) = path.parent() {
@@ -340,7 +342,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             ansi,
             width,
         } => {
-            let report = frankenlibc_harness::evidence_decode::decode_evidence_file(&input, epoch_id)?;
+            let report =
+                frankenlibc_harness::evidence_decode::decode_evidence_file(&input, epoch_id)?;
 
             let out = match format.to_ascii_lowercase().as_str() {
                 "json" => serde_json::to_string_pretty(&report)?,
@@ -348,7 +351,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "ftui" => {
                     #[cfg(feature = "frankentui-ui")]
                     {
-                        frankenlibc_harness::evidence_decode_render::render_ftui(&report, ansi, width)
+                        frankenlibc_harness::evidence_decode_render::render_ftui(
+                            &report, ansi, width,
+                        )
                     }
 
                     #[cfg(not(feature = "frankentui-ui"))]
@@ -391,8 +396,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 std::fs::create_dir_all(parent)?;
             }
 
-            let fixture =
-                frankenlibc_harness::kernel_snapshot::build_kernel_snapshot_fixture(seed, steps, mode);
+            let fixture = frankenlibc_harness::kernel_snapshot::build_kernel_snapshot_fixture(
+                seed, steps, mode,
+            );
             let body = serde_json::to_string_pretty(&fixture)?;
             std::fs::write(&output, body)?;
             eprintln!("Wrote kernel snapshot fixture to {}", output.display());
@@ -555,8 +561,10 @@ fn run_kernel_mode_subprocess(
     exe: &std::path::Path,
     mode: &str,
     cfg: KernelRegressionCliConfig,
-) -> Result<frankenlibc_harness::kernel_regression_report::KernelModeMetrics, Box<dyn std::error::Error>>
-{
+) -> Result<
+    frankenlibc_harness::kernel_regression_report::KernelModeMetrics,
+    Box<dyn std::error::Error>,
+> {
     let output = ProcCommand::new(exe)
         .arg("kernel-regression-mode")
         .arg("--mode")

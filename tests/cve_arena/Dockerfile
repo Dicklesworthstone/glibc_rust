@@ -4,23 +4,23 @@
 #
 # Minimal Debian-based container for running CVE reproduction tests.
 # Provides a stock glibc environment for the "stock" mode and the necessary
-# build tools to compile C trigger programs. The glibc_rust library is
+# build tools to compile C trigger programs. The FrankenLibC library is
 # mounted at runtime via docker run -v, not baked into the image.
 #
 # Build:
-#   docker build -t glibc-rust-cve-arena -f Dockerfile .
+#   docker build -t frankenlibc-cve-arena -f Dockerfile .
 #
 # Run (example):
 #   docker run --rm --network=none \
 #       -v /path/to/cve_test:/cve_arena/test:ro \
 #       -v /path/to/signal_wrapper.sh:/cve_arena/signal_wrapper.sh:ro \
-#       glibc-rust-cve-arena \
+#       frankenlibc-cve-arena \
 #       bash -c "cd /cve_arena/test && ./trigger"
 # =============================================================================
 
 FROM debian:bookworm-slim
 
-LABEL maintainer="glibc_rust CVE Arena"
+LABEL maintainer="FrankenLibC CVE Arena"
 LABEL description="Sandboxed environment for CVE reproduction testing"
 
 # Avoid interactive prompts during package installation.

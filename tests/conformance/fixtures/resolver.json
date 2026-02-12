@@ -1,0 +1,168 @@
+{
+  "version": "v1",
+  "family": "resolv/dns",
+  "captured_at": "2026-02-12T00:00:00Z",
+  "description": "DNS resolver phase-1 conformance tests",
+  "cases": [
+    {
+      "name": "resolv_conf_default",
+      "function": "ResolverConfig::default",
+      "spec_section": "resolver(5)",
+      "inputs": {},
+      "expected_output": {
+        "nameservers": ["127.0.0.1"],
+        "ndots": 1,
+        "timeout": 5,
+        "attempts": 2
+      },
+      "mode": "strict"
+    },
+    {
+      "name": "resolv_conf_single_nameserver",
+      "function": "ResolverConfig::parse",
+      "spec_section": "resolver(5)",
+      "inputs": { "content": "nameserver 8.8.8.8\n" },
+      "expected_output": {
+        "nameservers": ["8.8.8.8"]
+      },
+      "mode": "strict"
+    },
+    {
+      "name": "resolv_conf_max_nameservers",
+      "function": "ResolverConfig::parse",
+      "spec_section": "resolver(5)",
+      "inputs": { "content": "nameserver 1.1.1.1\nnameserver 2.2.2.2\nnameserver 3.3.3.3\nnameserver 4.4.4.4\n" },
+      "expected_output": {
+        "nameservers": ["1.1.1.1", "2.2.2.2", "3.3.3.3"],
+        "note": "Only first 3 nameservers are used per MAXNS"
+      },
+      "mode": "strict"
+    },
+    {
+      "name": "resolv_conf_options_ndots",
+      "function": "ResolverConfig::parse",
+      "spec_section": "resolver(5)",
+      "inputs": { "content": "options ndots:5\n" },
+      "expected_output": { "ndots": 5 },
+      "mode": "strict"
+    },
+    {
+      "name": "resolv_conf_options_timeout",
+      "function": "ResolverConfig::parse",
+      "spec_section": "resolver(5)",
+      "inputs": { "content": "options timeout:10\n" },
+      "expected_output": { "timeout": 10 },
+      "mode": "strict"
+    },
+    {
+      "name": "resolv_conf_options_attempts",
+      "function": "ResolverConfig::parse",
+      "spec_section": "resolver(5)",
+      "inputs": { "content": "options attempts:3\n" },
+      "expected_output": { "attempts": 3 },
+      "mode": "strict"
+    },
+    {
+      "name": "resolv_conf_search_list",
+      "function": "ResolverConfig::parse",
+      "spec_section": "resolver(5)",
+      "inputs": { "content": "search example.com local.domain\n" },
+      "expected_output": { "search": ["example.com", "local.domain"] },
+      "mode": "strict"
+    },
+    {
+      "name": "dns_header_query",
+      "function": "DnsHeader::new_query",
+      "spec_section": "RFC 1035 Section 4.1.1",
+      "inputs": { "id": 4660 },
+      "expected_output": {
+        "id": 4660,
+        "flags": 256,
+        "qdcount": 1,
+        "ancount": 0,
+        "nscount": 0,
+        "arcount": 0,
+        "note": "flags=0x0100 means QR=0 (query), RD=1 (recursion desired)"
+      },
+      "mode": "strict"
+    },
+    {
+      "name": "dns_encode_domain_name",
+      "function": "encode_domain_name",
+      "spec_section": "RFC 1035 Section 3.1",
+      "inputs": { "name": "example.com" },
+      "expected_output": "\\x07example\\x03com\\x00",
+      "mode": "strict"
+    },
+    {
+      "name": "dns_encode_single_label",
+      "function": "encode_domain_name",
+      "spec_section": "RFC 1035 Section 3.1",
+      "inputs": { "name": "localhost" },
+      "expected_output": "\\x09localhost\\x00",
+      "mode": "strict"
+    },
+    {
+      "name": "hosts_lookup_basic",
+      "function": "lookup_hosts",
+      "spec_section": "/etc/hosts format",
+      "inputs": {
+        "content": "127.0.0.1 localhost\n192.168.1.1 myhost\n",
+        "name": "myhost"
+      },
+      "expected_output": ["192.168.1.1"],
+      "mode": "strict"
+    },
+    {
+      "name": "hosts_lookup_case_insensitive",
+      "function": "lookup_hosts",
+      "spec_section": "/etc/hosts format",
+      "inputs": {
+        "content": "10.0.0.1 MyHost\n",
+        "name": "myhost"
+      },
+      "expected_output": ["10.0.0.1"],
+      "mode": "strict"
+    },
+    {
+      "name": "getaddrinfo_numeric_ipv4",
+      "function": "getaddrinfo",
+      "spec_section": "POSIX getaddrinfo",
+      "inputs": { "node": "192.168.1.1", "service": "80" },
+      "expected_output": {
+        "ai_family": 2,
+        "ai_addr": [192, 168, 1, 1]
+      },
+      "mode": "strict"
+    },
+    {
+      "name": "getaddrinfo_numeric_ipv6",
+      "function": "getaddrinfo",
+      "spec_section": "POSIX getaddrinfo",
+      "inputs": { "node": "::1", "service": "443" },
+      "expected_output": {
+        "ai_family": 10,
+        "ai_addr_last_byte": 1
+      },
+      "mode": "strict"
+    },
+    {
+      "name": "getaddrinfo_unknown_host",
+      "function": "getaddrinfo",
+      "spec_section": "POSIX getaddrinfo",
+      "inputs": { "node": "nonexistent.example", "service": null },
+      "expected_output": "Err(EAI_NONAME)",
+      "mode": "strict"
+    }
+  ],
+  "dns_protocol": {
+    "supported_qtypes": ["A", "AAAA"],
+    "transport": "UDP",
+    "max_message_size": 512,
+    "retry_policy": {
+      "timeout_default_secs": 5,
+      "attempts_default": 2,
+      "configurable_via": "/etc/resolv.conf options"
+    }
+  }
+}

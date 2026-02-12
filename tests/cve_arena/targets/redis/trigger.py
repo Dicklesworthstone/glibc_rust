@@ -15,7 +15,7 @@ Attack vector:
 With stock glibc:  The freed memory may be reallocated and the stale
   pointer dereferences corrupted data -> SIGSEGV or RCE.
 
-With glibc_rust TSM:  The generational arena detects the generation
+With FrankenLibC TSM: The generational arena detects the generation
   mismatch on the stale pointer, quarantines the access, and the
   healing engine returns a safe default instead of allowing the UAF.
 """

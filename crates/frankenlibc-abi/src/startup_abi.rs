@@ -268,7 +268,9 @@ pub unsafe extern "C" fn __frankenlibc_startup_phase0(
 
 /// Returns the last captured startup invariants from `startup_phase0_impl`.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn __frankenlibc_startup_snapshot(out: *mut StartupInvariantSnapshot) -> c_int {
+pub unsafe extern "C" fn __frankenlibc_startup_snapshot(
+    out: *mut StartupInvariantSnapshot,
+) -> c_int {
     if out.is_null() {
         // SAFETY: writes TLS errno.
         unsafe { set_abi_errno(libc::EFAULT) };

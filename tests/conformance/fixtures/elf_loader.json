@@ -1,0 +1,170 @@
+{
+  "version": "v1",
+  "family": "elf/loader",
+  "captured_at": "2026-02-12T00:00:00Z",
+  "description": "ELF64 loader conformance tests for phase-1 rtld implementation",
+  "cases": [
+    {
+      "name": "valid_elf_magic",
+      "function": "Elf64Header::parse",
+      "spec_section": "ELF64 Header",
+      "inputs": { "magic": [127, 69, 76, 70] },
+      "expected_output": "Ok",
+      "mode": "strict"
+    },
+    {
+      "name": "invalid_elf_magic",
+      "function": "Elf64Header::parse",
+      "spec_section": "ELF64 Header",
+      "inputs": { "magic": [0, 0, 0, 0] },
+      "expected_output": "Err(InvalidMagic)",
+      "mode": "strict"
+    },
+    {
+      "name": "reloc_r_x86_64_none",
+      "function": "compute_relocation",
+      "spec_section": "x86_64 Relocations",
+      "inputs": { "type": 0, "symbol_value": 0, "base": 0, "addend": 0 },
+      "expected_output": "Skipped",
+      "mode": "strict"
+    },
+    {
+      "name": "reloc_r_x86_64_64",
+      "function": "compute_relocation",
+      "spec_section": "x86_64 Relocations",
+      "inputs": { "type": 1, "symbol_value": 4096, "base": 8388608, "addend": 256 },
+      "expected_output": { "value": 4352, "size": 8 },
+      "mode": "strict"
+    },
+    {
+      "name": "reloc_r_x86_64_relative",
+      "function": "compute_relocation",
+      "spec_section": "x86_64 Relocations",
+      "inputs": { "type": 8, "symbol_value": 0, "base": 139637976047616, "addend": 8192 },
+      "expected_output": { "value": 139637976055808, "size": 8 },
+      "mode": "strict"
+    },
+    {
+      "name": "reloc_r_x86_64_glob_dat",
+      "function": "compute_relocation",
+      "spec_section": "x86_64 Relocations",
+      "inputs": { "type": 6, "symbol_value": 139637976047616 },
+      "expected_output": { "value": 139637976047616, "size": 8 },
+      "mode": "strict"
+    },
+    {
+      "name": "reloc_r_x86_64_jump_slot",
+      "function": "compute_relocation",
+      "spec_section": "x86_64 Relocations",
+      "inputs": { "type": 7, "symbol_value": 139637976047616 },
+      "expected_output": { "value": 139637976047616, "size": 8 },
+      "mode": "strict"
+    },
+    {
+      "name": "elf_hash_empty",
+      "function": "elf_hash",
+      "spec_section": "ELF Hash",
+      "inputs": { "name": "" },
+      "expected_output": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "elf_hash_malloc",
+      "function": "elf_hash",
+      "spec_section": "ELF Hash",
+      "inputs": { "name": "malloc" },
+      "expected_output": 121835347,
+      "expected_hex": "0x07383353",
+      "mode": "strict"
+    },
+    {
+      "name": "gnu_hash_malloc",
+      "function": "gnu_hash",
+      "spec_section": "GNU Hash",
+      "inputs": { "name": "malloc" },
+      "expected_output": 221883709,
+      "expected_hex": "0x0d39ad3d",
+      "mode": "strict"
+    },
+    {
+      "name": "symbol_binding_local",
+      "function": "SymbolBinding::from",
+      "spec_section": "ELF Symbol Table",
+      "inputs": { "st_info_binding": 0 },
+      "expected_output": "Local",
+      "mode": "strict"
+    },
+    {
+      "name": "symbol_binding_global",
+      "function": "SymbolBinding::from",
+      "spec_section": "ELF Symbol Table",
+      "inputs": { "st_info_binding": 1 },
+      "expected_output": "Global",
+      "mode": "strict"
+    },
+    {
+      "name": "symbol_binding_weak",
+      "function": "SymbolBinding::from",
+      "spec_section": "ELF Symbol Table",
+      "inputs": { "st_info_binding": 2 },
+      "expected_output": "Weak",
+      "mode": "strict"
+    },
+    {
+      "name": "symbol_type_func",
+      "function": "SymbolType::from",
+      "spec_section": "ELF Symbol Table",
+      "inputs": { "st_info_type": 2 },
+      "expected_output": "Func",
+      "mode": "strict"
+    },
+    {
+      "name": "symbol_type_object",
+      "function": "SymbolType::from",
+      "spec_section": "ELF Symbol Table",
+      "inputs": { "st_info_type": 1 },
+      "expected_output": "Object",
+      "mode": "strict"
+    },
+    {
+      "name": "program_flags_rwx",
+      "function": "ProgramFlags::to_mmap_prot",
+      "spec_section": "ELF Program Header",
+      "inputs": { "flags": 7 },
+      "expected_output": 7,
+      "mode": "strict",
+      "note": "PF_R|PF_W|PF_X = 0x7 -> PROT_READ|PROT_WRITE|PROT_EXEC"
+    },
+    {
+      "name": "program_flags_ro",
+      "function": "ProgramFlags::to_mmap_prot",
+      "spec_section": "ELF Program Header",
+      "inputs": { "flags": 4 },
+      "expected_output": 1,
+      "mode": "strict",
+      "note": "PF_R = 0x4 -> PROT_READ = 0x1"
+    }
+  ],
+  "binary_fixtures": [
+    {
+      "name": "libc_so_parsing",
+      "description": "Parse system libc.so.6 to validate header parsing against real binaries",
+      "path": "/lib/x86_64-linux-gnu/libc.so.6",
+      "assertions": [
+        { "field": "class", "expected": "Class64" },
+        { "field": "data", "expected": "LittleEndian" },
+        { "field": "machine", "expected": "X86_64" },
+        { "field": "type", "expected": "SharedObject" }
+      ]
+    },
+    {
+      "name": "libm_so_parsing",
+      "description": "Parse system libm.so.6 to validate symbol table parsing",
+      "path": "/lib/x86_64-linux-gnu/libm.so.6",
+      "assertions": [
+        { "field": "class", "expected": "Class64" },
+        { "field": "has_dynsym", "expected": true }
+      ]
+    }
+  ]
+}
