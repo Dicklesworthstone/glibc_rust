@@ -10,11 +10,11 @@
     },
     "support_matrix": {
       "path": "support_matrix.json",
-      "sha256": "2324aa1931efbd4114e7b3789d7c96343f788714ac16c6db1f9b9728c45eba04"
+      "sha256": "e847c5d1f809ddb380bf5f569c130cace1e60664836f173fb3f0a0962be0e28f"
     },
     "callthrough_census": {
       "path": "tests/conformance/callthrough_census.v1.json",
-      "sha256": "2cd97b2fec8e001f831fcad886e39d9286347e63d8ead5e858c1e4c4ac87cb13"
+      "sha256": "70159fea6478f28fefc8d1d73374182560cb373de7f41dd7e4731805210c09f7"
     }
   },
   "scoring": {
@@ -47,11 +47,11 @@
     },
     {
       "module": "pthread_abi",
-      "symbols_remaining": 10,
+      "symbols_remaining": 5,
       "blocked_workloads": 4,
       "weighted_workload_impact": 9.0,
-      "total_symbol_score": 204.0,
-      "critical_symbol_hits": 4,
+      "total_symbol_score": 100.0,
+      "critical_symbol_hits": 0,
       "recommended_beads": [
         "bd-z84",
         "bd-yos",
@@ -77,86 +77,6 @@
   ],
   "symbol_ranking_top_n": [
     {
-      "symbol": "pthread_create",
-      "module": "pthread_abi",
-      "status": "GlibcCallThrough",
-      "perf_class": "strict_hotpath",
-      "severity_weight": 2.0,
-      "blocked_workloads": 4,
-      "weighted_workload_impact": 9.0,
-      "critical_symbol_mentions": 4,
-      "score": 24.0,
-      "wave_id": "pthread-lifecycle",
-      "recommended_beads": [
-        "bd-z84",
-        "bd-yos",
-        "bd-rth1",
-        "bd-1f35",
-        "bd-3hud"
-      ],
-      "rank": 1
-    },
-    {
-      "symbol": "pthread_detach",
-      "module": "pthread_abi",
-      "status": "GlibcCallThrough",
-      "perf_class": "strict_hotpath",
-      "severity_weight": 2.0,
-      "blocked_workloads": 4,
-      "weighted_workload_impact": 9.0,
-      "critical_symbol_mentions": 0,
-      "score": 20.0,
-      "wave_id": "pthread-lifecycle",
-      "recommended_beads": [
-        "bd-z84",
-        "bd-yos",
-        "bd-rth1",
-        "bd-1f35",
-        "bd-3hud"
-      ],
-      "rank": 2
-    },
-    {
-      "symbol": "pthread_equal",
-      "module": "pthread_abi",
-      "status": "GlibcCallThrough",
-      "perf_class": "strict_hotpath",
-      "severity_weight": 2.0,
-      "blocked_workloads": 4,
-      "weighted_workload_impact": 9.0,
-      "critical_symbol_mentions": 0,
-      "score": 20.0,
-      "wave_id": "pthread-foundation",
-      "recommended_beads": [
-        "bd-z84",
-        "bd-yos",
-        "bd-rth1",
-        "bd-1f35",
-        "bd-3hud"
-      ],
-      "rank": 3
-    },
-    {
-      "symbol": "pthread_join",
-      "module": "pthread_abi",
-      "status": "GlibcCallThrough",
-      "perf_class": "strict_hotpath",
-      "severity_weight": 2.0,
-      "blocked_workloads": 4,
-      "weighted_workload_impact": 9.0,
-      "critical_symbol_mentions": 0,
-      "score": 20.0,
-      "wave_id": "pthread-lifecycle",
-      "recommended_beads": [
-        "bd-z84",
-        "bd-yos",
-        "bd-rth1",
-        "bd-1f35",
-        "bd-3hud"
-      ],
-      "rank": 4
-    },
-    {
       "symbol": "pthread_rwlock_destroy",
       "module": "pthread_abi",
       "status": "GlibcCallThrough",
@@ -174,7 +94,7 @@
         "bd-1f35",
         "bd-3hud"
       ],
-      "rank": 5
+      "rank": 1
     },
     {
       "symbol": "pthread_rwlock_init",
@@ -194,7 +114,7 @@
         "bd-1f35",
         "bd-3hud"
       ],
-      "rank": 6
+      "rank": 2
     },
     {
       "symbol": "pthread_rwlock_rdlock",
@@ -214,7 +134,7 @@
         "bd-1f35",
         "bd-3hud"
       ],
-      "rank": 7
+      "rank": 3
     },
     {
       "symbol": "pthread_rwlock_unlock",
@@ -234,7 +154,7 @@
         "bd-1f35",
         "bd-3hud"
       ],
-      "rank": 8
+      "rank": 4
     },
     {
       "symbol": "pthread_rwlock_wrlock",
@@ -254,27 +174,7 @@
         "bd-1f35",
         "bd-3hud"
       ],
-      "rank": 9
-    },
-    {
-      "symbol": "pthread_self",
-      "module": "pthread_abi",
-      "status": "GlibcCallThrough",
-      "perf_class": "strict_hotpath",
-      "severity_weight": 2.0,
-      "blocked_workloads": 4,
-      "weighted_workload_impact": 9.0,
-      "critical_symbol_mentions": 0,
-      "score": 20.0,
-      "wave_id": "pthread-foundation",
-      "recommended_beads": [
-        "bd-z84",
-        "bd-yos",
-        "bd-rth1",
-        "bd-1f35",
-        "bd-3hud"
-      ],
-      "rank": 10
+      "rank": 5
     },
     {
       "symbol": "fclose",
@@ -290,7 +190,7 @@
       "recommended_beads": [
         "bd-24ug"
       ],
-      "rank": 11
+      "rank": 6
     },
     {
       "symbol": "fgets",
@@ -306,7 +206,7 @@
       "recommended_beads": [
         "bd-24ug"
       ],
-      "rank": 12
+      "rank": 7
     },
     {
       "symbol": "fopen",
@@ -322,7 +222,7 @@
       "recommended_beads": [
         "bd-24ug"
       ],
-      "rank": 13
+      "rank": 8
     },
     {
       "symbol": "fprintf",
@@ -338,7 +238,7 @@
       "recommended_beads": [
         "bd-24ug"
       ],
-      "rank": 14
+      "rank": 9
     },
     {
       "symbol": "fputs",
@@ -354,7 +254,7 @@
       "recommended_beads": [
         "bd-24ug"
       ],
-      "rank": 15
+      "rank": 10
     },
     {
       "symbol": "fread",
@@ -370,7 +270,7 @@
       "recommended_beads": [
         "bd-24ug"
       ],
-      "rank": 16
+      "rank": 11
     },
     {
       "symbol": "fseek",
@@ -386,7 +286,7 @@
       "recommended_beads": [
         "bd-24ug"
       ],
-      "rank": 17
+      "rank": 12
     },
     {
       "symbol": "ftell",
@@ -402,7 +302,7 @@
       "recommended_beads": [
         "bd-24ug"
       ],
-      "rank": 18
+      "rank": 13
     },
     {
       "symbol": "fwrite",
@@ -418,7 +318,7 @@
       "recommended_beads": [
         "bd-24ug"
       ],
-      "rank": 19
+      "rank": 14
     },
     {
       "symbol": "perror",
@@ -434,7 +334,7 @@
       "recommended_beads": [
         "bd-24ug"
       ],
-      "rank": 20
+      "rank": 15
     },
     {
       "symbol": "printf",
@@ -450,7 +350,7 @@
       "recommended_beads": [
         "bd-24ug"
       ],
-      "rank": 21
+      "rank": 16
     },
     {
       "symbol": "puts",
@@ -466,7 +366,7 @@
       "recommended_beads": [
         "bd-24ug"
       ],
-      "rank": 22
+      "rank": 17
     },
     {
       "symbol": "setbuf",
@@ -482,7 +382,7 @@
       "recommended_beads": [
         "bd-24ug"
       ],
-      "rank": 23
+      "rank": 18
     },
     {
       "symbol": "setvbuf",
@@ -498,7 +398,7 @@
       "recommended_beads": [
         "bd-24ug"
       ],
-      "rank": 24
+      "rank": 19
     },
     {
       "symbol": "snprintf",
@@ -514,45 +414,99 @@
       "recommended_beads": [
         "bd-24ug"
       ],
+      "rank": 20
+    },
+    {
+      "symbol": "sprintf",
+      "module": "stdio_abi",
+      "status": "GlibcCallThrough",
+      "perf_class": "coldpath",
+      "severity_weight": 1.0,
+      "blocked_workloads": 7,
+      "weighted_workload_impact": 14.0,
+      "critical_symbol_mentions": 0,
+      "score": 15.0,
+      "wave_id": "stdio-surface",
+      "recommended_beads": [
+        "bd-24ug"
+      ],
+      "rank": 21
+    },
+    {
+      "symbol": "dlopen",
+      "module": "dlfcn_abi",
+      "status": "GlibcCallThrough",
+      "perf_class": "coldpath",
+      "severity_weight": 1.0,
+      "blocked_workloads": 2,
+      "weighted_workload_impact": 5.0,
+      "critical_symbol_mentions": 2,
+      "score": 7.0,
+      "wave_id": "loader-boundary",
+      "recommended_beads": [
+        "bd-3rn",
+        "bd-33zg"
+      ],
+      "rank": 22
+    },
+    {
+      "symbol": "dlsym",
+      "module": "dlfcn_abi",
+      "status": "GlibcCallThrough",
+      "perf_class": "coldpath",
+      "severity_weight": 1.0,
+      "blocked_workloads": 2,
+      "weighted_workload_impact": 5.0,
+      "critical_symbol_mentions": 1,
+      "score": 6.5,
+      "wave_id": "loader-boundary",
+      "recommended_beads": [
+        "bd-3rn",
+        "bd-33zg"
+      ],
+      "rank": 23
+    },
+    {
+      "symbol": "dlclose",
+      "module": "dlfcn_abi",
+      "status": "GlibcCallThrough",
+      "perf_class": "coldpath",
+      "severity_weight": 1.0,
+      "blocked_workloads": 2,
+      "weighted_workload_impact": 5.0,
+      "critical_symbol_mentions": 0,
+      "score": 6.0,
+      "wave_id": "loader-boundary",
+      "recommended_beads": [
+        "bd-3rn",
+        "bd-33zg"
+      ],
+      "rank": 24
+    },
+    {
+      "symbol": "dlerror",
+      "module": "dlfcn_abi",
+      "status": "GlibcCallThrough",
+      "perf_class": "coldpath",
+      "severity_weight": 1.0,
+      "blocked_workloads": 2,
+      "weighted_workload_impact": 5.0,
+      "critical_symbol_mentions": 0,
+      "score": 6.0,
+      "wave_id": "loader-boundary",
+      "recommended_beads": [
+        "bd-3rn",
+        "bd-33zg"
+      ],
       "rank": 25
     }
   ],
   "wave_plan": [
     {
       "wave": 1,
-      "wave_id": "pthread-foundation",
-      "title": "Pthread foundation primitives (low complexity)",
-      "depends_on": [],
-      "modules": [
-        "pthread_abi"
-      ],
-      "symbol_count": 2,
-      "top_symbols": [
-        "pthread_equal",
-        "pthread_self"
-      ],
-      "avg_score": 20.0,
-      "max_score": 20.0,
-      "recommended_beads": [
-        "bd-1f35",
-        "bd-3hud",
-        "bd-rth1",
-        "bd-yos",
-        "bd-z84"
-      ],
-      "success_criteria": [
-        "target module symbols no longer classified as GlibcCallThrough/Stub in support_matrix",
-        "replacement guard emits zero forbidden call-throughs for symbols in this wave",
-        "fixture/gate artifacts updated with deterministic logs"
-      ]
-    },
-    {
-      "wave": 2,
       "wave_id": "pthread-synchronization",
       "title": "Pthread condvar/rwlock synchronization surface",
-      "depends_on": [
-        "pthread-foundation"
-      ],
+      "depends_on": [],
       "modules": [
         "pthread_abi"
       ],
@@ -580,43 +534,10 @@
       ]
     },
     {
-      "wave": 3,
-      "wave_id": "pthread-lifecycle",
-      "title": "Pthread lifecycle operations (create/join/detach)",
-      "depends_on": [
-        "pthread-synchronization"
-      ],
-      "modules": [
-        "pthread_abi"
-      ],
-      "symbol_count": 3,
-      "top_symbols": [
-        "pthread_create",
-        "pthread_detach",
-        "pthread_join"
-      ],
-      "avg_score": 21.333,
-      "max_score": 24.0,
-      "recommended_beads": [
-        "bd-1f35",
-        "bd-3hud",
-        "bd-rth1",
-        "bd-yos",
-        "bd-z84"
-      ],
-      "success_criteria": [
-        "target module symbols no longer classified as GlibcCallThrough/Stub in support_matrix",
-        "replacement guard emits zero forbidden call-throughs for symbols in this wave",
-        "fixture/gate artifacts updated with deterministic logs"
-      ]
-    },
-    {
-      "wave": 4,
+      "wave": 2,
       "wave_id": "loader-boundary",
       "title": "dlfcn boundary migration",
-      "depends_on": [
-        "pthread-foundation"
-      ],
+      "depends_on": [],
       "modules": [
         "dlfcn_abi"
       ],
@@ -640,12 +561,11 @@
       ]
     },
     {
-      "wave": 5,
+      "wave": 3,
       "wave_id": "stdio-surface",
       "title": "stdio callthrough surface consolidation",
       "depends_on": [
-        "loader-boundary",
-        "pthread-lifecycle"
+        "loader-boundary"
       ],
       "modules": [
         "stdio_abi"
@@ -698,12 +618,12 @@
   },
   "summary": {
     "top_n": 25,
-    "candidate_symbols": 30,
+    "candidate_symbols": 25,
     "module_count": 3,
-    "wave_count": 5,
+    "wave_count": 3,
     "top_blocker_module": "stdio_abi",
-    "top_symbol": "pthread_create",
-    "baseline_unresolved_symbols": 30,
-    "remaining_after_top_n": 5
+    "top_symbol": "pthread_rwlock_destroy",
+    "baseline_unresolved_symbols": 25,
+    "remaining_after_top_n": 0
   }
 }

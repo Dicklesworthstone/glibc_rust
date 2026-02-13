@@ -800,13 +800,21 @@ mod tests {
         let id = k.id as usize;
 
         // Read initial seq via RCU.
-        let seq_after_create =
-            unsafe { KEY_REGISTRY_RCU.read().map(|r| r.slots[id].seq).unwrap_or(0) };
+        let seq_after_create = unsafe {
+            KEY_REGISTRY_RCU
+                .read()
+                .map(|r| r.slots[id].seq)
+                .unwrap_or(0)
+        };
         assert!(seq_after_create >= 1, "seq should be >= 1 after create");
 
         assert_eq!(pthread_key_delete(k), 0);
-        let seq_after_delete =
-            unsafe { KEY_REGISTRY_RCU.read().map(|r| r.slots[id].seq).unwrap_or(0) };
+        let seq_after_delete = unsafe {
+            KEY_REGISTRY_RCU
+                .read()
+                .map(|r| r.slots[id].seq)
+                .unwrap_or(0)
+        };
         assert_eq!(
             seq_after_delete,
             seq_after_create + 1,

@@ -467,6 +467,108 @@ mod tests {
     }
 
     #[test]
+    fn free_promotes_slot_to_quarantined_with_new_generation() {
+        let arena = AllocationArena::new();
+        let ptr = arena.allocate(96).expect("allocation should succeed");
+
+        let before = arena.lookup(ptr as usize).expect("live slot");
+        assert_eq!(before.state, SafetyState::Valid);
+
+        let (result, drained) = arena.free(ptr);
+        assert_eq!(result, FreeResult::Freed);
+        assert!(drained.is_empty(), "small free should not force drain");
+
+        let after = arena
+            .lookup(ptr as usize)
+            .expect("freed slot should remain quarantined and discoverable");
+        assert_eq!(after.state, SafetyState::Quarantined);
+        assert!(
+            after.generation > before.generation,
+            "free should bump generation to invalidate stale pointers"
+        );
+    }
+
+    #[test]
+    fn quarantine_drain_evicts_oldest_when_entry_count_exceeded() {
+        use std::alloc::{Layout, alloc, dealloc};
+
+        let arena = AllocationArena::new();
+        let align = 16_usize;
+        let total_size = align + CANARY_SIZE;
+
+        fn alloc_block(total_size: usize, align: usize) -> usize {
+            let layout = Layout::from_size_align(total_size, align).expect("valid layout");
+            // SAFETY: layout is valid; allocation failure is checked.
+            unsafe {
+                let ptr = alloc(layout);
+                assert!(!ptr.is_null(), "alloc failed for total_size={total_size}");
+                ptr as usize
+            }
+        }
+
+        let mut shard = arena.shards[0].lock();
+
+        let mut oldest_user = 0usize;
+        for idx in 0..=QUARANTINE_MAX_ENTRIES {
+            let raw = alloc_block(total_size, align);
+            let user = raw + align;
+            if idx == 0 {
+                oldest_user = user;
+            }
+            shard.quarantine.push_back(QuarantineEntry {
+                user_base: user,
+                raw_base: raw,
+                total_size,
+                align,
+            });
+            shard.quarantine_bytes += total_size;
+        }
+
+        assert_eq!(
+            shard.quarantine.len(),
+            QUARANTINE_MAX_ENTRIES + 1,
+            "test setup must exceed entry-count threshold by exactly one"
+        );
+        assert!(
+            shard.quarantine_bytes < QUARANTINE_MAX_BYTES,
+            "test setup should trigger count-based draining, not byte-based draining"
+        );
+
+        let drained = arena.drain_quarantine(&mut shard);
+
+        assert_eq!(drained.len(), 1, "expected exactly one entry drained");
+        assert_eq!(
+            drained[0].user_base, oldest_user,
+            "expected oldest entry to be drained first when count threshold is exceeded"
+        );
+        assert_eq!(
+            shard.quarantine.len(),
+            QUARANTINE_MAX_ENTRIES,
+            "drain should stop once count is back at limit"
+        );
+        assert_eq!(
+            shard.quarantine_bytes,
+            QUARANTINE_MAX_ENTRIES * total_size,
+            "exactly one entry worth of bytes should be removed"
+        );
+
+        // Cleanup: release remaining allocated blocks to avoid test-retained memory.
+        while let Some(entry) = shard.quarantine.pop_front() {
+            shard.quarantine_bytes = shard
+                .quarantine_bytes
+                .checked_sub(entry.total_size)
+                .expect("quarantine bytes underflow");
+            let layout =
+                Layout::from_size_align(entry.total_size, entry.align).expect("valid layout");
+            // SAFETY: entry.raw_base was allocated in alloc_block with the same layout.
+            unsafe {
+                dealloc(entry.raw_base as *mut u8, layout);
+            }
+        }
+        assert_eq!(shard.quarantine_bytes, 0, "cleanup must fully drain bytes");
+    }
+
+    #[test]
     fn quarantine_drain_evicts_oldest_until_within_budget() {
         use std::alloc::{Layout, alloc, dealloc};
 

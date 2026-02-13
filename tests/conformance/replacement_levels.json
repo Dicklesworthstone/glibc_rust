@@ -19,9 +19,9 @@
         "test_gate": "cargo test --workspace passes"
       },
       "current_state": {
-        "implemented_pct": 55,
+        "implemented_pct": 57,
         "raw_syscall_pct": 33,
-        "callthrough_pct": 12,
+        "callthrough_pct": 10,
         "stub_pct": 0,
         "callthrough_modules": [
           "dlfcn_abi",
@@ -107,7 +107,7 @@
         ]
       },
       "blockers": [
-        "pthread_abi: 10 call-throughs need futex-based implementation (bd-z84, bd-yos)",
+        "pthread_abi: 5 call-throughs need futex-based implementation (bd-z84, bd-yos)",
         "stdio_abi: 16 call-throughs need native implementation",
         "CRT bootstrap (bd-qwm) not started",
         "rtld (bd-3rn) not started",
@@ -120,17 +120,17 @@
   "current_level": "L0",
   "current_assessment": {
     "total_symbols": 250,
-    "implemented": 137,
+    "implemented": 142,
     "raw_syscall": 83,
-    "callthrough": 30,
+    "callthrough": 25,
     "stub": 0,
-    "implemented_pct": 55,
+    "implemented_pct": 57,
     "raw_syscall_pct": 33,
-    "callthrough_pct": 12,
+    "callthrough_pct": 10,
     "stub_pct": 0,
     "callthrough_breakdown": {
       "dlfcn_abi": 4,
-      "pthread_abi": 10,
+      "pthread_abi": 5,
       "stdio_abi": 16
     },
     "stub_breakdown": {}
@@ -160,7 +160,7 @@
       "Replacement profile guard passes with only stdio/pthread exceptions"
     ],
     "L2_to_L3": [
-      "Implement futex-based pthread (10 symbols)",
+      "Implement futex-based pthread (5 symbols)",
       "Implement native stdio (16 symbols)",
       "Build custom CRT bootstrap",
       "Build minimal rtld",

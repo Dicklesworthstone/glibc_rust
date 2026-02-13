@@ -1412,38 +1412,38 @@
     },
     {
       "symbol": "pthread_create",
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
-      "strict_semantics": "Delegates to host glibc pthread; preserves host semantics",
-      "hardened_semantics": "Host glibc pthread delegation; hardened membrane validates mutex/cond state",
+      "strict_semantics": "Native clone-backed thread creation via core ThreadHandle; null thread_out/start rejected with EINVAL and non-null attr rejected deterministically",
+      "hardened_semantics": "Native clone-backed thread creation with membrane policy gating and deterministic handle-registry ownership checks",
       "default_stub": false
     },
     {
       "symbol": "pthread_detach",
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
-      "strict_semantics": "Delegates to host glibc pthread; preserves host semantics",
-      "hardened_semantics": "Host glibc pthread delegation; hardened membrane validates mutex/cond state",
+      "strict_semantics": "Native detach on managed ThreadHandle registry; unknown or already-consumed thread ids return deterministic ESRCH",
+      "hardened_semantics": "Native detach with membrane policy gating and deterministic registry ownership enforcement",
       "default_stub": false
     },
     {
       "symbol": "pthread_equal",
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
-      "strict_semantics": "Delegates to host glibc pthread; preserves host semantics",
-      "hardened_semantics": "Host glibc pthread delegation; hardened membrane validates mutex/cond state",
+      "strict_semantics": "Native pthread_t identity comparison (reflexive equality over managed handle ids and fallback tid ids)",
+      "hardened_semantics": "Native identity comparison under membrane policy routing with deterministic 0/1 return",
       "default_stub": false
     },
     {
       "symbol": "pthread_join",
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
-      "strict_semantics": "Delegates to host glibc pthread; preserves host semantics",
-      "hardened_semantics": "Host glibc pthread delegation; hardened membrane validates mutex/cond state",
+      "strict_semantics": "Native join on managed ThreadHandle registry with deterministic ESRCH for unknown ids and core join errno propagation",
+      "hardened_semantics": "Native join with membrane policy gating and deterministic registry ownership enforcement",
       "default_stub": false
     },
     {
@@ -1538,11 +1538,11 @@
     },
     {
       "symbol": "pthread_self",
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
-      "strict_semantics": "Delegates to host glibc pthread; preserves host semantics",
-      "hardened_semantics": "Host glibc pthread delegation; hardened membrane validates mutex/cond state",
+      "strict_semantics": "Native self id resolution: returns managed ThreadHandle-backed pthread_t when available, otherwise kernel tid fallback",
+      "hardened_semantics": "Native self id resolution under membrane policy routing with deterministic managed-handle preference",
       "default_stub": false
     },
     {
@@ -2285,9 +2285,9 @@
     }
   ],
   "summary": {
-    "Implemented": 132,
+    "Implemented": 142,
     "RawSyscall": 83,
-    "GlibcCallThrough": 35,
+    "GlibcCallThrough": 25,
     "Stub": 0,
     "DefaultStub": 0
   }
