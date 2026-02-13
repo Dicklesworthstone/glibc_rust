@@ -1,0 +1,542 @@
+flowchart LR
+  sys_devel_binutils["sys-devel/binutils"]
+  sys_devel_make["sys-devel/make"]
+  sys_devel_patch["sys-devel/patch"]
+  sys_kernel_linux_headers["sys-kernel/linux-headers"]
+  sys_libs_glibc["sys-libs/glibc"]
+  sys_devel_gcc["sys-devel/gcc"]
+  app_admin_sudo["app-admin/sudo"]
+  app_arch_bzip2["app-arch/bzip2"]
+  app_arch_gzip["app-arch/gzip"]
+  app_arch_tar["app-arch/tar"]
+  app_arch_xz_utils["app-arch/xz-utils"]
+  app_arch_zstd["app-arch/zstd"]
+  app_crypt_gnupg["app-crypt/gnupg"]
+  app_crypt_mit_krb5["app-crypt/mit-krb5"]
+  app_crypt_pinentry["app-crypt/pinentry"]
+  app_editors_vim["app-editors/vim"]
+  app_emulation_virtualbox["app-emulation/virtualbox"]
+  app_misc_jq["app-misc/jq"]
+  app_misc_tmux["app-misc/tmux"]
+  app_text_aspell["app-text/aspell"]
+  app_text_hunspell["app-text/hunspell"]
+  app_text_texinfo["app-text/texinfo"]
+  dev_cpp_abseil_cpp["dev-cpp/abseil-cpp"]
+  dev_db_memcached["dev-db/memcached"]
+  dev_db_sqlite["dev-db/sqlite"]
+  dev_lang_lua["dev-lang/lua"]
+  dev_lang_perl["dev-lang/perl"]
+  dev_lang_python["dev-lang/python"]
+  dev_lang_ruby["dev-lang/ruby"]
+  dev_libs_boost["dev-libs/boost"]
+  dev_libs_expat["dev-libs/expat"]
+  dev_libs_glib["dev-libs/glib"]
+  dev_libs_icu["dev-libs/icu"]
+  dev_libs_jansson["dev-libs/jansson"]
+  dev_libs_json_c["dev-libs/json-c"]
+  dev_libs_libgcrypt["dev-libs/libgcrypt"]
+  dev_libs_libgit2["dev-libs/libgit2"]
+  dev_libs_libgpg_error["dev-libs/libgpg-error"]
+  dev_libs_libidn2["dev-libs/libidn2"]
+  dev_libs_libpcre2["dev-libs/libpcre2"]
+  dev_libs_libunistring["dev-libs/libunistring"]
+  dev_libs_libuv["dev-libs/libuv"]
+  dev_libs_libxml2["dev-libs/libxml2"]
+  dev_libs_libxslt["dev-libs/libxslt"]
+  dev_libs_libyaml["dev-libs/libyaml"]
+  dev_libs_nettle["dev-libs/nettle"]
+  dev_libs_oniguruma["dev-libs/oniguruma"]
+  dev_libs_openssl["dev-libs/openssl"]
+  dev_libs_poco["dev-libs/poco"]
+  dev_libs_yajl["dev-libs/yajl"]
+  dev_util_cmake["dev-util/cmake"]
+  dev_util_ninja["dev-util/ninja"]
+  dev_util_valgrind["dev-util/valgrind"]
+  mail_client_neomutt["mail-client/neomutt"]
+  media_gfx_imagemagick["media-gfx/imagemagick"]
+  media_libs_libjpeg_turbo["media-libs/libjpeg-turbo"]
+  media_libs_libpng["media-libs/libpng"]
+  net_analyzer_nmap["net-analyzer/nmap"]
+  net_dns_bind_tools["net-dns/bind-tools"]
+  net_dns_unbound["net-dns/unbound"]
+  net_firewall_iptables["net-firewall/iptables"]
+  net_firewall_nftables["net-firewall/nftables"]
+  net_libs_gnutls["net-libs/gnutls"]
+  net_libs_libevent["net-libs/libevent"]
+  net_libs_libpsl["net-libs/libpsl"]
+  net_libs_zeromq["net-libs/zeromq"]
+  net_misc_rsync["net-misc/rsync"]
+  sys_apps_coreutils["sys-apps/coreutils"]
+  sys_apps_findutils["sys-apps/findutils"]
+  sys_apps_grep["sys-apps/grep"]
+  sys_apps_sed["sys-apps/sed"]
+  sys_apps_util_linux["sys-apps/util-linux"]
+  sys_libs_ncurses["sys-libs/ncurses"]
+  sys_process_htop["sys-process/htop"]
+  sys_process_procps["sys-process/procps"]
+  app_editors_neovim["app-editors/neovim"]
+  app_emulation_qemu["app-emulation/qemu"]
+  app_emulation_wine["app-emulation/wine"]
+  app_text_ghostscript_gpl["app-text/ghostscript-gpl"]
+  app_text_poppler["app-text/poppler"]
+  app_text_xmlto["app-text/xmlto"]
+  dev_db_mariadb["dev-db/mariadb"]
+  dev_db_postgresql["dev-db/postgresql"]
+  dev_db_redis["dev-db/redis"]
+  dev_libs_protobuf["dev-libs/protobuf"]
+  mail_mta_postfix["mail-mta/postfix"]
+  media_video_ffmpeg["media-video/ffmpeg"]
+  net_misc_curl["net-misc/curl"]
+  net_misc_mosquitto["net-misc/mosquitto"]
+  net_misc_openssh["net-misc/openssh"]
+  net_misc_wget["net-misc/wget"]
+  sys_apps_systemd["sys-apps/systemd"]
+  www_servers_apache["www-servers/apache"]
+  www_servers_lighttpd["www-servers/lighttpd"]
+  www_servers_nginx["www-servers/nginx"]
+  app_containers_docker["app-containers/docker"]
+  dev_util_git["dev-util/git"]
+  media_video_vlc["media-video/vlc"]
+  net_libs_grpc["net-libs/grpc"]
+  net_p2p_transmission["net-p2p/transmission"]
+  app_crypt_mit_krb5 -->|RDEPEND| mail_mta_postfix
+  app_crypt_mit_krb5 -->|RDEPEND| net_misc_openssh
+  app_editors_vim -->|RDEPEND| app_editors_neovim
+  dev_cpp_abseil_cpp -->|RDEPEND| dev_libs_protobuf
+  dev_cpp_abseil_cpp -->|RDEPEND| net_libs_grpc
+  dev_libs_expat -->|RDEPEND| dev_util_git
+  dev_libs_glib -->|RDEPEND| app_emulation_qemu
+  dev_libs_icu -->|RDEPEND| app_text_ghostscript_gpl
+  dev_libs_icu -->|RDEPEND| app_text_poppler
+  dev_libs_icu -->|RDEPEND| dev_db_postgresql
+  dev_libs_libidn2 -->|RDEPEND| app_text_ghostscript_gpl
+  dev_libs_libidn2 -->|RDEPEND| net_misc_curl
+  dev_libs_libidn2 -->|RDEPEND| net_misc_wget
+  dev_libs_libpcre2 -->|RDEPEND| dev_util_git
+  dev_libs_libpcre2 -->|RDEPEND| sys_apps_systemd
+  dev_libs_libpcre2 -->|RDEPEND| www_servers_apache
+  dev_libs_libpcre2 -->|RDEPEND| www_servers_lighttpd
+  dev_libs_libpcre2 -->|RDEPEND| www_servers_nginx
+  dev_libs_libuv -->|RDEPEND| app_editors_neovim
+  dev_libs_libxml2 -->|RDEPEND| app_emulation_qemu
+  dev_libs_libxml2 -->|RDEPEND| app_emulation_wine
+  dev_libs_libxml2 -->|RDEPEND| app_text_poppler
+  dev_libs_libxml2 -->|RDEPEND| app_text_xmlto
+  dev_libs_libxml2 -->|RDEPEND| dev_db_postgresql
+  dev_libs_libxml2 -->|RDEPEND| www_servers_nginx
+  dev_libs_libxslt -->|RDEPEND| app_text_xmlto
+  dev_libs_openssl -->|RDEPEND| app_emulation_qemu
+  dev_libs_openssl -->|RDEPEND| app_emulation_wine
+  dev_libs_openssl -->|RDEPEND| dev_db_mariadb
+  dev_libs_openssl -->|RDEPEND| dev_db_postgresql
+  dev_libs_openssl -->|RDEPEND| dev_db_redis
+  dev_libs_openssl -->|RDEPEND| dev_util_git
+  dev_libs_openssl -->|RDEPEND| mail_mta_postfix
+  dev_libs_openssl -->|RDEPEND| media_video_ffmpeg
+  dev_libs_openssl -->|RDEPEND| media_video_vlc
+  dev_libs_openssl -->|RDEPEND| net_libs_grpc
+  dev_libs_openssl -->|RDEPEND| net_misc_curl
+  dev_libs_openssl -->|RDEPEND| net_misc_mosquitto
+  dev_libs_openssl -->|RDEPEND| net_misc_openssh
+  dev_libs_openssl -->|RDEPEND| net_misc_wget
+  dev_libs_openssl -->|RDEPEND| sys_apps_systemd
+  dev_libs_openssl -->|RDEPEND| www_servers_apache
+  dev_libs_openssl -->|RDEPEND| www_servers_lighttpd
+  dev_libs_openssl -->|RDEPEND| www_servers_nginx
+  dev_libs_protobuf -->|RDEPEND| app_containers_docker
+  dev_libs_protobuf -->|RDEPEND| net_libs_grpc
+  dev_util_cmake -->|BDEPEND| app_containers_docker
+  dev_util_cmake -->|BDEPEND| dev_libs_protobuf
+  dev_util_cmake -->|BDEPEND| net_libs_grpc
+  media_libs_libjpeg_turbo -->|RDEPEND| app_emulation_wine
+  media_libs_libjpeg_turbo -->|RDEPEND| media_video_ffmpeg
+  media_libs_libpng -->|RDEPEND| app_emulation_wine
+  media_libs_libpng -->|RDEPEND| media_video_ffmpeg
+  media_libs_libpng -->|RDEPEND| media_video_vlc
+  media_video_ffmpeg -->|RDEPEND| media_video_vlc
+  net_libs_gnutls -->|RDEPEND| net_misc_curl
+  net_libs_gnutls -->|RDEPEND| net_misc_wget
+  net_libs_libevent -->|RDEPEND| net_misc_mosquitto
+  net_libs_libpsl -->|RDEPEND| net_misc_curl
+  net_misc_curl -->|RDEPEND| app_containers_docker
+  net_misc_curl -->|RDEPEND| dev_util_git
+  net_misc_curl -->|RDEPEND| net_p2p_transmission
+  sys_devel_binutils -->|BDEPEND| app_admin_sudo
+  sys_devel_binutils -->|BDEPEND| app_arch_bzip2
+  sys_devel_binutils -->|BDEPEND| app_arch_gzip
+  sys_devel_binutils -->|BDEPEND| app_arch_tar
+  sys_devel_binutils -->|BDEPEND| app_arch_xz_utils
+  sys_devel_binutils -->|BDEPEND| app_arch_zstd
+  sys_devel_binutils -->|BDEPEND| app_containers_docker
+  sys_devel_binutils -->|BDEPEND| app_crypt_gnupg
+  sys_devel_binutils -->|BDEPEND| app_crypt_mit_krb5
+  sys_devel_binutils -->|BDEPEND| app_crypt_pinentry
+  sys_devel_binutils -->|BDEPEND| app_editors_neovim
+  sys_devel_binutils -->|BDEPEND| app_editors_vim
+  sys_devel_binutils -->|BDEPEND| app_emulation_qemu
+  sys_devel_binutils -->|BDEPEND| app_emulation_virtualbox
+  sys_devel_binutils -->|BDEPEND| app_emulation_wine
+  sys_devel_binutils -->|BDEPEND| app_misc_jq
+  sys_devel_binutils -->|BDEPEND| app_misc_tmux
+  sys_devel_binutils -->|BDEPEND| app_text_aspell
+  sys_devel_binutils -->|BDEPEND| app_text_ghostscript_gpl
+  sys_devel_binutils -->|BDEPEND| app_text_hunspell
+  sys_devel_binutils -->|BDEPEND| app_text_poppler
+  sys_devel_binutils -->|BDEPEND| app_text_texinfo
+  sys_devel_binutils -->|BDEPEND| app_text_xmlto
+  sys_devel_binutils -->|BDEPEND| dev_cpp_abseil_cpp
+  sys_devel_binutils -->|BDEPEND| dev_db_mariadb
+  sys_devel_binutils -->|BDEPEND| dev_db_memcached
+  sys_devel_binutils -->|BDEPEND| dev_db_postgresql
+  sys_devel_binutils -->|BDEPEND| dev_db_redis
+  sys_devel_binutils -->|BDEPEND| dev_db_sqlite
+  sys_devel_binutils -->|BDEPEND| dev_lang_lua
+  sys_devel_binutils -->|BDEPEND| dev_lang_perl
+  sys_devel_binutils -->|BDEPEND| dev_lang_python
+  sys_devel_binutils -->|BDEPEND| dev_lang_ruby
+  sys_devel_binutils -->|BDEPEND| dev_libs_boost
+  sys_devel_binutils -->|BDEPEND| dev_libs_expat
+  sys_devel_binutils -->|BDEPEND| dev_libs_glib
+  sys_devel_binutils -->|BDEPEND| dev_libs_icu
+  sys_devel_binutils -->|BDEPEND| dev_libs_jansson
+  sys_devel_binutils -->|BDEPEND| dev_libs_json_c
+  sys_devel_binutils -->|BDEPEND| dev_libs_libgcrypt
+  sys_devel_binutils -->|BDEPEND| dev_libs_libgit2
+  sys_devel_binutils -->|BDEPEND| dev_libs_libgpg_error
+  sys_devel_binutils -->|BDEPEND| dev_libs_libidn2
+  sys_devel_binutils -->|BDEPEND| dev_libs_libpcre2
+  sys_devel_binutils -->|BDEPEND| dev_libs_libunistring
+  sys_devel_binutils -->|BDEPEND| dev_libs_libuv
+  sys_devel_binutils -->|BDEPEND| dev_libs_libxml2
+  sys_devel_binutils -->|BDEPEND| dev_libs_libxslt
+  sys_devel_binutils -->|BDEPEND| dev_libs_libyaml
+  sys_devel_binutils -->|BDEPEND| dev_libs_nettle
+  sys_devel_binutils -->|BDEPEND| dev_libs_oniguruma
+  sys_devel_binutils -->|BDEPEND| dev_libs_openssl
+  sys_devel_binutils -->|BDEPEND| dev_libs_poco
+  sys_devel_binutils -->|BDEPEND| dev_libs_protobuf
+  sys_devel_binutils -->|BDEPEND| dev_libs_yajl
+  sys_devel_binutils -->|BDEPEND| dev_util_cmake
+  sys_devel_binutils -->|BDEPEND| dev_util_git
+  sys_devel_binutils -->|BDEPEND| dev_util_ninja
+  sys_devel_binutils -->|BDEPEND| dev_util_valgrind
+  sys_devel_binutils -->|BDEPEND| mail_client_neomutt
+  sys_devel_binutils -->|BDEPEND| mail_mta_postfix
+  sys_devel_binutils -->|BDEPEND| media_gfx_imagemagick
+  sys_devel_binutils -->|BDEPEND| media_libs_libjpeg_turbo
+  sys_devel_binutils -->|BDEPEND| media_libs_libpng
+  sys_devel_binutils -->|BDEPEND| media_video_ffmpeg
+  sys_devel_binutils -->|BDEPEND| media_video_vlc
+  sys_devel_binutils -->|BDEPEND| net_analyzer_nmap
+  sys_devel_binutils -->|BDEPEND| net_dns_bind_tools
+  sys_devel_binutils -->|BDEPEND| net_dns_unbound
+  sys_devel_binutils -->|BDEPEND| net_firewall_iptables
+  sys_devel_binutils -->|BDEPEND| net_firewall_nftables
+  sys_devel_binutils -->|BDEPEND| net_libs_gnutls
+  sys_devel_binutils -->|BDEPEND| net_libs_grpc
+  sys_devel_binutils -->|BDEPEND| net_libs_libevent
+  sys_devel_binutils -->|BDEPEND| net_libs_libpsl
+  sys_devel_binutils -->|BDEPEND| net_libs_zeromq
+  sys_devel_binutils -->|BDEPEND| net_misc_curl
+  sys_devel_binutils -->|BDEPEND| net_misc_mosquitto
+  sys_devel_binutils -->|BDEPEND| net_misc_openssh
+  sys_devel_binutils -->|BDEPEND| net_misc_rsync
+  sys_devel_binutils -->|BDEPEND| net_misc_wget
+  sys_devel_binutils -->|BDEPEND| net_p2p_transmission
+  sys_devel_binutils -->|BDEPEND| sys_apps_coreutils
+  sys_devel_binutils -->|BDEPEND| sys_apps_findutils
+  sys_devel_binutils -->|BDEPEND| sys_apps_grep
+  sys_devel_binutils -->|BDEPEND| sys_apps_sed
+  sys_devel_binutils -->|BDEPEND| sys_apps_systemd
+  sys_devel_binutils -->|BDEPEND| sys_apps_util_linux
+  sys_devel_binutils -->|BDEPEND| sys_devel_gcc
+  sys_devel_binutils -->|BDEPEND| sys_libs_ncurses
+  sys_devel_binutils -->|BDEPEND| sys_process_htop
+  sys_devel_binutils -->|BDEPEND| sys_process_procps
+  sys_devel_binutils -->|BDEPEND| www_servers_apache
+  sys_devel_binutils -->|BDEPEND| www_servers_lighttpd
+  sys_devel_binutils -->|BDEPEND| www_servers_nginx
+  sys_devel_gcc -->|BDEPEND| app_admin_sudo
+  sys_devel_gcc -->|BDEPEND| app_arch_bzip2
+  sys_devel_gcc -->|BDEPEND| app_arch_gzip
+  sys_devel_gcc -->|BDEPEND| app_arch_tar
+  sys_devel_gcc -->|BDEPEND| app_arch_xz_utils
+  sys_devel_gcc -->|BDEPEND| app_arch_zstd
+  sys_devel_gcc -->|BDEPEND| app_containers_docker
+  sys_devel_gcc -->|BDEPEND| app_crypt_gnupg
+  sys_devel_gcc -->|BDEPEND| app_crypt_mit_krb5
+  sys_devel_gcc -->|BDEPEND| app_crypt_pinentry
+  sys_devel_gcc -->|BDEPEND| app_editors_neovim
+  sys_devel_gcc -->|BDEPEND| app_editors_vim
+  sys_devel_gcc -->|BDEPEND| app_emulation_qemu
+  sys_devel_gcc -->|BDEPEND| app_emulation_virtualbox
+  sys_devel_gcc -->|BDEPEND| app_emulation_wine
+  sys_devel_gcc -->|BDEPEND| app_misc_jq
+  sys_devel_gcc -->|BDEPEND| app_misc_tmux
+  sys_devel_gcc -->|BDEPEND| app_text_aspell
+  sys_devel_gcc -->|BDEPEND| app_text_ghostscript_gpl
+  sys_devel_gcc -->|BDEPEND| app_text_hunspell
+  sys_devel_gcc -->|BDEPEND| app_text_poppler
+  sys_devel_gcc -->|BDEPEND| app_text_texinfo
+  sys_devel_gcc -->|BDEPEND| app_text_xmlto
+  sys_devel_gcc -->|BDEPEND| dev_cpp_abseil_cpp
+  sys_devel_gcc -->|BDEPEND| dev_db_mariadb
+  sys_devel_gcc -->|BDEPEND| dev_db_memcached
+  sys_devel_gcc -->|BDEPEND| dev_db_postgresql
+  sys_devel_gcc -->|BDEPEND| dev_db_redis
+  sys_devel_gcc -->|BDEPEND| dev_db_sqlite
+  sys_devel_gcc -->|BDEPEND| dev_lang_lua
+  sys_devel_gcc -->|BDEPEND| dev_lang_perl
+  sys_devel_gcc -->|BDEPEND| dev_lang_python
+  sys_devel_gcc -->|BDEPEND| dev_lang_ruby
+  sys_devel_gcc -->|BDEPEND| dev_libs_boost
+  sys_devel_gcc -->|BDEPEND| dev_libs_expat
+  sys_devel_gcc -->|BDEPEND| dev_libs_glib
+  sys_devel_gcc -->|BDEPEND| dev_libs_icu
+  sys_devel_gcc -->|BDEPEND| dev_libs_jansson
+  sys_devel_gcc -->|BDEPEND| dev_libs_json_c
+  sys_devel_gcc -->|BDEPEND| dev_libs_libgcrypt
+  sys_devel_gcc -->|BDEPEND| dev_libs_libgit2
+  sys_devel_gcc -->|BDEPEND| dev_libs_libgpg_error
+  sys_devel_gcc -->|BDEPEND| dev_libs_libidn2
+  sys_devel_gcc -->|BDEPEND| dev_libs_libpcre2
+  sys_devel_gcc -->|BDEPEND| dev_libs_libunistring
+  sys_devel_gcc -->|BDEPEND| dev_libs_libuv
+  sys_devel_gcc -->|BDEPEND| dev_libs_libxml2
+  sys_devel_gcc -->|BDEPEND| dev_libs_libxslt
+  sys_devel_gcc -->|BDEPEND| dev_libs_libyaml
+  sys_devel_gcc -->|BDEPEND| dev_libs_nettle
+  sys_devel_gcc -->|BDEPEND| dev_libs_oniguruma
+  sys_devel_gcc -->|BDEPEND| dev_libs_openssl
+  sys_devel_gcc -->|BDEPEND| dev_libs_poco
+  sys_devel_gcc -->|BDEPEND| dev_libs_protobuf
+  sys_devel_gcc -->|BDEPEND| dev_libs_yajl
+  sys_devel_gcc -->|BDEPEND| dev_util_cmake
+  sys_devel_gcc -->|BDEPEND| dev_util_git
+  sys_devel_gcc -->|BDEPEND| dev_util_ninja
+  sys_devel_gcc -->|BDEPEND| dev_util_valgrind
+  sys_devel_gcc -->|BDEPEND| mail_client_neomutt
+  sys_devel_gcc -->|BDEPEND| mail_mta_postfix
+  sys_devel_gcc -->|BDEPEND| media_gfx_imagemagick
+  sys_devel_gcc -->|BDEPEND| media_libs_libjpeg_turbo
+  sys_devel_gcc -->|BDEPEND| media_libs_libpng
+  sys_devel_gcc -->|BDEPEND| media_video_ffmpeg
+  sys_devel_gcc -->|BDEPEND| media_video_vlc
+  sys_devel_gcc -->|BDEPEND| net_analyzer_nmap
+  sys_devel_gcc -->|BDEPEND| net_dns_bind_tools
+  sys_devel_gcc -->|BDEPEND| net_dns_unbound
+  sys_devel_gcc -->|BDEPEND| net_firewall_iptables
+  sys_devel_gcc -->|BDEPEND| net_firewall_nftables
+  sys_devel_gcc -->|BDEPEND| net_libs_gnutls
+  sys_devel_gcc -->|BDEPEND| net_libs_grpc
+  sys_devel_gcc -->|BDEPEND| net_libs_libevent
+  sys_devel_gcc -->|BDEPEND| net_libs_libpsl
+  sys_devel_gcc -->|BDEPEND| net_libs_zeromq
+  sys_devel_gcc -->|BDEPEND| net_misc_curl
+  sys_devel_gcc -->|BDEPEND| net_misc_mosquitto
+  sys_devel_gcc -->|BDEPEND| net_misc_openssh
+  sys_devel_gcc -->|BDEPEND| net_misc_rsync
+  sys_devel_gcc -->|BDEPEND| net_misc_wget
+  sys_devel_gcc -->|BDEPEND| net_p2p_transmission
+  sys_devel_gcc -->|BDEPEND| sys_apps_coreutils
+  sys_devel_gcc -->|BDEPEND| sys_apps_findutils
+  sys_devel_gcc -->|BDEPEND| sys_apps_grep
+  sys_devel_gcc -->|BDEPEND| sys_apps_sed
+  sys_devel_gcc -->|BDEPEND| sys_apps_systemd
+  sys_devel_gcc -->|BDEPEND| sys_apps_util_linux
+  sys_devel_gcc -->|BDEPEND| sys_libs_ncurses
+  sys_devel_gcc -->|BDEPEND| sys_process_htop
+  sys_devel_gcc -->|BDEPEND| sys_process_procps
+  sys_devel_gcc -->|BDEPEND| www_servers_apache
+  sys_devel_gcc -->|BDEPEND| www_servers_lighttpd
+  sys_devel_gcc -->|BDEPEND| www_servers_nginx
+  sys_devel_make -->|BDEPEND| app_admin_sudo
+  sys_devel_make -->|BDEPEND| app_arch_bzip2
+  sys_devel_make -->|BDEPEND| app_arch_gzip
+  sys_devel_make -->|BDEPEND| app_arch_tar
+  sys_devel_make -->|BDEPEND| app_arch_xz_utils
+  sys_devel_make -->|BDEPEND| app_arch_zstd
+  sys_devel_make -->|BDEPEND| app_containers_docker
+  sys_devel_make -->|BDEPEND| app_crypt_gnupg
+  sys_devel_make -->|BDEPEND| app_crypt_mit_krb5
+  sys_devel_make -->|BDEPEND| app_crypt_pinentry
+  sys_devel_make -->|BDEPEND| app_editors_neovim
+  sys_devel_make -->|BDEPEND| app_editors_vim
+  sys_devel_make -->|BDEPEND| app_emulation_qemu
+  sys_devel_make -->|BDEPEND| app_emulation_virtualbox
+  sys_devel_make -->|BDEPEND| app_emulation_wine
+  sys_devel_make -->|BDEPEND| app_misc_jq
+  sys_devel_make -->|BDEPEND| app_misc_tmux
+  sys_devel_make -->|BDEPEND| app_text_aspell
+  sys_devel_make -->|BDEPEND| app_text_ghostscript_gpl
+  sys_devel_make -->|BDEPEND| app_text_hunspell
+  sys_devel_make -->|BDEPEND| app_text_poppler
+  sys_devel_make -->|BDEPEND| app_text_texinfo
+  sys_devel_make -->|BDEPEND| app_text_xmlto
+  sys_devel_make -->|BDEPEND| dev_cpp_abseil_cpp
+  sys_devel_make -->|BDEPEND| dev_db_mariadb
+  sys_devel_make -->|BDEPEND| dev_db_memcached
+  sys_devel_make -->|BDEPEND| dev_db_postgresql
+  sys_devel_make -->|BDEPEND| dev_db_redis
+  sys_devel_make -->|BDEPEND| dev_db_sqlite
+  sys_devel_make -->|BDEPEND| dev_lang_lua
+  sys_devel_make -->|BDEPEND| dev_lang_perl
+  sys_devel_make -->|BDEPEND| dev_lang_python
+  sys_devel_make -->|BDEPEND| dev_lang_ruby
+  sys_devel_make -->|BDEPEND| dev_libs_boost
+  sys_devel_make -->|BDEPEND| dev_libs_expat
+  sys_devel_make -->|BDEPEND| dev_libs_glib
+  sys_devel_make -->|BDEPEND| dev_libs_icu
+  sys_devel_make -->|BDEPEND| dev_libs_jansson
+  sys_devel_make -->|BDEPEND| dev_libs_json_c
+  sys_devel_make -->|BDEPEND| dev_libs_libgcrypt
+  sys_devel_make -->|BDEPEND| dev_libs_libgit2
+  sys_devel_make -->|BDEPEND| dev_libs_libgpg_error
+  sys_devel_make -->|BDEPEND| dev_libs_libidn2
+  sys_devel_make -->|BDEPEND| dev_libs_libpcre2
+  sys_devel_make -->|BDEPEND| dev_libs_libunistring
+  sys_devel_make -->|BDEPEND| dev_libs_libuv
+  sys_devel_make -->|BDEPEND| dev_libs_libxml2
+  sys_devel_make -->|BDEPEND| dev_libs_libxslt
+  sys_devel_make -->|BDEPEND| dev_libs_libyaml
+  sys_devel_make -->|BDEPEND| dev_libs_nettle
+  sys_devel_make -->|BDEPEND| dev_libs_oniguruma
+  sys_devel_make -->|BDEPEND| dev_libs_openssl
+  sys_devel_make -->|BDEPEND| dev_libs_poco
+  sys_devel_make -->|BDEPEND| dev_libs_protobuf
+  sys_devel_make -->|BDEPEND| dev_libs_yajl
+  sys_devel_make -->|BDEPEND| dev_util_cmake
+  sys_devel_make -->|BDEPEND| dev_util_git
+  sys_devel_make -->|BDEPEND| dev_util_ninja
+  sys_devel_make -->|BDEPEND| dev_util_valgrind
+  sys_devel_make -->|BDEPEND| mail_client_neomutt
+  sys_devel_make -->|BDEPEND| mail_mta_postfix
+  sys_devel_make -->|BDEPEND| media_gfx_imagemagick
+  sys_devel_make -->|BDEPEND| media_libs_libjpeg_turbo
+  sys_devel_make -->|BDEPEND| media_libs_libpng
+  sys_devel_make -->|BDEPEND| media_video_ffmpeg
+  sys_devel_make -->|BDEPEND| media_video_vlc
+  sys_devel_make -->|BDEPEND| net_analyzer_nmap
+  sys_devel_make -->|BDEPEND| net_dns_bind_tools
+  sys_devel_make -->|BDEPEND| net_dns_unbound
+  sys_devel_make -->|BDEPEND| net_firewall_iptables
+  sys_devel_make -->|BDEPEND| net_firewall_nftables
+  sys_devel_make -->|BDEPEND| net_libs_gnutls
+  sys_devel_make -->|BDEPEND| net_libs_grpc
+  sys_devel_make -->|BDEPEND| net_libs_libevent
+  sys_devel_make -->|BDEPEND| net_libs_libpsl
+  sys_devel_make -->|BDEPEND| net_libs_zeromq
+  sys_devel_make -->|BDEPEND| net_misc_curl
+  sys_devel_make -->|BDEPEND| net_misc_mosquitto
+  sys_devel_make -->|BDEPEND| net_misc_openssh
+  sys_devel_make -->|BDEPEND| net_misc_rsync
+  sys_devel_make -->|BDEPEND| net_misc_wget
+  sys_devel_make -->|BDEPEND| net_p2p_transmission
+  sys_devel_make -->|BDEPEND| sys_apps_coreutils
+  sys_devel_make -->|BDEPEND| sys_apps_findutils
+  sys_devel_make -->|BDEPEND| sys_apps_grep
+  sys_devel_make -->|BDEPEND| sys_apps_sed
+  sys_devel_make -->|BDEPEND| sys_apps_systemd
+  sys_devel_make -->|BDEPEND| sys_apps_util_linux
+  sys_devel_make -->|BDEPEND| sys_libs_ncurses
+  sys_devel_make -->|BDEPEND| sys_process_htop
+  sys_devel_make -->|BDEPEND| sys_process_procps
+  sys_devel_make -->|BDEPEND| www_servers_apache
+  sys_devel_make -->|BDEPEND| www_servers_lighttpd
+  sys_devel_make -->|BDEPEND| www_servers_nginx
+  sys_kernel_linux_headers -->|BDEPEND| sys_libs_glibc
+  sys_libs_glibc -->|RDEPEND| app_admin_sudo
+  sys_libs_glibc -->|RDEPEND| app_arch_bzip2
+  sys_libs_glibc -->|RDEPEND| app_arch_gzip
+  sys_libs_glibc -->|RDEPEND| app_arch_tar
+  sys_libs_glibc -->|RDEPEND| app_arch_xz_utils
+  sys_libs_glibc -->|RDEPEND| app_arch_zstd
+  sys_libs_glibc -->|RDEPEND| app_containers_docker
+  sys_libs_glibc -->|RDEPEND| app_crypt_gnupg
+  sys_libs_glibc -->|RDEPEND| app_crypt_mit_krb5
+  sys_libs_glibc -->|RDEPEND| app_crypt_pinentry
+  sys_libs_glibc -->|RDEPEND| app_editors_neovim
+  sys_libs_glibc -->|RDEPEND| app_editors_vim
+  sys_libs_glibc -->|RDEPEND| app_emulation_qemu
+  sys_libs_glibc -->|RDEPEND| app_emulation_virtualbox
+  sys_libs_glibc -->|RDEPEND| app_emulation_wine
+  sys_libs_glibc -->|RDEPEND| app_misc_jq
+  sys_libs_glibc -->|RDEPEND| app_misc_tmux
+  sys_libs_glibc -->|RDEPEND| app_text_aspell
+  sys_libs_glibc -->|RDEPEND| app_text_ghostscript_gpl
+  sys_libs_glibc -->|RDEPEND| app_text_hunspell
+  sys_libs_glibc -->|RDEPEND| app_text_poppler
+  sys_libs_glibc -->|RDEPEND| app_text_texinfo
+  sys_libs_glibc -->|RDEPEND| app_text_xmlto
+  sys_libs_glibc -->|RDEPEND| dev_cpp_abseil_cpp
+  sys_libs_glibc -->|RDEPEND| dev_db_mariadb
+  sys_libs_glibc -->|RDEPEND| dev_db_memcached
+  sys_libs_glibc -->|RDEPEND| dev_db_postgresql
+  sys_libs_glibc -->|RDEPEND| dev_db_redis
+  sys_libs_glibc -->|RDEPEND| dev_db_sqlite
+  sys_libs_glibc -->|RDEPEND| dev_lang_lua
+  sys_libs_glibc -->|RDEPEND| dev_lang_perl
+  sys_libs_glibc -->|RDEPEND| dev_lang_python
+  sys_libs_glibc -->|RDEPEND| dev_lang_ruby
+  sys_libs_glibc -->|RDEPEND| dev_libs_boost
+  sys_libs_glibc -->|RDEPEND| dev_libs_expat
+  sys_libs_glibc -->|RDEPEND| dev_libs_glib
+  sys_libs_glibc -->|RDEPEND| dev_libs_icu
+  sys_libs_glibc -->|RDEPEND| dev_libs_jansson
+  sys_libs_glibc -->|RDEPEND| dev_libs_json_c
+  sys_libs_glibc -->|RDEPEND| dev_libs_libgcrypt
+  sys_libs_glibc -->|RDEPEND| dev_libs_libgit2
+  sys_libs_glibc -->|RDEPEND| dev_libs_libgpg_error
+  sys_libs_glibc -->|RDEPEND| dev_libs_libidn2
+  sys_libs_glibc -->|RDEPEND| dev_libs_libpcre2
+  sys_libs_glibc -->|RDEPEND| dev_libs_libunistring
+  sys_libs_glibc -->|RDEPEND| dev_libs_libuv
+  sys_libs_glibc -->|RDEPEND| dev_libs_libxml2
+  sys_libs_glibc -->|RDEPEND| dev_libs_libxslt
+  sys_libs_glibc -->|RDEPEND| dev_libs_libyaml
+  sys_libs_glibc -->|RDEPEND| dev_libs_nettle
+  sys_libs_glibc -->|RDEPEND| dev_libs_oniguruma
+  sys_libs_glibc -->|RDEPEND| dev_libs_openssl
+  sys_libs_glibc -->|RDEPEND| dev_libs_poco
+  sys_libs_glibc -->|RDEPEND| dev_libs_protobuf
+  sys_libs_glibc -->|RDEPEND| dev_libs_yajl
+  sys_libs_glibc -->|RDEPEND| dev_util_cmake
+  sys_libs_glibc -->|RDEPEND| dev_util_git
+  sys_libs_glibc -->|RDEPEND| dev_util_ninja
+  sys_libs_glibc -->|RDEPEND| dev_util_valgrind
+  sys_libs_glibc -->|RDEPEND| mail_client_neomutt
+  sys_libs_glibc -->|RDEPEND| mail_mta_postfix
+  sys_libs_glibc -->|RDEPEND| media_gfx_imagemagick
+  sys_libs_glibc -->|RDEPEND| media_libs_libjpeg_turbo
+  sys_libs_glibc -->|RDEPEND| media_libs_libpng
+  sys_libs_glibc -->|RDEPEND| media_video_ffmpeg
+  sys_libs_glibc -->|RDEPEND| media_video_vlc
+  sys_libs_glibc -->|RDEPEND| net_analyzer_nmap
+  sys_libs_glibc -->|RDEPEND| net_dns_bind_tools
+  sys_libs_glibc -->|RDEPEND| net_dns_unbound
+  sys_libs_glibc -->|RDEPEND| net_firewall_iptables
+  sys_libs_glibc -->|RDEPEND| net_firewall_nftables
+  sys_libs_glibc -->|RDEPEND| net_libs_gnutls
+  sys_libs_glibc -->|RDEPEND| net_libs_grpc
+  sys_libs_glibc -->|RDEPEND| net_libs_libevent
+  sys_libs_glibc -->|RDEPEND| net_libs_libpsl
+  sys_libs_glibc -->|RDEPEND| net_libs_zeromq
+  sys_libs_glibc -->|RDEPEND| net_misc_curl
+  sys_libs_glibc -->|RDEPEND| net_misc_mosquitto
+  sys_libs_glibc -->|RDEPEND| net_misc_openssh
+  sys_libs_glibc -->|RDEPEND| net_misc_rsync
+  sys_libs_glibc -->|RDEPEND| net_misc_wget
+  sys_libs_glibc -->|RDEPEND| net_p2p_transmission
+  sys_libs_glibc -->|RDEPEND| sys_apps_coreutils
+  sys_libs_glibc -->|RDEPEND| sys_apps_findutils
+  sys_libs_glibc -->|RDEPEND| sys_apps_grep
+  sys_libs_glibc -->|RDEPEND| sys_apps_sed
+  sys_libs_glibc -->|RDEPEND| sys_apps_systemd
+  sys_libs_glibc -->|RDEPEND| sys_apps_util_linux
+  sys_libs_glibc -->|RDEPEND| sys_devel_gcc
+  sys_libs_glibc -->|RDEPEND| sys_libs_ncurses
+  sys_libs_glibc -->|RDEPEND| sys_process_htop
+  sys_libs_glibc -->|RDEPEND| sys_process_procps
+  sys_libs_glibc -->|RDEPEND| www_servers_apache
+  sys_libs_glibc -->|RDEPEND| www_servers_lighttpd
+  sys_libs_glibc -->|RDEPEND| www_servers_nginx

@@ -2,7 +2,7 @@
 //!
 //! Validates that:
 //! 1. replacement_profile.json exists and is valid JSON.
-//! 2. All ABI modules with call-throughs are in the interpose allowlist.
+//! 2. All ABI modules with libc/host-wrapper call-throughs are in the interpose allowlist.
 //! 3. No pthread call-through exists outside pthread_abi.rs.
 //! 4. The call-through census in the profile matches reality.
 //! 5. The replacement guard script exists and is executable.
@@ -54,7 +54,10 @@ fn extract_libc_call(fragment: &str) -> Option<&str> {
     }
 }
 
-/// Scan an ABI source file for libc:: function calls (not syscall, not types/constants).
+/// Scan an ABI source file for call-throughs:
+/// - libc::<function>(...)
+/// - host_pthread_<wrapper>(...)
+/// excluding raw syscall and `_sym` wrapper internals.
 fn scan_call_throughs(content: &str) -> Vec<(usize, String)> {
     let mut results = Vec::new();
 
@@ -74,8 +77,44 @@ fn scan_call_throughs(content: &str) -> Vec<(usize, String)> {
             }
             search_from = abs_pos + 6;
         }
+
+        if trimmed.contains("fn host_pthread_") {
+            continue;
+        }
+        let mut host_search_from = 0;
+        while let Some(pos) = line[host_search_from..].find("host_pthread_") {
+            let abs_pos = host_search_from + pos;
+            let after = &line[abs_pos + "host_pthread_".len()..];
+            let bytes = after.as_bytes();
+            let mut end = 0;
+            for &b in bytes {
+                if b.is_ascii_lowercase() || b == b'_' || (end > 0 && b.is_ascii_digit()) {
+                    end += 1;
+                } else {
+                    break;
+                }
+            }
+            if end > 0 {
+                let wrapped = &after[..end];
+                let rest = after[end..].trim_start();
+                if rest.starts_with('(') && !wrapped.ends_with("_sym") {
+                    results.push((lineno + 1, format!("pthread_{wrapped}")));
+                }
+            }
+            host_search_from = abs_pos + "host_pthread_".len();
+        }
     }
     results
+}
+
+fn forbidden_mutex_symbols() -> HashSet<&'static str> {
+    HashSet::from([
+        "pthread_mutex_init",
+        "pthread_mutex_destroy",
+        "pthread_mutex_lock",
+        "pthread_mutex_trylock",
+        "pthread_mutex_unlock",
+    ])
 }
 
 #[test]
@@ -163,6 +202,33 @@ fn interpose_allowlist_covers_all_call_through_modules() {
 }
 
 #[test]
+fn no_pthread_mutex_call_throughs_in_replacement_paths() {
+    let abi_src = workspace_root().join("crates/frankenlibc-abi/src");
+    let forbidden = forbidden_mutex_symbols();
+    let mut violations = Vec::new();
+
+    for entry in std::fs::read_dir(&abi_src).unwrap() {
+        let entry = entry.unwrap();
+        let fname = entry.file_name().to_string_lossy().to_string();
+        if !fname.ends_with("_abi.rs") {
+            continue;
+        }
+        let content = std::fs::read_to_string(entry.path()).unwrap();
+        for (lineno, func) in scan_call_throughs(&content) {
+            if forbidden.contains(func.as_str()) {
+                violations.push(format!("{fname}:{lineno} {func}"));
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "forbidden pthread_mutex call-throughs detected: {:?}",
+        violations
+    );
+}
+
+#[test]
 fn no_pthread_calls_outside_pthread_abi() {
     let abi_src = workspace_root().join("crates/frankenlibc-abi/src");
     let mut violations = Vec::new();
@@ -186,6 +252,35 @@ fn no_pthread_calls_outside_pthread_abi() {
                     violations.push(format!("{}:{} libc::{}", fname, lineno + 1, func));
                 }
                 pos = abs + 14;
+            }
+            if line.contains("fn host_pthread_") {
+                continue;
+            }
+            let mut host_pos = 0;
+            while let Some(idx) = line[host_pos..].find("host_pthread_") {
+                let abs = host_pos + idx;
+                let after = &line[abs + "host_pthread_".len()..];
+                let mut end = 0;
+                for &b in after.as_bytes() {
+                    if b.is_ascii_lowercase() || b == b'_' || (end > 0 && b.is_ascii_digit()) {
+                        end += 1;
+                    } else {
+                        break;
+                    }
+                }
+                if end > 0 {
+                    let wrapped = &after[..end];
+                    let rest = after[end..].trim_start();
+                    if rest.starts_with('(') && !wrapped.ends_with("_sym") {
+                        violations.push(format!(
+                            "{}:{} host_pthread_{}",
+                            fname,
+                            lineno + 1,
+                            wrapped
+                        ));
+                    }
+                }
+                host_pos = abs + "host_pthread_".len();
             }
         }
     }
@@ -259,6 +354,27 @@ fn replacement_profile_has_both_modes() {
         Some(false),
         "Replacement mode should forbid call-through"
     );
+
+    let forbidden = profile["replacement_forbidden"]["mutex_symbols"]
+        .as_array()
+        .expect("replacement_forbidden.mutex_symbols must be an array");
+    let expected = forbidden_mutex_symbols();
+    let actual: HashSet<String> = forbidden
+        .iter()
+        .filter_map(|v| v.as_str().map(str::to_string))
+        .collect();
+
+    assert_eq!(
+        actual.len(),
+        expected.len(),
+        "replacement_forbidden.mutex_symbols should list all tracked mutex symbols"
+    );
+    for symbol in expected {
+        assert!(
+            actual.contains(symbol),
+            "replacement_forbidden.mutex_symbols missing {symbol}"
+        );
+    }
 }
 
 #[test]

@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "bead": "bd-25pf",
+  "description": "Production-set change policy gate for runtime_math. Every module in the production manifest must have explicit admission/retirement evidence across governance, linkage, value-proof, and retirement policy artifacts.",
+  "sources": {
+    "production_manifest": "tests/runtime_math/production_kernel_manifest.v1.json",
+    "governance": "tests/conformance/math_governance.json",
+    "linkage": "tests/runtime_math/runtime_math_linkage.v1.json",
+    "value_proof": "tests/conformance/math_value_proof.json",
+    "retirement_policy": "tests/conformance/math_retirement_policy.json"
+  },
+  "policy": {
+    "admission_requirements": [
+      "classification entry required for every manifest module",
+      "linkage entry required for every manifest module",
+      "production tiers (production_core/production_monitor) require value-proof assessment",
+      "research tier modules remaining in manifest require active retirement waiver and migration-wave entry"
+    ],
+    "change_gate": {
+      "manifest_sha256": "cbac2689484772ff153bff077cb78afd23b6e311c4f7fe02814b9fc4ba8ae15a",
+      "module_count": 69,
+      "retention_threshold": 2.0,
+      "update_rule": "Any production manifest set change must update this digest and pass this gate with complete admission/retirement evidence."
+    }
+  },
+  "summary": {
+    "total_production_modules": 69,
+    "production_tier_modules": 25,
+    "research_tier_modules": 44,
+    "waived_research_modules": 44,
+    "missing_classification": 0,
+    "missing_linkage": 0,
+    "missing_value_proof": 0,
+    "missing_retirement_waiver": 0,
+    "missing_retirement_migration_entry": 0
+  }
+}

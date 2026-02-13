@@ -1,0 +1,22 @@
+ARG GENTOO_STAGE3_IMAGE=gentoo/stage3:latest
+FROM ${GENTOO_STAGE3_IMAGE}
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# Baseline Portage config for deterministic validation builds.
+COPY configs/gentoo/make.conf /etc/portage/make.conf
+
+RUN set -eux; \
+    mkdir -p /etc/portage/env /etc/portage/package.env /var/cache/distfiles /var/cache/binpkgs; \
+    emerge-webrsync; \
+    command -v gcc; \
+    command -v ld; \
+    command -v make; \
+    command -v emerge; \
+    FEATURES="-test -pid-sandbox -network-sandbox -ipc-sandbox -mount-sandbox -sandbox -usersandbox" emerge --quiet-build --oneshot app-portage/gentoolkit
+
+# Pre-create FrankenLibC mount points and evidence dirs.
+RUN set -eux; \
+    mkdir -p /opt/frankenlibc/lib /opt/frankenlibc/scripts/gentoo /var/log/frankenlibc/portage
+
+VOLUME ["/opt/frankenlibc", "/var/cache/binpkgs", "/var/cache/distfiles", "/var/log/frankenlibc"]

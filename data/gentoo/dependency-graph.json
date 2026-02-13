@@ -1,0 +1,3845 @@
+{
+  "schema_version": "v1",
+  "bead": "bd-2icq.6",
+  "generated_at": "2026-02-13T03:11:55Z",
+  "sources": {
+    "top100_packages": "configs/gentoo/top100-packages.txt",
+    "package_tiers": "configs/gentoo/package-tiers.json"
+  },
+  "metrics": {
+    "package_count": 100,
+    "edge_count": 441,
+    "wave_count": 6,
+    "estimated_total_build_time_minutes": 651,
+    "estimated_total_build_time_hours": 10.85,
+    "scc_count": 100,
+    "largest_scc_size": 1
+  },
+  "nodes": [
+    {
+      "atom": "sys-devel/binutils",
+      "tier": "tier1-core-infrastructure",
+      "in_degree": 0,
+      "out_degree": 95,
+      "transitive_deps": 0,
+      "depended_by_transitive": 95,
+      "critical_path_score": 0.6717,
+      "build_wave": 0,
+      "estimated_build_time_minutes": 4
+    },
+    {
+      "atom": "sys-devel/make",
+      "tier": "tier1-core-infrastructure",
+      "in_degree": 0,
+      "out_degree": 94,
+      "transitive_deps": 0,
+      "depended_by_transitive": 94,
+      "critical_path_score": 0.6646,
+      "build_wave": 0,
+      "estimated_build_time_minutes": 4
+    },
+    {
+      "atom": "sys-devel/patch",
+      "tier": "tier1-core-infrastructure",
+      "in_degree": 0,
+      "out_degree": 0,
+      "transitive_deps": 0,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.0,
+      "build_wave": 0,
+      "estimated_build_time_minutes": 4
+    },
+    {
+      "atom": "sys-kernel/linux-headers",
+      "tier": "tier1-core-infrastructure",
+      "in_degree": 0,
+      "out_degree": 1,
+      "transitive_deps": 0,
+      "depended_by_transitive": 96,
+      "critical_path_score": 0.6788,
+      "build_wave": 0,
+      "estimated_build_time_minutes": 4
+    },
+    {
+      "atom": "sys-libs/glibc",
+      "tier": "tier1-core-infrastructure",
+      "in_degree": 1,
+      "out_degree": 95,
+      "transitive_deps": 1,
+      "depended_by_transitive": 95,
+      "critical_path_score": 0.7092,
+      "build_wave": 1,
+      "estimated_build_time_minutes": 12
+    },
+    {
+      "atom": "sys-devel/gcc",
+      "tier": "tier1-core-infrastructure",
+      "in_degree": 2,
+      "out_degree": 94,
+      "transitive_deps": 3,
+      "depended_by_transitive": 94,
+      "critical_path_score": 0.7396,
+      "build_wave": 2,
+      "estimated_build_time_minutes": 18
+    },
+    {
+      "atom": "app-admin/sudo",
+      "tier": "tier2-security-critical",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 6
+    },
+    {
+      "atom": "app-arch/bzip2",
+      "tier": "tier1-core-infrastructure",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 4
+    },
+    {
+      "atom": "app-arch/gzip",
+      "tier": "tier1-core-infrastructure",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 4
+    },
+    {
+      "atom": "app-arch/tar",
+      "tier": "tier1-core-infrastructure",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 4
+    },
+    {
+      "atom": "app-arch/xz-utils",
+      "tier": "tier1-core-infrastructure",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 4
+    },
+    {
+      "atom": "app-arch/zstd",
+      "tier": "tier1-core-infrastructure",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 4
+    },
+    {
+      "atom": "app-crypt/gnupg",
+      "tier": "tier2-security-critical",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 6
+    },
+    {
+      "atom": "app-crypt/mit-krb5",
+      "tier": "tier2-security-critical",
+      "in_degree": 4,
+      "out_degree": 2,
+      "transitive_deps": 5,
+      "depended_by_transitive": 2,
+      "critical_path_score": 0.1641,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 6
+    },
+    {
+      "atom": "app-crypt/pinentry",
+      "tier": "tier2-security-critical",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 6
+    },
+    {
+      "atom": "app-editors/vim",
+      "tier": "tier2-security-critical",
+      "in_degree": 4,
+      "out_degree": 1,
+      "transitive_deps": 5,
+      "depended_by_transitive": 1,
+      "critical_path_score": 0.1571,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 6
+    },
+    {
+      "atom": "app-emulation/virtualbox",
+      "tier": "tier5-threading-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 7
+    },
+    {
+      "atom": "app-misc/jq",
+      "tier": "tier3-allocation-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 8
+    },
+    {
+      "atom": "app-misc/tmux",
+      "tier": "tier5-threading-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 7
+    },
+    {
+      "atom": "app-text/aspell",
+      "tier": "tier4-string-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 5
+    },
+    {
+      "atom": "app-text/hunspell",
+      "tier": "tier4-string-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 5
+    },
+    {
+      "atom": "app-text/texinfo",
+      "tier": "tier4-string-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 5
+    },
+    {
+      "atom": "dev-cpp/abseil-cpp",
+      "tier": "tier5-threading-heavy",
+      "in_degree": 4,
+      "out_degree": 2,
+      "transitive_deps": 5,
+      "depended_by_transitive": 3,
+      "critical_path_score": 0.1712,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 7
+    },
+    {
+      "atom": "dev-db/memcached",
+      "tier": "tier3-allocation-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 8
+    },
+    {
+      "atom": "dev-db/sqlite",
+      "tier": "tier3-allocation-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 8
+    },
+    {
+      "atom": "dev-lang/lua",
+      "tier": "tier3-allocation-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 8
+    },
+    {
+      "atom": "dev-lang/perl",
+      "tier": "tier3-allocation-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 8
+    },
+    {
+      "atom": "dev-lang/python",
+      "tier": "tier3-allocation-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 8
+    },
+    {
+      "atom": "dev-lang/ruby",
+      "tier": "tier3-allocation-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 8
+    },
+    {
+      "atom": "dev-libs/boost",
+      "tier": "tier3-allocation-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 8
+    },
+    {
+      "atom": "dev-libs/expat",
+      "tier": "tier4-string-heavy",
+      "in_degree": 4,
+      "out_degree": 1,
+      "transitive_deps": 5,
+      "depended_by_transitive": 1,
+      "critical_path_score": 0.1571,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 5
+    },
+    {
+      "atom": "dev-libs/glib",
+      "tier": "tier4-string-heavy",
+      "in_degree": 4,
+      "out_degree": 1,
+      "transitive_deps": 5,
+      "depended_by_transitive": 1,
+      "critical_path_score": 0.1571,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 5
+    },
+    {
+      "atom": "dev-libs/icu",
+      "tier": "tier4-string-heavy",
+      "in_degree": 4,
+      "out_degree": 3,
+      "transitive_deps": 5,
+      "depended_by_transitive": 3,
+      "critical_path_score": 0.1712,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 5
+    },
+    {
+      "atom": "dev-libs/jansson",
+      "tier": "tier4-string-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 5
+    },
+    {
+      "atom": "dev-libs/json-c",
+      "tier": "tier4-string-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 5
+    },
+    {
+      "atom": "dev-libs/libgcrypt",
+      "tier": "tier2-security-critical",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 6
+    },
+    {
+      "atom": "dev-libs/libgit2",
+      "tier": "tier5-threading-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 7
+    },
+    {
+      "atom": "dev-libs/libgpg-error",
+      "tier": "tier2-security-critical",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 6
+    },
+    {
+      "atom": "dev-libs/libidn2",
+      "tier": "tier4-string-heavy",
+      "in_degree": 4,
+      "out_degree": 3,
+      "transitive_deps": 5,
+      "depended_by_transitive": 6,
+      "critical_path_score": 0.1924,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 5
+    },
+    {
+      "atom": "dev-libs/libpcre2",
+      "tier": "tier1-core-infrastructure",
+      "in_degree": 4,
+      "out_degree": 5,
+      "transitive_deps": 5,
+      "depended_by_transitive": 5,
+      "critical_path_score": 0.1854,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 4
+    },
+    {
+      "atom": "dev-libs/libunistring",
+      "tier": "tier4-string-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 5
+    },
+    {
+      "atom": "dev-libs/libuv",
+      "tier": "tier3-allocation-heavy",
+      "in_degree": 4,
+      "out_degree": 1,
+      "transitive_deps": 5,
+      "depended_by_transitive": 1,
+      "critical_path_score": 0.1571,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 8
+    },
+    {
+      "atom": "dev-libs/libxml2",
+      "tier": "tier4-string-heavy",
+      "in_degree": 4,
+      "out_degree": 6,
+      "transitive_deps": 5,
+      "depended_by_transitive": 6,
+      "critical_path_score": 0.1924,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 5
+    },
+    {
+      "atom": "dev-libs/libxslt",
+      "tier": "tier4-string-heavy",
+      "in_degree": 4,
+      "out_degree": 1,
+      "transitive_deps": 5,
+      "depended_by_transitive": 1,
+      "critical_path_score": 0.1571,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 5
+    },
+    {
+      "atom": "dev-libs/libyaml",
+      "tier": "tier4-string-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 5
+    },
+    {
+      "atom": "dev-libs/nettle",
+      "tier": "tier2-security-critical",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 6
+    },
+    {
+      "atom": "dev-libs/oniguruma",
+      "tier": "tier4-string-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 5
+    },
+    {
+      "atom": "dev-libs/openssl",
+      "tier": "tier1-core-infrastructure",
+      "in_degree": 4,
+      "out_degree": 18,
+      "transitive_deps": 5,
+      "depended_by_transitive": 20,
+      "critical_path_score": 0.2914,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 4
+    },
+    {
+      "atom": "dev-libs/poco",
+      "tier": "tier5-threading-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 7
+    },
+    {
+      "atom": "dev-libs/yajl",
+      "tier": "tier4-string-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 5
+    },
+    {
+      "atom": "dev-util/cmake",
+      "tier": "tier5-threading-heavy",
+      "in_degree": 4,
+      "out_degree": 3,
+      "transitive_deps": 5,
+      "depended_by_transitive": 3,
+      "critical_path_score": 0.1712,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 7
+    },
+    {
+      "atom": "dev-util/ninja",
+      "tier": "tier5-threading-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 7
+    },
+    {
+      "atom": "dev-util/valgrind",
+      "tier": "tier5-threading-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 7
+    },
+    {
+      "atom": "mail-client/neomutt",
+      "tier": "tier2-security-critical",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 6
+    },
+    {
+      "atom": "media-gfx/imagemagick",
+      "tier": "tier3-allocation-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 8
+    },
+    {
+      "atom": "media-libs/libjpeg-turbo",
+      "tier": "tier5-threading-heavy",
+      "in_degree": 4,
+      "out_degree": 2,
+      "transitive_deps": 5,
+      "depended_by_transitive": 3,
+      "critical_path_score": 0.1712,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 7
+    },
+    {
+      "atom": "media-libs/libpng",
+      "tier": "tier5-threading-heavy",
+      "in_degree": 4,
+      "out_degree": 3,
+      "transitive_deps": 5,
+      "depended_by_transitive": 3,
+      "critical_path_score": 0.1712,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 7
+    },
+    {
+      "atom": "net-analyzer/nmap",
+      "tier": "tier2-security-critical",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 6
+    },
+    {
+      "atom": "net-dns/bind-tools",
+      "tier": "tier2-security-critical",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 6
+    },
+    {
+      "atom": "net-dns/unbound",
+      "tier": "tier2-security-critical",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 6
+    },
+    {
+      "atom": "net-firewall/iptables",
+      "tier": "tier2-security-critical",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 6
+    },
+    {
+      "atom": "net-firewall/nftables",
+      "tier": "tier2-security-critical",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 6
+    },
+    {
+      "atom": "net-libs/gnutls",
+      "tier": "tier2-security-critical",
+      "in_degree": 4,
+      "out_degree": 2,
+      "transitive_deps": 5,
+      "depended_by_transitive": 5,
+      "critical_path_score": 0.1854,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 6
+    },
+    {
+      "atom": "net-libs/libevent",
+      "tier": "tier3-allocation-heavy",
+      "in_degree": 4,
+      "out_degree": 1,
+      "transitive_deps": 5,
+      "depended_by_transitive": 1,
+      "critical_path_score": 0.1571,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 8
+    },
+    {
+      "atom": "net-libs/libpsl",
+      "tier": "tier4-string-heavy",
+      "in_degree": 4,
+      "out_degree": 1,
+      "transitive_deps": 5,
+      "depended_by_transitive": 4,
+      "critical_path_score": 0.1783,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 5
+    },
+    {
+      "atom": "net-libs/zeromq",
+      "tier": "tier5-threading-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 7
+    },
+    {
+      "atom": "net-misc/rsync",
+      "tier": "tier2-security-critical",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 6
+    },
+    {
+      "atom": "sys-apps/coreutils",
+      "tier": "tier1-core-infrastructure",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 4
+    },
+    {
+      "atom": "sys-apps/findutils",
+      "tier": "tier1-core-infrastructure",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 4
+    },
+    {
+      "atom": "sys-apps/grep",
+      "tier": "tier1-core-infrastructure",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 4
+    },
+    {
+      "atom": "sys-apps/sed",
+      "tier": "tier1-core-infrastructure",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 4
+    },
+    {
+      "atom": "sys-apps/util-linux",
+      "tier": "tier1-core-infrastructure",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 4
+    },
+    {
+      "atom": "sys-libs/ncurses",
+      "tier": "tier1-core-infrastructure",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 4
+    },
+    {
+      "atom": "sys-process/htop",
+      "tier": "tier5-threading-heavy",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 7
+    },
+    {
+      "atom": "sys-process/procps",
+      "tier": "tier1-core-infrastructure",
+      "in_degree": 4,
+      "out_degree": 0,
+      "transitive_deps": 5,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.15,
+      "build_wave": 3,
+      "estimated_build_time_minutes": 4
+    },
+    {
+      "atom": "app-editors/neovim",
+      "tier": "tier3-allocation-heavy",
+      "in_degree": 6,
+      "out_degree": 0,
+      "transitive_deps": 7,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.225,
+      "build_wave": 4,
+      "estimated_build_time_minutes": 8
+    },
+    {
+      "atom": "app-emulation/qemu",
+      "tier": "tier3-allocation-heavy",
+      "in_degree": 7,
+      "out_degree": 0,
+      "transitive_deps": 8,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.2625,
+      "build_wave": 4,
+      "estimated_build_time_minutes": 14
+    },
+    {
+      "atom": "app-emulation/wine",
+      "tier": "tier5-threading-heavy",
+      "in_degree": 8,
+      "out_degree": 0,
+      "transitive_deps": 9,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.3,
+      "build_wave": 4,
+      "estimated_build_time_minutes": 16
+    },
+    {
+      "atom": "app-text/ghostscript-gpl",
+      "tier": "tier4-string-heavy",
+      "in_degree": 6,
+      "out_degree": 0,
+      "transitive_deps": 7,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.225,
+      "build_wave": 4,
+      "estimated_build_time_minutes": 5
+    },
+    {
+      "atom": "app-text/poppler",
+      "tier": "tier4-string-heavy",
+      "in_degree": 6,
+      "out_degree": 0,
+      "transitive_deps": 7,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.225,
+      "build_wave": 4,
+      "estimated_build_time_minutes": 5
+    },
+    {
+      "atom": "app-text/xmlto",
+      "tier": "tier4-string-heavy",
+      "in_degree": 6,
+      "out_degree": 0,
+      "transitive_deps": 7,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.225,
+      "build_wave": 4,
+      "estimated_build_time_minutes": 5
+    },
+    {
+      "atom": "dev-db/mariadb",
+      "tier": "tier3-allocation-heavy",
+      "in_degree": 5,
+      "out_degree": 0,
+      "transitive_deps": 6,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.1875,
+      "build_wave": 4,
+      "estimated_build_time_minutes": 12
+    },
+    {
+      "atom": "dev-db/postgresql",
+      "tier": "tier3-allocation-heavy",
+      "in_degree": 7,
+      "out_degree": 0,
+      "transitive_deps": 8,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.2625,
+      "build_wave": 4,
+      "estimated_build_time_minutes": 11
+    },
+    {
+      "atom": "dev-db/redis",
+      "tier": "tier3-allocation-heavy",
+      "in_degree": 5,
+      "out_degree": 0,
+      "transitive_deps": 6,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.1875,
+      "build_wave": 4,
+      "estimated_build_time_minutes": 8
+    },
+    {
+      "atom": "dev-libs/protobuf",
+      "tier": "tier5-threading-heavy",
+      "in_degree": 6,
+      "out_degree": 2,
+      "transitive_deps": 7,
+      "depended_by_transitive": 2,
+      "critical_path_score": 0.2391,
+      "build_wave": 4,
+      "estimated_build_time_minutes": 7
+    },
+    {
+      "atom": "mail-mta/postfix",
+      "tier": "tier2-security-critical",
+      "in_degree": 6,
+      "out_degree": 0,
+      "transitive_deps": 7,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.225,
+      "build_wave": 4,
+      "estimated_build_time_minutes": 6
+    },
+    {
+      "atom": "media-video/ffmpeg",
+      "tier": "tier5-threading-heavy",
+      "in_degree": 7,
+      "out_degree": 1,
+      "transitive_deps": 8,
+      "depended_by_transitive": 1,
+      "critical_path_score": 0.2696,
+      "build_wave": 4,
+      "estimated_build_time_minutes": 10
+    },
+    {
+      "atom": "net-misc/curl",
+      "tier": "tier2-security-critical",
+      "in_degree": 8,
+      "out_degree": 3,
+      "transitive_deps": 9,
+      "depended_by_transitive": 3,
+      "critical_path_score": 0.3212,
+      "build_wave": 4,
+      "estimated_build_time_minutes": 6
+    },
+    {
+      "atom": "net-misc/mosquitto",
+      "tier": "tier5-threading-heavy",
+      "in_degree": 6,
+      "out_degree": 0,
+      "transitive_deps": 7,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.225,
+      "build_wave": 4,
+      "estimated_build_time_minutes": 7
+    },
+    {
+      "atom": "net-misc/openssh",
+      "tier": "tier2-security-critical",
+      "in_degree": 6,
+      "out_degree": 0,
+      "transitive_deps": 7,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.225,
+      "build_wave": 4,
+      "estimated_build_time_minutes": 6
+    },
+    {
+      "atom": "net-misc/wget",
+      "tier": "tier2-security-critical",
+      "in_degree": 7,
+      "out_degree": 0,
+      "transitive_deps": 8,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.2625,
+      "build_wave": 4,
+      "estimated_build_time_minutes": 6
+    },
+    {
+      "atom": "sys-apps/systemd",
+      "tier": "tier3-allocation-heavy",
+      "in_degree": 6,
+      "out_degree": 0,
+      "transitive_deps": 7,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.225,
+      "build_wave": 4,
+      "estimated_build_time_minutes": 8
+    },
+    {
+      "atom": "www-servers/apache",
+      "tier": "tier3-allocation-heavy",
+      "in_degree": 6,
+      "out_degree": 0,
+      "transitive_deps": 7,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.225,
+      "build_wave": 4,
+      "estimated_build_time_minutes": 8
+    },
+    {
+      "atom": "www-servers/lighttpd",
+      "tier": "tier5-threading-heavy",
+      "in_degree": 6,
+      "out_degree": 0,
+      "transitive_deps": 7,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.225,
+      "build_wave": 4,
+      "estimated_build_time_minutes": 7
+    },
+    {
+      "atom": "www-servers/nginx",
+      "tier": "tier3-allocation-heavy",
+      "in_degree": 7,
+      "out_degree": 0,
+      "transitive_deps": 8,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.2625,
+      "build_wave": 4,
+      "estimated_build_time_minutes": 8
+    },
+    {
+      "atom": "app-containers/docker",
+      "tier": "tier3-allocation-heavy",
+      "in_degree": 7,
+      "out_degree": 0,
+      "transitive_deps": 13,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.2625,
+      "build_wave": 5,
+      "estimated_build_time_minutes": 10
+    },
+    {
+      "atom": "dev-util/git",
+      "tier": "tier4-string-heavy",
+      "in_degree": 8,
+      "out_degree": 0,
+      "transitive_deps": 12,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.3,
+      "build_wave": 5,
+      "estimated_build_time_minutes": 5
+    },
+    {
+      "atom": "media-video/vlc",
+      "tier": "tier5-threading-heavy",
+      "in_degree": 7,
+      "out_degree": 0,
+      "transitive_deps": 9,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.2625,
+      "build_wave": 5,
+      "estimated_build_time_minutes": 9
+    },
+    {
+      "atom": "net-libs/grpc",
+      "tier": "tier5-threading-heavy",
+      "in_degree": 8,
+      "out_degree": 0,
+      "transitive_deps": 9,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.3,
+      "build_wave": 5,
+      "estimated_build_time_minutes": 7
+    },
+    {
+      "atom": "net-p2p/transmission",
+      "tier": "tier5-threading-heavy",
+      "in_degree": 5,
+      "out_degree": 0,
+      "transitive_deps": 10,
+      "depended_by_transitive": 0,
+      "critical_path_score": 0.1875,
+      "build_wave": 5,
+      "estimated_build_time_minutes": 7
+    }
+  ],
+  "edges": [
+    {
+      "from": "app-crypt/mit-krb5",
+      "to": "mail-mta/postfix",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "app-crypt/mit-krb5",
+      "to": "net-misc/openssh",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "app-editors/vim",
+      "to": "app-editors/neovim",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-cpp/abseil-cpp",
+      "to": "dev-libs/protobuf",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-cpp/abseil-cpp",
+      "to": "net-libs/grpc",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/expat",
+      "to": "dev-util/git",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/glib",
+      "to": "app-emulation/qemu",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/icu",
+      "to": "app-text/ghostscript-gpl",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/icu",
+      "to": "app-text/poppler",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/icu",
+      "to": "dev-db/postgresql",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/libidn2",
+      "to": "app-text/ghostscript-gpl",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/libidn2",
+      "to": "net-misc/curl",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/libidn2",
+      "to": "net-misc/wget",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/libpcre2",
+      "to": "dev-util/git",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/libpcre2",
+      "to": "sys-apps/systemd",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/libpcre2",
+      "to": "www-servers/apache",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/libpcre2",
+      "to": "www-servers/lighttpd",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/libpcre2",
+      "to": "www-servers/nginx",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/libuv",
+      "to": "app-editors/neovim",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/libxml2",
+      "to": "app-emulation/qemu",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/libxml2",
+      "to": "app-emulation/wine",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/libxml2",
+      "to": "app-text/poppler",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/libxml2",
+      "to": "app-text/xmlto",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/libxml2",
+      "to": "dev-db/postgresql",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/libxml2",
+      "to": "www-servers/nginx",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/libxslt",
+      "to": "app-text/xmlto",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/openssl",
+      "to": "app-emulation/qemu",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/openssl",
+      "to": "app-emulation/wine",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/openssl",
+      "to": "dev-db/mariadb",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/openssl",
+      "to": "dev-db/postgresql",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/openssl",
+      "to": "dev-db/redis",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/openssl",
+      "to": "dev-util/git",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/openssl",
+      "to": "mail-mta/postfix",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/openssl",
+      "to": "media-video/ffmpeg",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/openssl",
+      "to": "media-video/vlc",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/openssl",
+      "to": "net-libs/grpc",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/openssl",
+      "to": "net-misc/curl",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/openssl",
+      "to": "net-misc/mosquitto",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/openssl",
+      "to": "net-misc/openssh",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/openssl",
+      "to": "net-misc/wget",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/openssl",
+      "to": "sys-apps/systemd",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/openssl",
+      "to": "www-servers/apache",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/openssl",
+      "to": "www-servers/lighttpd",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/openssl",
+      "to": "www-servers/nginx",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/protobuf",
+      "to": "app-containers/docker",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-libs/protobuf",
+      "to": "net-libs/grpc",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "dev-util/cmake",
+      "to": "app-containers/docker",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "dev-util/cmake",
+      "to": "dev-libs/protobuf",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "dev-util/cmake",
+      "to": "net-libs/grpc",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "media-libs/libjpeg-turbo",
+      "to": "app-emulation/wine",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "media-libs/libjpeg-turbo",
+      "to": "media-video/ffmpeg",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "media-libs/libpng",
+      "to": "app-emulation/wine",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "media-libs/libpng",
+      "to": "media-video/ffmpeg",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "media-libs/libpng",
+      "to": "media-video/vlc",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "media-video/ffmpeg",
+      "to": "media-video/vlc",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "net-libs/gnutls",
+      "to": "net-misc/curl",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "net-libs/gnutls",
+      "to": "net-misc/wget",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "net-libs/libevent",
+      "to": "net-misc/mosquitto",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "net-libs/libpsl",
+      "to": "net-misc/curl",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "net-misc/curl",
+      "to": "app-containers/docker",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "net-misc/curl",
+      "to": "dev-util/git",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "net-misc/curl",
+      "to": "net-p2p/transmission",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "app-admin/sudo",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "app-arch/bzip2",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "app-arch/gzip",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "app-arch/tar",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "app-arch/xz-utils",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "app-arch/zstd",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "app-containers/docker",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "app-crypt/gnupg",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "app-crypt/mit-krb5",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "app-crypt/pinentry",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "app-editors/neovim",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "app-editors/vim",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "app-emulation/qemu",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "app-emulation/virtualbox",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "app-emulation/wine",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "app-misc/jq",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "app-misc/tmux",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "app-text/aspell",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "app-text/ghostscript-gpl",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "app-text/hunspell",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "app-text/poppler",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "app-text/texinfo",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "app-text/xmlto",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-cpp/abseil-cpp",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-db/mariadb",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-db/memcached",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-db/postgresql",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-db/redis",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-db/sqlite",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-lang/lua",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-lang/perl",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-lang/python",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-lang/ruby",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-libs/boost",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-libs/expat",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-libs/glib",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-libs/icu",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-libs/jansson",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-libs/json-c",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-libs/libgcrypt",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-libs/libgit2",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-libs/libgpg-error",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-libs/libidn2",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-libs/libpcre2",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-libs/libunistring",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-libs/libuv",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-libs/libxml2",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-libs/libxslt",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-libs/libyaml",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-libs/nettle",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-libs/oniguruma",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-libs/openssl",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-libs/poco",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-libs/protobuf",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-libs/yajl",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-util/cmake",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-util/git",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-util/ninja",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "dev-util/valgrind",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "mail-client/neomutt",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "mail-mta/postfix",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "media-gfx/imagemagick",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "media-libs/libjpeg-turbo",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "media-libs/libpng",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "media-video/ffmpeg",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "media-video/vlc",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "net-analyzer/nmap",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "net-dns/bind-tools",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "net-dns/unbound",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "net-firewall/iptables",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "net-firewall/nftables",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "net-libs/gnutls",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "net-libs/grpc",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "net-libs/libevent",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "net-libs/libpsl",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "net-libs/zeromq",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "net-misc/curl",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "net-misc/mosquitto",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "net-misc/openssh",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "net-misc/rsync",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "net-misc/wget",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "net-p2p/transmission",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "sys-apps/coreutils",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "sys-apps/findutils",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "sys-apps/grep",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "sys-apps/sed",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "sys-apps/systemd",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "sys-apps/util-linux",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "sys-devel/gcc",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "sys-libs/ncurses",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "sys-process/htop",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "sys-process/procps",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "www-servers/apache",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "www-servers/lighttpd",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/binutils",
+      "to": "www-servers/nginx",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "app-admin/sudo",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "app-arch/bzip2",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "app-arch/gzip",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "app-arch/tar",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "app-arch/xz-utils",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "app-arch/zstd",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "app-containers/docker",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "app-crypt/gnupg",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "app-crypt/mit-krb5",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "app-crypt/pinentry",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "app-editors/neovim",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "app-editors/vim",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "app-emulation/qemu",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "app-emulation/virtualbox",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "app-emulation/wine",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "app-misc/jq",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "app-misc/tmux",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "app-text/aspell",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "app-text/ghostscript-gpl",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "app-text/hunspell",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "app-text/poppler",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "app-text/texinfo",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "app-text/xmlto",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-cpp/abseil-cpp",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-db/mariadb",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-db/memcached",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-db/postgresql",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-db/redis",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-db/sqlite",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-lang/lua",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-lang/perl",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-lang/python",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-lang/ruby",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-libs/boost",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-libs/expat",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-libs/glib",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-libs/icu",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-libs/jansson",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-libs/json-c",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-libs/libgcrypt",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-libs/libgit2",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-libs/libgpg-error",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-libs/libidn2",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-libs/libpcre2",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-libs/libunistring",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-libs/libuv",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-libs/libxml2",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-libs/libxslt",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-libs/libyaml",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-libs/nettle",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-libs/oniguruma",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-libs/openssl",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-libs/poco",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-libs/protobuf",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-libs/yajl",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-util/cmake",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-util/git",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-util/ninja",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "dev-util/valgrind",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "mail-client/neomutt",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "mail-mta/postfix",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "media-gfx/imagemagick",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "media-libs/libjpeg-turbo",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "media-libs/libpng",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "media-video/ffmpeg",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "media-video/vlc",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "net-analyzer/nmap",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "net-dns/bind-tools",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "net-dns/unbound",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "net-firewall/iptables",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "net-firewall/nftables",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "net-libs/gnutls",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "net-libs/grpc",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "net-libs/libevent",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "net-libs/libpsl",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "net-libs/zeromq",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "net-misc/curl",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "net-misc/mosquitto",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "net-misc/openssh",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "net-misc/rsync",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "net-misc/wget",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "net-p2p/transmission",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "sys-apps/coreutils",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "sys-apps/findutils",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "sys-apps/grep",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "sys-apps/sed",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "sys-apps/systemd",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "sys-apps/util-linux",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "sys-libs/ncurses",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "sys-process/htop",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "sys-process/procps",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "www-servers/apache",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "www-servers/lighttpd",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/gcc",
+      "to": "www-servers/nginx",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "app-admin/sudo",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "app-arch/bzip2",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "app-arch/gzip",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "app-arch/tar",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "app-arch/xz-utils",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "app-arch/zstd",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "app-containers/docker",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "app-crypt/gnupg",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "app-crypt/mit-krb5",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "app-crypt/pinentry",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "app-editors/neovim",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "app-editors/vim",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "app-emulation/qemu",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "app-emulation/virtualbox",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "app-emulation/wine",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "app-misc/jq",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "app-misc/tmux",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "app-text/aspell",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "app-text/ghostscript-gpl",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "app-text/hunspell",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "app-text/poppler",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "app-text/texinfo",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "app-text/xmlto",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-cpp/abseil-cpp",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-db/mariadb",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-db/memcached",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-db/postgresql",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-db/redis",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-db/sqlite",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-lang/lua",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-lang/perl",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-lang/python",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-lang/ruby",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-libs/boost",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-libs/expat",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-libs/glib",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-libs/icu",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-libs/jansson",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-libs/json-c",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-libs/libgcrypt",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-libs/libgit2",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-libs/libgpg-error",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-libs/libidn2",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-libs/libpcre2",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-libs/libunistring",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-libs/libuv",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-libs/libxml2",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-libs/libxslt",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-libs/libyaml",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-libs/nettle",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-libs/oniguruma",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-libs/openssl",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-libs/poco",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-libs/protobuf",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-libs/yajl",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-util/cmake",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-util/git",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-util/ninja",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "dev-util/valgrind",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "mail-client/neomutt",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "mail-mta/postfix",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "media-gfx/imagemagick",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "media-libs/libjpeg-turbo",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "media-libs/libpng",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "media-video/ffmpeg",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "media-video/vlc",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "net-analyzer/nmap",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "net-dns/bind-tools",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "net-dns/unbound",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "net-firewall/iptables",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "net-firewall/nftables",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "net-libs/gnutls",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "net-libs/grpc",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "net-libs/libevent",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "net-libs/libpsl",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "net-libs/zeromq",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "net-misc/curl",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "net-misc/mosquitto",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "net-misc/openssh",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "net-misc/rsync",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "net-misc/wget",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "net-p2p/transmission",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "sys-apps/coreutils",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "sys-apps/findutils",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "sys-apps/grep",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "sys-apps/sed",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "sys-apps/systemd",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "sys-apps/util-linux",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "sys-libs/ncurses",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "sys-process/htop",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "sys-process/procps",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "www-servers/apache",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "www-servers/lighttpd",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-devel/make",
+      "to": "www-servers/nginx",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-kernel/linux-headers",
+      "to": "sys-libs/glibc",
+      "kind": "BDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "app-admin/sudo",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "app-arch/bzip2",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "app-arch/gzip",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "app-arch/tar",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "app-arch/xz-utils",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "app-arch/zstd",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "app-containers/docker",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "app-crypt/gnupg",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "app-crypt/mit-krb5",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "app-crypt/pinentry",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "app-editors/neovim",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "app-editors/vim",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "app-emulation/qemu",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "app-emulation/virtualbox",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "app-emulation/wine",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "app-misc/jq",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "app-misc/tmux",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "app-text/aspell",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "app-text/ghostscript-gpl",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "app-text/hunspell",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "app-text/poppler",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "app-text/texinfo",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "app-text/xmlto",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-cpp/abseil-cpp",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-db/mariadb",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-db/memcached",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-db/postgresql",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-db/redis",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-db/sqlite",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-lang/lua",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-lang/perl",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-lang/python",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-lang/ruby",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-libs/boost",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-libs/expat",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-libs/glib",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-libs/icu",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-libs/jansson",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-libs/json-c",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-libs/libgcrypt",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-libs/libgit2",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-libs/libgpg-error",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-libs/libidn2",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-libs/libpcre2",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-libs/libunistring",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-libs/libuv",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-libs/libxml2",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-libs/libxslt",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-libs/libyaml",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-libs/nettle",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-libs/oniguruma",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-libs/openssl",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-libs/poco",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-libs/protobuf",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-libs/yajl",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-util/cmake",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-util/git",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-util/ninja",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "dev-util/valgrind",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "mail-client/neomutt",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "mail-mta/postfix",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "media-gfx/imagemagick",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "media-libs/libjpeg-turbo",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "media-libs/libpng",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "media-video/ffmpeg",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "media-video/vlc",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "net-analyzer/nmap",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "net-dns/bind-tools",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "net-dns/unbound",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "net-firewall/iptables",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "net-firewall/nftables",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "net-libs/gnutls",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "net-libs/grpc",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "net-libs/libevent",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "net-libs/libpsl",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "net-libs/zeromq",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "net-misc/curl",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "net-misc/mosquitto",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "net-misc/openssh",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "net-misc/rsync",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "net-misc/wget",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "net-p2p/transmission",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "sys-apps/coreutils",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "sys-apps/findutils",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "sys-apps/grep",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "sys-apps/sed",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "sys-apps/systemd",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "sys-apps/util-linux",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "sys-devel/gcc",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "sys-libs/ncurses",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "sys-process/htop",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "sys-process/procps",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "www-servers/apache",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "www-servers/lighttpd",
+      "kind": "RDEPEND"
+    },
+    {
+      "from": "sys-libs/glibc",
+      "to": "www-servers/nginx",
+      "kind": "RDEPEND"
+    }
+  ],
+  "strongly_connected_components": [
+    [
+      "sys-kernel/linux-headers"
+    ],
+    [
+      "sys-devel/patch"
+    ],
+    [
+      "sys-devel/make"
+    ],
+    [
+      "sys-devel/binutils"
+    ],
+    [
+      "sys-libs/glibc"
+    ],
+    [
+      "sys-devel/gcc"
+    ],
+    [
+      "sys-process/procps"
+    ],
+    [
+      "sys-process/htop"
+    ],
+    [
+      "sys-libs/ncurses"
+    ],
+    [
+      "sys-apps/util-linux"
+    ],
+    [
+      "sys-apps/sed"
+    ],
+    [
+      "sys-apps/grep"
+    ],
+    [
+      "sys-apps/findutils"
+    ],
+    [
+      "sys-apps/coreutils"
+    ],
+    [
+      "net-misc/rsync"
+    ],
+    [
+      "net-libs/zeromq"
+    ],
+    [
+      "net-libs/libpsl"
+    ],
+    [
+      "net-libs/libevent"
+    ],
+    [
+      "net-libs/gnutls"
+    ],
+    [
+      "net-firewall/nftables"
+    ],
+    [
+      "net-firewall/iptables"
+    ],
+    [
+      "net-dns/unbound"
+    ],
+    [
+      "net-dns/bind-tools"
+    ],
+    [
+      "net-analyzer/nmap"
+    ],
+    [
+      "media-libs/libpng"
+    ],
+    [
+      "media-libs/libjpeg-turbo"
+    ],
+    [
+      "media-gfx/imagemagick"
+    ],
+    [
+      "mail-client/neomutt"
+    ],
+    [
+      "dev-util/valgrind"
+    ],
+    [
+      "dev-util/ninja"
+    ],
+    [
+      "dev-util/cmake"
+    ],
+    [
+      "dev-libs/yajl"
+    ],
+    [
+      "dev-libs/poco"
+    ],
+    [
+      "dev-libs/openssl"
+    ],
+    [
+      "net-misc/mosquitto"
+    ],
+    [
+      "media-video/ffmpeg"
+    ],
+    [
+      "media-video/vlc"
+    ],
+    [
+      "dev-libs/oniguruma"
+    ],
+    [
+      "dev-libs/nettle"
+    ],
+    [
+      "dev-libs/libyaml"
+    ],
+    [
+      "dev-libs/libxslt"
+    ],
+    [
+      "dev-libs/libxml2"
+    ],
+    [
+      "dev-libs/libuv"
+    ],
+    [
+      "dev-libs/libunistring"
+    ],
+    [
+      "dev-libs/libpcre2"
+    ],
+    [
+      "www-servers/nginx"
+    ],
+    [
+      "www-servers/lighttpd"
+    ],
+    [
+      "www-servers/apache"
+    ],
+    [
+      "sys-apps/systemd"
+    ],
+    [
+      "dev-libs/libidn2"
+    ],
+    [
+      "net-misc/wget"
+    ],
+    [
+      "net-misc/curl"
+    ],
+    [
+      "net-p2p/transmission"
+    ],
+    [
+      "dev-libs/libgpg-error"
+    ],
+    [
+      "dev-libs/libgit2"
+    ],
+    [
+      "dev-libs/libgcrypt"
+    ],
+    [
+      "dev-libs/json-c"
+    ],
+    [
+      "dev-libs/jansson"
+    ],
+    [
+      "dev-libs/icu"
+    ],
+    [
+      "dev-libs/glib"
+    ],
+    [
+      "dev-libs/expat"
+    ],
+    [
+      "dev-util/git"
+    ],
+    [
+      "dev-libs/boost"
+    ],
+    [
+      "dev-lang/ruby"
+    ],
+    [
+      "dev-lang/python"
+    ],
+    [
+      "dev-lang/perl"
+    ],
+    [
+      "dev-lang/lua"
+    ],
+    [
+      "dev-db/sqlite"
+    ],
+    [
+      "dev-db/redis"
+    ],
+    [
+      "dev-db/postgresql"
+    ],
+    [
+      "dev-db/memcached"
+    ],
+    [
+      "dev-db/mariadb"
+    ],
+    [
+      "dev-cpp/abseil-cpp"
+    ],
+    [
+      "dev-libs/protobuf"
+    ],
+    [
+      "net-libs/grpc"
+    ],
+    [
+      "app-text/xmlto"
+    ],
+    [
+      "app-text/texinfo"
+    ],
+    [
+      "app-text/poppler"
+    ],
+    [
+      "app-text/hunspell"
+    ],
+    [
+      "app-text/ghostscript-gpl"
+    ],
+    [
+      "app-text/aspell"
+    ],
+    [
+      "app-misc/tmux"
+    ],
+    [
+      "app-misc/jq"
+    ],
+    [
+      "app-emulation/wine"
+    ],
+    [
+      "app-emulation/virtualbox"
+    ],
+    [
+      "app-emulation/qemu"
+    ],
+    [
+      "app-editors/vim"
+    ],
+    [
+      "app-editors/neovim"
+    ],
+    [
+      "app-crypt/pinentry"
+    ],
+    [
+      "app-crypt/mit-krb5"
+    ],
+    [
+      "net-misc/openssh"
+    ],
+    [
+      "mail-mta/postfix"
+    ],
+    [
+      "app-crypt/gnupg"
+    ],
+    [
+      "app-containers/docker"
+    ],
+    [
+      "app-arch/zstd"
+    ],
+    [
+      "app-arch/xz-utils"
+    ],
+    [
+      "app-arch/tar"
+    ],
+    [
+      "app-arch/gzip"
+    ],
+    [
+      "app-arch/bzip2"
+    ],
+    [
+      "app-admin/sudo"
+    ]
+  ],
+  "build_order": [
+    "sys-devel/binutils",
+    "sys-devel/make",
+    "sys-devel/patch",
+    "sys-kernel/linux-headers",
+    "sys-libs/glibc",
+    "sys-devel/gcc",
+    "app-admin/sudo",
+    "app-arch/bzip2",
+    "app-arch/gzip",
+    "app-arch/tar",
+    "app-arch/xz-utils",
+    "app-arch/zstd",
+    "app-crypt/gnupg",
+    "app-crypt/mit-krb5",
+    "app-crypt/pinentry",
+    "app-editors/vim",
+    "app-emulation/virtualbox",
+    "app-misc/jq",
+    "app-misc/tmux",
+    "app-text/aspell",
+    "app-text/hunspell",
+    "app-text/texinfo",
+    "dev-cpp/abseil-cpp",
+    "dev-db/memcached",
+    "dev-db/sqlite",
+    "dev-lang/lua",
+    "dev-lang/perl",
+    "dev-lang/python",
+    "dev-lang/ruby",
+    "dev-libs/boost",
+    "dev-libs/expat",
+    "dev-libs/glib",
+    "dev-libs/icu",
+    "dev-libs/jansson",
+    "dev-libs/json-c",
+    "dev-libs/libgcrypt",
+    "dev-libs/libgit2",
+    "dev-libs/libgpg-error",
+    "dev-libs/libidn2",
+    "dev-libs/libpcre2",
+    "dev-libs/libunistring",
+    "dev-libs/libuv",
+    "dev-libs/libxml2",
+    "dev-libs/libxslt",
+    "dev-libs/libyaml",
+    "dev-libs/nettle",
+    "dev-libs/oniguruma",
+    "dev-libs/openssl",
+    "dev-libs/poco",
+    "dev-libs/yajl",
+    "dev-util/cmake",
+    "dev-util/ninja",
+    "dev-util/valgrind",
+    "mail-client/neomutt",
+    "media-gfx/imagemagick",
+    "media-libs/libjpeg-turbo",
+    "media-libs/libpng",
+    "net-analyzer/nmap",
+    "net-dns/bind-tools",
+    "net-dns/unbound",
+    "net-firewall/iptables",
+    "net-firewall/nftables",
+    "net-libs/gnutls",
+    "net-libs/libevent",
+    "net-libs/libpsl",
+    "net-libs/zeromq",
+    "net-misc/rsync",
+    "sys-apps/coreutils",
+    "sys-apps/findutils",
+    "sys-apps/grep",
+    "sys-apps/sed",
+    "sys-apps/util-linux",
+    "sys-libs/ncurses",
+    "sys-process/htop",
+    "sys-process/procps",
+    "app-editors/neovim",
+    "app-emulation/qemu",
+    "app-emulation/wine",
+    "app-text/ghostscript-gpl",
+    "app-text/poppler",
+    "app-text/xmlto",
+    "dev-db/mariadb",
+    "dev-db/postgresql",
+    "dev-db/redis",
+    "dev-libs/protobuf",
+    "mail-mta/postfix",
+    "media-video/ffmpeg",
+    "net-misc/curl",
+    "net-misc/mosquitto",
+    "net-misc/openssh",
+    "net-misc/wget",
+    "sys-apps/systemd",
+    "www-servers/apache",
+    "www-servers/lighttpd",
+    "www-servers/nginx",
+    "app-containers/docker",
+    "dev-util/git",
+    "media-video/vlc",
+    "net-libs/grpc",
+    "net-p2p/transmission"
+  ],
+  "build_waves": [
+    [
+      "sys-devel/binutils",
+      "sys-devel/make",
+      "sys-devel/patch",
+      "sys-kernel/linux-headers"
+    ],
+    [
+      "sys-libs/glibc"
+    ],
+    [
+      "sys-devel/gcc"
+    ],
+    [
+      "app-admin/sudo",
+      "app-arch/bzip2",
+      "app-arch/gzip",
+      "app-arch/tar",
+      "app-arch/xz-utils",
+      "app-arch/zstd",
+      "app-crypt/gnupg",
+      "app-crypt/mit-krb5",
+      "app-crypt/pinentry",
+      "app-editors/vim",
+      "app-emulation/virtualbox",
+      "app-misc/jq",
+      "app-misc/tmux",
+      "app-text/aspell",
+      "app-text/hunspell",
+      "app-text/texinfo",
+      "dev-cpp/abseil-cpp",
+      "dev-db/memcached",
+      "dev-db/sqlite",
+      "dev-lang/lua",
+      "dev-lang/perl",
+      "dev-lang/python",
+      "dev-lang/ruby",
+      "dev-libs/boost",
+      "dev-libs/expat",
+      "dev-libs/glib",
+      "dev-libs/icu",
+      "dev-libs/jansson",
+      "dev-libs/json-c",
+      "dev-libs/libgcrypt",
+      "dev-libs/libgit2",
+      "dev-libs/libgpg-error",
+      "dev-libs/libidn2",
+      "dev-libs/libpcre2",
+      "dev-libs/libunistring",
+      "dev-libs/libuv",
+      "dev-libs/libxml2",
+      "dev-libs/libxslt",
+      "dev-libs/libyaml",
+      "dev-libs/nettle",
+      "dev-libs/oniguruma",
+      "dev-libs/openssl",
+      "dev-libs/poco",
+      "dev-libs/yajl",
+      "dev-util/cmake",
+      "dev-util/ninja",
+      "dev-util/valgrind",
+      "mail-client/neomutt",
+      "media-gfx/imagemagick",
+      "media-libs/libjpeg-turbo",
+      "media-libs/libpng",
+      "net-analyzer/nmap",
+      "net-dns/bind-tools",
+      "net-dns/unbound",
+      "net-firewall/iptables",
+      "net-firewall/nftables",
+      "net-libs/gnutls",
+      "net-libs/libevent",
+      "net-libs/libpsl",
+      "net-libs/zeromq",
+      "net-misc/rsync",
+      "sys-apps/coreutils",
+      "sys-apps/findutils",
+      "sys-apps/grep",
+      "sys-apps/sed",
+      "sys-apps/util-linux",
+      "sys-libs/ncurses",
+      "sys-process/htop",
+      "sys-process/procps"
+    ],
+    [
+      "app-editors/neovim",
+      "app-emulation/qemu",
+      "app-emulation/wine",
+      "app-text/ghostscript-gpl",
+      "app-text/poppler",
+      "app-text/xmlto",
+      "dev-db/mariadb",
+      "dev-db/postgresql",
+      "dev-db/redis",
+      "dev-libs/protobuf",
+      "mail-mta/postfix",
+      "media-video/ffmpeg",
+      "net-misc/curl",
+      "net-misc/mosquitto",
+      "net-misc/openssh",
+      "net-misc/wget",
+      "sys-apps/systemd",
+      "www-servers/apache",
+      "www-servers/lighttpd",
+      "www-servers/nginx"
+    ],
+    [
+      "app-containers/docker",
+      "dev-util/git",
+      "media-video/vlc",
+      "net-libs/grpc",
+      "net-p2p/transmission"
+    ]
+  ]
+}

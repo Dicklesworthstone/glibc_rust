@@ -1,0 +1,122 @@
+#!/usr/bin/env python3
+"""FrankenLibC JSONL parser for runtime and hook events."""
+
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Dict, Iterator, List, Optional
+
+
+@dataclass
+class ParseError(Exception):
+    line_num: int
+    message: str
+    line: str = ""
+
+    def __str__(self) -> str:
+        return f"line {self.line_num}: {self.message}"
+
+
+@dataclass
+class LogEntry:
+    timestamp: str
+    pid: int
+    call: str
+    latency_ns: int
+    tid: Optional[int] = None
+    args: Dict[str, Any] = field(default_factory=dict)
+    result: Optional[Dict[str, Any]] = None
+    action: Optional[str] = None
+    action_details: Optional[Dict[str, Any]] = None
+    stack_hash: Optional[str] = None
+    source_line: int = 0
+    raw: Dict[str, Any] = field(default_factory=dict)
+
+
+class LogParser:
+    def __init__(self, strict: bool = True) -> None:
+        self.strict = strict
+        self.errors: List[ParseError] = []
+
+    def parse_file(self, path: Path) -> Iterator[LogEntry]:
+        with path.open("r", encoding="utf-8", errors="replace") as fh:
+            for line_num, line in enumerate(fh, 1):
+                entry = self.parse_line(line, line_num)
+                if entry is not None:
+                    yield entry
+
+    def parse_line(self, line: str, line_num: int = 1) -> Optional[LogEntry]:
+        stripped = line.strip()
+        if not stripped:
+            return None
+        try:
+            payload = json.loads(stripped)
+        except json.JSONDecodeError as exc:
+            return self._handle_error(ParseError(line_num, f"invalid JSON: {exc}", stripped))
+
+        try:
+            entry = self._normalize(payload, line_num)
+        except ParseError as exc:
+            return self._handle_error(exc)
+        return entry
+
+    def _normalize(self, payload: Dict[str, Any], line_num: int) -> LogEntry:
+        timestamp = payload.get("ts") or payload.get("timestamp")
+        pid = payload.get("pid")
+        call = payload.get("call")
+        latency_ns = payload.get("latency_ns")
+
+        if call is None and payload.get("event") is not None:
+            call = "__hook_event__"
+        if latency_ns is None:
+            latency_ns = 0
+
+        missing = []
+        if timestamp is None:
+            missing.append("ts|timestamp")
+        if pid is None:
+            missing.append("pid")
+        if call is None:
+            missing.append("call|event")
+        if latency_ns is None:
+            missing.append("latency_ns")
+        if missing:
+            raise ParseError(line_num, f"missing required field(s): {', '.join(missing)}", json.dumps(payload))
+
+        action = payload.get("action")
+        if action is None and payload.get("event") in {"enable", "disable", "skip"}:
+            action = f"hook_{payload['event']}"
+
+        args = payload.get("args") if isinstance(payload.get("args"), dict) else {}
+        result = payload.get("result") if isinstance(payload.get("result"), dict) else None
+        action_details = payload.get("action_details") if isinstance(payload.get("action_details"), dict) else None
+
+        try:
+            pid_int = int(pid)
+            tid_int = int(payload["tid"]) if payload.get("tid") is not None else None
+            latency_int = int(latency_ns)
+        except Exception as exc:  # noqa: BLE001
+            raise ParseError(line_num, f"type conversion error: {exc}", json.dumps(payload)) from exc
+
+        return LogEntry(
+            timestamp=str(timestamp),
+            pid=pid_int,
+            call=str(call),
+            latency_ns=latency_int,
+            tid=tid_int,
+            args=args,
+            result=result,
+            action=str(action) if action is not None else None,
+            action_details=action_details,
+            stack_hash=str(payload.get("stack_hash")) if payload.get("stack_hash") is not None else None,
+            source_line=line_num,
+            raw=payload,
+        )
+
+    def _handle_error(self, error: ParseError) -> Optional[LogEntry]:
+        self.errors.append(error)
+        if self.strict:
+            raise error
+        return None

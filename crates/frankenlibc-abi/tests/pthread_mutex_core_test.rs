@@ -1,7 +1,7 @@
 #![cfg(target_os = "linux")]
 
-use std::sync::{Arc, Barrier, Mutex};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Barrier, Mutex};
 use std::time::Duration;
 
 use frankenlibc_abi::pthread_abi::{

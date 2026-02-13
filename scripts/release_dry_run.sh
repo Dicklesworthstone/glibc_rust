@@ -24,6 +24,18 @@ from datetime import datetime, timezone
 from typing import Any
 
 
+def default_tmp_root() -> str:
+    # Prefer explicit overrides, then /data/tmp if present in this workspace,
+    # then fall back to /tmp for portability.
+    for key in ("FRANKENLIBC_TMPDIR", "TMPDIR"):
+        val = os.environ.get(key, "").strip()
+        if val and os.path.isdir(val) and os.access(val, os.W_OK):
+            return val
+    if os.path.isdir("/data/tmp") and os.access("/data/tmp", os.W_OK):
+        return "/data/tmp"
+    return "/tmp"
+
+
 def load_json(path: pathlib.Path) -> Any:
     with path.open(encoding="utf-8") as f:
         return json.load(f)
@@ -154,6 +166,7 @@ def write_jsonl(path: pathlib.Path, rows: list[dict[str, Any]]) -> None:
 
 
 def main() -> int:
+    tmp_root = default_tmp_root()
     parser = argparse.ArgumentParser(description="Deterministic release dry-run gate runner")
     parser.add_argument(
         "--dag",
@@ -168,17 +181,17 @@ def main() -> int:
     )
     parser.add_argument(
         "--log-path",
-        default="/tmp/frankenlibc_release_gate_dry_run.log.jsonl",
+        default=os.path.join(tmp_root, "frankenlibc_release_gate_dry_run.log.jsonl"),
         help="JSONL log output path",
     )
     parser.add_argument(
         "--state-path",
-        default="/tmp/frankenlibc_release_resume_state.json",
+        default=os.path.join(tmp_root, "frankenlibc_release_resume_state.json"),
         help="Resume state output path",
     )
     parser.add_argument(
         "--dossier-path",
-        default="/tmp/frankenlibc_release_dry_run_dossier.json",
+        default=os.path.join(tmp_root, "frankenlibc_release_dry_run_dossier.json"),
         help="Dossier summary output path",
     )
     parser.add_argument(

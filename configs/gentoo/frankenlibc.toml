@@ -1,0 +1,19 @@
+[mode]
+default = "hardened"
+allow_process_override = true
+
+[logging]
+root = "/var/log/frankenlibc/portage"
+hook_log = "/var/log/frankenlibc/portage/hooks.jsonl"
+emit_jsonl = true
+max_file_bytes = 16777216
+
+[portage]
+phase_allowlist = ["src_test", "pkg_test"]
+package_blocklist = ["sys-libs/glibc", "sys-apps/shadow"]
+skip_static = true
+allow_binary_merge = false
+
+[metrics]
+emit_latency_ns = true
+emit_action_counts = true

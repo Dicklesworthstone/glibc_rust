@@ -1,0 +1,12 @@
+.git
+.beads
+.tmp
+.agent_mail
+target
+target-rusticcastle
+storage.sqlite3
+storage.sqlite3-shm
+storage.sqlite3-wal
+perf.data.old
+legacy_glibc_code
+

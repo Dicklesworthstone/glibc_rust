@@ -80,6 +80,39 @@ fn clear_managed_mutex(mutex: *mut libc::pthread_mutex_t) {
     }
 }
 
+fn promote_unmanaged_default_mutex(mutex: *mut libc::pthread_mutex_t) -> bool {
+    if mutex.is_null() || is_managed_mutex(mutex) {
+        return !mutex.is_null();
+    }
+
+    let Some(word_ptr) = mutex_word_ptr(mutex) else {
+        return false;
+    };
+    if mutex_magic_ptr(mutex).is_none() {
+        return false;
+    }
+
+    // SAFETY: `word_ptr` is alignment-checked and non-null.
+    let word = unsafe { &*word_ptr };
+    if word.load(Ordering::Acquire) != 0 {
+        return false;
+    }
+
+    let total = std::mem::size_of::<libc::pthread_mutex_t>();
+    let tail_offset = std::mem::size_of::<AtomicI32>() + std::mem::size_of::<AtomicU32>();
+    if tail_offset < total {
+        let base = mutex.cast::<u8>();
+        for idx in tail_offset..total {
+            // SAFETY: bounded in-object read over `pthread_mutex_t` storage.
+            if unsafe { *base.add(idx) } != 0 {
+                return false;
+            }
+        }
+    }
+
+    mark_managed_mutex(mutex)
+}
+
 unsafe extern "C" {
     #[link_name = "pthread_self@@GLIBC_2.2.5"]
     fn host_pthread_self_sym() -> libc::pthread_t;
@@ -96,20 +129,6 @@ unsafe extern "C" {
     fn host_pthread_join_sym(thread: libc::pthread_t, retval: *mut *mut c_void) -> c_int;
     #[link_name = "pthread_detach@GLIBC_2.2.5"]
     fn host_pthread_detach_sym(thread: libc::pthread_t) -> c_int;
-
-    #[link_name = "__pthread_mutex_init@GLIBC_2.2.5"]
-    fn host_pthread_mutex_init_sym(
-        mutex: *mut libc::pthread_mutex_t,
-        attr: *const libc::pthread_mutexattr_t,
-    ) -> c_int;
-    #[link_name = "__pthread_mutex_destroy@GLIBC_2.2.5"]
-    fn host_pthread_mutex_destroy_sym(mutex: *mut libc::pthread_mutex_t) -> c_int;
-    #[link_name = "__pthread_mutex_lock@GLIBC_2.2.5"]
-    fn host_pthread_mutex_lock_sym(mutex: *mut libc::pthread_mutex_t) -> c_int;
-    #[link_name = "__pthread_mutex_trylock@GLIBC_2.2.5"]
-    fn host_pthread_mutex_trylock_sym(mutex: *mut libc::pthread_mutex_t) -> c_int;
-    #[link_name = "__pthread_mutex_unlock@GLIBC_2.2.5"]
-    fn host_pthread_mutex_unlock_sym(mutex: *mut libc::pthread_mutex_t) -> c_int;
 }
 
 unsafe fn host_pthread_self() -> libc::pthread_t {
@@ -140,34 +159,6 @@ unsafe fn host_pthread_join(thread: libc::pthread_t, retval: *mut *mut c_void) -
 unsafe fn host_pthread_detach(thread: libc::pthread_t) -> c_int {
     // SAFETY: direct call to glibc symbol with matching signature.
     unsafe { host_pthread_detach_sym(thread) }
-}
-
-unsafe fn host_pthread_mutex_init(
-    mutex: *mut libc::pthread_mutex_t,
-    attr: *const libc::pthread_mutexattr_t,
-) -> c_int {
-    // SAFETY: direct call to glibc internal symbol with matching signature.
-    unsafe { host_pthread_mutex_init_sym(mutex, attr) }
-}
-
-unsafe fn host_pthread_mutex_destroy(mutex: *mut libc::pthread_mutex_t) -> c_int {
-    // SAFETY: direct call to glibc internal symbol with matching signature.
-    unsafe { host_pthread_mutex_destroy_sym(mutex) }
-}
-
-unsafe fn host_pthread_mutex_lock(mutex: *mut libc::pthread_mutex_t) -> c_int {
-    // SAFETY: direct call to glibc internal symbol with matching signature.
-    unsafe { host_pthread_mutex_lock_sym(mutex) }
-}
-
-unsafe fn host_pthread_mutex_trylock(mutex: *mut libc::pthread_mutex_t) -> c_int {
-    // SAFETY: direct call to glibc internal symbol with matching signature.
-    unsafe { host_pthread_mutex_trylock_sym(mutex) }
-}
-
-unsafe fn host_pthread_mutex_unlock(mutex: *mut libc::pthread_mutex_t) -> c_int {
-    // SAFETY: direct call to glibc internal symbol with matching signature.
-    unsafe { host_pthread_mutex_unlock_sym(mutex) }
 }
 
 #[cfg(target_os = "linux")]
@@ -510,20 +501,27 @@ pub unsafe extern "C" fn pthread_mutex_init(
     if mutex.is_null() {
         return libc::EINVAL;
     }
-    if attr.is_null()
-        && let Some(word_ptr) = mutex_word_ptr(mutex)
-    {
-        // SAFETY: `word_ptr` is alignment-checked and points to caller-owned mutex storage.
-        let word = unsafe { &*word_ptr };
-        word.store(0, Ordering::Release);
-        if mark_managed_mutex(mutex) {
-            return 0;
-        }
+
+    // Scope for bd-z84 replacement path: only default/null attributes are supported by
+    // the futex-managed mutex core.
+    if !attr.is_null() {
+        clear_managed_mutex(mutex);
+        return libc::EINVAL;
     }
 
+    let Some(word_ptr) = mutex_word_ptr(mutex) else {
+        clear_managed_mutex(mutex);
+        return libc::EINVAL;
+    };
+    // SAFETY: `word_ptr` is alignment-checked and points to caller-owned mutex storage.
+    let word = unsafe { &*word_ptr };
+    word.store(0, Ordering::Release);
+
+    if mark_managed_mutex(mutex) {
+        return 0;
+    }
     clear_managed_mutex(mutex);
-    // SAFETY: explicit fallback to host pthread mutex initialization.
-    unsafe { host_pthread_mutex_init(mutex, attr) }
+    libc::EINVAL
 }
 
 /// POSIX `pthread_mutex_destroy`.
@@ -533,24 +531,22 @@ pub unsafe extern "C" fn pthread_mutex_destroy(mutex: *mut libc::pthread_mutex_t
         return libc::EINVAL;
     }
 
-    if is_managed_mutex(mutex) {
-        let Some(word_ptr) = mutex_word_ptr(mutex) else {
-            clear_managed_mutex(mutex);
-            // SAFETY: fallback for malformed managed marker state.
-            return unsafe { host_pthread_mutex_destroy(mutex) };
-        };
-        // SAFETY: `word_ptr` is alignment-checked and points to caller-owned mutex storage.
-        let word = unsafe { &*word_ptr };
-        let locked = word.load(Ordering::Acquire) != 0;
-        if locked {
-            return libc::EBUSY;
-        }
-        clear_managed_mutex(mutex);
-        return 0;
+    if !is_managed_mutex(mutex) && !promote_unmanaged_default_mutex(mutex) {
+        return libc::EINVAL;
     }
 
-    // SAFETY: forwarding foreign/static mutexes to host implementation.
-    unsafe { host_pthread_mutex_destroy(mutex) }
+    let Some(word_ptr) = mutex_word_ptr(mutex) else {
+        clear_managed_mutex(mutex);
+        return libc::EINVAL;
+    };
+    // SAFETY: `word_ptr` is alignment-checked and points to caller-owned mutex storage.
+    let word = unsafe { &*word_ptr };
+    if word.load(Ordering::Acquire) != 0 {
+        return libc::EBUSY;
+    }
+
+    clear_managed_mutex(mutex);
+    0
 }
 
 /// POSIX `pthread_mutex_lock`.
@@ -560,14 +556,12 @@ pub unsafe extern "C" fn pthread_mutex_lock(mutex: *mut libc::pthread_mutex_t) -
         return libc::EINVAL;
     }
 
-    let Some(word_ptr) = mutex_word_ptr(mutex) else {
-        // SAFETY: fallback when we cannot safely interpret mutex storage.
-        return unsafe { host_pthread_mutex_lock(mutex) };
-    };
-    if !is_managed_mutex(mutex) {
-        // SAFETY: foreign/static mutexes are owned by the host pthread implementation.
-        return unsafe { host_pthread_mutex_lock(mutex) };
+    if !is_managed_mutex(mutex) && !promote_unmanaged_default_mutex(mutex) {
+        return libc::EINVAL;
     }
+    let Some(word_ptr) = mutex_word_ptr(mutex) else {
+        return libc::EINVAL;
+    };
     // SAFETY: managed mutexes use our futex word in the leading i32.
     let word = unsafe { &*word_ptr };
     futex_lock_normal(word)
@@ -580,14 +574,12 @@ pub unsafe extern "C" fn pthread_mutex_trylock(mutex: *mut libc::pthread_mutex_t
         return libc::EINVAL;
     }
 
-    let Some(word_ptr) = mutex_word_ptr(mutex) else {
-        // SAFETY: fallback when we cannot safely interpret mutex storage.
-        return unsafe { host_pthread_mutex_trylock(mutex) };
-    };
-    if !is_managed_mutex(mutex) {
-        // SAFETY: foreign/static mutexes are owned by the host pthread implementation.
-        return unsafe { host_pthread_mutex_trylock(mutex) };
+    if !is_managed_mutex(mutex) && !promote_unmanaged_default_mutex(mutex) {
+        return libc::EINVAL;
     }
+    let Some(word_ptr) = mutex_word_ptr(mutex) else {
+        return libc::EINVAL;
+    };
     // SAFETY: managed mutexes use our futex word in the leading i32.
     let word = unsafe { &*word_ptr };
     futex_trylock_normal(word)
@@ -600,14 +592,12 @@ pub unsafe extern "C" fn pthread_mutex_unlock(mutex: *mut libc::pthread_mutex_t)
         return libc::EINVAL;
     }
 
-    let Some(word_ptr) = mutex_word_ptr(mutex) else {
-        // SAFETY: fallback when we cannot safely interpret mutex storage.
-        return unsafe { host_pthread_mutex_unlock(mutex) };
-    };
-    if !is_managed_mutex(mutex) {
-        // SAFETY: foreign/static mutexes are owned by the host pthread implementation.
-        return unsafe { host_pthread_mutex_unlock(mutex) };
+    if !is_managed_mutex(mutex) && !promote_unmanaged_default_mutex(mutex) {
+        return libc::EINVAL;
     }
+    let Some(word_ptr) = mutex_word_ptr(mutex) else {
+        return libc::EINVAL;
+    };
     // SAFETY: managed mutexes use our futex word in the leading i32.
     let word = unsafe { &*word_ptr };
     futex_unlock_normal(word)

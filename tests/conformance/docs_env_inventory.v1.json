@@ -1,0 +1,98 @@
+{
+  "docs_files": [
+    "README.md",
+    "AGENTS.md",
+    "FEATURE_PARITY.md",
+    "PLAN_TO_PORT_GLIBC_TO_RUST.md",
+    "PROPOSED_ARCHITECTURE.md",
+    "EXISTING_GLIBC_STRUCTURE.md"
+  ],
+  "generator": "scripts/generate_docs_env_mismatch_report.py",
+  "keys": [
+    {
+      "env_key": "FRANKENLIBC_DISABLE_HEAL",
+      "mention_count": 1,
+      "mentions": [
+        {
+          "line": 596,
+          "path": "README.md",
+          "snippet": "FRANKENLIBC_DISABLE_HEAL=clamp_size,ignore_double_free ./my_app"
+        }
+      ]
+    },
+    {
+      "env_key": "FRANKENLIBC_EXTENDED_GATES",
+      "mention_count": 1,
+      "mentions": [
+        {
+          "line": 303,
+          "path": "README.md",
+          "snippet": "FRANKENLIBC_EXTENDED_GATES=1 scripts/ci.sh"
+        }
+      ]
+    },
+    {
+      "env_key": "FRANKENLIBC_LOG",
+      "mention_count": 1,
+      "mentions": [
+        {
+          "line": 589,
+          "path": "README.md",
+          "snippet": "Ensure the version script (`libc.map`) covers all symbols the loaded library expects. Run with `FRANKENLIBC_LOG=debug` to see which symbol lookup failed."
+        }
+      ]
+    },
+    {
+      "env_key": "FRANKENLIBC_MODE",
+      "mention_count": 6,
+      "mentions": [
+        {
+          "line": 121,
+          "path": "AGENTS.md",
+          "snippet": "- Runtime selection is process-level and immutable after init (`FRANKENLIBC_MODE=strict|hardened`)."
+        },
+        {
+          "line": 30,
+          "path": "PLAN_TO_PORT_GLIBC_TO_RUST.md",
+          "snippet": "- `FRANKENLIBC_MODE=strict|hardened`"
+        },
+        {
+          "line": 12,
+          "path": "README.md",
+          "snippet": "FRANKENLIBC_MODE=hardened LD_PRELOAD=/usr/lib/frankenlibc/libfrankenlibc_abi.so ./my_program"
+        },
+        {
+          "line": 206,
+          "path": "README.md",
+          "snippet": "FRANKENLIBC_MODE=hardened LD_PRELOAD=target/release/libfrankenlibc_abi.so ./legacy_c_server"
+        },
+        {
+          "line": 315,
+          "path": "README.md",
+          "snippet": "FRANKENLIBC_MODE=hardened LD_PRELOAD=target/release/libfrankenlibc_abi.so ./my_app"
+        },
+        {
+          "line": 477,
+          "path": "README.md",
+          "snippet": "FRANKENLIBC_MODE=hardened LD_PRELOAD=target/release/libfrankenlibc_abi.so ./my_app"
+        }
+      ]
+    },
+    {
+      "env_key": "FRANKENLIBC_TLS_CACHE",
+      "mention_count": 1,
+      "mentions": [
+        {
+          "line": 585,
+          "path": "README.md",
+          "snippet": "Some programs with complex TLS layouts may conflict with the membrane's TLS cache. Set `FRANKENLIBC_TLS_CACHE=0` to disable the cache (increases overhead but resolves conflicts)."
+        }
+      ]
+    }
+  ],
+  "schema_version": "v1",
+  "summary": {
+    "total_keys": 5,
+    "total_mentions": 10
+  }
+}

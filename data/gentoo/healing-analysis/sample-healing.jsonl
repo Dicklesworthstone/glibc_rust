@@ -1,0 +1,5 @@
+{"ts":"2026-02-13T01:45:00.123456Z","pid":12345,"call":"malloc","package":"dev-db/redis","action":"ClampSize","action_details":{"original_size":8589934592,"clamped_size":4096},"latency_ns":185,"call_site":"redis/src/zmalloc.c:45"}
+{"ts":"2026-02-13T01:45:00.223456Z","pid":12345,"call":"strlen","package":"dev-db/redis","action":"TruncateWithNull","action_details":{"original_size":2048,"clamped_size":1024},"latency_ns":210,"call_site":"redis/src/sds.c:220"}
+{"ts":"2026-02-13T01:45:00.323456Z","pid":22345,"call":"free","package":"net-misc/curl","action":"IgnoreDoubleFree","latency_ns":120,"call_site":"curl/lib/url.c:98"}
+{"ts":"2026-02-13T01:45:00.423456Z","pid":22345,"call":"malloc","package":"net-misc/curl","action":"ClampSize","action_details":{"original_size":5000,"clamped_size":4096},"latency_ns":160,"call_site":"curl/lib/memdebug.c:71"}
+{"ts":"2026-02-13T01:45:00.523456Z","pid":32345,"call":"realloc","package":"sys-apps/coreutils","action":"ReallocAsMalloc","latency_ns":140,"call_site":"coreutils/src/xmalloc.c:31"}

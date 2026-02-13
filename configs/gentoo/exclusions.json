@@ -1,0 +1,68 @@
+{
+  "schema_version": "v1",
+  "bead": "bd-2icq.15",
+  "description": "Gentoo package exclusions for FrankenLibC LD_PRELOAD validation runs.",
+  "source_top100_packages": "configs/gentoo/top100-packages.txt",
+  "policy": {
+    "max_exclusion_rate_percent": 10.0,
+    "review_cadence": "weekly",
+    "required_fields": ["package", "type", "reason", "workaround", "tracking"],
+    "allowed_types": ["fundamental", "setuid", "static_binary", "frankenlibc_bug", "environmental_constraint"]
+  },
+  "exclusions": [
+    {
+      "package": "sys-libs/glibc",
+      "type": "fundamental",
+      "reason": "Cannot reliably LD_PRELOAD glibc over glibc for self-replacement validation.",
+      "workaround": "Validate glibc-adjacent behavior via dependent packages and direct ABI harness tests.",
+      "tracking": null
+    },
+    {
+      "package": "app-admin/sudo",
+      "type": "setuid",
+      "reason": "setuid execution sanitizes LD_PRELOAD; interposition is not representative.",
+      "workaround": "Run non-setuid helper tests only; keep privileged-path testing in dedicated non-PRELOAD harness.",
+      "tracking": null
+    },
+    {
+      "package": "net-misc/openssh",
+      "type": "setuid",
+      "reason": "setuid-sensitive helper paths (for example ssh-keysign) drop preload variables.",
+      "workaround": "Exercise non-privileged client/server flows under preload; isolate setuid paths.",
+      "tracking": null
+    },
+    {
+      "package": "app-containers/docker",
+      "type": "environmental_constraint",
+      "reason": "Container runtime privilege/capability model in CI can invalidate preload assumptions.",
+      "workaround": "Validate in privileged container host lane with explicit capability profile.",
+      "tracking": "bd-2icq.4"
+    },
+    {
+      "package": "app-emulation/virtualbox",
+      "type": "environmental_constraint",
+      "reason": "Kernel module and host virtualization dependencies are outside standard preload lane.",
+      "workaround": "Validate only user-space utilities in preload lane; full validation in dedicated host harness.",
+      "tracking": "bd-2icq.4"
+    },
+    {
+      "package": "app-emulation/wine",
+      "type": "frankenlibc_bug",
+      "reason": "Known high-risk TLS and loader edge interactions require stabilization before inclusion.",
+      "workaround": "Temporarily exclude from primary top100 lane and track in dedicated compatibility queue.",
+      "tracking": "bd-yos"
+    }
+  ],
+  "statistics": {
+    "top100_total": 100,
+    "excluded_total": 6,
+    "exclusion_rate_percent": 6.0,
+    "by_type": {
+      "fundamental": 1,
+      "setuid": 2,
+      "static_binary": 0,
+      "frankenlibc_bug": 1,
+      "environmental_constraint": 2
+    }
+  }
+}

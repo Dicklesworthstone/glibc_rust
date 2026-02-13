@@ -58,7 +58,10 @@ fn deterministic_allocator_membrane_sequences_hold_core_invariants() {
             "seed={seed}: expected Foreign for foreign_addr"
         );
         assert!(foreign_outcome.can_read(), "seed={seed}: foreign can_read");
-        assert!(foreign_outcome.can_write(), "seed={seed}: foreign can_write");
+        assert!(
+            foreign_outcome.can_write(),
+            "seed={seed}: foreign can_write"
+        );
         let foreign_abs = foreign_outcome.abstraction().expect("foreign abstraction");
         assert_eq!(
             foreign_abs.state,
@@ -167,4 +170,3 @@ fn deterministic_allocator_membrane_sequences_hold_core_invariants() {
         }
     }
 }
-

@@ -1448,47 +1448,47 @@
     },
     {
       "symbol": "pthread_mutex_destroy",
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
-      "strict_semantics": "Delegates to host glibc pthread; preserves host semantics",
-      "hardened_semantics": "Host glibc pthread delegation; hardened membrane validates mutex/cond state",
+      "strict_semantics": "Futex-managed NORMAL mutex core; supports init(NULL attr) and lazy promotion for zero-initialized default mutexes; unsupported attributed/foreign layouts return deterministic EINVAL",
+      "hardened_semantics": "Same futex-managed core with deterministic spin/wait/wake telemetry and identical errno contract",
       "default_stub": false
     },
     {
       "symbol": "pthread_mutex_init",
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
-      "strict_semantics": "Delegates to host glibc pthread; preserves host semantics",
-      "hardened_semantics": "Host glibc pthread delegation; hardened membrane validates mutex/cond state",
+      "strict_semantics": "Futex-managed NORMAL mutex core; supports init(NULL attr) and lazy promotion for zero-initialized default mutexes; unsupported attributed/foreign layouts return deterministic EINVAL",
+      "hardened_semantics": "Same futex-managed core with deterministic spin/wait/wake telemetry and identical errno contract",
       "default_stub": false
     },
     {
       "symbol": "pthread_mutex_lock",
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
-      "strict_semantics": "Delegates to host glibc pthread; preserves host semantics",
-      "hardened_semantics": "Host glibc pthread delegation; hardened membrane validates mutex/cond state",
+      "strict_semantics": "Futex-managed NORMAL mutex core; supports init(NULL attr) and lazy promotion for zero-initialized default mutexes; unsupported attributed/foreign layouts return deterministic EINVAL",
+      "hardened_semantics": "Same futex-managed core with deterministic spin/wait/wake telemetry and identical errno contract",
       "default_stub": false
     },
     {
       "symbol": "pthread_mutex_trylock",
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
-      "strict_semantics": "Delegates to host glibc pthread; preserves host semantics",
-      "hardened_semantics": "Host glibc pthread delegation; hardened membrane validates mutex/cond state",
+      "strict_semantics": "Futex-managed NORMAL mutex core; supports init(NULL attr) and lazy promotion for zero-initialized default mutexes; unsupported attributed/foreign layouts return deterministic EINVAL",
+      "hardened_semantics": "Same futex-managed core with deterministic spin/wait/wake telemetry and identical errno contract",
       "default_stub": false
     },
     {
       "symbol": "pthread_mutex_unlock",
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
-      "strict_semantics": "Delegates to host glibc pthread; preserves host semantics",
-      "hardened_semantics": "Host glibc pthread delegation; hardened membrane validates mutex/cond state",
+      "strict_semantics": "Futex-managed NORMAL mutex core; supports init(NULL attr) and lazy promotion for zero-initialized default mutexes; unsupported attributed/foreign layouts return deterministic EINVAL",
+      "hardened_semantics": "Same futex-managed core with deterministic spin/wait/wake telemetry and identical errno contract",
       "default_stub": false
     },
     {

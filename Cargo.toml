@@ -4,6 +4,7 @@ members = [
   "crates/frankenlibc-membrane",
   "crates/frankenlibc-core",
   "crates/frankenlibc-abi",
+  "crates/frankenlibc-fixture-exec",
   "crates/frankenlibc-harness",
   "crates/frankenlibc-bench",
   # Legacy crates (kept for migration compatibility)
@@ -34,6 +35,7 @@ libc = "0.2"
 frankenlibc-membrane = { path = "crates/frankenlibc-membrane" }
 frankenlibc-core = { path = "crates/frankenlibc-core" }
 frankenlibc-abi = { path = "crates/frankenlibc-abi" }
+frankenlibc-fixture-exec = { path = "crates/frankenlibc-fixture-exec" }
 
 # Companion crates (build tooling only)
 asupersync-conformance = { path = "/dp/asupersync/conformance" }

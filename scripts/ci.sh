@@ -205,6 +205,16 @@ if [[ "${FRANKENLIBC_EXTENDED_GATES:-0}" == "1" ]]; then
     echo "PASS"
     echo ""
 
+    echo "--- math production-set change policy gate ---"
+    scripts/check_math_production_set_policy.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- math value ablation gate ---"
+    scripts/check_math_value_ablations.sh
+    echo "PASS"
+    echo ""
+
     echo "--- changepoint drift policy gate ---"
     scripts/check_changepoint_drift.sh
     echo "PASS"

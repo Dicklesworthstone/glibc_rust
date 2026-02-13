@@ -1,0 +1,1373 @@
+{
+  "generator": "scripts/generate_runtime_env_inventory.py",
+  "inventory": [
+    {
+      "access_count": 6,
+      "accesses": [
+        {
+          "line": 69,
+          "operation": "read",
+          "path": "crates/frankenlibc-bench/benches/membrane_bench.rs",
+          "scope": "bench",
+          "snippet": "if std::env::var(\"FRANKENLIBC_BENCH_PIN\").ok().as_deref() != Some(\"1\") {"
+        },
+        {
+          "line": 104,
+          "operation": "read",
+          "path": "crates/frankenlibc-bench/benches/runtime_math_bench.rs",
+          "scope": "bench",
+          "snippet": "if std::env::var(\"FRANKENLIBC_BENCH_PIN\").ok().as_deref() != Some(\"1\") {"
+        },
+        {
+          "line": 110,
+          "operation": "read",
+          "path": "crates/frankenlibc-bench/benches/runtime_math_kernels_bench.rs",
+          "scope": "bench",
+          "snippet": "if std::env::var(\"FRANKENLIBC_BENCH_PIN\").ok().as_deref() != Some(\"1\") {"
+        },
+        {
+          "line": 119,
+          "operation": "write",
+          "path": "scripts/perf_gate.sh",
+          "scope": "scripts",
+          "snippet": "FRANKENLIBC_BENCH_PIN=1 FRANKENLIBC_MODE=\"$mode\" \\"
+        },
+        {
+          "line": 125,
+          "operation": "write",
+          "path": "scripts/perf_gate.sh",
+          "scope": "scripts",
+          "snippet": "FRANKENLIBC_BENCH_PIN=1 FRANKENLIBC_MODE=\"$mode\" \\"
+        },
+        {
+          "line": 132,
+          "operation": "write",
+          "path": "scripts/perf_gate.sh",
+          "scope": "scripts",
+          "snippet": "FRANKENLIBC_BENCH_PIN=1 FRANKENLIBC_MODE=\"$mode\" \\"
+        }
+      ],
+      "env_key": "FRANKENLIBC_BENCH_PIN",
+      "metadata": {
+        "allowed_values": [
+          "0",
+          "1"
+        ],
+        "default_value": "0",
+        "mode_impact": "benchmark-only CPU pinning control; no semantic libc behavior change",
+        "mutability": "read_per_process_start",
+        "owner": "bench",
+        "parse_rule": "enabled only when value == \"1\"",
+        "safety_impact": "low"
+      },
+      "read_count": 3,
+      "reference_count": 0,
+      "write_count": 3
+    },
+    {
+      "access_count": 3,
+      "accesses": [
+        {
+          "line": 200,
+          "operation": "write",
+          "path": "crates/frankenlibc-harness/tests/closure_contract_test.rs",
+          "scope": "harness",
+          "snippet": ".env(\"FRANKENLIBC_CLOSURE_CONTRACT_PATH\", &contract_path)"
+        },
+        {
+          "line": 280,
+          "operation": "write",
+          "path": "crates/frankenlibc-harness/tests/closure_contract_test.rs",
+          "scope": "harness",
+          "snippet": ".env(\"FRANKENLIBC_CLOSURE_CONTRACT_PATH\", &broken_path)"
+        },
+        {
+          "line": 12,
+          "operation": "read",
+          "path": "scripts/check_closure_contract.sh",
+          "scope": "scripts",
+          "snippet": "CONTRACT=\"${FRANKENLIBC_CLOSURE_CONTRACT_PATH:-${ROOT}/tests/conformance/closure_contract.v1.json}\""
+        }
+      ],
+      "env_key": "FRANKENLIBC_CLOSURE_CONTRACT_PATH",
+      "metadata": {
+        "allowed_values": [
+          "filesystem path"
+        ],
+        "default_value": "tests/conformance/closure_contract.v1.json",
+        "mode_impact": "tooling-only gate input path",
+        "mutability": "per-invocation",
+        "owner": "harness/scripts",
+        "parse_rule": "shell parameter expansion path override",
+        "safety_impact": "low"
+      },
+      "read_count": 1,
+      "reference_count": 0,
+      "write_count": 2
+    },
+    {
+      "access_count": 2,
+      "accesses": [
+        {
+          "line": 282,
+          "operation": "write",
+          "path": "crates/frankenlibc-harness/tests/closure_contract_test.rs",
+          "scope": "harness",
+          "snippet": ".env(\"FRANKENLIBC_CLOSURE_LEVEL\", \"L0\")"
+        },
+        {
+          "line": 14,
+          "operation": "read",
+          "path": "scripts/check_closure_contract.sh",
+          "scope": "scripts",
+          "snippet": "TARGET_LEVEL=\"${FRANKENLIBC_CLOSURE_LEVEL:-}\""
+        }
+      ],
+      "env_key": "FRANKENLIBC_CLOSURE_LEVEL",
+      "metadata": {
+        "allowed_values": [
+          "L0",
+          "L1",
+          "L2",
+          "L3",
+          "empty"
+        ],
+        "default_value": "empty (auto-select from contract)",
+        "mode_impact": "tooling-only release target-level override",
+        "mutability": "per-invocation",
+        "owner": "harness/scripts",
+        "parse_rule": "shell string passthrough to closure gate evaluator",
+        "safety_impact": "low"
+      },
+      "read_count": 1,
+      "reference_count": 0,
+      "write_count": 1
+    },
+    {
+      "access_count": 3,
+      "accesses": [
+        {
+          "line": 199,
+          "operation": "write",
+          "path": "crates/frankenlibc-harness/tests/closure_contract_test.rs",
+          "scope": "harness",
+          "snippet": ".env(\"FRANKENLIBC_CLOSURE_LOG\", &log_path)"
+        },
+        {
+          "line": 281,
+          "operation": "write",
+          "path": "crates/frankenlibc-harness/tests/closure_contract_test.rs",
+          "scope": "harness",
+          "snippet": ".env(\"FRANKENLIBC_CLOSURE_LOG\", &broken_log)"
+        },
+        {
+          "line": 13,
+          "operation": "read",
+          "path": "scripts/check_closure_contract.sh",
+          "scope": "scripts",
+          "snippet": "LOG_PATH=\"${FRANKENLIBC_CLOSURE_LOG:-/tmp/frankenlibc_closure_contract.log.jsonl}\""
+        }
+      ],
+      "env_key": "FRANKENLIBC_CLOSURE_LOG",
+      "metadata": {
+        "allowed_values": [
+          "filesystem path"
+        ],
+        "default_value": "/tmp/frankenlibc_closure_contract.log.jsonl",
+        "mode_impact": "tooling-only evidence log destination",
+        "mutability": "per-invocation",
+        "owner": "harness/scripts",
+        "parse_rule": "shell parameter expansion path override",
+        "safety_impact": "low"
+      },
+      "read_count": 1,
+      "reference_count": 0,
+      "write_count": 2
+    },
+    {
+      "access_count": 2,
+      "accesses": [
+        {
+          "line": 29,
+          "operation": "read",
+          "path": "scripts/e2e_suite.sh",
+          "scope": "scripts",
+          "snippet": "E2E_SEED=\"${FRANKENLIBC_E2E_SEED:-42}\""
+        },
+        {
+          "line": 136,
+          "operation": "write",
+          "path": "scripts/e2e_suite.sh",
+          "scope": "scripts",
+          "snippet": "FRANKENLIBC_E2E_SEED=\"${E2E_SEED}\" \\"
+        }
+      ],
+      "env_key": "FRANKENLIBC_E2E_SEED",
+      "metadata": {
+        "allowed_values": [
+          "integer >= 0"
+        ],
+        "default_value": "42",
+        "mode_impact": "deterministic scenario replay only",
+        "mutability": "per-e2e-run",
+        "owner": "harness/scripts",
+        "parse_rule": "shell numeric string consumed as deterministic seed",
+        "safety_impact": "low"
+      },
+      "read_count": 1,
+      "reference_count": 0,
+      "write_count": 1
+    },
+    {
+      "access_count": 1,
+      "accesses": [
+        {
+          "line": 211,
+          "operation": "read",
+          "path": "scripts/e2e_suite.sh",
+          "scope": "scripts",
+          "snippet": "local iterations=\"${FRANKENLIBC_E2E_STRESS_ITERS:-5}\""
+        }
+      ],
+      "env_key": "FRANKENLIBC_E2E_STRESS_ITERS",
+      "metadata": {
+        "allowed_values": [
+          "integer >= 1"
+        ],
+        "default_value": "5",
+        "mode_impact": "stress workload duration only",
+        "mutability": "per-e2e-run",
+        "owner": "harness/scripts",
+        "parse_rule": "shell numeric string consumed as stress loop count",
+        "safety_impact": "low"
+      },
+      "read_count": 1,
+      "reference_count": 0,
+      "write_count": 0
+    },
+    {
+      "access_count": 2,
+      "accesses": [
+        {
+          "line": 33,
+          "operation": "read",
+          "path": "scripts/ci.sh",
+          "scope": "scripts",
+          "snippet": "if [[ \"${FRANKENLIBC_EXTENDED_GATES:-0}\" == \"1\" ]]; then"
+        },
+        {
+          "line": 247,
+          "operation": "write",
+          "path": "scripts/ci.sh",
+          "scope": "scripts",
+          "snippet": "echo \"SKIP extended gates (set FRANKENLIBC_EXTENDED_GATES=1 to run full policy/perf/snapshot checks)\""
+        }
+      ],
+      "env_key": "FRANKENLIBC_EXTENDED_GATES",
+      "metadata": {
+        "allowed_values": [
+          "0",
+          "1"
+        ],
+        "default_value": "0",
+        "mode_impact": "enables extended policy/perf/snapshot gates",
+        "mutability": "per-ci-run",
+        "owner": "scripts/ci",
+        "parse_rule": "enabled only when value == \"1\"",
+        "safety_impact": "medium"
+      },
+      "read_count": 1,
+      "reference_count": 0,
+      "write_count": 1
+    },
+    {
+      "access_count": 2,
+      "accesses": [
+        {
+          "line": 12,
+          "operation": "read",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "if [[ \"${FRANKENLIBC_HOOKS_LOADED:-0}\" == \"1\" ]]; then"
+        },
+        {
+          "line": 19,
+          "operation": "write",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "export FRANKENLIBC_HOOKS_LOADED=1"
+        }
+      ],
+      "env_key": "FRANKENLIBC_HOOKS_LOADED",
+      "metadata": {
+        "allowed_values": [
+          "0",
+          "1"
+        ],
+        "default_value": "0",
+        "mode_impact": "Portage hook bootstrap guard only",
+        "mutability": "per-shell-session",
+        "owner": "scripts/gentoo",
+        "parse_rule": "set to \"1\" after first hook source to enforce idempotent shell loading",
+        "safety_impact": "low"
+      },
+      "read_count": 1,
+      "reference_count": 0,
+      "write_count": 1
+    },
+    {
+      "access_count": 15,
+      "accesses": [
+        {
+          "line": 136,
+          "operation": "read",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "if [[ -z \"${FRANKENLIBC_LIB:-}\" ]]; then"
+        },
+        {
+          "line": 137,
+          "operation": "write",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "export FRANKENLIBC_LIB=\"/opt/frankenlibc/lib/libfrankenlibc_abi.so\""
+        },
+        {
+          "line": 139,
+          "operation": "read",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "if [[ ! -r \"${FRANKENLIBC_LIB}\" ]]; then"
+        },
+        {
+          "line": 140,
+          "operation": "read",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "frankenlibc::log \"skip: FRANKENLIBC_LIB unreadable (${FRANKENLIBC_LIB})\""
+        },
+        {
+          "line": 147,
+          "operation": "read",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "local lib=\"${FRANKENLIBC_LIB}\""
+        },
+        {
+          "line": 181,
+          "operation": "read",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "local lib=\"${FRANKENLIBC_LIB:-}\""
+        },
+        {
+          "line": 19,
+          "operation": "write",
+          "path": "tests/cve_arena/build_targets.sh",
+          "scope": "tests",
+          "snippet": "FRANKENLIBC_LIB=\"${PROJECT_ROOT}/target/release/libfrankenlibc_abi.so\""
+        },
+        {
+          "line": 84,
+          "operation": "read",
+          "path": "tests/cve_arena/build_targets.sh",
+          "scope": "tests",
+          "snippet": "if [ -f \"${FRANKENLIBC_LIB}\" ]; then"
+        },
+        {
+          "line": 85,
+          "operation": "read",
+          "path": "tests/cve_arena/build_targets.sh",
+          "scope": "tests",
+          "snippet": "log_info \"  FrankenLibC library: ${FRANKENLIBC_LIB}\""
+        },
+        {
+          "line": 87,
+          "operation": "read",
+          "path": "tests/cve_arena/build_targets.sh",
+          "scope": "tests",
+          "snippet": "cp \"${FRANKENLIBC_LIB}\" \"${target_dir}/libfrankenlibc_abi.so\""
+        },
+        {
+          "line": 89,
+          "operation": "read",
+          "path": "tests/cve_arena/build_targets.sh",
+          "scope": "tests",
+          "snippet": "log_warn \"  FrankenLibC library not found at ${FRANKENLIBC_LIB}\""
+        },
+        {
+          "line": 224,
+          "operation": "read",
+          "path": "tests/cve_arena/runner.sh",
+          "scope": "tests",
+          "snippet": "if [[ -n \"${FRANKENLIBC_LIB:-}\" ]]; then"
+        },
+        {
+          "line": 225,
+          "operation": "read",
+          "path": "tests/cve_arena/runner.sh",
+          "scope": "tests",
+          "snippet": "if [[ ! -f \"${FRANKENLIBC_LIB}\" ]]; then"
+        },
+        {
+          "line": 226,
+          "operation": "read",
+          "path": "tests/cve_arena/runner.sh",
+          "scope": "tests",
+          "snippet": "log_fatal \"FRANKENLIBC_LIB points to missing file: ${FRANKENLIBC_LIB}\""
+        },
+        {
+          "line": 228,
+          "operation": "read",
+          "path": "tests/cve_arena/runner.sh",
+          "scope": "tests",
+          "snippet": "echo \"${FRANKENLIBC_LIB}\""
+        }
+      ],
+      "env_key": "FRANKENLIBC_LIB",
+      "metadata": {
+        "allowed_values": [
+          "filesystem path"
+        ],
+        "default_value": "auto-detected target/release/libfrankenlibc_abi.so",
+        "mode_impact": "tooling library path override for CVE arena and Gentoo LD_PRELOAD hooks",
+        "mutability": "per-runner-invocation",
+        "owner": "tests/cve_arena,scripts/gentoo",
+        "parse_rule": "shell path lookup with existence check",
+        "safety_impact": "medium"
+      },
+      "read_count": 13,
+      "reference_count": 0,
+      "write_count": 2
+    },
+    {
+      "access_count": 6,
+      "accesses": [
+        {
+          "line": 23,
+          "operation": "read_write",
+          "path": "scripts/gentoo/build-package.sh",
+          "scope": "scripts",
+          "snippet": "export FRANKENLIBC_LOG=\"${FRANKENLIBC_LOG_FILE}\""
+        },
+        {
+          "line": 73,
+          "operation": "read",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "\"$(frankenlibc::json_escape \"${FRANKENLIBC_LOG_FILE:-${FRANKENLIBC_LOG:-}}\")\" \\"
+        },
+        {
+          "line": 170,
+          "operation": "write",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "export FRANKENLIBC_LOG=\"${log_dir}/${phase}.jsonl\""
+        },
+        {
+          "line": 171,
+          "operation": "read",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "export FRANKENLIBC_LOG_FILE=\"${FRANKENLIBC_LOG}\""
+        },
+        {
+          "line": 176,
+          "operation": "read",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "frankenlibc::log \"enabled: mode=${FRANKENLIBC_MODE} ld_preload=${next_ld_preload} log=${FRANKENLIBC_LOG}\""
+        },
+        {
+          "line": 193,
+          "operation": "reference",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "unset FRANKENLIBC_LOG"
+        }
+      ],
+      "env_key": "FRANKENLIBC_LOG",
+      "metadata": {
+        "allowed_values": [
+          "filesystem path"
+        ],
+        "default_value": "unset",
+        "mode_impact": "runtime evidence log destination",
+        "mutability": "per-process-start",
+        "owner": "membrane/metrics,scripts/gentoo",
+        "parse_rule": "shell export consumed by runtime evidence/metrics logging",
+        "safety_impact": "medium"
+      },
+      "read_count": 4,
+      "reference_count": 1,
+      "write_count": 2
+    },
+    {
+      "access_count": 1,
+      "accesses": [
+        {
+          "line": 149,
+          "operation": "read",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "local base_dir=\"${FRANKENLIBC_LOG_DIR:-/var/log/frankenlibc/portage}\""
+        }
+      ],
+      "env_key": "FRANKENLIBC_LOG_DIR",
+      "metadata": {
+        "allowed_values": [
+          "filesystem path"
+        ],
+        "default_value": "/var/log/frankenlibc/portage",
+        "mode_impact": "Portage hook directory root for FRANKENLIBC_LOG files",
+        "mutability": "per-ebuild-run",
+        "owner": "scripts/gentoo",
+        "parse_rule": "shell path prefix for per-atom/phase log placement",
+        "safety_impact": "low"
+      },
+      "read_count": 1,
+      "reference_count": 0,
+      "write_count": 0
+    },
+    {
+      "access_count": 8,
+      "accesses": [
+        {
+          "line": 22,
+          "operation": "read_write",
+          "path": "scripts/gentoo/build-package.sh",
+          "scope": "scripts",
+          "snippet": "export FRANKENLIBC_LOG_FILE=\"${FRANKENLIBC_LOG_FILE:-${FRANKEN_LOG}}\""
+        },
+        {
+          "line": 23,
+          "operation": "read",
+          "path": "scripts/gentoo/build-package.sh",
+          "scope": "scripts",
+          "snippet": "export FRANKENLIBC_LOG=\"${FRANKENLIBC_LOG_FILE}\""
+        },
+        {
+          "line": 73,
+          "operation": "read",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "\"$(frankenlibc::json_escape \"${FRANKENLIBC_LOG_FILE:-${FRANKENLIBC_LOG:-}}\")\" \\"
+        },
+        {
+          "line": 171,
+          "operation": "write",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "export FRANKENLIBC_LOG_FILE=\"${FRANKENLIBC_LOG}\""
+        },
+        {
+          "line": 194,
+          "operation": "reference",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "unset FRANKENLIBC_LOG_FILE"
+        },
+        {
+          "line": 140,
+          "operation": "write",
+          "path": "scripts/gentoo/test-runner.py",
+          "scope": "scripts",
+          "snippet": "env_prefix = f\"FRANKENLIBC_PORTAGE_ENABLE=1 FRANKENLIBC_MODE={shlex.quote(franken_mode)} FRANKENLIBC_LOG_FILE=/results/frankenlibc.jsonl\""
+        },
+        {
+          "line": 49,
+          "operation": "read",
+          "path": "tests/gentoo/test-integration.sh",
+          "scope": "tests",
+          "snippet": "[[ -n \"${FRANKENLIBC_LOG_FILE:-}\" ]]"
+        },
+        {
+          "line": 50,
+          "operation": "read",
+          "path": "tests/gentoo/test-integration.sh",
+          "scope": "tests",
+          "snippet": "[[ \"${FRANKENLIBC_LOG_FILE}\" == */src_test.jsonl ]]"
+        }
+      ],
+      "env_key": "FRANKENLIBC_LOG_FILE",
+      "metadata": {
+        "allowed_values": [
+          "filesystem path"
+        ],
+        "default_value": "unset (aliases FRANKENLIBC_LOG when provided by Gentoo tooling)",
+        "mode_impact": "tooling-friendly log path variable for Gentoo runners and hooks",
+        "mutability": "per-build-or-test-invocation",
+        "owner": "scripts/gentoo,tests/gentoo",
+        "parse_rule": "shell path alias; exported into FRANKENLIBC_LOG for runtime consumption",
+        "safety_impact": "low"
+      },
+      "read_count": 5,
+      "reference_count": 1,
+      "write_count": 3
+    },
+    {
+      "access_count": 30,
+      "accesses": [
+        {
+          "line": 80,
+          "operation": "read",
+          "path": "crates/frankenlibc-bench/benches/runtime_math_bench.rs",
+          "scope": "bench",
+          "snippet": "let mode_raw = std::env::var(\"FRANKENLIBC_MODE\").unwrap_or_else(|_| \"<unset>\".to_string());"
+        },
+        {
+          "line": 86,
+          "operation": "read",
+          "path": "crates/frankenlibc-bench/benches/runtime_math_kernels_bench.rs",
+          "scope": "bench",
+          "snippet": "let mode_raw = std::env::var(\"FRANKENLIBC_MODE\").unwrap_or_else(|_| \"<unset>\".to_string());"
+        },
+        {
+          "line": 763,
+          "operation": "write",
+          "path": "crates/frankenlibc-harness/src/bin/harness.rs",
+          "scope": "harness",
+          "snippet": ".env(\"FRANKENLIBC_MODE\", mode)"
+        },
+        {
+          "line": 152,
+          "operation": "write",
+          "path": "crates/frankenlibc-harness/src/kernel_regression_report.rs",
+          "scope": "harness",
+          "snippet": "\"expected FRANKENLIBC_MODE={expected:?} but config resolved to {got:?}\","
+        },
+        {
+          "line": 133,
+          "operation": "read",
+          "path": "crates/frankenlibc-membrane/src/config.rs",
+          "scope": "membrane",
+          "snippet": "let level = std::env::var(\"FRANKENLIBC_MODE\")"
+        },
+        {
+          "line": 96,
+          "operation": "write",
+          "path": "scripts/bd35a_evidence_run.sh",
+          "scope": "scripts",
+          "snippet": "env FRANKENLIBC_MODE=\"${mode}\" bash -lc \"${cmd}\""
+        },
+        {
+          "line": 112,
+          "operation": "write",
+          "path": "scripts/c_fixture_suite.sh",
+          "scope": "scripts",
+          "snippet": "env FRANKENLIBC_MODE=\"${mode}\" LD_PRELOAD=\"${LIB_PATH}\" \"${bin}\" \\"
+        },
+        {
+          "line": 327,
+          "operation": "read",
+          "path": "scripts/check_closure_contract.sh",
+          "scope": "scripts",
+          "snippet": "mode = os.environ.get(\"FRANKENLIBC_MODE\", \"strict\")"
+        },
+        {
+          "line": 392,
+          "operation": "write",
+          "path": "scripts/check_packaging.sh",
+          "scope": "scripts",
+          "snippet": "if hardened_deploy.startswith('FRANKENLIBC_MODE=hardened'):"
+        },
+        {
+          "line": 135,
+          "operation": "write",
+          "path": "scripts/e2e_suite.sh",
+          "scope": "scripts",
+          "snippet": "env FRANKENLIBC_MODE=\"${mode}\" \\"
+        },
+        {
+          "line": 21,
+          "operation": "read_write",
+          "path": "scripts/gentoo/build-package.sh",
+          "scope": "scripts",
+          "snippet": "export FRANKENLIBC_MODE=\"${FRANKENLIBC_MODE:-hardened}\""
+        },
+        {
+          "line": 68,
+          "operation": "read",
+          "path": "scripts/gentoo/build-package.sh",
+          "scope": "scripts",
+          "snippet": "\"frankenlibc_mode\": \"${FRANKENLIBC_MODE}\","
+        },
+        {
+          "line": 231,
+          "operation": "write",
+          "path": "scripts/gentoo/build-runner.py",
+          "scope": "scripts",
+          "snippet": "f\"FRANKENLIBC_MODE={self.config.mode}\","
+        },
+        {
+          "line": 71,
+          "operation": "read",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "\"$(frankenlibc::json_escape \"${FRANKENLIBC_MODE:-unknown}\")\" \\"
+        },
+        {
+          "line": 148,
+          "operation": "read",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "local mode=\"${FRANKENLIBC_MODE:-hardened}\""
+        },
+        {
+          "line": 169,
+          "operation": "write",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "export FRANKENLIBC_MODE=\"${mode}\""
+        },
+        {
+          "line": 176,
+          "operation": "read",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "frankenlibc::log \"enabled: mode=${FRANKENLIBC_MODE} ld_preload=${next_ld_preload} log=${FRANKENLIBC_LOG}\""
+        },
+        {
+          "line": 140,
+          "operation": "write",
+          "path": "scripts/gentoo/test-runner.py",
+          "scope": "scripts",
+          "snippet": "env_prefix = f\"FRANKENLIBC_PORTAGE_ENABLE=1 FRANKENLIBC_MODE={shlex.quote(franken_mode)} FRANKENLIBC_LOG_FILE=/results/frankenlibc.jsonl\""
+        },
+        {
+          "line": 102,
+          "operation": "write",
+          "path": "scripts/ld_preload_smoke.sh",
+          "scope": "scripts",
+          "snippet": "env FRANKENLIBC_MODE=\"${mode}\" LD_PRELOAD=\"${LIB_PATH}\" \"$@\" \\"
+        },
+        {
+          "line": 119,
+          "operation": "write",
+          "path": "scripts/perf_gate.sh",
+          "scope": "scripts",
+          "snippet": "FRANKENLIBC_BENCH_PIN=1 FRANKENLIBC_MODE=\"$mode\" \\"
+        },
+        {
+          "line": 125,
+          "operation": "write",
+          "path": "scripts/perf_gate.sh",
+          "scope": "scripts",
+          "snippet": "FRANKENLIBC_BENCH_PIN=1 FRANKENLIBC_MODE=\"$mode\" \\"
+        },
+        {
+          "line": 132,
+          "operation": "write",
+          "path": "scripts/perf_gate.sh",
+          "scope": "scripts",
+          "snippet": "FRANKENLIBC_BENCH_PIN=1 FRANKENLIBC_MODE=\"$mode\" \\"
+        },
+        {
+          "line": 148,
+          "operation": "write",
+          "path": "scripts/profile_pipeline.sh",
+          "scope": "scripts",
+          "snippet": "append_cmd \"FRANKENLIBC_MODE=${MODE} CARGO_PROFILE_BENCH_DEBUG=true cargo flamegraph -F ${PROFILE_FREQ} -p frankenlibc-bench --bench ${bench} --deterministic -o ${cpu_svg} -- --bench --profile-time ${PROFILE_TIME} --exact ${bench_id}\""
+        },
+        {
+          "line": 149,
+          "operation": "write",
+          "path": "scripts/profile_pipeline.sh",
+          "scope": "scripts",
+          "snippet": "FRANKENLIBC_MODE=\"${MODE}\" CARGO_PROFILE_BENCH_DEBUG=true \\"
+        },
+        {
+          "line": 163,
+          "operation": "write",
+          "path": "scripts/profile_pipeline.sh",
+          "scope": "scripts",
+          "snippet": "append_cmd \"perf record -F ${PROFILE_FREQ} -g -o ${alloc_data} -- env FRANKENLIBC_MODE=${MODE} ${CARGO_BIN} bench -p frankenlibc-bench --bench ${bench} -- --profile-time ${PROFILE_TIME} --exact ${bench_id}\""
+        },
+        {
+          "line": 165,
+          "operation": "write",
+          "path": "scripts/profile_pipeline.sh",
+          "scope": "scripts",
+          "snippet": "env FRANKENLIBC_MODE=\"${MODE}\" \"${CARGO_BIN}\" bench -p frankenlibc-bench --bench \"${bench}\" -- \\"
+        },
+        {
+          "line": 171,
+          "operation": "write",
+          "path": "scripts/profile_pipeline.sh",
+          "scope": "scripts",
+          "snippet": "append_cmd \"strace -f -qq -c -o ${syscall_raw} env FRANKENLIBC_MODE=${MODE} ${CARGO_BIN} bench -p frankenlibc-bench --bench ${bench} -- --profile-time ${PROFILE_TIME} --exact ${bench_id}\""
+        },
+        {
+          "line": 173,
+          "operation": "write",
+          "path": "scripts/profile_pipeline.sh",
+          "scope": "scripts",
+          "snippet": "env FRANKENLIBC_MODE=\"${MODE}\" \"${CARGO_BIN}\" bench -p frankenlibc-bench --bench \"${bench}\" -- \\"
+        },
+        {
+          "line": 442,
+          "operation": "write",
+          "path": "tests/cve_arena/runner.sh",
+          "scope": "tests",
+          "snippet": "export FRANKENLIBC_MODE=\"hardened\""
+        },
+        {
+          "line": 474,
+          "operation": "write",
+          "path": "tests/cve_arena/runner.sh",
+          "scope": "tests",
+          "snippet": "-e \"FRANKENLIBC_MODE=hardened\""
+        }
+      ],
+      "env_key": "FRANKENLIBC_MODE",
+      "metadata": {
+        "allowed_values": [
+          "strict",
+          "hardened",
+          "default",
+          "abi",
+          "repair",
+          "tsm",
+          "full"
+        ],
+        "default_value": "strict",
+        "mode_impact": "selects strict ABI mode vs hardened repair mode",
+        "mutability": "process-immutable after first resolution",
+        "owner": "membrane/config",
+        "parse_rule": "case-insensitive parser in membrane config; unknown values resolve to strict",
+        "safety_impact": "high"
+      },
+      "read_count": 9,
+      "reference_count": 0,
+      "write_count": 22
+    },
+    {
+      "access_count": 2,
+      "accesses": [
+        {
+          "line": 173,
+          "operation": "write",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "export FRANKENLIBC_PACKAGE=\"${atom}\""
+        },
+        {
+          "line": 196,
+          "operation": "reference",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "unset FRANKENLIBC_PACKAGE"
+        }
+      ],
+      "env_key": "FRANKENLIBC_PACKAGE",
+      "metadata": {
+        "allowed_values": [
+          "Gentoo atom string (<category>/<package-version>)"
+        ],
+        "default_value": "unset",
+        "mode_impact": "observability context only for hook/session logs",
+        "mutability": "per-phase",
+        "owner": "scripts/gentoo",
+        "parse_rule": "set by hook from CATEGORY/PF for per-phase context annotation",
+        "safety_impact": "low"
+      },
+      "read_count": 0,
+      "reference_count": 1,
+      "write_count": 1
+    },
+    {
+      "access_count": 2,
+      "accesses": [
+        {
+          "line": 108,
+          "operation": "read",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "local blocklist=\"${FRANKENLIBC_PACKAGE_BLOCKLIST:-sys-libs/glibc sys-apps/shadow}\""
+        },
+        {
+          "line": 125,
+          "operation": "read",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "frankenlibc::log \"skip: atom in blocklist (${FRANKENLIBC_PACKAGE_BLOCKLIST:-})\""
+        }
+      ],
+      "env_key": "FRANKENLIBC_PACKAGE_BLOCKLIST",
+      "metadata": {
+        "allowed_values": [
+          "whitespace-delimited package atom list"
+        ],
+        "default_value": "sys-libs/glibc sys-apps/shadow",
+        "mode_impact": "blocks LD_PRELOAD injection for sensitive packages",
+        "mutability": "per-ebuild-run",
+        "owner": "scripts/gentoo",
+        "parse_rule": "shell word-membership check against CATEGORY/PF atom",
+        "safety_impact": "medium"
+      },
+      "read_count": 2,
+      "reference_count": 0,
+      "write_count": 0
+    },
+    {
+      "access_count": 1,
+      "accesses": [
+        {
+          "line": 14,
+          "operation": "read",
+          "path": "scripts/perf_gate.sh",
+          "scope": "scripts",
+          "snippet": "ALLOW_TARGET_VIOLATION=\"${FRANKENLIBC_PERF_ALLOW_TARGET_VIOLATION:-1}\""
+        }
+      ],
+      "env_key": "FRANKENLIBC_PERF_ALLOW_TARGET_VIOLATION",
+      "metadata": {
+        "allowed_values": [
+          "0",
+          "1"
+        ],
+        "default_value": "1",
+        "mode_impact": "policy for perf target budget enforcement strictness",
+        "mutability": "per-perf-gate-run",
+        "owner": "scripts/perf_gate",
+        "parse_rule": "shell numeric flag",
+        "safety_impact": "medium"
+      },
+      "read_count": 1,
+      "reference_count": 0,
+      "write_count": 0
+    },
+    {
+      "access_count": 1,
+      "accesses": [
+        {
+          "line": 20,
+          "operation": "read",
+          "path": "scripts/perf_gate.sh",
+          "scope": "scripts",
+          "snippet": "ENABLE_KERNEL_SUITE=\"${FRANKENLIBC_PERF_ENABLE_KERNEL_SUITE:-0}\""
+        }
+      ],
+      "env_key": "FRANKENLIBC_PERF_ENABLE_KERNEL_SUITE",
+      "metadata": {
+        "allowed_values": [
+          "0",
+          "1"
+        ],
+        "default_value": "0",
+        "mode_impact": "enables additional kernel perf suite branch",
+        "mutability": "per-perf-gate-run",
+        "owner": "scripts/perf_gate",
+        "parse_rule": "shell numeric flag",
+        "safety_impact": "low"
+      },
+      "read_count": 1,
+      "reference_count": 0,
+      "write_count": 0
+    },
+    {
+      "access_count": 1,
+      "accesses": [
+        {
+          "line": 18,
+          "operation": "read",
+          "path": "scripts/perf_gate.sh",
+          "scope": "scripts",
+          "snippet": "MAX_LOAD_FACTOR=\"${FRANKENLIBC_PERF_MAX_LOAD_FACTOR:-0.85}\""
+        }
+      ],
+      "env_key": "FRANKENLIBC_PERF_MAX_LOAD_FACTOR",
+      "metadata": {
+        "allowed_values": [
+          "float > 0"
+        ],
+        "default_value": "0.85",
+        "mode_impact": "host load cutoff for overloaded-run skipping",
+        "mutability": "per-perf-gate-run",
+        "owner": "scripts/perf_gate",
+        "parse_rule": "shell numeric string parsed by gate",
+        "safety_impact": "low"
+      },
+      "read_count": 1,
+      "reference_count": 0,
+      "write_count": 0
+    },
+    {
+      "access_count": 1,
+      "accesses": [
+        {
+          "line": 13,
+          "operation": "read",
+          "path": "scripts/perf_gate.sh",
+          "scope": "scripts",
+          "snippet": "MAX_REGRESSION_PCT=\"${FRANKENLIBC_PERF_MAX_REGRESSION_PCT:-15}\""
+        }
+      ],
+      "env_key": "FRANKENLIBC_PERF_MAX_REGRESSION_PCT",
+      "metadata": {
+        "allowed_values": [
+          "integer/float >= 0"
+        ],
+        "default_value": "15",
+        "mode_impact": "perf regression fail threshold",
+        "mutability": "per-perf-gate-run",
+        "owner": "scripts/perf_gate",
+        "parse_rule": "shell numeric string parsed as percentage threshold",
+        "safety_impact": "medium"
+      },
+      "read_count": 1,
+      "reference_count": 0,
+      "write_count": 0
+    },
+    {
+      "access_count": 1,
+      "accesses": [
+        {
+          "line": 17,
+          "operation": "read",
+          "path": "scripts/perf_gate.sh",
+          "scope": "scripts",
+          "snippet": "SKIP_OVERLOADED=\"${FRANKENLIBC_PERF_SKIP_OVERLOADED:-1}\""
+        }
+      ],
+      "env_key": "FRANKENLIBC_PERF_SKIP_OVERLOADED",
+      "metadata": {
+        "allowed_values": [
+          "0",
+          "1"
+        ],
+        "default_value": "1",
+        "mode_impact": "whether perf gate skips on overloaded hosts",
+        "mutability": "per-perf-gate-run",
+        "owner": "scripts/perf_gate",
+        "parse_rule": "shell numeric flag",
+        "safety_impact": "low"
+      },
+      "read_count": 1,
+      "reference_count": 0,
+      "write_count": 0
+    },
+    {
+      "access_count": 2,
+      "accesses": [
+        {
+          "line": 174,
+          "operation": "write",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "export FRANKENLIBC_PHASE=\"${phase}\""
+        },
+        {
+          "line": 197,
+          "operation": "reference",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "unset FRANKENLIBC_PHASE"
+        }
+      ],
+      "env_key": "FRANKENLIBC_PHASE",
+      "metadata": {
+        "allowed_values": [
+          "Portage phase identifier (e.g. src_test, pkg_test)"
+        ],
+        "default_value": "unset",
+        "mode_impact": "observability context only for hook/session logs",
+        "mutability": "per-phase",
+        "owner": "scripts/gentoo",
+        "parse_rule": "set by hook from EBUILD_PHASE when instrumentation is active",
+        "safety_impact": "low"
+      },
+      "read_count": 0,
+      "reference_count": 1,
+      "write_count": 1
+    },
+    {
+      "access_count": 3,
+      "accesses": [
+        {
+          "line": 172,
+          "operation": "write",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "export FRANKENLIBC_PHASE_ACTIVE=1"
+        },
+        {
+          "line": 195,
+          "operation": "reference",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "unset FRANKENLIBC_PHASE_ACTIVE"
+        },
+        {
+          "line": 210,
+          "operation": "read",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "if [[ \"${FRANKENLIBC_PHASE_ACTIVE:-0}\" == \"1\" ]]; then"
+        }
+      ],
+      "env_key": "FRANKENLIBC_PHASE_ACTIVE",
+      "metadata": {
+        "allowed_values": [
+          "0",
+          "1"
+        ],
+        "default_value": "unset/0",
+        "mode_impact": "ensures balanced teardown for temporary preload/log environment",
+        "mutability": "per-hook-invocation",
+        "owner": "scripts/gentoo",
+        "parse_rule": "internal shell phase-activation flag set/unset by hook enter/exit",
+        "safety_impact": "low"
+      },
+      "read_count": 1,
+      "reference_count": 1,
+      "write_count": 1
+    },
+    {
+      "access_count": 2,
+      "accesses": [
+        {
+          "line": 85,
+          "operation": "read",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "local allowlist=\"${FRANKENLIBC_PHASE_ALLOWLIST:-src_test pkg_test}\""
+        },
+        {
+          "line": 121,
+          "operation": "read",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "frankenlibc::log \"skip: phase not in allowlist (${FRANKENLIBC_PHASE_ALLOWLIST:-src_test pkg_test})\""
+        }
+      ],
+      "env_key": "FRANKENLIBC_PHASE_ALLOWLIST",
+      "metadata": {
+        "allowed_values": [
+          "whitespace-delimited phase names"
+        ],
+        "default_value": "src_test pkg_test",
+        "mode_impact": "limits which Portage phases activate FrankenLibC",
+        "mutability": "per-ebuild-run",
+        "owner": "scripts/gentoo",
+        "parse_rule": "shell word-membership check with src_/pkg_ alias normalization",
+        "safety_impact": "medium"
+      },
+      "read_count": 2,
+      "reference_count": 0,
+      "write_count": 0
+    },
+    {
+      "access_count": 4,
+      "accesses": [
+        {
+          "line": 116,
+          "operation": "read",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "if [[ \"${FRANKENLIBC_PORTAGE_ENABLE:-1}\" != \"1\" ]]; then"
+        },
+        {
+          "line": 117,
+          "operation": "read_write",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "frankenlibc::log \"disabled: FRANKENLIBC_PORTAGE_ENABLE=${FRANKENLIBC_PORTAGE_ENABLE:-0}\""
+        },
+        {
+          "line": 138,
+          "operation": "write",
+          "path": "scripts/gentoo/test-runner.py",
+          "scope": "scripts",
+          "snippet": "env_prefix = \"FRANKENLIBC_PORTAGE_ENABLE=0\""
+        },
+        {
+          "line": 140,
+          "operation": "write",
+          "path": "scripts/gentoo/test-runner.py",
+          "scope": "scripts",
+          "snippet": "env_prefix = f\"FRANKENLIBC_PORTAGE_ENABLE=1 FRANKENLIBC_MODE={shlex.quote(franken_mode)} FRANKENLIBC_LOG_FILE=/results/frankenlibc.jsonl\""
+        }
+      ],
+      "env_key": "FRANKENLIBC_PORTAGE_ENABLE",
+      "metadata": {
+        "allowed_values": [
+          "0",
+          "1"
+        ],
+        "default_value": "1",
+        "mode_impact": "global kill-switch for Gentoo Portage hooks",
+        "mutability": "per-ebuild-run",
+        "owner": "scripts/gentoo",
+        "parse_rule": "enabled only when value == \"1\"",
+        "safety_impact": "medium"
+      },
+      "read_count": 2,
+      "reference_count": 0,
+      "write_count": 3
+    },
+    {
+      "access_count": 1,
+      "accesses": [
+        {
+          "line": 55,
+          "operation": "read",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "local log_file=\"${FRANKENLIBC_PORTAGE_LOG:-/var/log/frankenlibc/portage/hooks.jsonl}\""
+        }
+      ],
+      "env_key": "FRANKENLIBC_PORTAGE_LOG",
+      "metadata": {
+        "allowed_values": [
+          "filesystem path"
+        ],
+        "default_value": "/tmp/frankenlibc-portage-hooks.log",
+        "mode_impact": "records hook enable/skip decisions for troubleshooting",
+        "mutability": "per-ebuild-run",
+        "owner": "scripts/gentoo",
+        "parse_rule": "shell path override for hook decision log append",
+        "safety_impact": "low"
+      },
+      "read_count": 1,
+      "reference_count": 0,
+      "write_count": 0
+    },
+    {
+      "access_count": 2,
+      "accesses": [
+        {
+          "line": 174,
+          "operation": "write",
+          "path": "crates/frankenlibc-harness/tests/release_gate_dag_test.rs",
+          "scope": "harness",
+          "snippet": ".env(\"FRANKENLIBC_RELEASE_SIMULATE_FAIL_GATE\", \"e2e\")"
+        },
+        {
+          "line": 126,
+          "operation": "read",
+          "path": "scripts/release_dry_run.sh",
+          "scope": "scripts",
+          "snippet": "simulated_fail_gate = os.environ.get(\"FRANKENLIBC_RELEASE_SIMULATE_FAIL_GATE\", \"\").strip()"
+        }
+      ],
+      "env_key": "FRANKENLIBC_RELEASE_SIMULATE_FAIL_GATE",
+      "metadata": {
+        "allowed_values": [
+          "gate name string",
+          "empty"
+        ],
+        "default_value": "empty",
+        "mode_impact": "injects deterministic release-gate failure for test paths",
+        "mutability": "per-release-dry-run",
+        "owner": "scripts/release_dry_run",
+        "parse_rule": "python os.environ.get(...).strip(); empty means disabled",
+        "safety_impact": "low"
+      },
+      "read_count": 1,
+      "reference_count": 0,
+      "write_count": 1
+    },
+    {
+      "access_count": 1,
+      "accesses": [
+        {
+          "line": 132,
+          "operation": "read",
+          "path": "scripts/gentoo/frankenlibc-ebuild-hooks.sh",
+          "scope": "scripts",
+          "snippet": "if [[ \"${FRANKENLIBC_SKIP_STATIC:-1}\" == \"1\" ]] && frankenlibc::contains_word \"${USE:-}\" \"static-libs\"; then"
+        }
+      ],
+      "env_key": "FRANKENLIBC_SKIP_STATIC",
+      "metadata": {
+        "allowed_values": [
+          "0",
+          "1"
+        ],
+        "default_value": "1",
+        "mode_impact": "skips preload for static-libs builds that cannot use dynamic interposition",
+        "mutability": "per-ebuild-run",
+        "owner": "scripts/gentoo",
+        "parse_rule": "enabled only when value == \"1\" and USE contains static-libs",
+        "safety_impact": "medium"
+      },
+      "read_count": 1,
+      "reference_count": 0,
+      "write_count": 0
+    },
+    {
+      "access_count": 1,
+      "accesses": [
+        {
+          "line": 61,
+          "operation": "read",
+          "path": "crates/frankenlibc-abi/src/startup_abi.rs",
+          "scope": "abi",
+          "snippet": "matches!(std::env::var(\"FRANKENLIBC_STARTUP_PHASE0\"), Ok(v) if v == \"1\")"
+        }
+      ],
+      "env_key": "FRANKENLIBC_STARTUP_PHASE0",
+      "metadata": {
+        "allowed_values": [
+          "0",
+          "1"
+        ],
+        "default_value": "0",
+        "mode_impact": "gates phase-0 startup path in __libc_start_main",
+        "mutability": "process-startup-time",
+        "owner": "abi/startup_abi",
+        "parse_rule": "enabled only when value == \"1\"",
+        "safety_impact": "high"
+      },
+      "read_count": 1,
+      "reference_count": 0,
+      "write_count": 0
+    },
+    {
+      "access_count": 1,
+      "accesses": [
+        {
+          "line": 30,
+          "operation": "reference",
+          "path": "scripts/release_dry_run.sh",
+          "scope": "scripts",
+          "snippet": "for key in (\"FRANKENLIBC_TMPDIR\", \"TMPDIR\"):"
+        }
+      ],
+      "env_key": "FRANKENLIBC_TMPDIR",
+      "metadata": {
+        "allowed_values": [
+          "filesystem path"
+        ],
+        "default_value": "unset (fallback to TMPDIR then /tmp)",
+        "mode_impact": "tooling artifact temp-root location",
+        "mutability": "per-release-dry-run",
+        "owner": "scripts/release_dry_run",
+        "parse_rule": "python os.environ lookup chain",
+        "safety_impact": "low"
+      },
+      "read_count": 0,
+      "reference_count": 1,
+      "write_count": 0
+    }
+  ],
+  "schema_version": "v1",
+  "summary": {
+    "keys_with_reads": 26,
+    "keys_with_writes": 16,
+    "scanned_extensions": [
+      ".py",
+      ".rs",
+      ".sh"
+    ],
+    "scanned_roots": [
+      "crates",
+      "scripts",
+      "tests"
+    ],
+    "total_keys": 29,
+    "unknown_or_ambiguous_count": 0
+  },
+  "unknown_or_ambiguous": []
+}

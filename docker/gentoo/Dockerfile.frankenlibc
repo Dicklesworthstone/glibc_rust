@@ -1,0 +1,24 @@
+ARG BASE_IMAGE=frankenlibc/gentoo-builder:latest
+FROM ${BASE_IMAGE}
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+COPY configs/gentoo/portage-bashrc /etc/portage/bashrc
+COPY configs/gentoo/frankenlibc.toml /opt/frankenlibc/etc/frankenlibc.toml
+COPY configs/gentoo/no-frankenlibc.conf /etc/portage/env/no-frankenlibc.conf
+COPY scripts/gentoo/frankenlibc-ebuild-hooks.sh /opt/frankenlibc/scripts/gentoo/frankenlibc-ebuild-hooks.sh
+COPY scripts/gentoo/build-package.sh /opt/frankenlibc/scripts/gentoo/build-package.sh
+COPY scripts/gentoo/collect-artifacts.sh /opt/frankenlibc/scripts/gentoo/collect-artifacts.sh
+COPY scripts/gentoo/collect-logs.sh /opt/frankenlibc/scripts/gentoo/collect-logs.sh
+COPY scripts/gentoo/analyze-logs.py /opt/frankenlibc/scripts/gentoo/analyze-logs.py
+
+RUN set -eux; \
+    chmod +x /opt/frankenlibc/scripts/gentoo/frankenlibc-ebuild-hooks.sh /opt/frankenlibc/scripts/gentoo/build-package.sh /opt/frankenlibc/scripts/gentoo/collect-artifacts.sh /opt/frankenlibc/scripts/gentoo/collect-logs.sh /opt/frankenlibc/scripts/gentoo/analyze-logs.py; \
+    mkdir -p /etc/portage/env /etc/portage/package.env /opt/frankenlibc/etc /opt/frankenlibc/log /var/log/frankenlibc/portage
+
+ENV FRANKENLIBC_CONFIG=/opt/frankenlibc/etc/frankenlibc.toml
+ENV FRANKENLIBC_LOG_DIR=/var/log/frankenlibc/portage
+ENV FRANKENLIBC_PORTAGE_LOG=/var/log/frankenlibc/portage/hooks.jsonl
+ENV FRANKENLIBC_MODE=hardened
+
+VOLUME ["/opt/frankenlibc", "/var/cache/binpkgs", "/var/cache/distfiles", "/var/log/frankenlibc"]

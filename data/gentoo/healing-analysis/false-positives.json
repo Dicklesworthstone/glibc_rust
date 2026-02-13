@@ -1,0 +1,24 @@
+{
+  "candidate_count": 3,
+  "candidates": [
+    {
+      "actions_per_1000_calls": 1000.0,
+      "kind": "high_action_rate",
+      "package": "dev-db/redis",
+      "reason": "action rate exceeds threshold 50.0"
+    },
+    {
+      "actions_per_1000_calls": 1000.0,
+      "kind": "high_action_rate",
+      "package": "net-misc/curl",
+      "reason": "action rate exceeds threshold 50.0"
+    },
+    {
+      "actions_per_1000_calls": 1000.0,
+      "kind": "high_action_rate",
+      "package": "sys-apps/coreutils",
+      "reason": "action rate exceeds threshold 50.0"
+    }
+  ],
+  "source": "data/gentoo/healing-analysis/summary.json"
+}

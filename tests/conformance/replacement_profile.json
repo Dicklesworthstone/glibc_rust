@@ -108,13 +108,20 @@
     "rationale": "These modules delegate to host glibc for operations not yet reimplemented as RawSyscall or Implemented. They are safe in interpose mode because the host glibc is still loaded."
   },
   "replacement_forbidden": {
-    "description": "In replacement mode, these call-through patterns must be zero. The gate scans for libc:: function calls (not syscall/constant/type) and fails if any are found outside the allowlist.",
+    "description": "In replacement mode, these call-through patterns must be zero. The gate scans for libc:: function calls (not syscall/constant/type) and host pthread wrapper calls (host_pthread_*) and fails if any are found outside the allowlist. Additionally, pthread_mutex_* call-through is always forbidden in replacement-relevant routing paths.",
+    "mutex_symbols": [
+      "pthread_mutex_init",
+      "pthread_mutex_destroy",
+      "pthread_mutex_lock",
+      "pthread_mutex_trylock",
+      "pthread_mutex_unlock"
+    ],
     "enforcement": "scripts/check_replacement_guard.sh"
   },
   "call_through_census": {
     "description": "Current census of host glibc function calls by module. Updated by CI gate.",
     "modules": {
-      "pthread_abi": {"count": 20, "functions": ["pthread_mutex_init", "pthread_mutex_destroy", "pthread_mutex_lock", "pthread_mutex_trylock", "pthread_mutex_unlock", "pthread_cond_init", "pthread_cond_destroy", "pthread_cond_wait", "pthread_cond_signal", "pthread_cond_broadcast", "pthread_rwlock_init", "pthread_rwlock_destroy", "pthread_rwlock_rdlock", "pthread_rwlock_wrlock", "pthread_rwlock_unlock"]},
+      "pthread_abi": {"count": 15, "functions": ["pthread_self", "pthread_equal", "pthread_create", "pthread_join", "pthread_detach", "pthread_cond_init", "pthread_cond_destroy", "pthread_cond_wait", "pthread_cond_signal", "pthread_cond_broadcast", "pthread_rwlock_init", "pthread_rwlock_destroy", "pthread_rwlock_rdlock", "pthread_rwlock_wrlock", "pthread_rwlock_unlock"]},
       "socket_abi": {"count": 14, "functions": ["socket", "bind", "listen", "accept", "connect", "send", "recv", "sendto", "recvfrom", "shutdown", "setsockopt", "getsockopt", "getpeername", "getsockname"]},
       "unistd_abi": {"count": 21, "functions": ["lseek", "stat", "fstat", "lstat", "access", "getcwd", "chdir", "fchdir", "getppid", "getuid", "geteuid", "getgid", "getegid", "unlink", "rmdir", "link", "symlink", "readlink", "fsync", "fdatasync", "sleep", "usleep"]},
       "dlfcn_abi": {"count": 4, "functions": ["dlopen", "dlsym", "dlclose"]},
@@ -127,7 +134,7 @@
       "dirent_abi": {"count": 2, "functions": ["open", "close"]},
       "process_abi": {"count": 1, "functions": ["execvp"]}
     },
-    "total_call_throughs": 85,
+    "total_call_throughs": 80,
     "note": "process_abi.rs has 1 call-through (execvp) plus raw syscalls. dirent_abi uses libc::open/close which are technically call-throughs."
   }
 }

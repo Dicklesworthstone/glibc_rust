@@ -34,7 +34,7 @@ ftui-render = { path = "/dp/frankentui/crates/ftui-render", optional = true }
 ftui-style = { path = "/dp/frankentui/crates/ftui-style", optional = true }
 ftui-widgets = { path = "/dp/frankentui/crates/ftui-widgets", optional = true }
 frankenlibc-membrane = { workspace = true }
-frankenlibc_conformance = { path = "../frankenlibc_conformance" }
+frankenlibc-fixture-exec = { workspace = true }
 
 [[bin]]
 name = "harness"

@@ -1,0 +1,18 @@
+[runner]
+image = "frankenlibc/gentoo-frankenlibc:latest"
+parallelism = 4
+max_retries = 3
+timeout_seconds = 7200
+mode = "hardened"
+resume = true
+dry_run = false
+stop_on_failure = false
+
+[paths]
+build_order = "data/gentoo/build-order.txt"
+build_waves = "data/gentoo/build-waves.json"
+dependency_graph = "data/gentoo/dependency-graph.json"
+results_dir = "artifacts/gentoo-builds"
+state_file = "artifacts/gentoo-builds/state.json"
+binpkg_cache = "/var/cache/binpkgs"
+distfiles_cache = "/var/cache/distfiles"
