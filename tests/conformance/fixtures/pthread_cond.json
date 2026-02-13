@@ -1,0 +1,248 @@
+{
+  "version": "v1",
+  "family": "pthread/cond",
+  "captured_at": "2026-02-13T17:55:00Z",
+  "description": "POSIX condition variable APIs: pthread_cond_init, pthread_cond_destroy, pthread_cond_wait, pthread_cond_timedwait, pthread_cond_signal, pthread_cond_broadcast — POSIX.1-2017 pthread.h",
+  "cases": [
+    {
+      "name": "init_default_attr",
+      "function": "pthread_cond_init",
+      "spec_section": "POSIX.1-2017 pthread_cond_init",
+      "inputs": { "attr": "NULL" },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "both",
+      "notes": "Initialize condvar with default attributes (CLOCK_REALTIME, private). Returns 0."
+    },
+    {
+      "name": "init_monotonic_clock",
+      "function": "pthread_cond_init",
+      "spec_section": "POSIX.1-2017 pthread_cond_init + pthread_condattr_setclock",
+      "inputs": { "attr_clock": "CLOCK_MONOTONIC" },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "both",
+      "notes": "Initialize condvar with CLOCK_MONOTONIC attribute. Returns 0."
+    },
+    {
+      "name": "init_null_pointer",
+      "function": "pthread_cond_init",
+      "spec_section": "POSIX.1-2017 pthread_cond_init",
+      "inputs": { "cond": "NULL" },
+      "expected_output": "EINVAL",
+      "expected_errno": 22,
+      "mode": "both",
+      "notes": "Null condvar pointer. Returns EINVAL."
+    },
+    {
+      "name": "destroy_idle",
+      "function": "pthread_cond_destroy",
+      "spec_section": "POSIX.1-2017 pthread_cond_destroy",
+      "inputs": { "state": "idle" },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "both",
+      "notes": "Destroy initialized condvar with no waiters. Returns 0."
+    },
+    {
+      "name": "destroy_with_waiters",
+      "function": "pthread_cond_destroy",
+      "spec_section": "POSIX.1-2017 pthread_cond_destroy",
+      "inputs": { "state": "waiting" },
+      "expected_output": "EBUSY",
+      "expected_errno": 16,
+      "mode": "both",
+      "notes": "Destroy condvar while threads are waiting. UB per POSIX; we return EBUSY deterministically."
+    },
+    {
+      "name": "destroy_null_pointer",
+      "function": "pthread_cond_destroy",
+      "spec_section": "POSIX.1-2017 pthread_cond_destroy",
+      "inputs": { "cond": "NULL" },
+      "expected_output": "EINVAL",
+      "expected_errno": 22,
+      "mode": "both",
+      "notes": "Null condvar pointer. Returns EINVAL."
+    },
+    {
+      "name": "wait_basic",
+      "function": "pthread_cond_wait",
+      "spec_section": "POSIX.1-2017 pthread_cond_wait",
+      "inputs": { "condvar": "initialized", "mutex": "locked_by_caller" },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "both",
+      "notes": "Basic wait: atomically release mutex, block, reacquire mutex on signal. Returns 0."
+    },
+    {
+      "name": "wait_null_condvar",
+      "function": "pthread_cond_wait",
+      "spec_section": "POSIX.1-2017 pthread_cond_wait",
+      "inputs": { "condvar": "NULL", "mutex": "locked_by_caller" },
+      "expected_output": "EINVAL",
+      "expected_errno": 22,
+      "mode": "both",
+      "notes": "Null condvar. Returns EINVAL."
+    },
+    {
+      "name": "wait_null_mutex",
+      "function": "pthread_cond_wait",
+      "spec_section": "POSIX.1-2017 pthread_cond_wait",
+      "inputs": { "condvar": "initialized", "mutex": "NULL" },
+      "expected_output": "EINVAL",
+      "expected_errno": 22,
+      "mode": "both",
+      "notes": "Null mutex. Returns EINVAL."
+    },
+    {
+      "name": "wait_mutex_mismatch",
+      "function": "pthread_cond_wait",
+      "spec_section": "POSIX.1-2017 pthread_cond_wait",
+      "inputs": { "condvar": "has_waiter_with_mutex_A", "mutex": "mutex_B" },
+      "expected_output": "EINVAL",
+      "expected_errno": 22,
+      "mode": "both",
+      "notes": "Different mutex than existing waiters. UB per POSIX; we return EINVAL."
+    },
+    {
+      "name": "timedwait_before_deadline",
+      "function": "pthread_cond_timedwait",
+      "spec_section": "POSIX.1-2017 pthread_cond_timedwait",
+      "inputs": { "condvar": "initialized", "mutex": "locked_by_caller", "deadline": "future" },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "both",
+      "notes": "Signal arrives before deadline. Returns 0 after reacquiring mutex."
+    },
+    {
+      "name": "timedwait_expired_deadline",
+      "function": "pthread_cond_timedwait",
+      "spec_section": "POSIX.1-2017 pthread_cond_timedwait",
+      "inputs": { "condvar": "initialized", "mutex": "locked_by_caller", "deadline": "past" },
+      "expected_output": "ETIMEDOUT",
+      "expected_errno": 110,
+      "mode": "both",
+      "notes": "Deadline already in the past. Returns ETIMEDOUT after reacquiring mutex."
+    },
+    {
+      "name": "timedwait_invalid_nsec_negative",
+      "function": "pthread_cond_timedwait",
+      "spec_section": "POSIX.1-2017 pthread_cond_timedwait",
+      "inputs": { "condvar": "initialized", "mutex": "locked_by_caller", "tv_nsec": -1 },
+      "expected_output": "EINVAL",
+      "expected_errno": 22,
+      "mode": "both",
+      "notes": "Negative tv_nsec. Returns EINVAL."
+    },
+    {
+      "name": "timedwait_invalid_nsec_billion",
+      "function": "pthread_cond_timedwait",
+      "spec_section": "POSIX.1-2017 pthread_cond_timedwait",
+      "inputs": { "condvar": "initialized", "mutex": "locked_by_caller", "tv_nsec": 1000000000 },
+      "expected_output": "EINVAL",
+      "expected_errno": 22,
+      "mode": "both",
+      "notes": "tv_nsec >= 1e9. Returns EINVAL."
+    },
+    {
+      "name": "signal_one_waiter",
+      "function": "pthread_cond_signal",
+      "spec_section": "POSIX.1-2017 pthread_cond_signal",
+      "inputs": { "condvar": "has_one_waiter" },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "both",
+      "notes": "Signal wakes exactly one waiter. Returns 0."
+    },
+    {
+      "name": "signal_no_waiters",
+      "function": "pthread_cond_signal",
+      "spec_section": "POSIX.1-2017 pthread_cond_signal",
+      "inputs": { "condvar": "idle_no_waiters" },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "both",
+      "notes": "Signal on empty condvar is a no-op. Returns 0."
+    },
+    {
+      "name": "signal_null_pointer",
+      "function": "pthread_cond_signal",
+      "spec_section": "POSIX.1-2017 pthread_cond_signal",
+      "inputs": { "condvar": "NULL" },
+      "expected_output": "EINVAL",
+      "expected_errno": 22,
+      "mode": "both",
+      "notes": "Null condvar pointer. Returns EINVAL."
+    },
+    {
+      "name": "broadcast_multiple_waiters",
+      "function": "pthread_cond_broadcast",
+      "spec_section": "POSIX.1-2017 pthread_cond_broadcast",
+      "inputs": { "condvar": "has_multiple_waiters" },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "both",
+      "notes": "Broadcast wakes all waiters. Returns 0. Waiters contend for mutex."
+    },
+    {
+      "name": "broadcast_no_waiters",
+      "function": "pthread_cond_broadcast",
+      "spec_section": "POSIX.1-2017 pthread_cond_broadcast",
+      "inputs": { "condvar": "idle_no_waiters" },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "both",
+      "notes": "Broadcast on empty condvar is a no-op. Returns 0."
+    },
+    {
+      "name": "broadcast_null_pointer",
+      "function": "pthread_cond_broadcast",
+      "spec_section": "POSIX.1-2017 pthread_cond_broadcast",
+      "inputs": { "condvar": "NULL" },
+      "expected_output": "EINVAL",
+      "expected_errno": 22,
+      "mode": "both",
+      "notes": "Null condvar pointer. Returns EINVAL."
+    },
+    {
+      "name": "spurious_wakeup_predicate_loop",
+      "function": "pthread_cond_wait",
+      "spec_section": "POSIX.1-2017 pthread_cond_wait (spurious wakeup)",
+      "inputs": { "condvar": "initialized", "pattern": "predicate_loop" },
+      "expected_output": "predicate_satisfied",
+      "expected_errno": 0,
+      "mode": "both",
+      "notes": "Predicate loop pattern correctly handles spurious wakeups. Wait may return without signal."
+    },
+    {
+      "name": "wait_reacquires_mutex",
+      "function": "pthread_cond_wait",
+      "spec_section": "POSIX.1-2017 pthread_cond_wait",
+      "inputs": { "condvar": "initialized", "mutex": "locked_by_caller" },
+      "expected_output": "mutex_held_on_return",
+      "expected_errno": 0,
+      "mode": "both",
+      "notes": "After wait returns (signal or spurious), the mutex is reacquired by the caller."
+    },
+    {
+      "name": "timedwait_monotonic_clock",
+      "function": "pthread_cond_timedwait",
+      "spec_section": "POSIX.1-2017 pthread_cond_timedwait + pthread_condattr_setclock",
+      "inputs": { "condvar": "monotonic_clock", "deadline": "monotonic_future" },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "both",
+      "notes": "Timed wait with CLOCK_MONOTONIC condvar. Deadline compared against monotonic clock."
+    },
+    {
+      "name": "destroy_then_reinit",
+      "function": "pthread_cond_init",
+      "spec_section": "POSIX.1-2017 pthread_cond_init",
+      "inputs": { "state": "previously_destroyed" },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "both",
+      "notes": "Reinitializing a destroyed condvar is valid. Returns 0."
+    }
+  ]
+}

@@ -121,6 +121,25 @@ def parse_resume_token(token: str, prereq_hash: str, gate_count: int) -> int:
     return start_idx
 
 
+def resolve_artifact(root: pathlib.Path, gate: dict[str, Any]) -> str | None:
+    art = gate.get("report_artifact")
+    if not art:
+        return None
+    p = root / art if not pathlib.Path(art).is_absolute() else pathlib.Path(art)
+    return str(p) if p.exists() else None
+
+
+def build_blocker_chain(gates: list[dict[str, Any]], failed_idx: int) -> list[str]:
+    chain: list[str] = []
+    failed_name = gates[failed_idx]["gate_name"]
+    chain.append(f"{failed_name} (FAILED)")
+    for gate in gates[failed_idx + 1:]:
+        deps = gate.get("depends_on", [])
+        if any(d in [g for g in [r.split(" ")[0] for r in chain]] for d in deps):
+            chain.append(f"{gate['gate_name']} (BLOCKED by {failed_name})")
+    return chain
+
+
 def run_gate(root: pathlib.Path, command: str, mode: str, gate_name: str) -> tuple[bool, int, str]:
     if mode == "dry-run":
         simulated_fail_gate = os.environ.get("FRANKENLIBC_RELEASE_SIMULATE_FAIL_GATE", "").strip()
@@ -261,6 +280,7 @@ def main() -> int:
             duration_ms = int((time.perf_counter() - gate_started) * 1000)
             status = "pass" if ok else "fail"
 
+        artifact_path = resolve_artifact(root, gate)
         row = {
             "trace_id": trace_id,
             "gate_name": gate_name,
@@ -272,12 +292,16 @@ def main() -> int:
             "depends_on": gate.get("depends_on", []),
             "detail": detail,
             "exit_code": exit_code,
+            "artifact_path": artifact_path,
+            "critical": gate.get("critical", True),
+            "rationale": f"gate '{gate_name}' {'passed all checks' if status == 'pass' else 'failed: ' + detail}" if status not in ("resume_skip",) else "skipped (resume)",
         }
         rows.append(row)
         print(f"{status.upper()}: {gate_name} ({detail})")
 
         if status == "fail":
             next_token = f"v1:{prereq_hash[:12]}:{idx}"
+            blocker_chain = build_blocker_chain(gates, idx)
             state = {
                 "schema_version": 1,
                 "trace_id": trace_id,
@@ -288,11 +312,14 @@ def main() -> int:
                 "resume_token": next_token,
                 "generated_at_utc": now_utc(),
                 "log_path": str(log_path),
+                "blocker_chain": blocker_chain,
+                "diagnostics": detail,
             }
             write_json(state_path, state)
             write_jsonl(log_path, rows)
             print("")
             print(f"FAIL-FAST: stopped at gate '{gate_name}'")
+            print(f"Blocker chain: {' -> '.join(blocker_chain)}")
             print(f"Resume token: {next_token}")
             print(f"State file: {state_path}")
             print(f"Log file: {log_path}")
@@ -300,8 +327,16 @@ def main() -> int:
             return 1
 
     total_duration_ms = int((time.perf_counter() - run_started) * 1000)
+    passed = sum(1 for r in rows if r["status"] == "pass")
+    skipped = sum(1 for r in rows if r["status"] == "resume_skip")
+    artifact_index = {
+        r["gate_name"]: r["artifact_path"]
+        for r in rows
+        if r.get("artifact_path")
+    }
     dossier = {
-        "schema_version": 1,
+        "schema_version": 2,
+        "bead": "bd-w2c3.10.2",
         "trace_id": trace_id,
         "mode": args.mode,
         "prereq_hash": prereq_hash,
@@ -309,6 +344,14 @@ def main() -> int:
         "start_index": start_index,
         "total_duration_ms": total_duration_ms,
         "generated_at_utc": now_utc(),
+        "summary": {
+            "total": len(gates),
+            "passed": passed,
+            "skipped": skipped,
+            "failed": 0,
+            "verdict": "PASS",
+        },
+        "artifact_index": artifact_index,
         "gates": rows,
     }
 

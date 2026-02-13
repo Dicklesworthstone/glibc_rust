@@ -1,0 +1,75 @@
+{
+  "version": "v1",
+  "family": "grp_ops",
+  "captured_at": "2026-02-13T00:00:00Z",
+  "description": "Mode-specific parity fixtures for group database operations (getgrnam, getgrgid, getgrent, setgrent, endgrent, getgrnam_r, getgrgid_r). All Implemented. Strict: host-glibc parity. Hardened: missing group fallback.",
+  "cases": [
+    {
+      "name": "getgrnam_root_strict",
+      "function": "getgrnam",
+      "spec_section": "POSIX getgrnam",
+      "inputs": { "name": "root" },
+      "expected_output": "GROUP_PTR",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "root group always exists"
+    },
+    {
+      "name": "getgrnam_nonexistent_strict",
+      "function": "getgrnam",
+      "spec_section": "POSIX getgrnam",
+      "inputs": { "name": "nonexistent_group_xyz" },
+      "expected_output": "NULL",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Unknown group returns NULL without error"
+    },
+    {
+      "name": "getgrgid_zero_strict",
+      "function": "getgrgid",
+      "spec_section": "POSIX getgrgid",
+      "inputs": { "gid": 0 },
+      "expected_output": "GROUP_PTR",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "GID 0 is root group"
+    },
+    {
+      "name": "getgrgid_nonexistent_strict",
+      "function": "getgrgid",
+      "spec_section": "POSIX getgrgid",
+      "inputs": { "gid": 99999 },
+      "expected_output": "NULL",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "setgrent_endgrent_strict",
+      "function": "setgrent",
+      "spec_section": "POSIX setgrent/endgrent",
+      "inputs": {},
+      "expected_output": "VOID",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "setgrent/endgrent cycle without error"
+    },
+    {
+      "name": "getgrnam_root_hardened",
+      "function": "getgrnam",
+      "spec_section": "POSIX getgrnam",
+      "inputs": { "name": "root" },
+      "expected_output": "GROUP_PTR",
+      "expected_errno": 0,
+      "mode": "hardened"
+    },
+    {
+      "name": "getgrgid_zero_hardened",
+      "function": "getgrgid",
+      "spec_section": "POSIX getgrgid",
+      "inputs": { "gid": 0 },
+      "expected_output": "GROUP_PTR",
+      "expected_errno": 0,
+      "mode": "hardened"
+    }
+  ]
+}

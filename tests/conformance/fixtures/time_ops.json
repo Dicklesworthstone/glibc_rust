@@ -1,0 +1,84 @@
+{
+  "version": "v1",
+  "family": "time_ops",
+  "captured_at": "2026-02-13T00:00:00Z",
+  "description": "Mode-specific parity fixtures for time operations (clock, clock_gettime, localtime_r, time). All RawSyscall. Strict: host-kernel parity. Hardened: invalid clockid fallback.",
+  "cases": [
+    {
+      "name": "time_returns_positive_strict",
+      "function": "time",
+      "spec_section": "POSIX time",
+      "inputs": { "tloc": null },
+      "expected_output": "POSITIVE_INT",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "clock_gettime_realtime_strict",
+      "function": "clock_gettime",
+      "spec_section": "POSIX clock_gettime",
+      "inputs": { "clk_id": 0 },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "CLOCK_REALTIME"
+    },
+    {
+      "name": "clock_gettime_monotonic_strict",
+      "function": "clock_gettime",
+      "spec_section": "POSIX clock_gettime",
+      "inputs": { "clk_id": 1 },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "CLOCK_MONOTONIC"
+    },
+    {
+      "name": "clock_gettime_invalid_strict",
+      "function": "clock_gettime",
+      "spec_section": "POSIX clock_gettime",
+      "inputs": { "clk_id": 999 },
+      "expected_output": "-1",
+      "expected_errno": 22,
+      "mode": "strict",
+      "note": "Invalid clock ID returns EINVAL"
+    },
+    {
+      "name": "clock_returns_positive_strict",
+      "function": "clock",
+      "spec_section": "C11 7.27.2.1 clock",
+      "inputs": {},
+      "expected_output": "NON_NEGATIVE",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "localtime_r_epoch_strict",
+      "function": "localtime_r",
+      "spec_section": "POSIX localtime_r",
+      "inputs": { "time": 0 },
+      "expected_output": "TM_STRUCT",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Unix epoch should produce valid tm"
+    },
+    {
+      "name": "time_returns_positive_hardened",
+      "function": "time",
+      "spec_section": "POSIX time",
+      "inputs": { "tloc": null },
+      "expected_output": "POSITIVE_INT",
+      "expected_errno": 0,
+      "mode": "hardened"
+    },
+    {
+      "name": "clock_gettime_realtime_hardened",
+      "function": "clock_gettime",
+      "spec_section": "POSIX clock_gettime",
+      "inputs": { "clk_id": 0 },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "hardened"
+    }
+  ]
+}

@@ -1,0 +1,330 @@
+{
+  "schema_version": "v1",
+  "bead": "bd-w2c3.10.3",
+  "generated_at": "2026-02-13T17:57:36Z",
+  "status": "pass",
+  "summary": {
+    "errors": 0,
+    "warnings": 0,
+    "total_findings": 0,
+    "coverage_pct": 64,
+    "callthrough_remaining": 49,
+    "open_gap_beads": 45,
+    "closure_ready": false
+  },
+  "findings": [],
+  "coverage_gaps": {
+    "total_symbols": 250,
+    "symbols_with_fixtures": 159,
+    "coverage_pct": 64,
+    "uncovered_modules": [],
+    "partial_modules": [
+      {
+        "module": "dlfcn_abi",
+        "total": 4,
+        "covered": 3,
+        "pct": 75,
+        "gap": 1
+      },
+      {
+        "module": "grp_abi",
+        "total": 7,
+        "covered": 3,
+        "pct": 43,
+        "gap": 4
+      },
+      {
+        "module": "io_abi",
+        "total": 4,
+        "covered": 1,
+        "pct": 25,
+        "gap": 3
+      },
+      {
+        "module": "malloc_abi",
+        "total": 7,
+        "covered": 4,
+        "pct": 57,
+        "gap": 3
+      },
+      {
+        "module": "mmap_abi",
+        "total": 5,
+        "covered": 4,
+        "pct": 80,
+        "gap": 1
+      },
+      {
+        "module": "poll_abi",
+        "total": 4,
+        "covered": 2,
+        "pct": 50,
+        "gap": 2
+      },
+      {
+        "module": "process_abi",
+        "total": 6,
+        "covered": 2,
+        "pct": 33,
+        "gap": 4
+      },
+      {
+        "module": "pthread_abi",
+        "total": 20,
+        "covered": 15,
+        "pct": 75,
+        "gap": 5
+      },
+      {
+        "module": "pwd_abi",
+        "total": 7,
+        "covered": 3,
+        "pct": 43,
+        "gap": 4
+      },
+      {
+        "module": "resolv_abi",
+        "total": 4,
+        "covered": 1,
+        "pct": 25,
+        "gap": 3
+      },
+      {
+        "module": "resource_abi",
+        "total": 2,
+        "covered": 1,
+        "pct": 50,
+        "gap": 1
+      },
+      {
+        "module": "signal_abi",
+        "total": 4,
+        "covered": 3,
+        "pct": 75,
+        "gap": 1
+      },
+      {
+        "module": "socket_abi",
+        "total": 14,
+        "covered": 5,
+        "pct": 36,
+        "gap": 9
+      },
+      {
+        "module": "stdio_abi",
+        "total": 30,
+        "covered": 4,
+        "pct": 13,
+        "gap": 26
+      },
+      {
+        "module": "stdlib_abi",
+        "total": 11,
+        "covered": 6,
+        "pct": 55,
+        "gap": 5
+      },
+      {
+        "module": "termios_abi",
+        "total": 10,
+        "covered": 5,
+        "pct": 50,
+        "gap": 5
+      },
+      {
+        "module": "unistd_abi",
+        "total": 27,
+        "covered": 13,
+        "pct": 48,
+        "gap": 14
+      }
+    ],
+    "full_modules": [
+      {
+        "module": "ctype_abi",
+        "total": 11
+      },
+      {
+        "module": "dirent_abi",
+        "total": 3
+      },
+      {
+        "module": "errno_abi",
+        "total": 1
+      },
+      {
+        "module": "iconv_abi",
+        "total": 3
+      },
+      {
+        "module": "inet_abi",
+        "total": 7
+      },
+      {
+        "module": "locale_abi",
+        "total": 2
+      },
+      {
+        "module": "math_abi",
+        "total": 19
+      },
+      {
+        "module": "startup_abi",
+        "total": 3
+      },
+      {
+        "module": "string_abi",
+        "total": 17
+      },
+      {
+        "module": "time_abi",
+        "total": 4
+      },
+      {
+        "module": "wchar_abi",
+        "total": 14
+      }
+    ]
+  },
+  "callthrough_gaps": {
+    "total_callthrough": 49,
+    "by_module": [
+      {
+        "module": "stdio_abi",
+        "count": 30,
+        "symbols": [
+          "clearerr",
+          "fclose",
+          "feof",
+          "ferror",
+          "fflush",
+          "fgetc",
+          "fgets",
+          "fileno",
+          "fopen",
+          "fprintf",
+          "fputc",
+          "fputs",
+          "fread",
+          "fseek",
+          "ftell",
+          "fwrite",
+          "getchar",
+          "perror",
+          "printf",
+          "putchar",
+          "puts",
+          "rewind",
+          "setbuf",
+          "setvbuf",
+          "snprintf",
+          "sprintf",
+          "stderr",
+          "stdin",
+          "stdout",
+          "ungetc"
+        ]
+      },
+      {
+        "module": "pthread_abi",
+        "count": 15,
+        "symbols": [
+          "pthread_cond_broadcast",
+          "pthread_cond_destroy",
+          "pthread_cond_init",
+          "pthread_cond_signal",
+          "pthread_cond_wait",
+          "pthread_create",
+          "pthread_detach",
+          "pthread_equal",
+          "pthread_join",
+          "pthread_rwlock_destroy",
+          "pthread_rwlock_init",
+          "pthread_rwlock_rdlock",
+          "pthread_rwlock_unlock",
+          "pthread_rwlock_wrlock",
+          "pthread_self"
+        ]
+      },
+      {
+        "module": "dlfcn_abi",
+        "count": 4,
+        "symbols": [
+          "dlclose",
+          "dlerror",
+          "dlopen",
+          "dlsym"
+        ]
+      }
+    ]
+  },
+  "non_closure_reasons": [
+    {
+      "category": "callthrough_elimination",
+      "detail": "49 GlibcCallThrough symbols remain for replacement elimination",
+      "blocking_beads": [
+        "bd-w2c3.2.1"
+      ]
+    },
+    {
+      "category": "open_beads",
+      "detail": "45 gap-closure beads remain open"
+    }
+  ],
+  "drift_gates_status": "armed",
+  "open_gap_beads": {
+    "count": 45,
+    "top_priorities": [
+      {
+        "id": "bd-26xb.5",
+        "priority": 0,
+        "title": "Flagship 5: Counterfactual Policy Simulator + Safe Promotion"
+      },
+      {
+        "id": "bd-26xb.4",
+        "priority": 0,
+        "title": "Flagship 4: Explainability Workbench (frankentui)"
+      },
+      {
+        "id": "bd-26xb.3",
+        "priority": 0,
+        "title": "Flagship 3: Compatibility SLO + Certification Packs"
+      },
+      {
+        "id": "bd-26xb.2",
+        "priority": 0,
+        "title": "Flagship 2: Change-Impact Oracle + Budget-Aware Test Scheduler"
+      },
+      {
+        "id": "bd-26xb.1",
+        "priority": 0,
+        "title": "Flagship 1: Failure-to-Fix Autoreducer Pipeline"
+      },
+      {
+        "id": "bd-w2c3.10",
+        "priority": 0,
+        "title": "Track 9: Release Claim-Control + Closure Protocol"
+      },
+      {
+        "id": "bd-w2c3.9.3",
+        "priority": 0,
+        "title": "T8.3 Structured Log/Evidence Unification + Artifact Index"
+      },
+      {
+        "id": "bd-w2c3.9.2",
+        "priority": 0,
+        "title": "T8.2 Deterministic E2E Packs: smoke/stress/fault/stability/security"
+      },
+      {
+        "id": "bd-w2c3.9.1",
+        "priority": 0,
+        "title": "T8.1 Unit Test Closure Packs by Family"
+      },
+      {
+        "id": "bd-w2c3.9",
+        "priority": 0,
+        "title": "Track 8: Testing + Observability + Deterministic Replay Expansion"
+      }
+    ]
+  }
+}

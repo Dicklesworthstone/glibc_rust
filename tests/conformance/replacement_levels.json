@@ -19,12 +19,12 @@
         "test_gate": "cargo test --workspace passes"
       },
       "current_state": {
-        "implemented_pct": 38,
-        "raw_syscall_pct": 36,
-        "callthrough_pct": 23,
-        "stub_pct": 3,
+        "implemented_pct": 47,
+        "raw_syscall_pct": 33,
+        "callthrough_pct": 20,
+        "stub_pct": 0,
         "callthrough_modules": ["stdio_abi", "pthread_abi", "dlfcn_abi"],
-        "stub_modules": ["locale_abi", "resolv_abi"]
+        "stub_modules": []
       },
       "status": "achieved"
     },
@@ -45,7 +45,6 @@
         "additional": ["All stubs eliminated", "Hardened mode E2E validated"]
       },
       "blockers": [
-        "6 Stub symbols need implementation (locale_abi: 2, resolv_abi: 4)",
         "E2E smoke harness needs hardened mode validation"
       ],
       "status": "in_progress"

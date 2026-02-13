@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "bead": "bd-5fw.2",
-  "description": "Canonical deterministic gate DAG for release dry-runs. Defines one fixed topological order, explicit gate dependencies, and fail-fast/resume semantics.",
+  "description": "Canonical deterministic gate DAG for release dry-runs. Defines one fixed topological order, explicit gate dependencies, and fail-fast/resume semantics. Enhanced with claim reconciliation and conformance coverage gates (bd-w2c3.10.2).",
   "gate_ordering_policy": {
     "strategy": "topological_then_declared",
     "determinism": "Given identical DAG + mode + inputs, gate execution order is identical.",
@@ -20,7 +20,9 @@
       ],
       "outputs": [
         "target/"
-      ]
+      ],
+      "report_artifact": null,
+      "critical": true
     },
     {
       "gate_name": "unit",
@@ -34,7 +36,9 @@
       ],
       "outputs": [
         "target/"
-      ]
+      ],
+      "report_artifact": null,
+      "critical": true
     },
     {
       "gate_name": "conformance",
@@ -47,12 +51,50 @@
       ],
       "outputs": [
         "tests/conformance/golden/sha256sums.txt"
-      ]
+      ],
+      "report_artifact": "tests/conformance/golden/sha256sums.txt",
+      "critical": true
+    },
+    {
+      "gate_name": "conformance_coverage",
+      "depends_on": [
+        "conformance"
+      ],
+      "command": "scripts/check_conformance_coverage.sh",
+      "inputs": [
+        "tests/conformance/fixtures/",
+        "tests/conformance/conformance_coverage_baseline.v1.json",
+        "support_matrix.json"
+      ],
+      "outputs": [
+        "tests/conformance/conformance_coverage_snapshot.v1.json"
+      ],
+      "report_artifact": "tests/conformance/conformance_coverage_snapshot.v1.json",
+      "critical": true
+    },
+    {
+      "gate_name": "claim_reconciliation",
+      "depends_on": [
+        "conformance_coverage"
+      ],
+      "command": "scripts/check_claim_reconciliation.sh",
+      "inputs": [
+        "FEATURE_PARITY.md",
+        "README.md",
+        "support_matrix.json",
+        "tests/conformance/reality_report.v1.json",
+        "tests/conformance/replacement_levels.json"
+      ],
+      "outputs": [
+        "tests/conformance/claim_reconciliation_report.v1.json"
+      ],
+      "report_artifact": "tests/conformance/claim_reconciliation_report.v1.json",
+      "critical": true
     },
     {
       "gate_name": "e2e",
       "depends_on": [
-        "conformance"
+        "claim_reconciliation"
       ],
       "command": "scripts/check_e2e_suite.sh",
       "inputs": [
@@ -61,7 +103,9 @@
       ],
       "outputs": [
         "tests/cve_arena/results/"
-      ]
+      ],
+      "report_artifact": null,
+      "critical": true
     },
     {
       "gate_name": "perf",
@@ -75,7 +119,9 @@
       ],
       "outputs": [
         "target/criterion/"
-      ]
+      ],
+      "report_artifact": null,
+      "critical": true
     },
     {
       "gate_name": "docs_reports",
@@ -91,7 +137,9 @@
       ],
       "outputs": [
         "tests/conformance/reality_report.v1.json"
-      ]
+      ],
+      "report_artifact": "tests/conformance/reality_report.v1.json",
+      "critical": true
     },
     {
       "gate_name": "release_dossier",
@@ -105,7 +153,9 @@
       ],
       "outputs": [
         "/tmp/frankenlibc_release_dry_run_dossier.json"
-      ]
+      ],
+      "report_artifact": null,
+      "critical": true
     }
   ],
   "resume_policy": {

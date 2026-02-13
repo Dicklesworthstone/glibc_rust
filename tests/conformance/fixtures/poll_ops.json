@@ -1,0 +1,67 @@
+{
+  "version": "v1",
+  "family": "poll_ops",
+  "captured_at": "2026-02-13T00:00:00Z",
+  "description": "Mode-specific parity fixtures for I/O multiplexing operations (poll, ppoll, select, pselect). Strict: host-glibc parity. Hardened: nfds clamping for oversized values.",
+  "cases": [
+    {
+      "name": "poll_stdin_readable_strict",
+      "function": "poll",
+      "spec_section": "POSIX poll",
+      "inputs": { "fds": [{"fd": 0, "events": 1}], "nfds": 1, "timeout": 0 },
+      "expected_output": "POLL_RETURNED",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "POLLIN on stdin with zero timeout"
+    },
+    {
+      "name": "poll_empty_fds_strict",
+      "function": "poll",
+      "spec_section": "POSIX poll",
+      "inputs": { "fds": [], "nfds": 0, "timeout": 0 },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Empty fds with zero timeout returns 0"
+    },
+    {
+      "name": "poll_invalid_fd_strict",
+      "function": "poll",
+      "spec_section": "POSIX poll",
+      "inputs": { "fds": [{"fd": -1, "events": 1}], "nfds": 1, "timeout": 0 },
+      "expected_output": "POLLNVAL",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Invalid fd returns POLLNVAL in revents"
+    },
+    {
+      "name": "select_zero_timeout_strict",
+      "function": "select",
+      "spec_section": "POSIX pselect / select",
+      "inputs": { "nfds": 0, "timeout_sec": 0, "timeout_usec": 0 },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Zero timeout, no fds: returns 0"
+    },
+    {
+      "name": "poll_stdin_readable_hardened",
+      "function": "poll",
+      "spec_section": "POSIX poll",
+      "inputs": { "fds": [{"fd": 0, "events": 1}], "nfds": 1, "timeout": 0 },
+      "expected_output": "POLL_RETURNED",
+      "expected_errno": 0,
+      "mode": "hardened"
+    },
+    {
+      "name": "poll_oversized_nfds_hardened",
+      "function": "poll",
+      "spec_section": "POSIX poll",
+      "inputs": { "fds": [{"fd": 0, "events": 1}], "nfds": 999999, "timeout": 0 },
+      "expected_output": "POLL_CLAMPED",
+      "expected_errno": 0,
+      "mode": "hardened",
+      "note": "Oversized nfds clamped to actual array length"
+    }
+  ]
+}

@@ -1,0 +1,168 @@
+{
+  "version": "v1",
+  "family": "pthread/tls_keys",
+  "captured_at": "2026-02-13T17:38:00Z",
+  "description": "POSIX thread-local storage key APIs: pthread_key_create, pthread_key_delete, pthread_getspecific, pthread_setspecific — POSIX.1-2017 pthread.h",
+  "cases": [
+    {
+      "name": "key_create_success",
+      "function": "pthread_key_create",
+      "spec_section": "POSIX.1-2017 pthread_key_create",
+      "inputs": { "destructor": "none" },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "both",
+      "notes": "Creates a key with no destructor. Returns 0 on success."
+    },
+    {
+      "name": "key_create_with_destructor",
+      "function": "pthread_key_create",
+      "spec_section": "POSIX.1-2017 pthread_key_create",
+      "inputs": { "destructor": "counter_dtor" },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "both",
+      "notes": "Creates a key with a destructor function. Returns 0 on success."
+    },
+    {
+      "name": "key_create_exhaustion",
+      "function": "pthread_key_create",
+      "spec_section": "POSIX.1-2017 pthread_key_create",
+      "inputs": { "prior_keys_consumed": 1024 },
+      "expected_output": "EAGAIN",
+      "expected_errno": 11,
+      "mode": "both",
+      "notes": "All PTHREAD_KEYS_MAX (1024) slots consumed. Returns EAGAIN."
+    },
+    {
+      "name": "key_delete_valid",
+      "function": "pthread_key_delete",
+      "spec_section": "POSIX.1-2017 pthread_key_delete",
+      "inputs": { "key": "valid_key" },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "both",
+      "notes": "Deletes a valid key. Returns 0."
+    },
+    {
+      "name": "key_delete_invalid_key",
+      "function": "pthread_key_delete",
+      "spec_section": "POSIX.1-2017 pthread_key_delete",
+      "inputs": { "key": "invalid_key_9999" },
+      "expected_output": "EINVAL",
+      "expected_errno": 22,
+      "mode": "both",
+      "notes": "Attempting to delete an out-of-range key. Returns EINVAL."
+    },
+    {
+      "name": "key_delete_already_deleted",
+      "function": "pthread_key_delete",
+      "spec_section": "POSIX.1-2017 pthread_key_delete",
+      "inputs": { "key": "deleted_key" },
+      "expected_output": "EINVAL",
+      "expected_errno": 22,
+      "mode": "both",
+      "notes": "Double-delete of same key. Returns EINVAL."
+    },
+    {
+      "name": "key_delete_does_not_call_destructors",
+      "function": "pthread_key_delete",
+      "spec_section": "POSIX.1-2017 pthread_key_delete",
+      "inputs": { "key": "key_with_dtor_and_value" },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "both",
+      "notes": "Per POSIX: key_delete does NOT invoke destructors. Destructor count remains 0."
+    },
+    {
+      "name": "getspecific_default_zero",
+      "function": "pthread_getspecific",
+      "spec_section": "POSIX.1-2017 pthread_getspecific",
+      "inputs": { "key": "valid_key_no_value_set" },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "both",
+      "notes": "Default value for an unused key is NULL (0)."
+    },
+    {
+      "name": "getspecific_invalid_key",
+      "function": "pthread_getspecific",
+      "spec_section": "POSIX.1-2017 pthread_getspecific",
+      "inputs": { "key": "out_of_bounds_key" },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "both",
+      "notes": "Invalid key returns NULL (0). No errno set per POSIX."
+    },
+    {
+      "name": "setspecific_roundtrip",
+      "function": "pthread_setspecific",
+      "spec_section": "POSIX.1-2017 pthread_setspecific",
+      "inputs": { "key": "valid_key", "value": "0xDEADBEEF" },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "both",
+      "notes": "Set then get returns same value. Returns 0 on success."
+    },
+    {
+      "name": "setspecific_deleted_key",
+      "function": "pthread_setspecific",
+      "spec_section": "POSIX.1-2017 pthread_setspecific",
+      "inputs": { "key": "deleted_key", "value": 42 },
+      "expected_output": "EINVAL",
+      "expected_errno": 22,
+      "mode": "both",
+      "notes": "Setting value on deleted key. Returns EINVAL."
+    },
+    {
+      "name": "setspecific_out_of_bounds_key",
+      "function": "pthread_setspecific",
+      "spec_section": "POSIX.1-2017 pthread_setspecific",
+      "inputs": { "key": "key_id_1025", "value": 42 },
+      "expected_output": "EINVAL",
+      "expected_errno": 22,
+      "mode": "both",
+      "notes": "Key ID exceeds PTHREAD_KEYS_MAX. Returns EINVAL."
+    },
+    {
+      "name": "destructor_fires_on_thread_exit",
+      "function": "teardown_thread_tls",
+      "spec_section": "POSIX.1-2017 pthread_key_create (destructor semantics)",
+      "inputs": { "key": "key_with_dtor", "value": 42 },
+      "expected_output": "destructor_called_once",
+      "expected_errno": 0,
+      "mode": "both",
+      "notes": "Destructor fires exactly once when thread exits with non-null value."
+    },
+    {
+      "name": "destructor_iterates_on_reset",
+      "function": "teardown_thread_tls",
+      "spec_section": "POSIX.1-2017 pthread_key_create (destructor semantics)",
+      "inputs": { "key": "key_with_resetting_dtor", "value": 1 },
+      "expected_output": "destructor_called_multiple_times",
+      "expected_errno": 0,
+      "mode": "both",
+      "notes": "Destructor re-sets value, causing iteration up to PTHREAD_DESTRUCTOR_ITERATIONS (4)."
+    },
+    {
+      "name": "destructor_bounded_iterations",
+      "function": "teardown_thread_tls",
+      "spec_section": "POSIX.1-2017 pthread_key_create (destructor semantics)",
+      "inputs": { "key": "key_with_always_resetting_dtor", "value": 1 },
+      "expected_output": "calls_bounded_at_4",
+      "expected_errno": 0,
+      "mode": "both",
+      "notes": "Even if destructor always re-sets, iteration is bounded by PTHREAD_DESTRUCTOR_ITERATIONS."
+    },
+    {
+      "name": "destructor_not_called_for_null_value",
+      "function": "teardown_thread_tls",
+      "spec_section": "POSIX.1-2017 pthread_key_create (destructor semantics)",
+      "inputs": { "key": "key_with_dtor", "value": 0 },
+      "expected_output": "destructor_not_called",
+      "expected_errno": 0,
+      "mode": "both",
+      "notes": "Per POSIX: destructor not called when value is NULL (0)."
+    }
+  ]
+}

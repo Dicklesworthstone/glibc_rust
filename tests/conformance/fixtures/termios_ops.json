@@ -1,0 +1,83 @@
+{
+  "version": "v1",
+  "family": "termios_ops",
+  "captured_at": "2026-02-13T00:00:00Z",
+  "description": "Mode-specific parity fixtures for terminal I/O operations (tcgetattr, tcsetattr, cfgetispeed, cfgetospeed, cfsetispeed, cfsetospeed, tcdrain, tcflow, tcflush, tcsendbreak). All RawSyscall. Strict: host-kernel parity. Hardened: invalid fd handling.",
+  "cases": [
+    {
+      "name": "tcgetattr_stdin_strict",
+      "function": "tcgetattr",
+      "spec_section": "POSIX tcgetattr",
+      "inputs": { "fd": 0 },
+      "expected_output": "0_OR_ENOTTY",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "stdin may or may not be a terminal"
+    },
+    {
+      "name": "tcgetattr_invalid_fd_strict",
+      "function": "tcgetattr",
+      "spec_section": "POSIX tcgetattr",
+      "inputs": { "fd": -1 },
+      "expected_output": "-1",
+      "expected_errno": 9,
+      "mode": "strict",
+      "note": "EBADF for invalid fd"
+    },
+    {
+      "name": "cfgetispeed_b9600_strict",
+      "function": "cfgetispeed",
+      "spec_section": "POSIX cfgetispeed",
+      "inputs": { "termios": "B9600" },
+      "expected_output": "B9600",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "cfgetospeed_b9600_strict",
+      "function": "cfgetospeed",
+      "spec_section": "POSIX cfgetospeed",
+      "inputs": { "termios": "B9600" },
+      "expected_output": "B9600",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "cfsetispeed_b115200_strict",
+      "function": "cfsetispeed",
+      "spec_section": "POSIX cfsetispeed",
+      "inputs": { "speed": "B115200" },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "cfsetospeed_b115200_strict",
+      "function": "cfsetospeed",
+      "spec_section": "POSIX cfsetospeed",
+      "inputs": { "speed": "B115200" },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "tcgetattr_stdin_hardened",
+      "function": "tcgetattr",
+      "spec_section": "POSIX tcgetattr",
+      "inputs": { "fd": 0 },
+      "expected_output": "0_OR_ENOTTY",
+      "expected_errno": 0,
+      "mode": "hardened"
+    },
+    {
+      "name": "tcgetattr_invalid_fd_hardened",
+      "function": "tcgetattr",
+      "spec_section": "POSIX tcgetattr",
+      "inputs": { "fd": -1 },
+      "expected_output": "-1",
+      "expected_errno": 9,
+      "mode": "hardened",
+      "note": "EBADF even in hardened mode"
+    }
+  ]
+}

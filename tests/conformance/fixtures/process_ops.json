@@ -1,0 +1,72 @@
+{
+  "version": "v1",
+  "family": "process_ops",
+  "captured_at": "2026-02-13T00:00:00Z",
+  "description": "Mode-specific parity fixtures for process operations (fork, _exit, execve, execvp, waitpid, wait). Strict: host-glibc parity. Hardened: exit status clamping, wait options sanitization.",
+  "cases": [
+    {
+      "name": "getpid_positive_strict",
+      "function": "getpid",
+      "spec_section": "POSIX getpid",
+      "inputs": {},
+      "expected_output": "POSITIVE_INT",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "getppid_positive_strict",
+      "function": "getppid",
+      "spec_section": "POSIX getppid",
+      "inputs": {},
+      "expected_output": "POSITIVE_INT",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "fork_returns_child_or_zero_strict",
+      "function": "fork",
+      "spec_section": "POSIX fork",
+      "inputs": {},
+      "expected_output": "CHILD_PID_OR_ZERO",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "waitpid_reaps_child_strict",
+      "function": "waitpid",
+      "spec_section": "POSIX waitpid",
+      "inputs": { "pid": -1, "options": 0 },
+      "expected_output": "CHILD_PID",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "waitpid_nohang_no_child_strict",
+      "function": "waitpid",
+      "spec_section": "POSIX waitpid",
+      "inputs": { "pid": -1, "options": 1 },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "WNOHANG with no waitable child returns 0"
+    },
+    {
+      "name": "getpid_positive_hardened",
+      "function": "getpid",
+      "spec_section": "POSIX getpid",
+      "inputs": {},
+      "expected_output": "POSITIVE_INT",
+      "expected_errno": 0,
+      "mode": "hardened"
+    },
+    {
+      "name": "fork_returns_child_or_zero_hardened",
+      "function": "fork",
+      "spec_section": "POSIX fork",
+      "inputs": {},
+      "expected_output": "CHILD_PID_OR_ZERO",
+      "expected_errno": 0,
+      "mode": "hardened"
+    }
+  ]
+}

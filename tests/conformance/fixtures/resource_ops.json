@@ -1,0 +1,56 @@
+{
+  "version": "v1",
+  "family": "resource_ops",
+  "captured_at": "2026-02-13T00:00:00Z",
+  "description": "Mode-specific parity fixtures for resource limit operations (getrlimit, setrlimit). All RawSyscall. Strict: host-kernel parity. Hardened: invalid resource handling.",
+  "cases": [
+    {
+      "name": "getrlimit_nofile_strict",
+      "function": "getrlimit",
+      "spec_section": "POSIX getrlimit",
+      "inputs": { "resource": 7 },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "RLIMIT_NOFILE"
+    },
+    {
+      "name": "getrlimit_stack_strict",
+      "function": "getrlimit",
+      "spec_section": "POSIX getrlimit",
+      "inputs": { "resource": 3 },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "RLIMIT_STACK"
+    },
+    {
+      "name": "getrlimit_invalid_strict",
+      "function": "getrlimit",
+      "spec_section": "POSIX getrlimit",
+      "inputs": { "resource": 999 },
+      "expected_output": "-1",
+      "expected_errno": 22,
+      "mode": "strict",
+      "note": "EINVAL for invalid resource"
+    },
+    {
+      "name": "getrlimit_nofile_hardened",
+      "function": "getrlimit",
+      "spec_section": "POSIX getrlimit",
+      "inputs": { "resource": 7 },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "hardened"
+    },
+    {
+      "name": "getrlimit_invalid_hardened",
+      "function": "getrlimit",
+      "spec_section": "POSIX getrlimit",
+      "inputs": { "resource": 999 },
+      "expected_output": "-1",
+      "expected_errno": 22,
+      "mode": "hardened"
+    }
+  ]
+}

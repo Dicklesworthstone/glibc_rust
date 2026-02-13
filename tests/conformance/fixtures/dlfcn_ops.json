@@ -1,0 +1,75 @@
+{
+  "version": "v1",
+  "family": "dlfcn_ops",
+  "captured_at": "2026-02-13T00:00:00Z",
+  "description": "Mode-specific parity fixtures for dynamic linking operations (dlopen, dlsym, dlclose, dlerror). All GlibcCallThrough. Strict: host-glibc parity. Hardened: null handle safety.",
+  "cases": [
+    {
+      "name": "dlopen_self_strict",
+      "function": "dlopen",
+      "spec_section": "POSIX dlopen",
+      "inputs": { "filename": null, "flags": 1 },
+      "expected_output": "HANDLE_PTR",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "NULL filename opens main program, RTLD_LAZY"
+    },
+    {
+      "name": "dlopen_nonexistent_strict",
+      "function": "dlopen",
+      "spec_section": "POSIX dlopen",
+      "inputs": { "filename": "libnonexistent_xyz.so", "flags": 1 },
+      "expected_output": "NULL",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Missing library returns NULL, dlerror set"
+    },
+    {
+      "name": "dlsym_valid_strict",
+      "function": "dlsym",
+      "spec_section": "POSIX dlsym",
+      "inputs": { "handle": "RTLD_DEFAULT", "symbol": "printf" },
+      "expected_output": "FUNC_PTR",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "printf should be resolvable"
+    },
+    {
+      "name": "dlsym_nonexistent_strict",
+      "function": "dlsym",
+      "spec_section": "POSIX dlsym",
+      "inputs": { "handle": "RTLD_DEFAULT", "symbol": "nonexistent_sym_xyz" },
+      "expected_output": "NULL",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "dlerror_after_success_strict",
+      "function": "dlerror",
+      "spec_section": "POSIX dlerror",
+      "inputs": {},
+      "expected_output": "NULL",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "dlerror returns NULL when no error pending"
+    },
+    {
+      "name": "dlopen_self_hardened",
+      "function": "dlopen",
+      "spec_section": "POSIX dlopen",
+      "inputs": { "filename": null, "flags": 1 },
+      "expected_output": "HANDLE_PTR",
+      "expected_errno": 0,
+      "mode": "hardened"
+    },
+    {
+      "name": "dlsym_valid_hardened",
+      "function": "dlsym",
+      "spec_section": "POSIX dlsym",
+      "inputs": { "handle": "RTLD_DEFAULT", "symbol": "printf" },
+      "expected_output": "FUNC_PTR",
+      "expected_errno": 0,
+      "mode": "hardened"
+    }
+  ]
+}

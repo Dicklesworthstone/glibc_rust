@@ -1,0 +1,67 @@
+{
+  "version": "v1",
+  "family": "locale_ops",
+  "captured_at": "2026-02-13T00:00:00Z",
+  "description": "Mode-specific parity fixtures for locale operations (setlocale, localeconv). Implemented. Strict: host-glibc parity. Hardened: unsupported locale fallback to C.",
+  "cases": [
+    {
+      "name": "setlocale_query_strict",
+      "function": "setlocale",
+      "spec_section": "C11 7.11.1.1 setlocale",
+      "inputs": { "category": 0, "locale": null },
+      "expected_output": "C",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "LC_CTYPE query returns current locale"
+    },
+    {
+      "name": "setlocale_c_locale_strict",
+      "function": "setlocale",
+      "spec_section": "C11 7.11.1.1 setlocale",
+      "inputs": { "category": 6, "locale": "C" },
+      "expected_output": "C",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "LC_ALL set to C locale"
+    },
+    {
+      "name": "setlocale_posix_strict",
+      "function": "setlocale",
+      "spec_section": "C11 7.11.1.1 setlocale",
+      "inputs": { "category": 6, "locale": "POSIX" },
+      "expected_output": "C",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "POSIX is equivalent to C"
+    },
+    {
+      "name": "localeconv_nonnull_strict",
+      "function": "localeconv",
+      "spec_section": "C11 7.11.2.1 localeconv",
+      "inputs": {},
+      "expected_output": "NON_NULL_PTR",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Returns pointer to lconv struct"
+    },
+    {
+      "name": "setlocale_c_locale_hardened",
+      "function": "setlocale",
+      "spec_section": "C11 7.11.1.1 setlocale",
+      "inputs": { "category": 6, "locale": "C" },
+      "expected_output": "C",
+      "expected_errno": 0,
+      "mode": "hardened"
+    },
+    {
+      "name": "setlocale_unsupported_hardened",
+      "function": "setlocale",
+      "spec_section": "C11 7.11.1.1 setlocale",
+      "inputs": { "category": 6, "locale": "xx_INVALID.UTF-8" },
+      "expected_output": "C",
+      "expected_errno": 0,
+      "mode": "hardened",
+      "note": "Unsupported locale falls back to C in hardened mode"
+    }
+  ]
+}

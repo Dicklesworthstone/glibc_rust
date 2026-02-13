@@ -1,0 +1,79 @@
+{
+  "schema_version": "v1",
+  "bead": "bd-15n.3",
+  "title": "Golden Fixture Protocol",
+  "description": "Deterministic golden capture/update protocol with checksums and approval metadata for FrankenLibC conformance fixtures.",
+  "protocol": {
+    "capture": {
+      "description": "Capture new or updated conformance fixtures via the harness verify command with a fixed timestamp.",
+      "command": "scripts/update_conformance_golden.sh",
+      "fixed_timestamp": "1970-01-01T00:00:00Z",
+      "determinism_guarantee": "Fixed timestamp ensures byte-stable golden outputs across runs.",
+      "outputs": [
+        "tests/conformance/golden/fixture_verify_strict_hardened.v1.md",
+        "tests/conformance/golden/fixture_verify_strict_hardened.v1.json",
+        "tests/conformance/golden/fixture_verify_strict_hardened.v1.suite.json",
+        "tests/conformance/golden/sha256sums.txt"
+      ]
+    },
+    "verification": {
+      "description": "Verify golden outputs have not drifted from committed checksums.",
+      "command": "scripts/conformance_golden_gate.sh",
+      "exit_codes": {
+        "0": "Pass: goldens match committed checksums",
+        "1": "Fail: golden drift detected",
+        "2": "Error: missing golden artifacts"
+      }
+    },
+    "coverage_regression": {
+      "description": "Detect fixture coverage regressions (removed files, decreased case counts, module coverage drops).",
+      "command": "scripts/check_conformance_coverage.sh",
+      "baseline": "tests/conformance/conformance_coverage_baseline.v1.json",
+      "snapshot": "tests/conformance/conformance_coverage_snapshot.v1.json",
+      "exit_codes": {
+        "0": "Pass: no coverage regression",
+        "1": "Fail: coverage regression detected",
+        "2": "Info: initial baseline created"
+      },
+      "regression_rules": [
+        "Fixture file count must not decrease",
+        "Total case count must not decrease",
+        "Symbol coverage percentage must not decrease",
+        "Per-module covered symbol count must not decrease",
+        "No fixture file may be removed without approval"
+      ]
+    },
+    "update_workflow": {
+      "steps": [
+        "1. Make implementation changes.",
+        "2. Run scripts/update_conformance_golden.sh to regenerate goldens.",
+        "3. Run scripts/check_conformance_coverage.sh to verify no coverage regression.",
+        "4. If coverage increased, run scripts/conformance_coverage_gate.py update-baseline to update baseline.",
+        "5. Commit golden artifacts, baseline, and fixture changes together.",
+        "6. CI verifies: conformance_golden_gate.sh and check_conformance_coverage.sh both pass."
+      ]
+    }
+  },
+  "ci_integration": {
+    "gates": [
+      {
+        "name": "conformance_golden_gate",
+        "script": "scripts/conformance_golden_gate.sh",
+        "blocking": true,
+        "description": "Blocks on golden checksum drift"
+      },
+      {
+        "name": "conformance_coverage_gate",
+        "script": "scripts/check_conformance_coverage.sh",
+        "blocking": true,
+        "description": "Blocks on fixture coverage regression"
+      },
+      {
+        "name": "claim_reconciliation_gate",
+        "script": "scripts/check_claim_reconciliation.sh",
+        "blocking": true,
+        "description": "Blocks on cross-artifact count/status contradictions"
+      }
+    ]
+  }
+}

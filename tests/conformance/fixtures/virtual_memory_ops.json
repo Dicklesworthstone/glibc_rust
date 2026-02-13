@@ -1,0 +1,86 @@
+{
+  "version": "v1",
+  "family": "virtual_memory_ops",
+  "captured_at": "2026-02-13T00:00:00Z",
+  "description": "Mode-specific parity fixtures for virtual memory operations (mmap, munmap, mprotect, msync, madvise). Strict: host-glibc parity. Hardened: invalid prot->PROT_READ, missing visibility->MAP_PRIVATE, invalid msync->MS_ASYNC, unknown madvise->MADV_NORMAL.",
+  "cases": [
+    {
+      "name": "mmap_anon_rw_strict",
+      "function": "mmap",
+      "spec_section": "POSIX mmap",
+      "inputs": { "length": 4096, "prot": 3, "flags": 34, "fd": -1, "offset": 0 },
+      "expected_output": "MAPPED",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS"
+    },
+    {
+      "name": "mmap_zero_length_strict",
+      "function": "mmap",
+      "spec_section": "POSIX mmap",
+      "inputs": { "length": 0, "prot": 3, "flags": 34, "fd": -1, "offset": 0 },
+      "expected_output": "MAP_FAILED",
+      "expected_errno": 22,
+      "mode": "strict",
+      "note": "Zero length is EINVAL"
+    },
+    {
+      "name": "munmap_valid_strict",
+      "function": "munmap",
+      "spec_section": "POSIX munmap",
+      "inputs": { "addr": "valid_mapped", "length": 4096 },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "mprotect_read_only_strict",
+      "function": "mprotect",
+      "spec_section": "POSIX mprotect",
+      "inputs": { "addr": "valid_mapped", "len": 4096, "prot": 1 },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "PROT_READ"
+    },
+    {
+      "name": "madvise_normal_strict",
+      "function": "madvise",
+      "spec_section": "POSIX posix_madvise / Linux madvise",
+      "inputs": { "addr": "valid_mapped", "length": 4096, "advice": 0 },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "MADV_NORMAL"
+    },
+    {
+      "name": "mmap_anon_rw_hardened",
+      "function": "mmap",
+      "spec_section": "POSIX mmap",
+      "inputs": { "length": 4096, "prot": 3, "flags": 34, "fd": -1, "offset": 0 },
+      "expected_output": "MAPPED",
+      "expected_errno": 0,
+      "mode": "hardened"
+    },
+    {
+      "name": "mmap_invalid_prot_hardened",
+      "function": "mmap",
+      "spec_section": "POSIX mmap",
+      "inputs": { "length": 4096, "prot": 255, "flags": 34, "fd": -1, "offset": 0 },
+      "expected_output": "MAPPED_REPAIRED",
+      "expected_errno": 0,
+      "mode": "hardened",
+      "note": "Invalid prot repaired to PROT_READ"
+    },
+    {
+      "name": "mmap_missing_visibility_hardened",
+      "function": "mmap",
+      "spec_section": "POSIX mmap",
+      "inputs": { "length": 4096, "prot": 3, "flags": 32, "fd": -1, "offset": 0 },
+      "expected_output": "MAPPED_REPAIRED",
+      "expected_errno": 0,
+      "mode": "hardened",
+      "note": "Missing visibility flag repaired to MAP_PRIVATE"
+    }
+  ]
+}

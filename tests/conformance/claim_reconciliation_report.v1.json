@@ -1,0 +1,21 @@
+{
+  "schema_version": "v1",
+  "bead": "bd-w2c3.10.1",
+  "status": "pass",
+  "ground_truth": {
+    "source": "support_matrix.json",
+    "generated_at": "2026-02-11T19:17:31Z",
+    "total": 250,
+    "Implemented": 118,
+    "RawSyscall": 83,
+    "GlibcCallThrough": 49,
+    "Stub": 0
+  },
+  "summary": {
+    "critical": 0,
+    "errors": 0,
+    "warnings": 0,
+    "total_findings": 0
+  },
+  "findings": []
+}

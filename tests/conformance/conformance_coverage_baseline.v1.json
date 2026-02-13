@@ -1,0 +1,1117 @@
+{
+  "schema_version": "v1",
+  "bead": "bd-15n.3",
+  "generated_at": "2026-02-13T17:57:28Z",
+  "summary": {
+    "total_symbols": 250,
+    "symbols_with_fixtures": 159,
+    "coverage_pct": 64,
+    "total_fixture_files": 41,
+    "total_fixture_cases": 421,
+    "total_families": 32
+  },
+  "module_coverage": {
+    "ctype_abi": {
+      "total": 11,
+      "covered": 11,
+      "pct": 100
+    },
+    "dirent_abi": {
+      "total": 3,
+      "covered": 3,
+      "pct": 100
+    },
+    "dlfcn_abi": {
+      "total": 4,
+      "covered": 3,
+      "pct": 75
+    },
+    "errno_abi": {
+      "total": 1,
+      "covered": 1,
+      "pct": 100
+    },
+    "grp_abi": {
+      "total": 7,
+      "covered": 3,
+      "pct": 43
+    },
+    "iconv_abi": {
+      "total": 3,
+      "covered": 3,
+      "pct": 100
+    },
+    "inet_abi": {
+      "total": 7,
+      "covered": 7,
+      "pct": 100
+    },
+    "io_abi": {
+      "total": 4,
+      "covered": 1,
+      "pct": 25
+    },
+    "locale_abi": {
+      "total": 2,
+      "covered": 2,
+      "pct": 100
+    },
+    "malloc_abi": {
+      "total": 7,
+      "covered": 4,
+      "pct": 57
+    },
+    "math_abi": {
+      "total": 19,
+      "covered": 19,
+      "pct": 100
+    },
+    "mmap_abi": {
+      "total": 5,
+      "covered": 4,
+      "pct": 80
+    },
+    "poll_abi": {
+      "total": 4,
+      "covered": 2,
+      "pct": 50
+    },
+    "process_abi": {
+      "total": 6,
+      "covered": 2,
+      "pct": 33
+    },
+    "pthread_abi": {
+      "total": 20,
+      "covered": 15,
+      "pct": 75
+    },
+    "pwd_abi": {
+      "total": 7,
+      "covered": 3,
+      "pct": 43
+    },
+    "resolv_abi": {
+      "total": 4,
+      "covered": 1,
+      "pct": 25
+    },
+    "resource_abi": {
+      "total": 2,
+      "covered": 1,
+      "pct": 50
+    },
+    "signal_abi": {
+      "total": 4,
+      "covered": 3,
+      "pct": 75
+    },
+    "socket_abi": {
+      "total": 14,
+      "covered": 5,
+      "pct": 36
+    },
+    "startup_abi": {
+      "total": 3,
+      "covered": 3,
+      "pct": 100
+    },
+    "stdio_abi": {
+      "total": 30,
+      "covered": 4,
+      "pct": 13
+    },
+    "stdlib_abi": {
+      "total": 11,
+      "covered": 6,
+      "pct": 55
+    },
+    "string_abi": {
+      "total": 17,
+      "covered": 17,
+      "pct": 100
+    },
+    "termios_abi": {
+      "total": 10,
+      "covered": 5,
+      "pct": 50
+    },
+    "time_abi": {
+      "total": 4,
+      "covered": 4,
+      "pct": 100
+    },
+    "unistd_abi": {
+      "total": 27,
+      "covered": 13,
+      "pct": 48
+    },
+    "wchar_abi": {
+      "total": 14,
+      "covered": 14,
+      "pct": 100
+    }
+  },
+  "family_coverage": {
+    "allocator": {
+      "function_count": 4,
+      "functions": [
+        "calloc",
+        "free",
+        "malloc",
+        "realloc"
+      ]
+    },
+    "ctype": {
+      "function_count": 11,
+      "functions": [
+        "isalnum",
+        "isalpha",
+        "isdigit",
+        "islower",
+        "isprint",
+        "ispunct",
+        "isspace",
+        "isupper",
+        "isxdigit",
+        "tolower",
+        "toupper"
+      ]
+    },
+    "dirent": {
+      "function_count": 3,
+      "functions": [
+        "closedir",
+        "opendir",
+        "readdir"
+      ]
+    },
+    "dlfcn": {
+      "function_count": 3,
+      "functions": [
+        "dlerror",
+        "dlopen",
+        "dlsym"
+      ]
+    },
+    "elf": {
+      "function_count": 7,
+      "functions": [
+        "Elf64Header::parse",
+        "ProgramFlags::to_mmap_prot",
+        "SymbolBinding::from",
+        "SymbolType::from",
+        "compute_relocation",
+        "elf_hash",
+        "gnu_hash"
+      ]
+    },
+    "errno": {
+      "function_count": 1,
+      "functions": [
+        "__errno_location"
+      ]
+    },
+    "grp": {
+      "function_count": 3,
+      "functions": [
+        "getgrgid",
+        "getgrnam",
+        "setgrent"
+      ]
+    },
+    "iconv": {
+      "function_count": 3,
+      "functions": [
+        "iconv",
+        "iconv_close",
+        "iconv_open"
+      ]
+    },
+    "inet": {
+      "function_count": 7,
+      "functions": [
+        "htonl",
+        "htons",
+        "inet_addr",
+        "inet_ntop",
+        "inet_pton",
+        "ntohl",
+        "ntohs"
+      ]
+    },
+    "locale": {
+      "function_count": 2,
+      "functions": [
+        "localeconv",
+        "setlocale"
+      ]
+    },
+    "math": {
+      "function_count": 19,
+      "functions": [
+        "acos",
+        "asin",
+        "atan",
+        "atan2",
+        "ceil",
+        "cos",
+        "erf",
+        "exp",
+        "fabs",
+        "floor",
+        "fmod",
+        "lgamma",
+        "log",
+        "log10",
+        "pow",
+        "round",
+        "sin",
+        "tan",
+        "tgamma"
+      ]
+    },
+    "membrane": {
+      "function_count": 2,
+      "functions": [
+        "memcpy",
+        "strlen"
+      ]
+    },
+    "memcpy": {
+      "function_count": 1,
+      "functions": [
+        "memcpy"
+      ]
+    },
+    "memory": {
+      "function_count": 5,
+      "functions": [
+        "memchr",
+        "memcmp",
+        "memcpy",
+        "memmove",
+        "memset"
+      ]
+    },
+    "poll": {
+      "function_count": 2,
+      "functions": [
+        "poll",
+        "select"
+      ]
+    },
+    "process": {
+      "function_count": 4,
+      "functions": [
+        "fork",
+        "getpid",
+        "getppid",
+        "waitpid"
+      ]
+    },
+    "pthread": {
+      "function_count": 21,
+      "functions": [
+        "pthread_cond_broadcast",
+        "pthread_cond_destroy",
+        "pthread_cond_init",
+        "pthread_cond_signal",
+        "pthread_cond_timedwait",
+        "pthread_cond_wait",
+        "pthread_create",
+        "pthread_detach",
+        "pthread_equal",
+        "pthread_getspecific",
+        "pthread_join",
+        "pthread_key_create",
+        "pthread_key_delete",
+        "pthread_mutex_destroy",
+        "pthread_mutex_init",
+        "pthread_mutex_lock",
+        "pthread_mutex_trylock",
+        "pthread_mutex_unlock",
+        "pthread_self",
+        "pthread_setspecific",
+        "teardown_thread_tls"
+      ]
+    },
+    "pwd": {
+      "function_count": 3,
+      "functions": [
+        "getpwnam",
+        "getpwuid",
+        "setpwent"
+      ]
+    },
+    "resolver": {
+      "function_count": 6,
+      "functions": [
+        "DnsHeader::new_query",
+        "ResolverConfig::default",
+        "ResolverConfig::parse",
+        "encode_domain_name",
+        "getaddrinfo",
+        "lookup_hosts"
+      ]
+    },
+    "resource": {
+      "function_count": 1,
+      "functions": [
+        "getrlimit"
+      ]
+    },
+    "signal": {
+      "function_count": 3,
+      "functions": [
+        "kill",
+        "raise",
+        "sigaction"
+      ]
+    },
+    "socket": {
+      "function_count": 5,
+      "functions": [
+        "bind",
+        "getsockname",
+        "listen",
+        "shutdown",
+        "socket"
+      ]
+    },
+    "startup": {
+      "function_count": 3,
+      "functions": [
+        "__frankenlibc_startup_phase0",
+        "__frankenlibc_startup_snapshot",
+        "__libc_start_main"
+      ]
+    },
+    "stdio": {
+      "function_count": 4,
+      "functions": [
+        "fclose",
+        "fopen",
+        "fprintf",
+        "snprintf"
+      ]
+    },
+    "stdlib": {
+      "function_count": 6,
+      "functions": [
+        "atoi",
+        "atol",
+        "bsearch",
+        "qsort",
+        "strtol",
+        "strtoul"
+      ]
+    },
+    "string": {
+      "function_count": 15,
+      "functions": [
+        "memchr",
+        "memcmp",
+        "memmove",
+        "memrchr",
+        "memset",
+        "strcat",
+        "strchr",
+        "strcmp",
+        "strcpy",
+        "strncat",
+        "strncpy",
+        "strrchr",
+        "strstr",
+        "strtok",
+        "strtok_r"
+      ]
+    },
+    "strlen": {
+      "function_count": 1,
+      "functions": [
+        "strlen"
+      ]
+    },
+    "termios": {
+      "function_count": 5,
+      "functions": [
+        "cfgetispeed",
+        "cfgetospeed",
+        "cfsetispeed",
+        "cfsetospeed",
+        "tcgetattr"
+      ]
+    },
+    "time": {
+      "function_count": 4,
+      "functions": [
+        "clock",
+        "clock_gettime",
+        "localtime_r",
+        "time"
+      ]
+    },
+    "unistd": {
+      "function_count": 14,
+      "functions": [
+        "access",
+        "close",
+        "getcwd",
+        "getegid",
+        "geteuid",
+        "getgid",
+        "getpid",
+        "getppid",
+        "getuid",
+        "isatty",
+        "lseek",
+        "pipe",
+        "read",
+        "write"
+      ]
+    },
+    "virtual": {
+      "function_count": 4,
+      "functions": [
+        "madvise",
+        "mmap",
+        "mprotect",
+        "munmap"
+      ]
+    },
+    "wide": {
+      "function_count": 14,
+      "functions": [
+        "wcscat",
+        "wcschr",
+        "wcscmp",
+        "wcscpy",
+        "wcslen",
+        "wcsncmp",
+        "wcsncpy",
+        "wcsrchr",
+        "wcsstr",
+        "wmemchr",
+        "wmemcmp",
+        "wmemcpy",
+        "wmemmove",
+        "wmemset"
+      ]
+    }
+  },
+  "fixtures": {
+    "allocator": {
+      "file": "allocator.json",
+      "sha256": "3ed17b70c74892f87b87364fd9197e1f802c1f9cae0f1a045033f53c2a54bb66",
+      "case_count": 5,
+      "functions": [
+        "calloc",
+        "free",
+        "malloc",
+        "realloc"
+      ],
+      "families": [
+        "allocator"
+      ]
+    },
+    "ctype_ops": {
+      "file": "ctype_ops.json",
+      "sha256": "14f112bfa1f61dca5422cfc426119f791c0901bf6afd48c59054cfd8ec83c364",
+      "case_count": 37,
+      "functions": [
+        "isalnum",
+        "isalpha",
+        "isdigit",
+        "islower",
+        "isprint",
+        "ispunct",
+        "isspace",
+        "isupper",
+        "isxdigit",
+        "tolower",
+        "toupper"
+      ],
+      "families": [
+        "ctype"
+      ]
+    },
+    "dirent_ops": {
+      "file": "dirent_ops.json",
+      "sha256": "5f9902405f388675f1529743c012afebd639e9fa1afb504af001e482578fea9e",
+      "case_count": 6,
+      "functions": [
+        "closedir",
+        "opendir",
+        "readdir"
+      ],
+      "families": [
+        "dirent"
+      ]
+    },
+    "dlfcn_ops": {
+      "file": "dlfcn_ops.json",
+      "sha256": "4b378aabafc1944efd3bc5371815609f8dc34a7d8baacb27e17d005cc44f14a4",
+      "case_count": 7,
+      "functions": [
+        "dlerror",
+        "dlopen",
+        "dlsym"
+      ],
+      "families": [
+        "dlfcn"
+      ]
+    },
+    "elf_loader": {
+      "file": "elf_loader.json",
+      "sha256": "cd70d632f9629724774c97af522e34a41755ec7b1b639590ca44d307414276a1",
+      "case_count": 17,
+      "functions": [
+        "Elf64Header::parse",
+        "ProgramFlags::to_mmap_prot",
+        "SymbolBinding::from",
+        "SymbolType::from",
+        "compute_relocation",
+        "elf_hash",
+        "gnu_hash"
+      ],
+      "families": [
+        "elf"
+      ]
+    },
+    "errno_ops": {
+      "file": "errno_ops.json",
+      "sha256": "36f5950a8ef2acc2dc2d3392b0999dab62a23648f88ba63fc327450a0f3e3a36",
+      "case_count": 3,
+      "functions": [
+        "__errno_location"
+      ],
+      "families": [
+        "errno"
+      ]
+    },
+    "grp_ops": {
+      "file": "grp_ops.json",
+      "sha256": "55f05ee0a50d778b704dad10a1ce20c8b5d0489b7d3f2f3d2f9087533b117258",
+      "case_count": 7,
+      "functions": [
+        "getgrgid",
+        "getgrnam",
+        "setgrent"
+      ],
+      "families": [
+        "grp"
+      ]
+    },
+    "iconv_phase1": {
+      "file": "iconv_phase1.json",
+      "sha256": "e3f0bbfb8461fe63190885caa53640ff4151710c969d482a1900de2a837d287e",
+      "case_count": 11,
+      "functions": [
+        "iconv",
+        "iconv_close",
+        "iconv_open"
+      ],
+      "families": [
+        "iconv"
+      ]
+    },
+    "inet_ops": {
+      "file": "inet_ops.json",
+      "sha256": "09fc34639e2c6d09b82e00856a112b879fa703c613c3fc65b5d20e20f52a91c6",
+      "case_count": 15,
+      "functions": [
+        "htonl",
+        "htons",
+        "inet_addr",
+        "inet_ntop",
+        "inet_pton",
+        "ntohl",
+        "ntohs"
+      ],
+      "families": [
+        "inet"
+      ]
+    },
+    "locale_ops": {
+      "file": "locale_ops.json",
+      "sha256": "bd50d1894efad5a824730bd60b1055e12a517478f09e9539ecb5409fa941697d",
+      "case_count": 6,
+      "functions": [
+        "localeconv",
+        "setlocale"
+      ],
+      "families": [
+        "locale"
+      ]
+    },
+    "math_ops": {
+      "file": "math_ops.json",
+      "sha256": "d433d91aad964d2e8a27e8aaa8e9815ad803dad76aa9b10e67a7a92c78bbb24d",
+      "case_count": 33,
+      "functions": [
+        "acos",
+        "asin",
+        "atan",
+        "atan2",
+        "ceil",
+        "cos",
+        "erf",
+        "exp",
+        "fabs",
+        "floor",
+        "fmod",
+        "lgamma",
+        "log",
+        "log10",
+        "pow",
+        "round",
+        "sin",
+        "tan",
+        "tgamma"
+      ],
+      "families": [
+        "math"
+      ]
+    },
+    "membrane_mode_split": {
+      "file": "membrane_mode_split.json",
+      "sha256": "8190c7325933ead7074271921de229d5d58647d5391a20578d3888fcb42abf4f",
+      "case_count": 4,
+      "functions": [
+        "memcpy",
+        "strlen"
+      ],
+      "families": [
+        "membrane"
+      ]
+    },
+    "memcpy_strict": {
+      "file": "memcpy_strict.json",
+      "sha256": "074bd9fe479197229ade85efb411a6eefefdf958c2af26c7b2bab35d5ce56d67",
+      "case_count": 4,
+      "functions": [
+        "memcpy"
+      ],
+      "families": [
+        "memcpy"
+      ]
+    },
+    "memory_ops": {
+      "file": "memory_ops.json",
+      "sha256": "c2e63ee0140a27b9ad8286edc115eebade440e1c06040ebdc21dea8ee285a1dc",
+      "case_count": 11,
+      "functions": [
+        "memchr",
+        "memcmp",
+        "memcpy",
+        "memmove",
+        "memset"
+      ],
+      "families": [
+        "memory"
+      ]
+    },
+    "poll_ops": {
+      "file": "poll_ops.json",
+      "sha256": "ba84351a63d246292065896dd956527d356bed899e4d7ab36ca815bb57376d47",
+      "case_count": 6,
+      "functions": [
+        "poll",
+        "select"
+      ],
+      "families": [
+        "poll"
+      ]
+    },
+    "process_ops": {
+      "file": "process_ops.json",
+      "sha256": "bc79f96c443c79982d5f6186a8033839d5893cd14b11adf1b98a97a5438de001",
+      "case_count": 7,
+      "functions": [
+        "fork",
+        "getpid",
+        "getppid",
+        "waitpid"
+      ],
+      "families": [
+        "process"
+      ]
+    },
+    "pthread_cond": {
+      "file": "pthread_cond.json",
+      "sha256": "ad53ffc024cc2dc825885ba0d77e8dae4428fdbab480e4ba977e7bc0b0adde21",
+      "case_count": 24,
+      "functions": [
+        "pthread_cond_broadcast",
+        "pthread_cond_destroy",
+        "pthread_cond_init",
+        "pthread_cond_signal",
+        "pthread_cond_timedwait",
+        "pthread_cond_wait"
+      ],
+      "families": [
+        "pthread"
+      ]
+    },
+    "pthread_mutex": {
+      "file": "pthread_mutex.json",
+      "sha256": "7d7832d8c826ce3c15959db1159905adcd37358b637d9d3f1bba92fb711982da",
+      "case_count": 8,
+      "functions": [
+        "pthread_mutex_destroy",
+        "pthread_mutex_init",
+        "pthread_mutex_lock",
+        "pthread_mutex_trylock",
+        "pthread_mutex_unlock"
+      ],
+      "families": [
+        "pthread"
+      ]
+    },
+    "pthread_thread": {
+      "file": "pthread_thread.json",
+      "sha256": "abfcbdefdc96c0850354451312c989ea4715b858304e8fa8d5f28a4bf847c170",
+      "case_count": 11,
+      "functions": [
+        "pthread_create",
+        "pthread_detach",
+        "pthread_equal",
+        "pthread_join",
+        "pthread_self"
+      ],
+      "families": [
+        "pthread"
+      ]
+    },
+    "pthread_tls_keys": {
+      "file": "pthread_tls_keys.json",
+      "sha256": "f162f5b0fd48ba22863d037bb7a715dd40b7e5f0c882ba2ed7c0a806ca94d55d",
+      "case_count": 16,
+      "functions": [
+        "pthread_getspecific",
+        "pthread_key_create",
+        "pthread_key_delete",
+        "pthread_setspecific",
+        "teardown_thread_tls"
+      ],
+      "families": [
+        "pthread"
+      ]
+    },
+    "pwd_ops": {
+      "file": "pwd_ops.json",
+      "sha256": "9534d1cb7976df7ccdf135aa8631a1281e877ad3980b719065cd5ffe92d46374",
+      "case_count": 7,
+      "functions": [
+        "getpwnam",
+        "getpwuid",
+        "setpwent"
+      ],
+      "families": [
+        "pwd"
+      ]
+    },
+    "resolver": {
+      "file": "resolver.json",
+      "sha256": "2f602aa67f0ff9ac5a105db276981be1ab0b33f3ab9baa2f9d1b0a6e7f58c4fe",
+      "case_count": 16,
+      "functions": [
+        "DnsHeader::new_query",
+        "ResolverConfig::default",
+        "ResolverConfig::parse",
+        "encode_domain_name",
+        "getaddrinfo",
+        "lookup_hosts"
+      ],
+      "families": [
+        "resolver"
+      ]
+    },
+    "resource_ops": {
+      "file": "resource_ops.json",
+      "sha256": "7994dd123459b2eeae898131e341278baac7d2de267766b63eea5ff3f6ee23f4",
+      "case_count": 5,
+      "functions": [
+        "getrlimit"
+      ],
+      "families": [
+        "resource"
+      ]
+    },
+    "signal_ops": {
+      "file": "signal_ops.json",
+      "sha256": "4e08bffe2c9d4c7fbd547019315e9abc0d0f32c8851d2475727fc21b0039bfd0",
+      "case_count": 6,
+      "functions": [
+        "kill",
+        "raise",
+        "sigaction"
+      ],
+      "families": [
+        "signal"
+      ]
+    },
+    "socket_ops": {
+      "file": "socket_ops.json",
+      "sha256": "d99b01d103d1806ed674d7a2074eed44ecbd2d60425fd656995ec645ce08567c",
+      "case_count": 9,
+      "functions": [
+        "bind",
+        "getsockname",
+        "listen",
+        "shutdown",
+        "socket"
+      ],
+      "families": [
+        "socket"
+      ]
+    },
+    "startup_ops": {
+      "file": "startup_ops.json",
+      "sha256": "83a60908a531a7ea6950a0682bf888622b6abe9fca641cfbc5d7f3d9893b285c",
+      "case_count": 5,
+      "functions": [
+        "__frankenlibc_startup_phase0",
+        "__frankenlibc_startup_snapshot",
+        "__libc_start_main"
+      ],
+      "families": [
+        "startup"
+      ]
+    },
+    "stdio_file_ops": {
+      "file": "stdio_file_ops.json",
+      "sha256": "c75ce4476ea7bf7034c48379f35bb4fdb19266236100dbd99e013a9b121b4293",
+      "case_count": 8,
+      "functions": [
+        "fclose",
+        "fopen",
+        "fprintf",
+        "snprintf"
+      ],
+      "families": [
+        "stdio"
+      ]
+    },
+    "stdlib_conversion": {
+      "file": "stdlib_conversion.json",
+      "sha256": "0b1b179b05e6feb21042d9e1ac1a62631b1bce46b6fb4f8a1e849a26ad85a4fb",
+      "case_count": 7,
+      "functions": [
+        "atoi",
+        "strtol"
+      ],
+      "families": [
+        "stdlib"
+      ]
+    },
+    "stdlib_numeric": {
+      "file": "stdlib_numeric.json",
+      "sha256": "f65c8840162502b3da2c1c9a4f196cf59c774036d82a63c7d751fcb9dfcfbd88",
+      "case_count": 10,
+      "functions": [
+        "atoi",
+        "atol",
+        "strtol",
+        "strtoul"
+      ],
+      "families": [
+        "stdlib"
+      ]
+    },
+    "stdlib_sort": {
+      "file": "stdlib_sort.json",
+      "sha256": "a08abf1cfcca2b764897b1fa1bd3689e9b4d8634a5c3f5cbfaf1697cb3cd8da2",
+      "case_count": 3,
+      "functions": [
+        "bsearch",
+        "qsort"
+      ],
+      "families": [
+        "stdlib"
+      ]
+    },
+    "string_memory_full": {
+      "file": "string_memory_full.json",
+      "sha256": "94e8dc73391d2f0d29fa07dc15366150bc015b59ce2d7c2e18ead6373f35b9e4",
+      "case_count": 14,
+      "functions": [
+        "memchr",
+        "memcmp",
+        "memrchr",
+        "memset",
+        "strcat",
+        "strchr",
+        "strcmp",
+        "strcpy",
+        "strncat",
+        "strncpy",
+        "strrchr",
+        "strstr"
+      ],
+      "families": [
+        "string"
+      ]
+    },
+    "string_ops": {
+      "file": "string_ops.json",
+      "sha256": "49bdaa67de7778378cafe8a6f71bf8c5b3a0f4d3a33e533056bc8329b0233087",
+      "case_count": 15,
+      "functions": [
+        "memchr",
+        "memcmp",
+        "memmove",
+        "memrchr",
+        "memset",
+        "strcat",
+        "strchr",
+        "strcmp",
+        "strcpy",
+        "strncpy",
+        "strrchr",
+        "strstr"
+      ],
+      "families": [
+        "string"
+      ]
+    },
+    "string_strtok": {
+      "file": "string_strtok.json",
+      "sha256": "4c6409d181230d3a8df20061e504f896e4a7f11bb6939f5cf603f7f17347e29d",
+      "case_count": 8,
+      "functions": [
+        "strtok",
+        "strtok_r"
+      ],
+      "families": [
+        "string"
+      ]
+    },
+    "strlen_strict": {
+      "file": "strlen_strict.json",
+      "sha256": "61e21fe0d23f5ef974ea32882162d8aedd204770aa77b6a46bb40dfbdb8f5832",
+      "case_count": 3,
+      "functions": [
+        "strlen"
+      ],
+      "families": [
+        "strlen"
+      ]
+    },
+    "termios_ops": {
+      "file": "termios_ops.json",
+      "sha256": "e6d94ee61fef47d89b07d2f44aeebc6c1e9697ecd95ce333c487d888f2bf77d3",
+      "case_count": 8,
+      "functions": [
+        "cfgetispeed",
+        "cfgetospeed",
+        "cfsetispeed",
+        "cfsetospeed",
+        "tcgetattr"
+      ],
+      "families": [
+        "termios"
+      ]
+    },
+    "time_ops": {
+      "file": "time_ops.json",
+      "sha256": "8d74cf08ab984e541dad57609e7db0b589d025998eb11a1f10699fd414986b1a",
+      "case_count": 8,
+      "functions": [
+        "clock",
+        "clock_gettime",
+        "localtime_r",
+        "time"
+      ],
+      "families": [
+        "time"
+      ]
+    },
+    "unistd_ops": {
+      "file": "unistd_ops.json",
+      "sha256": "eabeb9b8786697c410e387eda836c2c2ec479b352133cdc8a6ba0553c13085c4",
+      "case_count": 17,
+      "functions": [
+        "access",
+        "close",
+        "getcwd",
+        "getegid",
+        "geteuid",
+        "getgid",
+        "getpid",
+        "getppid",
+        "getuid",
+        "isatty",
+        "lseek",
+        "pipe",
+        "read",
+        "write"
+      ],
+      "families": [
+        "unistd"
+      ]
+    },
+    "virtual_memory_ops": {
+      "file": "virtual_memory_ops.json",
+      "sha256": "3857f2a26dc451c81dcfe253662a82d2c8cea175924194ccf02add0e9deb97b0",
+      "case_count": 8,
+      "functions": [
+        "madvise",
+        "mmap",
+        "mprotect",
+        "munmap"
+      ],
+      "families": [
+        "virtual"
+      ]
+    },
+    "wide_memory": {
+      "file": "wide_memory.json",
+      "sha256": "3c1412d07055b66747c4b8a9ee92e25993334c2b02e26c6ce073a845c4dfeb30",
+      "case_count": 6,
+      "functions": [
+        "wmemchr",
+        "wmemcmp",
+        "wmemcpy",
+        "wmemmove",
+        "wmemset"
+      ],
+      "families": [
+        "wide"
+      ]
+    },
+    "wide_string": {
+      "file": "wide_string.json",
+      "sha256": "b674eb31c28054f4c61e7da5234020d0839e60b21eafa9c815e8a76b6cd71d2f",
+      "case_count": 4,
+      "functions": [
+        "wcscmp",
+        "wcscpy",
+        "wcslen"
+      ],
+      "families": [
+        "wide"
+      ]
+    },
+    "wide_string_ops": {
+      "file": "wide_string_ops.json",
+      "sha256": "27f6c82defa323fab0eb349deff6cb3b31e0e47bc77793e458fdffe8d882e1e2",
+      "case_count": 16,
+      "functions": [
+        "wcscat",
+        "wcschr",
+        "wcscmp",
+        "wcscpy",
+        "wcslen",
+        "wcsncmp",
+        "wcsncpy",
+        "wcsrchr",
+        "wcsstr"
+      ],
+      "families": [
+        "wide"
+      ]
+    }
+  }
+}

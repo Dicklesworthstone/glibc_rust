@@ -1,0 +1,37 @@
+{
+  "version": "v1",
+  "family": "errno_ops",
+  "captured_at": "2026-02-13T00:00:00Z",
+  "description": "Mode-specific parity fixtures for errno operations (__errno_location). Implemented. Strict: host-glibc parity. Hardened: same behavior.",
+  "cases": [
+    {
+      "name": "errno_location_nonnull_strict",
+      "function": "__errno_location",
+      "spec_section": "glibc __errno_location",
+      "inputs": {},
+      "expected_output": "NON_NULL_PTR",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Must return non-null pointer to thread-local errno"
+    },
+    {
+      "name": "errno_initially_zero_strict",
+      "function": "__errno_location",
+      "spec_section": "glibc __errno_location",
+      "inputs": { "check_value": true },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "errno should be 0 at start of well-formed program"
+    },
+    {
+      "name": "errno_location_nonnull_hardened",
+      "function": "__errno_location",
+      "spec_section": "glibc __errno_location",
+      "inputs": {},
+      "expected_output": "NON_NULL_PTR",
+      "expected_errno": 0,
+      "mode": "hardened"
+    }
+  ]
+}

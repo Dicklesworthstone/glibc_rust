@@ -1,0 +1,107 @@
+{
+  "version": "v1",
+  "family": "memory_ops",
+  "captured_at": "2026-02-13T00:00:00Z",
+  "description": "Mode-specific parity fixtures for memory operations (memcpy, memmove, memset, memcmp, memchr). Strict: host-glibc differential parity. Hardened: policy-validated clamp/truncate/deny.",
+  "cases": [
+    {
+      "name": "memcpy_basic_strict",
+      "function": "memcpy",
+      "spec_section": "C11 7.24.2.1 memcpy",
+      "inputs": { "src": "hello", "n": 5 },
+      "expected_output": "hello",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "memcpy_zero_len_strict",
+      "function": "memcpy",
+      "spec_section": "C11 7.24.2.1 memcpy",
+      "inputs": { "src": "hello", "n": 0 },
+      "expected_output": "",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "memmove_overlap_forward_strict",
+      "function": "memmove",
+      "spec_section": "C11 7.24.2.2 memmove",
+      "inputs": { "src_offset": 0, "dst_offset": 2, "n": 4, "buffer": "abcdefgh" },
+      "expected_output": "ababcdgh",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "memset_basic_strict",
+      "function": "memset",
+      "spec_section": "C11 7.24.6.1 memset",
+      "inputs": { "c": 65, "n": 4 },
+      "expected_output": "AAAA",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "memcmp_equal_strict",
+      "function": "memcmp",
+      "spec_section": "C11 7.24.4.1 memcmp",
+      "inputs": { "s1": "abc", "s2": "abc", "n": 3 },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "memcmp_less_strict",
+      "function": "memcmp",
+      "spec_section": "C11 7.24.4.1 memcmp",
+      "inputs": { "s1": "abc", "s2": "abd", "n": 3 },
+      "expected_output": "NEGATIVE",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "memchr_found_strict",
+      "function": "memchr",
+      "spec_section": "C11 7.24.5.1 memchr",
+      "inputs": { "s": "hello world", "c": 111, "n": 11 },
+      "expected_output": "FOUND_AT_4",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "memchr_not_found_strict",
+      "function": "memchr",
+      "spec_section": "C11 7.24.5.1 memchr",
+      "inputs": { "s": "hello", "c": 122, "n": 5 },
+      "expected_output": "NULL",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "memcpy_basic_hardened",
+      "function": "memcpy",
+      "spec_section": "C11 7.24.2.1 memcpy",
+      "inputs": { "src": "hello", "n": 5 },
+      "expected_output": "hello",
+      "expected_errno": 0,
+      "mode": "hardened"
+    },
+    {
+      "name": "memset_zero_len_hardened",
+      "function": "memset",
+      "spec_section": "C11 7.24.6.1 memset",
+      "inputs": { "c": 0, "n": 0 },
+      "expected_output": "",
+      "expected_errno": 0,
+      "mode": "hardened"
+    },
+    {
+      "name": "memcmp_greater_hardened",
+      "function": "memcmp",
+      "spec_section": "C11 7.24.4.1 memcmp",
+      "inputs": { "s1": "abd", "s2": "abc", "n": 3 },
+      "expected_output": "POSITIVE",
+      "expected_errno": 0,
+      "mode": "hardened"
+    }
+  ]
+}

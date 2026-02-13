@@ -1,0 +1,80 @@
+{
+  "version": "v1",
+  "family": "stdio_file_ops",
+  "captured_at": "2026-02-13T00:00:00Z",
+  "description": "Mode-specific parity fixtures for stdio file operations (fopen, fclose, fread, fwrite, fgets, fputs, fseek, ftell, fflush). Strict: host-glibc parity. Hardened: invalid mode repair, buffering fallbacks.",
+  "cases": [
+    {
+      "name": "fopen_valid_mode_strict",
+      "function": "fopen",
+      "spec_section": "C11 7.21.5.3 fopen",
+      "inputs": { "filename": "/dev/null", "mode": "r" },
+      "expected_output": "STREAM_OPENED",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "fopen_invalid_path_strict",
+      "function": "fopen",
+      "spec_section": "C11 7.21.5.3 fopen",
+      "inputs": { "filename": "/nonexistent/path/file.txt", "mode": "r" },
+      "expected_output": "NULL",
+      "expected_errno": 2,
+      "mode": "strict"
+    },
+    {
+      "name": "fclose_valid_strict",
+      "function": "fclose",
+      "spec_section": "C11 7.21.5.1 fclose",
+      "inputs": { "stream": "valid_devnull" },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "fprintf_devnull_strict",
+      "function": "fprintf",
+      "spec_section": "C11 7.21.6.1 fprintf",
+      "inputs": { "stream": "devnull", "format": "hello %d", "args": [42] },
+      "expected_output": "8",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "snprintf_basic_strict",
+      "function": "snprintf",
+      "spec_section": "C11 7.21.6.5 snprintf",
+      "inputs": { "size": 32, "format": "test %s %d", "args": ["abc", 123] },
+      "expected_output": "test abc 123",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "snprintf_truncation_strict",
+      "function": "snprintf",
+      "spec_section": "C11 7.21.6.5 snprintf",
+      "inputs": { "size": 5, "format": "hello world" },
+      "expected_output": "hell",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "fopen_valid_mode_hardened",
+      "function": "fopen",
+      "spec_section": "C11 7.21.5.3 fopen",
+      "inputs": { "filename": "/dev/null", "mode": "r" },
+      "expected_output": "STREAM_OPENED",
+      "expected_errno": 0,
+      "mode": "hardened"
+    },
+    {
+      "name": "snprintf_basic_hardened",
+      "function": "snprintf",
+      "spec_section": "C11 7.21.6.5 snprintf",
+      "inputs": { "size": 32, "format": "val=%d", "args": [99] },
+      "expected_output": "val=99",
+      "expected_errno": 0,
+      "mode": "hardened"
+    }
+  ]
+}

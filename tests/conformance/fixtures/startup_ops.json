@@ -1,0 +1,56 @@
+{
+  "version": "v1",
+  "family": "startup_ops",
+  "captured_at": "2026-02-13T00:00:00Z",
+  "description": "Mode-specific parity fixtures for startup operations (__libc_start_main, __frankenlibc_startup_phase0, __frankenlibc_startup_snapshot). All Implemented. Strict: deterministic startup sequence. Hardened: same behavior.",
+  "cases": [
+    {
+      "name": "startup_phase0_returns_strict",
+      "function": "__frankenlibc_startup_phase0",
+      "spec_section": "FrankenLibC startup",
+      "inputs": {},
+      "expected_output": "PHASE0_COMPLETE",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Phase-0 initialization completes successfully"
+    },
+    {
+      "name": "startup_snapshot_valid_strict",
+      "function": "__frankenlibc_startup_snapshot",
+      "spec_section": "FrankenLibC startup",
+      "inputs": {},
+      "expected_output": "SNAPSHOT_VALID",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Startup snapshot captures valid invariants"
+    },
+    {
+      "name": "libc_start_main_entry_strict",
+      "function": "__libc_start_main",
+      "spec_section": "glibc __libc_start_main",
+      "inputs": { "main": "valid_fn_ptr", "argc": 1, "argv": "valid_ptr" },
+      "expected_output": "MAIN_CALLED",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "main function is called with correct argc/argv"
+    },
+    {
+      "name": "startup_phase0_returns_hardened",
+      "function": "__frankenlibc_startup_phase0",
+      "spec_section": "FrankenLibC startup",
+      "inputs": {},
+      "expected_output": "PHASE0_COMPLETE",
+      "expected_errno": 0,
+      "mode": "hardened"
+    },
+    {
+      "name": "startup_snapshot_valid_hardened",
+      "function": "__frankenlibc_startup_snapshot",
+      "spec_section": "FrankenLibC startup",
+      "inputs": {},
+      "expected_output": "SNAPSHOT_VALID",
+      "expected_errno": 0,
+      "mode": "hardened"
+    }
+  ]
+}

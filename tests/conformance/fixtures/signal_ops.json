@@ -1,0 +1,67 @@
+{
+  "version": "v1",
+  "family": "signal_ops",
+  "captured_at": "2026-02-13T00:00:00Z",
+  "description": "Mode-specific parity fixtures for signal operations (kill, raise, sigaction, signal). All RawSyscall. Strict: host-kernel parity. Hardened: invalid signal number clamping.",
+  "cases": [
+    {
+      "name": "raise_zero_strict",
+      "function": "raise",
+      "spec_section": "POSIX raise",
+      "inputs": { "sig": 0 },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Signal 0 is a null signal, always succeeds"
+    },
+    {
+      "name": "kill_self_zero_strict",
+      "function": "kill",
+      "spec_section": "POSIX kill",
+      "inputs": { "pid": 0, "sig": 0 },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Signal 0 to own process group"
+    },
+    {
+      "name": "kill_invalid_signal_strict",
+      "function": "kill",
+      "spec_section": "POSIX kill",
+      "inputs": { "pid": 1, "sig": 999 },
+      "expected_output": "-1",
+      "expected_errno": 22,
+      "mode": "strict",
+      "note": "Invalid signal number returns EINVAL"
+    },
+    {
+      "name": "sigaction_query_strict",
+      "function": "sigaction",
+      "spec_section": "POSIX sigaction",
+      "inputs": { "signum": 2, "act": null },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Query current SIGINT handler without setting"
+    },
+    {
+      "name": "raise_zero_hardened",
+      "function": "raise",
+      "spec_section": "POSIX raise",
+      "inputs": { "sig": 0 },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "hardened"
+    },
+    {
+      "name": "kill_invalid_signal_hardened",
+      "function": "kill",
+      "spec_section": "POSIX kill",
+      "inputs": { "pid": 1, "sig": 999 },
+      "expected_output": "-1",
+      "expected_errno": 22,
+      "mode": "hardened",
+      "note": "Invalid signal rejected in hardened mode too"
+    }
+  ]
+}

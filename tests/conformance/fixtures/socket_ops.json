@@ -1,0 +1,95 @@
+{
+  "version": "v1",
+  "family": "socket_ops",
+  "captured_at": "2026-02-13T00:00:00Z",
+  "description": "Mode-specific parity fixtures for socket operations (socket, bind, listen, accept, connect, send, recv, shutdown, getsockname, getpeername, getsockopt, setsockopt, sendto, recvfrom). All RawSyscall. Strict: host-kernel parity. Hardened: invalid domain/type handling.",
+  "cases": [
+    {
+      "name": "socket_tcp_strict",
+      "function": "socket",
+      "spec_section": "POSIX socket",
+      "inputs": { "domain": 2, "type": 1, "protocol": 0 },
+      "expected_output": "FD_POSITIVE",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "AF_INET, SOCK_STREAM"
+    },
+    {
+      "name": "socket_udp_strict",
+      "function": "socket",
+      "spec_section": "POSIX socket",
+      "inputs": { "domain": 2, "type": 2, "protocol": 0 },
+      "expected_output": "FD_POSITIVE",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "AF_INET, SOCK_DGRAM"
+    },
+    {
+      "name": "socket_invalid_domain_strict",
+      "function": "socket",
+      "spec_section": "POSIX socket",
+      "inputs": { "domain": 999, "type": 1, "protocol": 0 },
+      "expected_output": "-1",
+      "expected_errno": 97,
+      "mode": "strict",
+      "note": "EAFNOSUPPORT for invalid domain"
+    },
+    {
+      "name": "bind_invalid_fd_strict",
+      "function": "bind",
+      "spec_section": "POSIX bind",
+      "inputs": { "sockfd": -1, "addr": "127.0.0.1:0" },
+      "expected_output": "-1",
+      "expected_errno": 9,
+      "mode": "strict",
+      "note": "EBADF for invalid socket fd"
+    },
+    {
+      "name": "listen_invalid_fd_strict",
+      "function": "listen",
+      "spec_section": "POSIX listen",
+      "inputs": { "sockfd": -1, "backlog": 5 },
+      "expected_output": "-1",
+      "expected_errno": 9,
+      "mode": "strict"
+    },
+    {
+      "name": "shutdown_invalid_fd_strict",
+      "function": "shutdown",
+      "spec_section": "POSIX shutdown",
+      "inputs": { "sockfd": -1, "how": 2 },
+      "expected_output": "-1",
+      "expected_errno": 9,
+      "mode": "strict",
+      "note": "SHUT_RDWR on invalid fd"
+    },
+    {
+      "name": "getsockname_invalid_fd_strict",
+      "function": "getsockname",
+      "spec_section": "POSIX getsockname",
+      "inputs": { "sockfd": -1 },
+      "expected_output": "-1",
+      "expected_errno": 9,
+      "mode": "strict"
+    },
+    {
+      "name": "socket_tcp_hardened",
+      "function": "socket",
+      "spec_section": "POSIX socket",
+      "inputs": { "domain": 2, "type": 1, "protocol": 0 },
+      "expected_output": "FD_POSITIVE",
+      "expected_errno": 0,
+      "mode": "hardened"
+    },
+    {
+      "name": "socket_invalid_domain_hardened",
+      "function": "socket",
+      "spec_section": "POSIX socket",
+      "inputs": { "domain": 999, "type": 1, "protocol": 0 },
+      "expected_output": "-1",
+      "expected_errno": 97,
+      "mode": "hardened",
+      "note": "Invalid domain also rejected in hardened mode"
+    }
+  ]
+}

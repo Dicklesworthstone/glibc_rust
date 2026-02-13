@@ -1,0 +1,65 @@
+{
+  "version": "v1",
+  "family": "dirent_ops",
+  "captured_at": "2026-02-13T00:00:00Z",
+  "description": "Mode-specific parity fixtures for directory operations (opendir, readdir, closedir). All RawSyscall. Strict: host-kernel parity. Hardened: invalid path handling.",
+  "cases": [
+    {
+      "name": "opendir_root_strict",
+      "function": "opendir",
+      "spec_section": "POSIX opendir",
+      "inputs": { "name": "/" },
+      "expected_output": "DIR_PTR",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Root directory always openable"
+    },
+    {
+      "name": "opendir_nonexistent_strict",
+      "function": "opendir",
+      "spec_section": "POSIX opendir",
+      "inputs": { "name": "/nonexistent_dir_12345" },
+      "expected_output": "NULL",
+      "expected_errno": 2,
+      "mode": "strict",
+      "note": "ENOENT for nonexistent directory"
+    },
+    {
+      "name": "readdir_root_strict",
+      "function": "readdir",
+      "spec_section": "POSIX readdir",
+      "inputs": { "dirp": "valid_root_dir" },
+      "expected_output": "DIRENT_PTR",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Root always has entries (at least . and ..)"
+    },
+    {
+      "name": "closedir_valid_strict",
+      "function": "closedir",
+      "spec_section": "POSIX closedir",
+      "inputs": { "dirp": "valid_dir" },
+      "expected_output": "0",
+      "expected_errno": 0,
+      "mode": "strict"
+    },
+    {
+      "name": "opendir_root_hardened",
+      "function": "opendir",
+      "spec_section": "POSIX opendir",
+      "inputs": { "name": "/" },
+      "expected_output": "DIR_PTR",
+      "expected_errno": 0,
+      "mode": "hardened"
+    },
+    {
+      "name": "opendir_nonexistent_hardened",
+      "function": "opendir",
+      "spec_section": "POSIX opendir",
+      "inputs": { "name": "/nonexistent_dir_12345" },
+      "expected_output": "NULL",
+      "expected_errno": 2,
+      "mode": "hardened"
+    }
+  ]
+}
