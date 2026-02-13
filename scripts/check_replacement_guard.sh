@@ -20,10 +20,12 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ABI_SRC="${ROOT}/crates/frankenlibc-abi/src"
 PROFILE_DEF="${ROOT}/tests/conformance/replacement_profile.json"
+SUPPORT_MATRIX="${ROOT}/support_matrix.json"
 MODE="${1:-interpose}"
 OUT_DIR="${ROOT}/target/conformance"
 LOG_PATH="${OUT_DIR}/replacement_guard.log.jsonl"
 REPORT_PATH="${OUT_DIR}/replacement_guard.report.json"
+FIXTURE_PACK="${ROOT}/tests/conformance/replacement_zero_unapproved_fixtures.v1.json"
 
 failures=0
 
@@ -42,6 +44,20 @@ if [[ ! -f "${PROFILE_DEF}" ]]; then
     failures=$((failures + 1))
 else
     echo "PASS: Profile definition exists"
+fi
+
+if [[ ! -f "${SUPPORT_MATRIX}" ]]; then
+    echo "FAIL: support_matrix.json not found"
+    failures=$((failures + 1))
+else
+    echo "PASS: support_matrix.json exists"
+fi
+
+if [[ ! -f "${FIXTURE_PACK}" ]]; then
+    echo "FAIL: tests/conformance/replacement_zero_unapproved_fixtures.v1.json not found"
+    failures=$((failures + 1))
+else
+    echo "PASS: replacement zero-unapproved fixture pack exists"
 fi
 echo ""
 
@@ -238,6 +254,145 @@ else
 fi
 echo "Structured logs: ${log_path_rel}"
 echo "Report: ${report_path_rel}"
+echo ""
+
+# ---------------------------------------------------------------------------
+# Check 2b: All callthrough families are covered by profile + fixtures
+# ---------------------------------------------------------------------------
+echo "--- Check 2b: Callthrough family coverage + fixture alignment ---"
+
+coverage_check=$(python3 -c "
+import json
+import pathlib
+
+profile_path = pathlib.Path('${PROFILE_DEF}')
+support_path = pathlib.Path('${SUPPORT_MATRIX}')
+fixture_path = pathlib.Path('${FIXTURE_PACK}')
+report_path = pathlib.Path('${REPORT_PATH}')
+log_path = pathlib.Path('${LOG_PATH}')
+
+profile = json.loads(profile_path.read_text(encoding='utf-8'))
+support = json.loads(support_path.read_text(encoding='utf-8'))
+fixtures = json.loads(fixture_path.read_text(encoding='utf-8'))
+report = json.loads(report_path.read_text(encoding='utf-8'))
+
+symbols = support.get('symbols', [])
+callthrough_rows = [row for row in symbols if row.get('status') == 'GlibcCallThrough']
+support_modules = {str(row.get('module')) for row in callthrough_rows}
+support_symbol_map = {str(row.get('symbol')): row for row in callthrough_rows}
+
+profile_modules = set(profile.get('callthrough_families', {}).get('modules', []))
+allowlist = set(profile.get('interpose_allowlist', {}).get('modules', []))
+
+errors = []
+if support_modules != profile_modules:
+    errors.append(
+        f'callthrough module mismatch: support_matrix={sorted(support_modules)} profile.callthrough_families={sorted(profile_modules)}'
+    )
+if not profile_modules.issubset(allowlist):
+    missing = sorted(profile_modules - allowlist)
+    errors.append(f'profile.callthrough_families not fully in interpose_allowlist: {missing}')
+
+source_modules = set(report.get('module_counts', {}).keys())
+if not source_modules.issubset(profile_modules):
+    extra = sorted(source_modules - profile_modules)
+    errors.append(f'source scan found callthrough modules absent from profile.callthrough_families: {extra}')
+
+fixture_rows = fixtures.get('fixtures', [])
+if fixtures.get('schema_version') != 'v1':
+    errors.append('fixture pack schema_version must be v1')
+if fixtures.get('bead') != 'bd-27kh':
+    errors.append('fixture pack bead must be bd-27kh')
+if not isinstance(fixture_rows, list) or not fixture_rows:
+    errors.append('fixture pack fixtures must be a non-empty array')
+
+mode_counts = {'interpose': 0, 'replacement': 0}
+module_mode_coverage = {}
+for row in fixture_rows:
+    row_id = row.get('id')
+    mode = row.get('mode')
+    module = row.get('module')
+    symbol = row.get('symbol')
+    expected = row.get('expected_outcome')
+    if mode not in ('interpose', 'replacement'):
+        errors.append(f'{row_id}: invalid mode {mode!r}')
+        continue
+    mode_counts[mode] += 1
+    if mode == 'interpose' and expected != 'allowed':
+        errors.append(f'{row_id}: interpose fixture expected_outcome must be allowed')
+    if mode == 'replacement' and expected != 'forbidden':
+        errors.append(f'{row_id}: replacement fixture expected_outcome must be forbidden')
+    if module not in profile_modules:
+        errors.append(f'{row_id}: module {module!r} not tracked in profile.callthrough_families')
+    if symbol not in support_symbol_map:
+        errors.append(f'{row_id}: symbol {symbol!r} not found as GlibcCallThrough in support_matrix')
+    else:
+        support_module = support_symbol_map[symbol].get('module')
+        if support_module != module:
+            errors.append(
+                f'{row_id}: symbol/module mismatch (fixture {module}, support_matrix {support_module})'
+            )
+    module_mode_coverage.setdefault(module, set()).add(mode)
+
+for module in profile_modules:
+    modes = module_mode_coverage.get(module, set())
+    if 'interpose' not in modes or 'replacement' not in modes:
+        errors.append(
+            f'module {module} missing fixture coverage for both modes: has={sorted(modes)}'
+        )
+
+summary = fixtures.get('summary', {})
+if summary.get('fixture_count') != len(fixture_rows):
+    errors.append('fixture summary.fixture_count mismatch')
+if summary.get('interpose_allowed_count') != mode_counts['interpose']:
+    errors.append('fixture summary.interpose_allowed_count mismatch')
+if summary.get('replacement_forbidden_count') != mode_counts['replacement']:
+    errors.append('fixture summary.replacement_forbidden_count mismatch')
+covered_modules = set(summary.get('covered_callthrough_modules', []))
+if covered_modules != profile_modules:
+    errors.append(
+        f'fixture summary.covered_callthrough_modules mismatch: summary={sorted(covered_modules)} profile={sorted(profile_modules)}'
+    )
+
+required_log_fields = set(fixtures.get('required_log_fields', []))
+if required_log_fields:
+    first_row = None
+    for line in log_path.read_text(encoding='utf-8').splitlines():
+        if line.strip():
+            first_row = json.loads(line)
+            break
+    if first_row is None:
+        errors.append('replacement_guard.log.jsonl is empty')
+    else:
+        missing = sorted(required_log_fields - set(first_row.keys()))
+        if missing:
+            errors.append(f'replacement_guard.log.jsonl missing required fields from fixture pack: {missing}')
+
+print(f'FAMILY_ERRORS={len(errors)}')
+print(f'CALLTHROUGH_MODULES={len(profile_modules)}')
+print(f'FIXTURE_CASES={len(fixture_rows)}')
+print(f'INTERPOSE_FIXTURES={mode_counts[\"interpose\"]}')
+print(f'REPLACEMENT_FIXTURES={mode_counts[\"replacement\"]}')
+for err in errors:
+    print(f'  {err}')
+")
+
+family_errors=$(echo "${coverage_check}" | grep '^FAMILY_ERRORS=' | cut -d= -f2)
+callthrough_modules=$(echo "${coverage_check}" | grep '^CALLTHROUGH_MODULES=' | cut -d= -f2)
+fixture_cases=$(echo "${coverage_check}" | grep '^FIXTURE_CASES=' | cut -d= -f2)
+interpose_fixtures=$(echo "${coverage_check}" | grep '^INTERPOSE_FIXTURES=' | cut -d= -f2)
+replacement_fixtures=$(echo "${coverage_check}" | grep '^REPLACEMENT_FIXTURES=' | cut -d= -f2)
+
+echo "Callthrough families tracked: ${callthrough_modules}"
+echo "Fixture cases: ${fixture_cases} (interpose=${interpose_fixtures}, replacement=${replacement_fixtures})"
+
+if [[ "${family_errors}" -gt 0 ]]; then
+    echo "FAIL: ${family_errors} callthrough-family/fixture issue(s):"
+    echo "${coverage_check}" | grep '^  '
+    failures=$((failures + 1))
+else
+    echo "PASS: Callthrough family coverage and fixtures align with profile + support matrix"
+fi
 echo ""
 
 # ---------------------------------------------------------------------------

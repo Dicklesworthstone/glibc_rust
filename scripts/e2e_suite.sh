@@ -31,15 +31,37 @@ DRY_RUN_MANIFEST=0
 MANIFEST_PATH="${FRANKENLIBC_E2E_MANIFEST:-${ROOT}/tests/conformance/e2e_scenario_manifest.v1.json}"
 TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-10}"
 E2E_SEED="${FRANKENLIBC_E2E_SEED:-42}"
+RETRY_MAX="${FRANKENLIBC_E2E_RETRY_MAX:-1}"
+RETRY_ON_NONZERO="${FRANKENLIBC_E2E_RETRY_ON_NONZERO:-1}"
+RETRYABLE_CODES="${FRANKENLIBC_E2E_RETRYABLE_CODES:-124,125}"
+FLAKE_QUARANTINE_THRESHOLD="${FRANKENLIBC_E2E_FLAKE_QUARANTINE_THRESHOLD:-0.34}"
+
+PACK_MAX_FAILS_SMOKE="${FRANKENLIBC_E2E_PACK_MAX_FAILS_SMOKE:-2}"
+PACK_MAX_FAILS_STRESS="${FRANKENLIBC_E2E_PACK_MAX_FAILS_STRESS:-4}"
+PACK_MAX_FAILS_FAULT="${FRANKENLIBC_E2E_PACK_MAX_FAILS_FAULT:-6}"
+PACK_MAX_FAILS_STABILITY="${FRANKENLIBC_E2E_PACK_MAX_FAILS_STABILITY:-4}"
+
+PACK_MAX_QUARANTINED_SMOKE="${FRANKENLIBC_E2E_PACK_MAX_QUARANTINED_SMOKE:-0}"
+PACK_MAX_QUARANTINED_STRESS="${FRANKENLIBC_E2E_PACK_MAX_QUARANTINED_STRESS:-2}"
+PACK_MAX_QUARANTINED_FAULT="${FRANKENLIBC_E2E_PACK_MAX_QUARANTINED_FAULT:-2}"
+PACK_MAX_QUARANTINED_STABILITY="${FRANKENLIBC_E2E_PACK_MAX_QUARANTINED_STABILITY:-2}"
+
 RUN_ID="e2e-v${SUITE_VERSION}-$(date -u +%Y%m%dT%H%M%SZ)-s${E2E_SEED}"
 OUT_DIR="${ROOT}/target/e2e_suite/${RUN_ID}"
 LOG_FILE="${OUT_DIR}/trace.jsonl"
 INDEX_FILE="${OUT_DIR}/artifact_index.json"
 PAIR_REPORT_FILE="${OUT_DIR}/mode_pair_report.json"
 PAIR_REPORT_TSV="${OUT_DIR}/mode_pair_report.tsv"
+PACK_REPORT_FILE="${OUT_DIR}/scenario_pack_report.json"
+QUARANTINE_REPORT_FILE="${OUT_DIR}/flake_quarantine_report.json"
+QUARANTINE_TSV="${OUT_DIR}/flake_quarantine.tsv"
+FLAKE_POLICY="${ROOT}/scripts/e2e_flake_policy.py"
 
 declare -A CASE_RESULT_BY_SCENARIO_MODE=()
 declare -A CASE_SCENARIOS=()
+declare -A PACK_FAILS=()
+declare -A PACK_FLAKES=()
+declare -A PACK_QUARANTINED=()
 pair_mismatch_count=0
 MANIFEST_SHA256=""
 
@@ -126,7 +148,18 @@ if ! command -v cc >/dev/null 2>&1; then
     exit 2
 fi
 
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "e2e_suite: required runtime 'python3' not found" >&2
+    exit 2
+fi
+
+if [[ ! -f "${FLAKE_POLICY}" ]]; then
+    echo "e2e_suite: missing flake policy helper: ${FLAKE_POLICY}" >&2
+    exit 2
+fi
+
 mkdir -p "${OUT_DIR}"
+: > "${QUARANTINE_TSV}"
 
 # ---------------------------------------------------------------------------
 # JSONL structured log helpers
@@ -159,6 +192,188 @@ emit_log() {
 
     json="${json}}"
     echo "${json}" >> "${LOG_FILE}"
+}
+
+pack_max_fails() {
+    local pack="$1"
+    case "${pack}" in
+        smoke) echo "${PACK_MAX_FAILS_SMOKE}" ;;
+        stress) echo "${PACK_MAX_FAILS_STRESS}" ;;
+        fault) echo "${PACK_MAX_FAILS_FAULT}" ;;
+        stability) echo "${PACK_MAX_FAILS_STABILITY}" ;;
+        *) echo "0" ;;
+    esac
+}
+
+pack_max_quarantined() {
+    local pack="$1"
+    case "${pack}" in
+        smoke) echo "${PACK_MAX_QUARANTINED_SMOKE}" ;;
+        stress) echo "${PACK_MAX_QUARANTINED_STRESS}" ;;
+        fault) echo "${PACK_MAX_QUARANTINED_FAULT}" ;;
+        stability) echo "${PACK_MAX_QUARANTINED_STABILITY}" ;;
+        *) echo "0" ;;
+    esac
+}
+
+classify_attempt_history() {
+    local exit_codes_csv="$1"
+    python3 "${FLAKE_POLICY}" classify \
+        --exit-codes "${exit_codes_csv}" \
+        --quarantine-threshold "${FLAKE_QUARANTINE_THRESHOLD}"
+}
+
+should_retry_attempt() {
+    local exit_code="$1"
+    local attempt_index="$2"
+    python3 "${FLAKE_POLICY}" should-retry \
+        --exit-code "${exit_code}" \
+        --attempt-index "${attempt_index}" \
+        --max-retries "${RETRY_MAX}" \
+        --retry-on-any-nonzero "${RETRY_ON_NONZERO}" \
+        --retryable-codes "${RETRYABLE_CODES}"
+}
+
+emit_quarantine_report() {
+    QUARANTINE_TSV_PATH="${QUARANTINE_TSV}" \
+    QUARANTINE_JSON_PATH="${QUARANTINE_REPORT_FILE}" \
+    E2E_RUN_ID="${RUN_ID}" \
+    E2E_SEED_VALUE="${E2E_SEED}" \
+    E2E_MANIFEST_SHA256="${MANIFEST_SHA256}" \
+    E2E_THRESHOLD="${FLAKE_QUARANTINE_THRESHOLD}" \
+    E2E_RETRY_MAX="${RETRY_MAX}" \
+    E2E_RETRY_ANY="${RETRY_ON_NONZERO}" \
+    E2E_RETRY_CODES="${RETRYABLE_CODES}" \
+    python3 - <<'PY'
+import json
+import os
+from pathlib import Path
+
+rows = []
+tsv_path = Path(os.environ["QUARANTINE_TSV_PATH"])
+if tsv_path.exists():
+    for line in tsv_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        (
+            scenario_pack,
+            scenario_id,
+            mode,
+            label,
+            flake_score,
+            retry_count,
+            final_exit_code,
+            replay_key,
+            verdict,
+            artifact_refs_json,
+        ) = line.split("\t", 9)
+        rows.append(
+            {
+                "scenario_pack": scenario_pack,
+                "scenario_id": scenario_id,
+                "mode": mode,
+                "label": label,
+                "flake_score": float(flake_score),
+                "retry_count": int(retry_count),
+                "final_exit_code": int(final_exit_code),
+                "replay_key": replay_key,
+                "verdict": verdict,
+                "artifact_refs": json.loads(artifact_refs_json),
+            }
+        )
+
+payload = {
+    "schema_version": "v1",
+    "run_id": os.environ["E2E_RUN_ID"],
+    "seed": os.environ["E2E_SEED_VALUE"],
+    "manifest_sha256": os.environ["E2E_MANIFEST_SHA256"],
+    "quarantine_threshold": float(os.environ["E2E_THRESHOLD"]),
+    "retry_policy": {
+        "max_retries": int(os.environ["E2E_RETRY_MAX"]),
+        "retry_on_nonzero": bool(int(os.environ["E2E_RETRY_ANY"])),
+        "retryable_codes": [
+            int(code.strip())
+            for code in os.environ["E2E_RETRY_CODES"].split(",")
+            if code.strip()
+        ],
+    },
+    "quarantined_count": len(rows),
+    "quarantined_cases": rows,
+    "remediation_workflow": [
+        "reproduce each quarantined case with replay_key and identical mode",
+        "inspect stdout/stderr + bundle.meta + env.txt from artifact_refs",
+        "fix root cause or tighten retry policy only with explicit evidence",
+        "remove quarantine label after two deterministic clean reruns",
+    ],
+}
+
+Path(os.environ["QUARANTINE_JSON_PATH"]).write_text(
+    json.dumps(payload, indent=2) + "\n", encoding="utf-8"
+)
+PY
+}
+
+emit_pack_report() {
+    PACK_REPORT_FILE_PATH="${PACK_REPORT_FILE}" \
+    PACK_FAILS_SMOKE="${PACK_FAILS["smoke"]:-0}" \
+    PACK_FAILS_STRESS="${PACK_FAILS["stress"]:-0}" \
+    PACK_FAILS_FAULT="${PACK_FAILS["fault"]:-0}" \
+    PACK_FAILS_STABILITY="${PACK_FAILS["stability"]:-0}" \
+    PACK_FLAKES_SMOKE="${PACK_FLAKES["smoke"]:-0}" \
+    PACK_FLAKES_STRESS="${PACK_FLAKES["stress"]:-0}" \
+    PACK_FLAKES_FAULT="${PACK_FLAKES["fault"]:-0}" \
+    PACK_FLAKES_STABILITY="${PACK_FLAKES["stability"]:-0}" \
+    PACK_QUAR_SMOKE="${PACK_QUARANTINED["smoke"]:-0}" \
+    PACK_QUAR_STRESS="${PACK_QUARANTINED["stress"]:-0}" \
+    PACK_QUAR_FAULT="${PACK_QUARANTINED["fault"]:-0}" \
+    PACK_QUAR_STABILITY="${PACK_QUARANTINED["stability"]:-0}" \
+    PACK_MAX_FAILS_SMOKE="${PACK_MAX_FAILS_SMOKE}" \
+    PACK_MAX_FAILS_STRESS="${PACK_MAX_FAILS_STRESS}" \
+    PACK_MAX_FAILS_FAULT="${PACK_MAX_FAILS_FAULT}" \
+    PACK_MAX_FAILS_STABILITY="${PACK_MAX_FAILS_STABILITY}" \
+    PACK_MAX_QUARANTINED_SMOKE="${PACK_MAX_QUARANTINED_SMOKE}" \
+    PACK_MAX_QUARANTINED_STRESS="${PACK_MAX_QUARANTINED_STRESS}" \
+    PACK_MAX_QUARANTINED_FAULT="${PACK_MAX_QUARANTINED_FAULT}" \
+    PACK_MAX_QUARANTINED_STABILITY="${PACK_MAX_QUARANTINED_STABILITY}" \
+    python3 - <<'PY'
+import json
+import os
+from pathlib import Path
+
+packs = []
+for name in ("smoke", "stress", "fault", "stability"):
+    fails = int(os.environ[f"PACK_FAILS_{name.upper()}"])
+    flakes = int(os.environ[f"PACK_FLAKES_{name.upper()}"])
+    quarantined = int(os.environ[f"PACK_QUAR_{name.upper()}"])
+    max_fails = int(os.environ[f"PACK_MAX_FAILS_{name.upper()}"])
+    max_quarantined = int(os.environ[f"PACK_MAX_QUARANTINED_{name.upper()}"])
+    fail_ok = fails <= max_fails
+    quarantine_ok = quarantined <= max_quarantined
+    packs.append(
+        {
+            "scenario_pack": name,
+            "counts": {
+                "fails": fails,
+                "flakes": flakes,
+                "quarantined": quarantined,
+            },
+            "thresholds": {
+                "max_fails": max_fails,
+                "max_quarantined": max_quarantined,
+            },
+            "verdict": "pass" if (fail_ok and quarantine_ok) else "fail",
+        }
+    )
+
+payload = {
+    "schema_version": "v1",
+    "packs": packs,
+}
+
+Path(os.environ["PACK_REPORT_FILE_PATH"]).write_text(
+    json.dumps(payload, indent=2) + "\n", encoding="utf-8"
+)
+PY
 }
 
 manifest_validate() {
@@ -366,7 +581,7 @@ run_e2e_case() {
     local metadata
     if ! metadata="$(manifest_case_metadata "${mode}" "${scenario}" "${label}" 2>/dev/null)"; then
         fails=$((fails + 1))
-        emit_log "error" "case_manifest_mismatch" "${mode}" "" "${label}" "fail" "" "\"details\":{\"scenario\":\"${scenario}\",\"label\":\"${label}\",\"manifest\":\"${MANIFEST_PATH}\"}"
+        emit_log "error" "case_manifest_mismatch" "${mode}" "" "${label}" "fail" "" "\"scenario_pack\":\"${scenario}\",\"retry_count\":0,\"flake_score\":0.0,\"artifact_refs\":[],\"verdict\":\"manifest_mismatch\",\"details\":{\"scenario\":\"${scenario}\",\"label\":\"${label}\",\"manifest\":\"${MANIFEST_PATH}\"}"
         echo "[FAIL] ${scenario}/${mode}/${label} (manifest metadata missing)" >&2
         return 1
     fi
@@ -376,60 +591,165 @@ run_e2e_case() {
     local env_fingerprint
     env_fingerprint="$(compute_env_fingerprint "${mode}")"
 
-    emit_log "info" "case_start" "${mode}" "" "${label}" "" "" "\"scenario_id\":\"${scenario_id}\",\"replay_key\":\"${replay_key}\",\"env_fingerprint\":\"${env_fingerprint}\",\"expected_outcome\":\"${expected_outcome}\",\"pass_condition\":\"${pass_condition}\",\"artifact_policy\":${artifact_policy},\"details\":{\"scenario\":\"${scenario}\"}"
+    emit_log "info" "case_start" "${mode}" "" "${label}" "" "" "\"scenario_id\":\"${scenario_id}\",\"scenario_pack\":\"${scenario}\",\"retry_count\":0,\"flake_score\":0.0,\"artifact_refs\":[],\"verdict\":\"running\",\"replay_key\":\"${replay_key}\",\"env_fingerprint\":\"${env_fingerprint}\",\"expected_outcome\":\"${expected_outcome}\",\"pass_condition\":\"${pass_condition}\",\"artifact_policy\":${artifact_policy},\"details\":{\"scenario\":\"${scenario}\"}"
 
-    local start_ns
-    start_ns=$(date +%s%N)
+    local -a exit_codes=()
+    local -a latencies=()
+    local attempt_index=0
+    local final_rc=0
+    local last_attempt_stdout=""
+    local last_attempt_stderr=""
 
-    set +e
-    timeout "${TIMEOUT_SECONDS}" \
-        env FRANKENLIBC_MODE="${mode}" \
-            FRANKENLIBC_E2E_SEED="${E2E_SEED}" \
-            LD_PRELOAD="${LIB_PATH}" \
-            "$@" \
-        > "${case_dir}/stdout.txt" 2> "${case_dir}/stderr.txt"
-    local rc=$?
-    set -e
+    while :; do
+        local attempt_num=$((attempt_index + 1))
+        local attempt_stdout="${case_dir}/stdout.attempt${attempt_num}.txt"
+        local attempt_stderr="${case_dir}/stderr.attempt${attempt_num}.txt"
+        local start_ns
+        start_ns=$(date +%s%N)
 
-    local end_ns
-    end_ns=$(date +%s%N)
-    local elapsed_ns=$(( end_ns - start_ns ))
+        set +e
+        timeout "${TIMEOUT_SECONDS}" \
+            env FRANKENLIBC_MODE="${mode}" \
+                FRANKENLIBC_E2E_SEED="${E2E_SEED}" \
+                LD_PRELOAD="${LIB_PATH}" \
+                "$@" \
+            > "${attempt_stdout}" 2> "${attempt_stderr}"
+        local rc=$?
+        set -e
 
-    if [[ "${rc}" -eq 0 ]]; then
+        local end_ns
+        end_ns=$(date +%s%N)
+        local elapsed_ns=$(( end_ns - start_ns ))
+        exit_codes+=("${rc}")
+        latencies+=("${elapsed_ns}")
+        final_rc="${rc}"
+        last_attempt_stdout="${attempt_stdout}"
+        last_attempt_stderr="${attempt_stderr}"
+
+        emit_log "info" "case_attempt" "${mode}" "" "${label}" "" "${elapsed_ns}" "\"scenario_id\":\"${scenario_id}\",\"scenario_pack\":\"${scenario}\",\"attempt_index\":${attempt_num},\"attempt_exit_code\":${rc},\"retry_count\":${attempt_index},\"flake_score\":0.0,\"artifact_refs\":[\"${scenario}/${mode}/${label}/stdout.attempt${attempt_num}.txt\",\"${scenario}/${mode}/${label}/stderr.attempt${attempt_num}.txt\"],\"verdict\":\"attempt_recorded\",\"replay_key\":\"${replay_key}\",\"env_fingerprint\":\"${env_fingerprint}\",\"expected_outcome\":\"${expected_outcome}\",\"pass_condition\":\"${pass_condition}\",\"artifact_policy\":${artifact_policy}"
+
+        local retry_decision
+        retry_decision="$(should_retry_attempt "${rc}" "${attempt_index}")"
+        if [[ "${retry_decision}" != "1" ]]; then
+            break
+        fi
+
+        attempt_index=$((attempt_index + 1))
+        emit_log "info" "case_retry" "${mode}" "" "${label}" "" "" "\"scenario_id\":\"${scenario_id}\",\"scenario_pack\":\"${scenario}\",\"retry_count\":${attempt_index},\"flake_score\":0.0,\"artifact_refs\":[\"${scenario}/${mode}/${label}/stdout.attempt${attempt_num}.txt\",\"${scenario}/${mode}/${label}/stderr.attempt${attempt_num}.txt\"],\"verdict\":\"retry_scheduled\",\"replay_key\":\"${replay_key}\",\"env_fingerprint\":\"${env_fingerprint}\",\"expected_outcome\":\"${expected_outcome}\",\"pass_condition\":\"${pass_condition}\",\"artifact_policy\":${artifact_policy}"
+    done
+
+    cp "${last_attempt_stdout}" "${case_dir}/stdout.txt"
+    cp "${last_attempt_stderr}" "${case_dir}/stderr.txt"
+
+    local exit_codes_csv
+    exit_codes_csv="$(IFS=,; echo "${exit_codes[*]}")"
+    local classification
+    classification="$(classify_attempt_history "${exit_codes_csv}")"
+
+    local retry_count flake_score verdict final_outcome final_exit_code is_flaky should_quarantine
+    IFS=$'\t' read -r retry_count flake_score verdict final_outcome final_exit_code is_flaky should_quarantine <<<"${classification}"
+
+    local total_elapsed_ns=0
+    local latency_ns
+    for latency_ns in "${latencies[@]}"; do
+        total_elapsed_ns=$((total_elapsed_ns + latency_ns))
+    done
+
+    if [[ "${final_outcome}" != "pass" || "${should_quarantine}" == "1" ]]; then
+        local fail_reason="exit_${final_rc}"
+        if [[ "${final_rc}" -eq 124 || "${final_rc}" -eq 125 ]]; then
+            fail_reason="timeout_${TIMEOUT_SECONDS}s"
+        fi
+        {
+            echo "mode=${mode}"
+            echo "scenario=${scenario}"
+            echo "label=${label}"
+            echo "exit_codes=${exit_codes_csv}"
+            echo "exit_code=${final_rc}"
+            echo "fail_reason=${fail_reason}"
+            echo "retry_count=${retry_count}"
+            echo "flake_score=${flake_score}"
+            echo "verdict=${verdict}"
+            echo "timestamp_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "lib_path=${LIB_PATH}"
+            echo "seed=${E2E_SEED}"
+            echo "scenario_id=${scenario_id}"
+            echo "replay_key=${replay_key}"
+            echo "env_fingerprint=${env_fingerprint}"
+        } > "${case_dir}/bundle.meta"
+        env | sort > "${case_dir}/env.txt"
+    fi
+
+    local artifact_refs_json="["
+    local first_ref=1
+    local i
+    for i in $(seq 1 "${#exit_codes[@]}"); do
+        for suffix in "stdout.attempt${i}.txt" "stderr.attempt${i}.txt"; do
+            if [[ "${first_ref}" -eq 0 ]]; then
+                artifact_refs_json="${artifact_refs_json},"
+            fi
+            artifact_refs_json="${artifact_refs_json}\"${scenario}/${mode}/${label}/${suffix}\""
+            first_ref=0
+        done
+    done
+    for suffix in "stdout.txt" "stderr.txt"; do
+        if [[ "${first_ref}" -eq 0 ]]; then
+            artifact_refs_json="${artifact_refs_json},"
+        fi
+        artifact_refs_json="${artifact_refs_json}\"${scenario}/${mode}/${label}/${suffix}\""
+        first_ref=0
+    done
+    if [[ -f "${case_dir}/bundle.meta" ]]; then
+        artifact_refs_json="${artifact_refs_json},\"${scenario}/${mode}/${label}/bundle.meta\",\"${scenario}/${mode}/${label}/env.txt\""
+    fi
+    artifact_refs_json="${artifact_refs_json}]"
+
+    if [[ "${final_outcome}" == "pass" ]]; then
         passes=$((passes + 1))
-        CASE_RESULT_BY_SCENARIO_MODE["${scenario_id}|${mode}"]="pass|${elapsed_ns}|${replay_key}|${label}"
-        CASE_SCENARIOS["${scenario_id}"]=1
-        emit_log "info" "case_pass" "${mode}" "" "${label}" "pass" "${elapsed_ns}" "\"scenario_id\":\"${scenario_id}\",\"replay_key\":\"${replay_key}\",\"env_fingerprint\":\"${env_fingerprint}\",\"expected_outcome\":\"${expected_outcome}\",\"pass_condition\":\"${pass_condition}\",\"artifact_policy\":${artifact_policy}"
-        echo "[PASS] ${scenario}/${mode}/${label}"
+        CASE_RESULT_BY_SCENARIO_MODE["${scenario_id}|${mode}"]="pass|${total_elapsed_ns}|${replay_key}|${label}"
+    else
+        fails=$((fails + 1))
+        PACK_FAILS["${scenario}"]=$(( ${PACK_FAILS["${scenario}"]:-0} + 1 ))
+        CASE_RESULT_BY_SCENARIO_MODE["${scenario_id}|${mode}"]="fail|${total_elapsed_ns}|${replay_key}|${label}"
+    fi
+    CASE_SCENARIOS["${scenario_id}"]=1
+
+    if [[ "${is_flaky}" == "1" ]]; then
+        PACK_FLAKES["${scenario}"]=$(( ${PACK_FLAKES["${scenario}"]:-0} + 1 ))
+    fi
+    if [[ "${should_quarantine}" == "1" ]]; then
+        PACK_QUARANTINED["${scenario}"]=$(( ${PACK_QUARANTINED["${scenario}"]:-0} + 1 ))
+        printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+            "${scenario}" \
+            "${scenario_id}" \
+            "${mode}" \
+            "${label}" \
+            "${flake_score}" \
+            "${retry_count}" \
+            "${final_exit_code}" \
+            "${replay_key}" \
+            "${verdict}" \
+            "${artifact_refs_json}" \
+            >> "${QUARANTINE_TSV}"
+    fi
+
+    local level="info"
+    local event="case_pass"
+    if [[ "${final_outcome}" != "pass" ]]; then
+        level="error"
+        event="case_fail"
+    elif [[ "${verdict}" == "quarantined_flake" ]]; then
+        level="warn"
+    fi
+
+    emit_log "${level}" "${event}" "${mode}" "" "${label}" "${final_outcome}" "${total_elapsed_ns}" "\"scenario_id\":\"${scenario_id}\",\"scenario_pack\":\"${scenario}\",\"retry_count\":${retry_count},\"flake_score\":${flake_score},\"artifact_refs\":${artifact_refs_json},\"verdict\":\"${verdict}\",\"final_exit_code\":${final_exit_code},\"replay_key\":\"${replay_key}\",\"env_fingerprint\":\"${env_fingerprint}\",\"expected_outcome\":\"${expected_outcome}\",\"pass_condition\":\"${pass_condition}\",\"artifact_policy\":${artifact_policy}"
+
+    if [[ "${final_outcome}" == "pass" ]]; then
+        echo "[PASS] ${scenario}/${mode}/${label} (verdict=${verdict}, retry_count=${retry_count}, flake_score=${flake_score})"
         return 0
     fi
 
-    fails=$((fails + 1))
-    local fail_reason="exit_${rc}"
-    if [[ "${rc}" -eq 124 || "${rc}" -eq 125 ]]; then
-        fail_reason="timeout_${TIMEOUT_SECONDS}s"
-    fi
-
-    # Capture diagnostics
-    {
-        echo "mode=${mode}"
-        echo "scenario=${scenario}"
-        echo "label=${label}"
-        echo "exit_code=${rc}"
-        echo "fail_reason=${fail_reason}"
-        echo "timestamp_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-        echo "lib_path=${LIB_PATH}"
-        echo "seed=${E2E_SEED}"
-        echo "scenario_id=${scenario_id}"
-        echo "replay_key=${replay_key}"
-        echo "env_fingerprint=${env_fingerprint}"
-    } > "${case_dir}/bundle.meta"
-    env | sort > "${case_dir}/env.txt"
-
-    CASE_RESULT_BY_SCENARIO_MODE["${scenario_id}|${mode}"]="fail|${elapsed_ns}|${replay_key}|${label}"
-    CASE_SCENARIOS["${scenario_id}"]=1
-    emit_log "error" "case_fail" "${mode}" "" "${label}" "fail" "${elapsed_ns}" "\"scenario_id\":\"${scenario_id}\",\"replay_key\":\"${replay_key}\",\"env_fingerprint\":\"${env_fingerprint}\",\"expected_outcome\":\"${expected_outcome}\",\"pass_condition\":\"${pass_condition}\",\"artifact_policy\":${artifact_policy},\"errno\":${rc},\"details\":{\"scenario\":\"${scenario}\",\"fail_reason\":\"${fail_reason}\"}"
-    echo "[FAIL] ${scenario}/${mode}/${label} (${fail_reason})"
+    echo "[FAIL] ${scenario}/${mode}/${label} (verdict=${verdict}, exit=${final_exit_code}, retry_count=${retry_count}, flake_score=${flake_score})"
     return 1
 }
 
@@ -576,7 +896,7 @@ if ! manifest_validate; then
 fi
 MANIFEST_SHA256="$(sha256sum "${MANIFEST_PATH}" | awk '{print $1}')"
 
-emit_log "info" "suite_start" "" "" "" "" "" "\"details\":{\"version\":\"${SUITE_VERSION}\",\"scenario_class\":\"${SCENARIO_CLASS}\",\"mode_filter\":\"${MODE_FILTER}\",\"seed\":\"${E2E_SEED}\",\"manifest\":\"${MANIFEST_PATH}\",\"dry_run_manifest\":${DRY_RUN_MANIFEST}}"
+emit_log "info" "suite_start" "" "" "" "" "" "\"details\":{\"version\":\"${SUITE_VERSION}\",\"scenario_class\":\"${SCENARIO_CLASS}\",\"mode_filter\":\"${MODE_FILTER}\",\"seed\":\"${E2E_SEED}\",\"manifest\":\"${MANIFEST_PATH}\",\"dry_run_manifest\":${DRY_RUN_MANIFEST},\"retry_max\":${RETRY_MAX},\"retry_on_nonzero\":${RETRY_ON_NONZERO},\"retryable_codes\":\"${RETRYABLE_CODES}\",\"flake_quarantine_threshold\":${FLAKE_QUARANTINE_THRESHOLD}}"
 
 echo "=== E2E Suite v${SUITE_VERSION} ==="
 echo "run_id=${RUN_ID}"
@@ -587,6 +907,10 @@ echo "mode=${MODE_FILTER}"
 echo "timeout=${TIMEOUT_SECONDS}s"
 echo "manifest=${MANIFEST_PATH}"
 echo "dry_run_manifest=${DRY_RUN_MANIFEST}"
+echo "retry_max=${RETRY_MAX}"
+echo "retry_on_nonzero=${RETRY_ON_NONZERO}"
+echo "retryable_codes=${RETRYABLE_CODES}"
+echo "flake_quarantine_threshold=${FLAKE_QUARANTINE_THRESHOLD}"
 echo ""
 
 overall_failed=0
@@ -606,7 +930,7 @@ if [[ "${DRY_RUN_MANIFEST}" -eq 1 ]]; then
             replay_key="$(compute_replay_key "${mode}" "${scenario_id}" "${label}")"
             env_fingerprint="$(compute_env_fingerprint "${mode}")"
             listed_cases=$((listed_cases + 1))
-            emit_log "info" "manifest_case" "${mode}" "" "${label}" "catalog_loaded" "" "\"scenario_id\":\"${scenario_id}\",\"replay_key\":\"${replay_key}\",\"env_fingerprint\":\"${env_fingerprint}\",\"expected_outcome\":\"${expected_outcome}\",\"pass_condition\":\"${pass_condition}\",\"artifact_policy\":${artifact_policy},\"details\":{\"scenario\":\"${scenario}\",\"verdict\":\"catalog_loaded\"}"
+            emit_log "info" "manifest_case" "${mode}" "" "${label}" "catalog_loaded" "" "\"scenario_id\":\"${scenario_id}\",\"scenario_pack\":\"${scenario}\",\"retry_count\":0,\"flake_score\":0.0,\"artifact_refs\":[],\"verdict\":\"catalog_loaded\",\"replay_key\":\"${replay_key}\",\"env_fingerprint\":\"${env_fingerprint}\",\"expected_outcome\":\"${expected_outcome}\",\"pass_condition\":\"${pass_condition}\",\"artifact_policy\":${artifact_policy},\"details\":{\"scenario\":\"${scenario}\"}"
             echo "[MANIFEST] ${scenario_id} mode=${mode} expected=${expected_outcome} replay_key=${replay_key}"
         done
     done < <(manifest_list_cases)
@@ -645,9 +969,29 @@ fi
 
 if [[ "${DRY_RUN_MANIFEST}" -eq 0 ]]; then
     emit_mode_pair_report
+    emit_quarantine_report
+    emit_pack_report
+
+    for pack in smoke stress fault stability; do
+        if [[ "${SCENARIO_CLASS}" != "all" && "${SCENARIO_CLASS}" != "${pack}" ]]; then
+            continue
+        fi
+        local_fail_count="${PACK_FAILS["${pack}"]:-0}"
+        local_quarantine_count="${PACK_QUARANTINED["${pack}"]:-0}"
+        max_fail_count="$(pack_max_fails "${pack}")"
+        max_quarantine_count="$(pack_max_quarantined "${pack}")"
+        if (( local_fail_count > max_fail_count )); then
+            overall_failed=1
+            emit_log "error" "scenario_pack_gate_fail" "" "" "${pack}" "fail" "" "\"scenario_pack\":\"${pack}\",\"retry_count\":0,\"flake_score\":0.0,\"artifact_refs\":[\"scenario_pack_report.json\"],\"verdict\":\"pack_fail_budget_exceeded\",\"details\":{\"fails\":${local_fail_count},\"max_fails\":${max_fail_count}}"
+        fi
+        if (( local_quarantine_count > max_quarantine_count )); then
+            overall_failed=1
+            emit_log "error" "scenario_pack_gate_fail" "" "" "${pack}" "fail" "" "\"scenario_pack\":\"${pack}\",\"retry_count\":0,\"flake_score\":0.0,\"artifact_refs\":[\"scenario_pack_report.json\",\"flake_quarantine_report.json\"],\"verdict\":\"pack_quarantine_budget_exceeded\",\"details\":{\"quarantined\":${local_quarantine_count},\"max_quarantined\":${max_quarantine_count}}"
+        fi
+    done
 fi
 
-emit_log "info" "suite_end" "" "" "" "" "" "\"details\":{\"passes\":${passes},\"fails\":${fails},\"skips\":${skips},\"mode_pair_mismatches\":${pair_mismatch_count}}"
+emit_log "info" "suite_end" "" "" "" "" "" "\"details\":{\"passes\":${passes},\"fails\":${fails},\"skips\":${skips},\"mode_pair_mismatches\":${pair_mismatch_count},\"pack_fails\":{\"smoke\":${PACK_FAILS["smoke"]:-0},\"stress\":${PACK_FAILS["stress"]:-0},\"fault\":${PACK_FAILS["fault"]:-0},\"stability\":${PACK_FAILS["stability"]:-0}},\"pack_quarantined\":{\"smoke\":${PACK_QUARANTINED["smoke"]:-0},\"stress\":${PACK_QUARANTINED["stress"]:-0},\"fault\":${PACK_QUARANTINED["fault"]:-0},\"stability\":${PACK_QUARANTINED["stability"]:-0}}}"
 
 # ---------------------------------------------------------------------------
 # Artifact index
@@ -665,10 +1009,19 @@ for root, dirs, files in sorted(os.walk(out_dir)):
         rel = os.path.relpath(fpath, out_dir)
         size = os.path.getsize(fpath)
         sha = hashlib.sha256(open(fpath, 'rb').read()).hexdigest()
-        kind = 'log' if f.endswith('.jsonl') else 'report' if f == 'artifact_index.json' else 'diagnostic'
+        if f.endswith('.jsonl'):
+            kind = 'log'
+            retention_tier = 'release'
+        elif f in {'artifact_index.json', 'mode_pair_report.json', 'scenario_pack_report.json', 'flake_quarantine_report.json'}:
+            kind = 'report'
+            retention_tier = 'release'
+        else:
+            kind = 'diagnostic'
+            retention_tier = 'debug'
         artifacts.append({
             'path': rel,
             'kind': kind,
+            'retention_tier': retention_tier,
             'sha256': sha,
             'size_bytes': size,
         })
@@ -682,6 +1035,13 @@ index = {
         'passes': ${passes},
         'fails': ${fails},
         'skips': ${skips},
+    },
+    'retention_policy': {
+        'policy_version': 'v1',
+        'tier_days': {
+            'release': 90,
+            'debug': 14,
+        },
     },
     'artifacts': artifacts,
 }
@@ -698,6 +1058,11 @@ echo "=== Summary ==="
 echo "passes=${passes} fails=${fails} skips=${skips}"
 echo "trace_log=${LOG_FILE}"
 echo "artifact_index=${INDEX_FILE}"
+if [[ "${DRY_RUN_MANIFEST}" -eq 0 ]]; then
+    echo "mode_pair_report=${PAIR_REPORT_FILE}"
+    echo "scenario_pack_report=${PACK_REPORT_FILE}"
+    echo "flake_quarantine_report=${QUARANTINE_REPORT_FILE}"
+fi
 echo ""
 
 if [[ "${overall_failed}" -ne 0 ]]; then

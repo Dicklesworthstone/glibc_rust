@@ -111,8 +111,8 @@ MOD_HARDENED[locale_abi]="Locale implementation with hardened fallback to C loca
 MOD_STRICT[iconv_abi]="Phase-1 iconv implementation for UTF-8/ISO-8859-1/UTF-16LE with deterministic errno semantics"
 MOD_HARDENED[iconv_abi]="Phase-1 iconv with hardened membrane routing; deterministic bounds/error behavior"
 
-MOD_STRICT[dlfcn_abi]="Delegates to host glibc dlopen/dlsym/dlclose/dlerror; preserves host semantics"
-MOD_HARDENED[dlfcn_abi]="Host glibc delegation; hardened membrane validates path strings"
+MOD_STRICT[dlfcn_abi]="dlfcn boundary policy: host glibc call-through for dlopen/dlsym/dlclose with thread-local dlerror contract"
+MOD_HARDENED[dlfcn_abi]="dlfcn boundary policy: invalid dlopen flags heal to RTLD_NOW; null/denied loader inputs return deterministic dlerror"
 
 MOD_STRICT[dirent_abi]="Raw Linux syscall for directory enumeration; POSIX errno on failure"
 MOD_HARDENED[dirent_abi]="Raw syscall; validates path pointer bounds before getdents64"

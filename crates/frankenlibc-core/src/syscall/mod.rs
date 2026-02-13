@@ -392,6 +392,18 @@ pub fn sys_gettid() -> i32 {
     ret as i32
 }
 
+/// `set_tid_address(tidptr)` — set the clear_child_tid address for the calling thread.
+///
+/// Passing NULL (0) disables the kernel's CLONE_CHILD_CLEARTID behavior, preventing
+/// the kernel from writing to the TID address on thread exit.
+#[inline]
+#[allow(unsafe_code)]
+pub fn sys_set_tid_address(tidptr: usize) -> i32 {
+    // SAFETY: set_tid_address accepts any address (including NULL).
+    let ret = unsafe { raw::syscall1(SYS_SET_TID_ADDRESS, tidptr) };
+    ret as i32
+}
+
 /// `exit(status)` — terminate the calling thread (not the entire process).
 ///
 /// Unlike `exit_group`, this only terminates the calling thread.

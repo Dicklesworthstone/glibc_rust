@@ -110,6 +110,16 @@ if [[ "${FRANKENLIBC_EXTENDED_GATES:-0}" == "1" ]]; then
     echo "PASS"
     echo ""
 
+    echo "--- hard-parts docs/parity/support/reality truth drift check ---"
+    scripts/check_hard_parts_truth.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- hard-parts cross-boundary E2E classification gate ---"
+    scripts/check_hard_parts_e2e.sh
+    echo "PASS"
+    echo ""
+
     echo "--- feature parity gap ledger extractor gate ---"
     scripts/check_feature_parity_gap_ledger.sh
     echo "PASS"
@@ -220,6 +230,11 @@ if [[ "${FRANKENLIBC_EXTENDED_GATES:-0}" == "1" ]]; then
     echo "PASS"
     echo ""
 
+    echo "--- bd-1f35 pthread stress strict+hardened artifact gate ---"
+    scripts/check_bd1f35_thread_stress.sh
+    echo "PASS"
+    echo ""
+
     echo "--- bd-15n.2 fixture gap-fill strict+hardened artifact gate ---"
     scripts/check_bd15n2_fixture_gap_fill.sh
     echo "PASS"
@@ -260,6 +275,11 @@ if [[ "${FRANKENLIBC_EXTENDED_GATES:-0}" == "1" ]]; then
     echo "PASS"
     echo ""
 
+    echo "--- perf regression attribution gate ---"
+    scripts/check_perf_regression_gate.sh
+    echo "PASS"
+    echo ""
+
     echo "--- optimization proof ledger gate ---"
     scripts/check_optimization_proof_ledger.sh
     echo "PASS"
@@ -294,8 +314,43 @@ if [[ "${FRANKENLIBC_EXTENDED_GATES:-0}" == "1" ]]; then
     echo "PASS"
     echo ""
 
+    echo "--- deterministic E2E CI gate (bd-b5a.3 / bd-2ez) ---"
+    scripts/check_e2e_suite.sh
+    echo "PASS"
+    echo ""
+
     echo "--- regression detection gate (bd-2icq.12) ---"
     scripts/check_regression_detector.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- resource constraint testing gate (bd-2icq.20) ---"
+    scripts/check_resource_constraints.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- progress reporter gate (bd-2icq.21) ---"
+    scripts/check_progress_reporter.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- validation dashboard gate (bd-2icq.11) ---"
+    scripts/check_validation_dashboard.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- release qualification gate (bd-2icq.17) ---"
+    scripts/check_release_gate.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- branch-diversity gate (bd-5fw.5) ---"
+    scripts/check_branch_diversity.sh
+    echo "PASS"
+    echo ""
+
+    echo "--- proof obligations binder gate (bd-5fw.4) ---"
+    scripts/check_proof_binder.sh
     echo "PASS"
     echo ""
 else
