@@ -2,14 +2,14 @@
 
 ## Current Reality
 
-Source of truth for implementation parity is `tests/conformance/reality_report.v1.json` (generated `2026-02-11T19:17:31Z`).
-Reality snapshot: total_exported=250, implemented=118, raw_syscall=83, glibc_call_through=49, stub=0.
+Source of truth for implementation parity is `tests/conformance/reality_report.v1.json` (generated `2026-02-13T18:07:59Z`).
+Reality snapshot: total_exported=250, implemented=137, raw_syscall=83, glibc_call_through=30, stub=0.
 Counts below reflect that generated snapshot and will change as matrix drift fixes land.
 
 Current exported ABI surface is **250 symbols**, classified as:
-- `Implemented`: 118
+- `Implemented`: 137
 - `RawSyscall`: 83
-- `GlibcCallThrough`: 49
+- `GlibcCallThrough`: 30
 - `Stub`: 0
 
 This means the current artifact is a **hybrid interposition profile** (mixed Rust-owned behavior, raw syscalls, host-glibc delegation, and deterministic stubs), not a full replacement profile.
@@ -77,10 +77,10 @@ Current stubbed symbols (explicit deterministic contracts):
 
 | Runtime Kernel | Live Role | Status |
 |---|---|---|
-| `runtime_math::risk` | online risk upper bound per API family (`risk_upper_bound_ppm`) | IN_PROGRESS |
+| `runtime_math::risk` | online risk upper bound per API family (`risk_upper_bound_ppm`) | DONE |
 | `runtime_math::bandit` | constrained `Fast` vs `Full` validation-depth routing | DONE |
 | `runtime_math::control` | primal-dual runtime threshold tuning | DONE |
-| `runtime_math::pareto` | mode-aware latency/risk Pareto profile selection + cumulative regret tracking + per-family hard regret caps | IN_PROGRESS |
+| `runtime_math::pareto` | mode-aware latency/risk Pareto profile selection + cumulative regret tracking + per-family hard regret caps | DONE |
 | `runtime_math::barrier` | constant-time admissibility guard | DONE |
 | `runtime_math::cohomology` | overlap-consistency fault detection for sharded metadata | IN_PROGRESS |
 | `runtime_math::design` | D-optimal heavy-probe selection under strict/hardened budget with online identifiability tracking | DONE |
@@ -259,7 +259,7 @@ Current stubbed symbols (explicit deterministic contracts):
 4. Version script scaffold created (`libc.map`); full symbol/version verification pending.
 5. No formal proof artifacts are committed yet.
 6. Runtime math kernel is live in membrane and pointer validation; cross-family ABI wiring remains incomplete.
-7. Sequential-statistical guardrails are partially wired in runtime code; calibration evidence remains pending.
+7. Sequential-statistical guardrails are wired with deterministic calibration evidence (`tests/runtime_math/risk_pareto_calibration.v1.json`) and enforced via `scripts/check_runtime_math_risk_pareto_calibration.sh`.
 8. Bootstrap string/memory + allocator boundary implementations exist; initial strict/hardened fixture evidence is now committed (`tests/conformance/fixtures/membrane_mode_split.json`), full differential campaign remains pending.
 8. Core allocator subsystem (size classes, thread cache, large allocator, MallocState) implemented with 50+ tests.
 9. Stdlib numeric conversion (`atoi`, `atol`, `strtol`, `strtoul`), process control (`exit`, `atexit`), and sorting (`qsort`, `bsearch`) implemented with core logic and ABI membrane integration.
