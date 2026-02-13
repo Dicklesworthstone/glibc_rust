@@ -1,0 +1,6 @@
+# Deterministic sample lines for bd-3h1u.1 ingestion.
+# Source: tests/conformance/mutex_hotpath_optimization.v1.json baseline_captures.modes.*
+MUTEX_BENCH mode=strict bench=lock_unlock samples=98 p50_ns_op=4.244 p95_ns_op=5.000 p99_ns_op=15.000 mean_ns_op=4.947 throughput_ops_s=229943286.289
+MUTEX_BENCH mode=strict bench=try_lock samples=98 p50_ns_op=4.328 p95_ns_op=7.054 p99_ns_op=161.000 mean_ns_op=10.610 throughput_ops_s=229963471.045
+MUTEX_BENCH mode=hardened bench=lock_unlock samples=98 p50_ns_op=4.193 p95_ns_op=5.031 p99_ns_op=25.000 mean_ns_op=5.206 throughput_ops_s=238203869.875
+MUTEX_BENCH mode=hardened bench=try_lock samples=98 p50_ns_op=4.153 p95_ns_op=5.000 p99_ns_op=15.000 mean_ns_op=5.873 throughput_ops_s=238909310.773

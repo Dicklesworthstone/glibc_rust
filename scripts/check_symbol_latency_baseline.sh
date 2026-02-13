@@ -3,7 +3,7 @@
 #
 # Validates that:
 # 1) Canonical symbol latency baseline artifact is valid JSON and internally consistent.
-# 2) Canonical artifact matches deterministic generator output.
+# 2) Canonical artifact matches deterministic generator+ingestion output.
 #
 # Exit codes:
 #   0 -> pass
@@ -12,8 +12,11 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GEN="${ROOT}/scripts/generate_symbol_latency_baseline.py"
+INGEST="${ROOT}/scripts/ingest_symbol_latency_samples.py"
 CANONICAL="${ROOT}/tests/conformance/symbol_latency_baseline.v1.json"
 SUPPORT_MATRIX="${ROOT}/support_matrix.json"
+CAPTURE_MAP="${ROOT}/tests/conformance/symbol_latency_capture_map.v1.json"
+SAMPLE_LOG="${ROOT}/tests/conformance/symbol_latency_samples.v1.log"
 
 start_ns="$(date +%s%N)"
 
@@ -25,8 +28,12 @@ fail() {
 
 [[ -f "${GEN}" ]] || fail "missing generator: ${GEN}"
 [[ -x "${GEN}" ]] || fail "generator not executable: ${GEN}"
+[[ -f "${INGEST}" ]] || fail "missing ingestion script: ${INGEST}"
+[[ -x "${INGEST}" ]] || fail "ingestion script not executable: ${INGEST}"
 [[ -f "${CANONICAL}" ]] || fail "missing canonical artifact: ${CANONICAL}"
 [[ -f "${SUPPORT_MATRIX}" ]] || fail "missing support_matrix.json"
+[[ -f "${CAPTURE_MAP}" ]] || fail "missing capture map: ${CAPTURE_MAP}"
+[[ -f "${SAMPLE_LOG}" ]] || fail "missing sample log: ${SAMPLE_LOG}"
 
 tmp_out="$(mktemp)"
 trap 'rm -f "${tmp_out}"' EXIT
@@ -37,6 +44,12 @@ trap 'rm -f "${tmp_out}"' EXIT
         --support-matrix "support_matrix.json" \
         --perf-baseline "scripts/perf_baseline.json" \
         --symbol-fixture-coverage "tests/conformance/symbol_fixture_coverage.v1.json" \
+        --output "${tmp_out}" \
+        --quiet
+    python3 "scripts/ingest_symbol_latency_samples.py" \
+        --artifact "${tmp_out}" \
+        --capture-map "tests/conformance/symbol_latency_capture_map.v1.json" \
+        --log "tests/conformance/symbol_latency_samples.v1.log" \
         --output "${tmp_out}" \
         --quiet
 )

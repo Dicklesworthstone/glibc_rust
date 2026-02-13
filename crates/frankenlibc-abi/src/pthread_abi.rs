@@ -6,13 +6,18 @@
 #![allow(clippy::missing_safety_doc)]
 
 use std::cell::Cell;
+use std::collections::HashMap;
 use std::ffi::{c_int, c_void};
 use std::sync::atomic::{AtomicI32, AtomicU32, AtomicU64, Ordering};
+use std::sync::{LazyLock, Mutex};
 
 use frankenlibc_core::pthread::{
-    CondvarData, PTHREAD_COND_CLOCK_REALTIME, condvar_broadcast as core_condvar_broadcast,
-    condvar_destroy as core_condvar_destroy, condvar_init as core_condvar_init,
-    condvar_signal as core_condvar_signal, condvar_wait as core_condvar_wait,
+    CondvarData, PTHREAD_COND_CLOCK_REALTIME, ThreadHandle,
+    condvar_broadcast as core_condvar_broadcast, condvar_destroy as core_condvar_destroy,
+    condvar_init as core_condvar_init, condvar_signal as core_condvar_signal,
+    condvar_wait as core_condvar_wait, create_thread as core_create_thread,
+    detach_thread as core_detach_thread, join_thread as core_join_thread,
+    self_tid as core_self_tid,
 };
 use frankenlibc_membrane::check_oracle::CheckStage;
 use frankenlibc_membrane::runtime_math::{ApiFamily, MembraneAction};
@@ -30,6 +35,8 @@ static MUTEX_SPIN_BRANCHES: AtomicU64 = AtomicU64::new(0);
 static MUTEX_WAIT_BRANCHES: AtomicU64 = AtomicU64::new(0);
 static MUTEX_WAKE_BRANCHES: AtomicU64 = AtomicU64::new(0);
 const MANAGED_MUTEX_MAGIC: u32 = 0x474d_5854; // "GMXT"
+static THREAD_HANDLE_REGISTRY: LazyLock<Mutex<HashMap<usize, usize>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
 
 thread_local! {
     static THREADING_POLICY_DEPTH: Cell<u32> = const { Cell::new(0) };
@@ -136,52 +143,122 @@ fn condvar_data_ptr(cond: *mut libc::pthread_cond_t) -> Option<*mut CondvarData>
     Some(ptr)
 }
 
-unsafe extern "C" {
-    #[link_name = "pthread_self@@GLIBC_2.2.5"]
-    fn host_pthread_self_sym() -> libc::pthread_t;
-    #[link_name = "pthread_equal@@GLIBC_2.2.5"]
-    fn host_pthread_equal_sym(a: libc::pthread_t, b: libc::pthread_t) -> c_int;
-    #[link_name = "pthread_create@GLIBC_2.2.5"]
-    fn host_pthread_create_sym(
-        thread_out: *mut libc::pthread_t,
-        attr: *const libc::pthread_attr_t,
-        start_routine: StartRoutine,
-        arg: *mut c_void,
-    ) -> c_int;
-    #[link_name = "pthread_join@GLIBC_2.2.5"]
-    fn host_pthread_join_sym(thread: libc::pthread_t, retval: *mut *mut c_void) -> c_int;
-    #[link_name = "pthread_detach@GLIBC_2.2.5"]
-    fn host_pthread_detach_sym(thread: libc::pthread_t) -> c_int;
+#[inline]
+fn native_pthread_self() -> libc::pthread_t {
+    let tid = core_self_tid();
+    if tid > 0 {
+        let registry = THREAD_HANDLE_REGISTRY
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        for &handle_raw in registry.values() {
+            let handle_ptr = handle_raw as *mut ThreadHandle;
+            // SAFETY: registry only stores live handles from `core_create_thread`.
+            let handle_tid = unsafe { (*handle_ptr).tid.load(Ordering::Acquire) };
+            if handle_tid == tid {
+                return handle_raw as libc::pthread_t;
+            }
+        }
+    }
+    // Fallback for threads not created via our managed pthread_create path.
+    tid as libc::pthread_t
 }
 
-unsafe fn host_pthread_self() -> libc::pthread_t {
-    // SAFETY: direct call to glibc symbol with matching signature.
-    unsafe { host_pthread_self_sym() }
+#[inline]
+fn native_pthread_equal(a: libc::pthread_t, b: libc::pthread_t) -> c_int {
+    if a == b { 1 } else { 0 }
 }
 
-unsafe fn host_pthread_equal(a: libc::pthread_t, b: libc::pthread_t) -> c_int {
-    // SAFETY: direct call to glibc symbol with matching signature.
-    unsafe { host_pthread_equal_sym(a, b) }
-}
-
-unsafe fn host_pthread_create(
+#[allow(unsafe_code)]
+unsafe fn native_pthread_create(
     thread_out: *mut libc::pthread_t,
     attr: *const libc::pthread_attr_t,
     start_routine: StartRoutine,
     arg: *mut c_void,
 ) -> c_int {
-    // SAFETY: direct call to glibc symbol with matching signature.
-    unsafe { host_pthread_create_sym(thread_out, attr, start_routine, arg) }
+    if thread_out.is_null() {
+        return libc::EINVAL;
+    }
+    if !attr.is_null() {
+        return libc::EINVAL;
+    }
+
+    let handle_ptr = match unsafe { core_create_thread(start_routine as usize, arg as usize) } {
+        Ok(ptr) => ptr,
+        Err(errno) => return errno,
+    };
+
+    let thread_key = handle_ptr as usize;
+
+    let mut registry = THREAD_HANDLE_REGISTRY
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+    if registry.contains_key(&thread_key) {
+        let _ = unsafe { core_detach_thread(handle_ptr) };
+        return libc::EAGAIN;
+    }
+    registry.insert(thread_key, handle_ptr as usize);
+    drop(registry);
+
+    // SAFETY: thread_out validated non-null above.
+    unsafe { *thread_out = thread_key as libc::pthread_t };
+    0
 }
 
-unsafe fn host_pthread_join(thread: libc::pthread_t, retval: *mut *mut c_void) -> c_int {
-    // SAFETY: direct call to glibc symbol with matching signature.
-    unsafe { host_pthread_join_sym(thread, retval) }
+#[allow(unsafe_code)]
+unsafe fn native_pthread_join(thread: libc::pthread_t, retval: *mut *mut c_void) -> c_int {
+    let thread_key = thread as usize;
+
+    let handle_ptr = {
+        let mut registry = THREAD_HANDLE_REGISTRY
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        match registry.remove(&thread_key) {
+            Some(raw) => raw as *mut ThreadHandle,
+            None => return libc::ESRCH,
+        }
+    };
+
+    match unsafe { core_join_thread(handle_ptr) } {
+        Ok(value) => {
+            if !retval.is_null() {
+                // SAFETY: caller provided a writable retval pointer.
+                unsafe { *retval = value as *mut c_void };
+            }
+            0
+        }
+        Err(errno) => {
+            let mut registry = THREAD_HANDLE_REGISTRY
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
+            registry.insert(thread_key, handle_ptr as usize);
+            errno
+        }
+    }
 }
 
-unsafe fn host_pthread_detach(thread: libc::pthread_t) -> c_int {
-    // SAFETY: direct call to glibc symbol with matching signature.
-    unsafe { host_pthread_detach_sym(thread) }
+#[allow(unsafe_code)]
+unsafe fn native_pthread_detach(thread: libc::pthread_t) -> c_int {
+    let thread_key = thread as usize;
+    let handle_ptr = {
+        let mut registry = THREAD_HANDLE_REGISTRY
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        match registry.remove(&thread_key) {
+            Some(raw) => raw as *mut ThreadHandle,
+            None => return libc::ESRCH,
+        }
+    };
+
+    match unsafe { core_detach_thread(handle_ptr) } {
+        Ok(()) => 0,
+        Err(errno) => {
+            let mut registry = THREAD_HANDLE_REGISTRY
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
+            registry.insert(thread_key, handle_ptr as usize);
+            errno
+        }
+    }
 }
 
 #[cfg(target_os = "linux")]
@@ -347,10 +424,7 @@ fn record_threading_stage_outcome(
 #[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_self() -> libc::pthread_t {
     with_threading_policy_guard(
-        || {
-            // SAFETY: reentrant path bypasses runtime policy and delegates to host runtime.
-            unsafe { host_pthread_self() }
-        },
+        || native_pthread_self(),
         || {
             let (aligned, recent_page, ordering) = threading_stage_context(0, 0);
             let (_, decision) = runtime_policy::decide(ApiFamily::Threading, 0, 0, false, false, 0);
@@ -364,8 +438,7 @@ pub unsafe extern "C" fn pthread_self() -> libc::pthread_t {
                 runtime_policy::observe(ApiFamily::Threading, decision.profile, 4, true);
                 return 0;
             }
-            // SAFETY: call-through to host glibc pthread runtime.
-            let id = unsafe { host_pthread_self() };
+            let id = native_pthread_self();
             record_threading_stage_outcome(&ordering, aligned, recent_page, None);
             runtime_policy::observe(ApiFamily::Threading, decision.profile, 4, false);
             id
@@ -377,10 +450,7 @@ pub unsafe extern "C" fn pthread_self() -> libc::pthread_t {
 #[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_equal(a: libc::pthread_t, b: libc::pthread_t) -> c_int {
     with_threading_policy_guard(
-        || {
-            // SAFETY: reentrant path bypasses runtime policy and delegates to host runtime.
-            unsafe { host_pthread_equal(a, b) }
-        },
+        || native_pthread_equal(a, b),
         || {
             let (aligned, recent_page, ordering) = threading_stage_context(a as usize, b as usize);
             let (_, decision) =
@@ -395,8 +465,7 @@ pub unsafe extern "C" fn pthread_equal(a: libc::pthread_t, b: libc::pthread_t) -
                 runtime_policy::observe(ApiFamily::Threading, decision.profile, 4, true);
                 return 0;
             }
-            // SAFETY: call-through to host glibc pthread runtime.
-            let equal = unsafe { host_pthread_equal(a, b) };
+            let equal = native_pthread_equal(a, b);
             record_threading_stage_outcome(&ordering, aligned, recent_page, None);
             runtime_policy::observe(ApiFamily::Threading, decision.profile, 4, false);
             equal
@@ -436,8 +505,8 @@ pub unsafe extern "C" fn pthread_create(
         || {
             let start =
                 start_routine.unwrap_or_else(|| unreachable!("start routine checked above"));
-            // SAFETY: reentrant path bypasses runtime policy and delegates to host runtime.
-            unsafe { host_pthread_create(thread_out, _attr, start, arg) }
+            // SAFETY: pointers and start routine are validated by this wrapper.
+            unsafe { native_pthread_create(thread_out, _attr, start, arg) }
         },
         || {
             let (_, decision) =
@@ -455,8 +524,8 @@ pub unsafe extern "C" fn pthread_create(
 
             let start =
                 start_routine.unwrap_or_else(|| unreachable!("start routine checked above"));
-            // SAFETY: call-through to host glibc pthread runtime (no recursive Rust std thread spawn).
-            let rc = unsafe { host_pthread_create(thread_out, _attr, start, arg) };
+            // SAFETY: pointers and start routine are validated by this wrapper.
+            let rc = unsafe { native_pthread_create(thread_out, _attr, start, arg) };
             record_threading_stage_outcome(
                 &ordering,
                 aligned,
@@ -478,8 +547,8 @@ pub unsafe extern "C" fn pthread_create(
 pub unsafe extern "C" fn pthread_join(thread: libc::pthread_t, retval: *mut *mut c_void) -> c_int {
     with_threading_policy_guard(
         || {
-            // SAFETY: reentrant path bypasses runtime policy and delegates to host runtime.
-            unsafe { host_pthread_join(thread, retval) }
+            // SAFETY: native helper enforces thread-handle validity and pointer checks.
+            unsafe { native_pthread_join(thread, retval) }
         },
         || {
             let (aligned, recent_page, ordering) =
@@ -496,8 +565,8 @@ pub unsafe extern "C" fn pthread_join(thread: libc::pthread_t, retval: *mut *mut
                 runtime_policy::observe(ApiFamily::Threading, decision.profile, 24, true);
                 return libc::EINVAL;
             }
-            // SAFETY: call-through to host glibc pthread runtime.
-            let rc = unsafe { host_pthread_join(thread, retval) };
+            // SAFETY: native helper enforces thread-handle validity and pointer checks.
+            let rc = unsafe { native_pthread_join(thread, retval) };
             record_threading_stage_outcome(
                 &ordering,
                 aligned,
@@ -519,8 +588,8 @@ pub unsafe extern "C" fn pthread_join(thread: libc::pthread_t, retval: *mut *mut
 pub unsafe extern "C" fn pthread_detach(thread: libc::pthread_t) -> c_int {
     with_threading_policy_guard(
         || {
-            // SAFETY: reentrant path bypasses runtime policy and delegates to host runtime.
-            unsafe { host_pthread_detach(thread) }
+            // SAFETY: native helper enforces thread-handle validity.
+            unsafe { native_pthread_detach(thread) }
         },
         || {
             let (aligned, recent_page, ordering) = threading_stage_context(thread as usize, 0);
@@ -536,8 +605,8 @@ pub unsafe extern "C" fn pthread_detach(thread: libc::pthread_t) -> c_int {
                 runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, true);
                 return libc::EINVAL;
             }
-            // SAFETY: call-through to host glibc pthread runtime.
-            let rc = unsafe { host_pthread_detach(thread) };
+            // SAFETY: native helper enforces thread-handle validity.
+            let rc = unsafe { native_pthread_detach(thread) };
             record_threading_stage_outcome(
                 &ordering,
                 aligned,

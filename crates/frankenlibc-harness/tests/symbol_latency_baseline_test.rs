@@ -4,7 +4,8 @@
 //! 1. Canonical artifact exists and has required schema fields.
 //! 2. Summary counts are internally consistent.
 //! 3. Each symbol has raw/strict/hardened p50/p95/p99 fields.
-//! 4. Generator + gate scripts exist and are executable.
+//! 4. Ingestion metadata and measured coverage are present.
+//! 5. Generator/ingestion/gate scripts exist and are executable.
 //! 5. Drift gate passes on clean checkout.
 
 use std::path::{Path, PathBuf};
@@ -50,6 +51,8 @@ fn artifact_exists_and_valid() {
     );
     assert!(doc["capture_queue"].is_array(), "Missing capture_queue[]");
     assert!(doc["symbols"].is_array(), "Missing symbols[]");
+    assert!(doc["ingestion"].is_object(), "Missing ingestion metadata");
+    assert_eq!(doc["ingestion"]["schema_version"].as_u64(), Some(1));
 }
 
 #[test]
@@ -101,6 +104,19 @@ fn summary_counts_consistent() {
             );
         }
     }
+
+    // We expect deterministic strict/hardened measurements for the mutex symbols
+    // ingested from tests/conformance/symbol_latency_samples.v1.log.
+    let strict_p50 = measured["strict"]["p50"].as_u64().unwrap();
+    let hardened_p50 = measured["hardened"]["p50"].as_u64().unwrap();
+    assert!(
+        strict_p50 >= 3,
+        "expected at least 3 strict p50 measurements from ingestion, got {strict_p50}"
+    );
+    assert!(
+        hardened_p50 >= 3,
+        "expected at least 3 hardened p50 measurements from ingestion, got {hardened_p50}"
+    );
 }
 
 #[test]
@@ -135,6 +151,7 @@ fn scripts_exist_and_executable() {
     let root = workspace_root();
     let scripts = [
         "scripts/generate_symbol_latency_baseline.py",
+        "scripts/ingest_symbol_latency_samples.py",
         "scripts/check_symbol_latency_baseline.sh",
     ];
 
@@ -148,6 +165,14 @@ fn scripts_exist_and_executable() {
             let perms = std::fs::metadata(&path).unwrap().permissions();
             assert!(perms.mode() & 0o111 != 0, "{rel} must be executable");
         }
+    }
+
+    for rel in [
+        "tests/conformance/symbol_latency_capture_map.v1.json",
+        "tests/conformance/symbol_latency_samples.v1.log",
+    ] {
+        let path = root.join(rel);
+        assert!(path.exists(), "{rel} must exist");
     }
 }
 

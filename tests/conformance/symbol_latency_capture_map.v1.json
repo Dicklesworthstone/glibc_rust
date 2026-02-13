@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "bead": "bd-3h1u.1",
+  "description": "Deterministic mapping from benchmark log lines to symbol-level latency baseline entries.",
+  "sources": [
+    {
+      "id": "mutex_hotpath",
+      "line_prefix": "MUTEX_BENCH",
+      "mode_key": "mode",
+      "bench_key": "bench",
+      "percentile_keys": {
+        "p50": "p50_ns_op",
+        "p95": "p95_ns_op",
+        "p99": "p99_ns_op"
+      },
+      "bench_symbol_map": [
+        {
+          "bench": "lock_unlock",
+          "symbols": [
+            "pthread_mutex_lock",
+            "pthread_mutex_unlock"
+          ]
+        },
+        {
+          "bench": "try_lock",
+          "symbols": [
+            "pthread_mutex_trylock"
+          ]
+        }
+      ]
+    }
+  ]
+}

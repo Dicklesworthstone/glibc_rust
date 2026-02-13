@@ -482,43 +482,43 @@
       "symbol": "posix_memalign"
     },
     {
-      "capture_priority_score": 110,
+      "capture_priority_score": 130,
       "fixture_covered": false,
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "symbol": "pthread_cond_broadcast"
     },
     {
-      "capture_priority_score": 110,
+      "capture_priority_score": 130,
       "fixture_covered": false,
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "symbol": "pthread_cond_destroy"
     },
     {
-      "capture_priority_score": 110,
+      "capture_priority_score": 130,
       "fixture_covered": false,
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "symbol": "pthread_cond_init"
     },
     {
-      "capture_priority_score": 110,
+      "capture_priority_score": 130,
       "fixture_covered": false,
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "symbol": "pthread_cond_signal"
     },
     {
-      "capture_priority_score": 110,
+      "capture_priority_score": 130,
       "fixture_covered": false,
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "symbol": "pthread_cond_wait"
     },
     {
@@ -1196,6 +1196,118 @@
     {
       "capture_priority_score": 30,
       "fixture_covered": false,
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "clearerr"
+    },
+    {
+      "capture_priority_score": 30,
+      "fixture_covered": false,
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "feof"
+    },
+    {
+      "capture_priority_score": 30,
+      "fixture_covered": false,
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "ferror"
+    },
+    {
+      "capture_priority_score": 30,
+      "fixture_covered": false,
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "fflush"
+    },
+    {
+      "capture_priority_score": 30,
+      "fixture_covered": false,
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "fgetc"
+    },
+    {
+      "capture_priority_score": 30,
+      "fixture_covered": false,
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "fileno"
+    },
+    {
+      "capture_priority_score": 30,
+      "fixture_covered": false,
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "fputc"
+    },
+    {
+      "capture_priority_score": 30,
+      "fixture_covered": false,
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "getchar"
+    },
+    {
+      "capture_priority_score": 30,
+      "fixture_covered": false,
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "putchar"
+    },
+    {
+      "capture_priority_score": 30,
+      "fixture_covered": false,
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "rewind"
+    },
+    {
+      "capture_priority_score": 30,
+      "fixture_covered": false,
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "stderr"
+    },
+    {
+      "capture_priority_score": 30,
+      "fixture_covered": false,
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "stdin"
+    },
+    {
+      "capture_priority_score": 30,
+      "fixture_covered": false,
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "stdout"
+    },
+    {
+      "capture_priority_score": 30,
+      "fixture_covered": false,
+      "module": "stdio_abi",
+      "perf_class": "coldpath",
+      "status": "Implemented",
+      "symbol": "ungetc"
+    },
+    {
+      "capture_priority_score": 30,
+      "fixture_covered": false,
       "module": "stdlib_abi",
       "perf_class": "coldpath",
       "status": "Implemented",
@@ -1767,14 +1879,6 @@
       "module": "stdio_abi",
       "perf_class": "coldpath",
       "status": "GlibcCallThrough",
-      "symbol": "clearerr"
-    },
-    {
-      "capture_priority_score": 10,
-      "fixture_covered": false,
-      "module": "stdio_abi",
-      "perf_class": "coldpath",
-      "status": "GlibcCallThrough",
       "symbol": "fclose"
     },
     {
@@ -1783,47 +1887,7 @@
       "module": "stdio_abi",
       "perf_class": "coldpath",
       "status": "GlibcCallThrough",
-      "symbol": "feof"
-    },
-    {
-      "capture_priority_score": 10,
-      "fixture_covered": false,
-      "module": "stdio_abi",
-      "perf_class": "coldpath",
-      "status": "GlibcCallThrough",
-      "symbol": "ferror"
-    },
-    {
-      "capture_priority_score": 10,
-      "fixture_covered": false,
-      "module": "stdio_abi",
-      "perf_class": "coldpath",
-      "status": "GlibcCallThrough",
-      "symbol": "fflush"
-    },
-    {
-      "capture_priority_score": 10,
-      "fixture_covered": false,
-      "module": "stdio_abi",
-      "perf_class": "coldpath",
-      "status": "GlibcCallThrough",
-      "symbol": "fgetc"
-    },
-    {
-      "capture_priority_score": 10,
-      "fixture_covered": false,
-      "module": "stdio_abi",
-      "perf_class": "coldpath",
-      "status": "GlibcCallThrough",
       "symbol": "fgets"
-    },
-    {
-      "capture_priority_score": 10,
-      "fixture_covered": false,
-      "module": "stdio_abi",
-      "perf_class": "coldpath",
-      "status": "GlibcCallThrough",
-      "symbol": "fileno"
     },
     {
       "capture_priority_score": 10,
@@ -1840,14 +1904,6 @@
       "perf_class": "coldpath",
       "status": "GlibcCallThrough",
       "symbol": "fprintf"
-    },
-    {
-      "capture_priority_score": 10,
-      "fixture_covered": false,
-      "module": "stdio_abi",
-      "perf_class": "coldpath",
-      "status": "GlibcCallThrough",
-      "symbol": "fputc"
     },
     {
       "capture_priority_score": 10,
@@ -1895,14 +1951,6 @@
       "module": "stdio_abi",
       "perf_class": "coldpath",
       "status": "GlibcCallThrough",
-      "symbol": "getchar"
-    },
-    {
-      "capture_priority_score": 10,
-      "fixture_covered": false,
-      "module": "stdio_abi",
-      "perf_class": "coldpath",
-      "status": "GlibcCallThrough",
       "symbol": "perror"
     },
     {
@@ -1919,23 +1967,7 @@
       "module": "stdio_abi",
       "perf_class": "coldpath",
       "status": "GlibcCallThrough",
-      "symbol": "putchar"
-    },
-    {
-      "capture_priority_score": 10,
-      "fixture_covered": false,
-      "module": "stdio_abi",
-      "perf_class": "coldpath",
-      "status": "GlibcCallThrough",
       "symbol": "puts"
-    },
-    {
-      "capture_priority_score": 10,
-      "fixture_covered": false,
-      "module": "stdio_abi",
-      "perf_class": "coldpath",
-      "status": "GlibcCallThrough",
-      "symbol": "rewind"
     },
     {
       "capture_priority_score": 10,
@@ -1968,42 +2000,21 @@
       "perf_class": "coldpath",
       "status": "GlibcCallThrough",
       "symbol": "sprintf"
-    },
-    {
-      "capture_priority_score": 10,
-      "fixture_covered": false,
-      "module": "stdio_abi",
-      "perf_class": "coldpath",
-      "status": "GlibcCallThrough",
-      "symbol": "stderr"
-    },
-    {
-      "capture_priority_score": 10,
-      "fixture_covered": false,
-      "module": "stdio_abi",
-      "perf_class": "coldpath",
-      "status": "GlibcCallThrough",
-      "symbol": "stdin"
-    },
-    {
-      "capture_priority_score": 10,
-      "fixture_covered": false,
-      "module": "stdio_abi",
-      "perf_class": "coldpath",
-      "status": "GlibcCallThrough",
-      "symbol": "stdout"
-    },
-    {
-      "capture_priority_score": 10,
-      "fixture_covered": false,
-      "module": "stdio_abi",
-      "perf_class": "coldpath",
-      "status": "GlibcCallThrough",
-      "symbol": "ungetc"
     }
   ],
   "description": "Symbol-level latency baseline inventory across all exported symbols. Tracks strict/hardened/raw p50/p95/p99 capture coverage and pending gaps without fabricating measurements.",
-  "generated_at_utc": "2026-02-11T19:17:31Z",
+  "generated_at_utc": "2026-02-13T18:07:59Z",
+  "ingestion": {
+    "applied_observations": 18,
+    "capture_map": "tests/conformance/symbol_latency_capture_map.v1.json",
+    "logs": [
+      "tests/conformance/symbol_latency_samples.v1.log"
+    ],
+    "schema_version": 1,
+    "trace_id": "bd-3h1u.1-symbol-latency-ingest-v1",
+    "updated_modes": 6,
+    "updated_symbols": 3
+  },
   "inputs": {
     "perf_baseline": "scripts/perf_baseline.json",
     "support_matrix": "support_matrix.json",
@@ -2155,8 +2166,8 @@
       "fixture_uncovered": 10,
       "module": "pthread_abi",
       "status_breakdown": {
-        "GlibcCallThrough": 15,
-        "Implemented": 5
+        "GlibcCallThrough": 10,
+        "Implemented": 10
       },
       "strict_hotpath": 20,
       "total": 20
@@ -2226,7 +2237,8 @@
       "fixture_uncovered": 30,
       "module": "stdio_abi",
       "status_breakdown": {
-        "GlibcCallThrough": 30
+        "GlibcCallThrough": 16,
+        "Implemented": 14
       },
       "strict_hotpath": 0,
       "total": 30
@@ -2310,15 +2322,15 @@
   "status_breakdown": {
     "GlibcCallThrough": {
       "fixture_covered": 5,
-      "fixture_uncovered": 44,
-      "strict_hotpath": 15,
-      "total": 49
+      "fixture_uncovered": 25,
+      "strict_hotpath": 10,
+      "total": 30
     },
     "Implemented": {
       "fixture_covered": 88,
-      "fixture_uncovered": 30,
-      "strict_hotpath": 55,
-      "total": 118
+      "fixture_uncovered": 49,
+      "strict_hotpath": 60,
+      "total": 137
     },
     "RawSyscall": {
       "fixture_covered": 21,
@@ -2333,9 +2345,9 @@
     "fixture_uncovered_symbols": 136,
     "mode_percentile_measured_counts": {
       "hardened": {
-        "p50": 0,
-        "p95": 0,
-        "p99": 0
+        "p50": 3,
+        "p95": 3,
+        "p99": 3
       },
       "raw": {
         "p50": 0,
@@ -2343,16 +2355,16 @@
         "p99": 0
       },
       "strict": {
-        "p50": 0,
-        "p95": 0,
-        "p99": 0
+        "p50": 3,
+        "p95": 3,
+        "p99": 3
       }
     },
     "mode_percentile_pending_counts": {
       "hardened": {
-        "p50": 250,
-        "p95": 250,
-        "p99": 250
+        "p50": 247,
+        "p95": 247,
+        "p99": 247
       },
       "raw": {
         "p50": 250,
@@ -2360,9 +2372,9 @@
         "p99": 250
       },
       "strict": {
-        "p50": 250,
-        "p95": 250,
-        "p99": 250
+        "p50": 247,
+        "p95": 247,
+        "p99": 247
       }
     },
     "strict_hotpath_symbols": 70,
@@ -6134,7 +6146,7 @@
           "source": null
         }
       },
-      "capture_priority_score": 110,
+      "capture_priority_score": 130,
       "fixture_covered": false,
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
@@ -6152,7 +6164,7 @@
           "runtime_math_observe_fast_p50_ns": 1870.91
         }
       },
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "symbol": "pthread_cond_broadcast"
     },
     {
@@ -6179,7 +6191,7 @@
           "source": null
         }
       },
-      "capture_priority_score": 110,
+      "capture_priority_score": 130,
       "fixture_covered": false,
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
@@ -6197,7 +6209,7 @@
           "runtime_math_observe_fast_p50_ns": 1870.91
         }
       },
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "symbol": "pthread_cond_destroy"
     },
     {
@@ -6224,7 +6236,7 @@
           "source": null
         }
       },
-      "capture_priority_score": 110,
+      "capture_priority_score": 130,
       "fixture_covered": false,
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
@@ -6242,7 +6254,7 @@
           "runtime_math_observe_fast_p50_ns": 1870.91
         }
       },
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "symbol": "pthread_cond_init"
     },
     {
@@ -6269,7 +6281,7 @@
           "source": null
         }
       },
-      "capture_priority_score": 110,
+      "capture_priority_score": 130,
       "fixture_covered": false,
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
@@ -6287,7 +6299,7 @@
           "runtime_math_observe_fast_p50_ns": 1870.91
         }
       },
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "symbol": "pthread_cond_signal"
     },
     {
@@ -6314,7 +6326,7 @@
           "source": null
         }
       },
-      "capture_priority_score": 110,
+      "capture_priority_score": 130,
       "fixture_covered": false,
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
@@ -6332,7 +6344,7 @@
           "runtime_math_observe_fast_p50_ns": 1870.91
         }
       },
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "symbol": "pthread_cond_wait"
     },
     {
@@ -6608,11 +6620,11 @@
     {
       "baseline": {
         "hardened": {
-          "capture_state": "pending_symbol_benchmark",
-          "p50_ns": null,
-          "p95_ns": null,
-          "p99_ns": null,
-          "source": null
+          "capture_state": "measured",
+          "p50_ns": 4.193,
+          "p95_ns": 5.031,
+          "p99_ns": 25.0,
+          "source": "mutex_hotpath:symbol_latency_samples.v1.log:lock_unlock"
         },
         "raw": {
           "capture_state": "pending_symbol_benchmark",
@@ -6622,11 +6634,11 @@
           "source": null
         },
         "strict": {
-          "capture_state": "pending_symbol_benchmark",
-          "p50_ns": null,
-          "p95_ns": null,
-          "p99_ns": null,
-          "source": null
+          "capture_state": "measured",
+          "p50_ns": 4.244,
+          "p95_ns": 5.0,
+          "p99_ns": 15.0,
+          "source": "mutex_hotpath:symbol_latency_samples.v1.log:lock_unlock"
         }
       },
       "capture_priority_score": 170,
@@ -6653,11 +6665,11 @@
     {
       "baseline": {
         "hardened": {
-          "capture_state": "pending_symbol_benchmark",
-          "p50_ns": null,
-          "p95_ns": null,
-          "p99_ns": null,
-          "source": null
+          "capture_state": "measured",
+          "p50_ns": 4.153,
+          "p95_ns": 5.0,
+          "p99_ns": 15.0,
+          "source": "mutex_hotpath:symbol_latency_samples.v1.log:try_lock"
         },
         "raw": {
           "capture_state": "pending_symbol_benchmark",
@@ -6667,11 +6679,11 @@
           "source": null
         },
         "strict": {
-          "capture_state": "pending_symbol_benchmark",
-          "p50_ns": null,
-          "p95_ns": null,
-          "p99_ns": null,
-          "source": null
+          "capture_state": "measured",
+          "p50_ns": 4.328,
+          "p95_ns": 7.054,
+          "p99_ns": 161.0,
+          "source": "mutex_hotpath:symbol_latency_samples.v1.log:try_lock"
         }
       },
       "capture_priority_score": 170,
@@ -6698,11 +6710,11 @@
     {
       "baseline": {
         "hardened": {
-          "capture_state": "pending_symbol_benchmark",
-          "p50_ns": null,
-          "p95_ns": null,
-          "p99_ns": null,
-          "source": null
+          "capture_state": "measured",
+          "p50_ns": 4.193,
+          "p95_ns": 5.031,
+          "p99_ns": 25.0,
+          "source": "mutex_hotpath:symbol_latency_samples.v1.log:lock_unlock"
         },
         "raw": {
           "capture_state": "pending_symbol_benchmark",
@@ -6712,11 +6724,11 @@
           "source": null
         },
         "strict": {
-          "capture_state": "pending_symbol_benchmark",
-          "p50_ns": null,
-          "p95_ns": null,
-          "p99_ns": null,
-          "source": null
+          "capture_state": "measured",
+          "p50_ns": 4.244,
+          "p95_ns": 5.0,
+          "p99_ns": 15.0,
+          "source": "mutex_hotpath:symbol_latency_samples.v1.log:lock_unlock"
         }
       },
       "capture_priority_score": 170,
@@ -8564,7 +8576,7 @@
           "source": null
         }
       },
-      "capture_priority_score": 10,
+      "capture_priority_score": 30,
       "fixture_covered": false,
       "module": "stdio_abi",
       "perf_class": "coldpath",
@@ -8582,7 +8594,7 @@
           "runtime_math_observe_fast_p50_ns": 1870.91
         }
       },
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "symbol": "clearerr"
     },
     {
@@ -8654,7 +8666,7 @@
           "source": null
         }
       },
-      "capture_priority_score": 10,
+      "capture_priority_score": 30,
       "fixture_covered": false,
       "module": "stdio_abi",
       "perf_class": "coldpath",
@@ -8672,7 +8684,7 @@
           "runtime_math_observe_fast_p50_ns": 1870.91
         }
       },
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "symbol": "feof"
     },
     {
@@ -8699,7 +8711,7 @@
           "source": null
         }
       },
-      "capture_priority_score": 10,
+      "capture_priority_score": 30,
       "fixture_covered": false,
       "module": "stdio_abi",
       "perf_class": "coldpath",
@@ -8717,7 +8729,7 @@
           "runtime_math_observe_fast_p50_ns": 1870.91
         }
       },
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "symbol": "ferror"
     },
     {
@@ -8744,7 +8756,7 @@
           "source": null
         }
       },
-      "capture_priority_score": 10,
+      "capture_priority_score": 30,
       "fixture_covered": false,
       "module": "stdio_abi",
       "perf_class": "coldpath",
@@ -8762,7 +8774,7 @@
           "runtime_math_observe_fast_p50_ns": 1870.91
         }
       },
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "symbol": "fflush"
     },
     {
@@ -8789,7 +8801,7 @@
           "source": null
         }
       },
-      "capture_priority_score": 10,
+      "capture_priority_score": 30,
       "fixture_covered": false,
       "module": "stdio_abi",
       "perf_class": "coldpath",
@@ -8807,7 +8819,7 @@
           "runtime_math_observe_fast_p50_ns": 1870.91
         }
       },
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "symbol": "fgetc"
     },
     {
@@ -8879,7 +8891,7 @@
           "source": null
         }
       },
-      "capture_priority_score": 10,
+      "capture_priority_score": 30,
       "fixture_covered": false,
       "module": "stdio_abi",
       "perf_class": "coldpath",
@@ -8897,7 +8909,7 @@
           "runtime_math_observe_fast_p50_ns": 1870.91
         }
       },
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "symbol": "fileno"
     },
     {
@@ -9014,7 +9026,7 @@
           "source": null
         }
       },
-      "capture_priority_score": 10,
+      "capture_priority_score": 30,
       "fixture_covered": false,
       "module": "stdio_abi",
       "perf_class": "coldpath",
@@ -9032,7 +9044,7 @@
           "runtime_math_observe_fast_p50_ns": 1870.91
         }
       },
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "symbol": "fputc"
     },
     {
@@ -9284,7 +9296,7 @@
           "source": null
         }
       },
-      "capture_priority_score": 10,
+      "capture_priority_score": 30,
       "fixture_covered": false,
       "module": "stdio_abi",
       "perf_class": "coldpath",
@@ -9302,7 +9314,7 @@
           "runtime_math_observe_fast_p50_ns": 1870.91
         }
       },
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "symbol": "getchar"
     },
     {
@@ -9419,7 +9431,7 @@
           "source": null
         }
       },
-      "capture_priority_score": 10,
+      "capture_priority_score": 30,
       "fixture_covered": false,
       "module": "stdio_abi",
       "perf_class": "coldpath",
@@ -9437,7 +9449,7 @@
           "runtime_math_observe_fast_p50_ns": 1870.91
         }
       },
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "symbol": "putchar"
     },
     {
@@ -9509,7 +9521,7 @@
           "source": null
         }
       },
-      "capture_priority_score": 10,
+      "capture_priority_score": 30,
       "fixture_covered": false,
       "module": "stdio_abi",
       "perf_class": "coldpath",
@@ -9527,7 +9539,7 @@
           "runtime_math_observe_fast_p50_ns": 1870.91
         }
       },
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "symbol": "rewind"
     },
     {
@@ -9734,7 +9746,7 @@
           "source": null
         }
       },
-      "capture_priority_score": 10,
+      "capture_priority_score": 30,
       "fixture_covered": false,
       "module": "stdio_abi",
       "perf_class": "coldpath",
@@ -9752,7 +9764,7 @@
           "runtime_math_observe_fast_p50_ns": 1870.91
         }
       },
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "symbol": "stderr"
     },
     {
@@ -9779,7 +9791,7 @@
           "source": null
         }
       },
-      "capture_priority_score": 10,
+      "capture_priority_score": 30,
       "fixture_covered": false,
       "module": "stdio_abi",
       "perf_class": "coldpath",
@@ -9797,7 +9809,7 @@
           "runtime_math_observe_fast_p50_ns": 1870.91
         }
       },
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "symbol": "stdin"
     },
     {
@@ -9824,7 +9836,7 @@
           "source": null
         }
       },
-      "capture_priority_score": 10,
+      "capture_priority_score": 30,
       "fixture_covered": false,
       "module": "stdio_abi",
       "perf_class": "coldpath",
@@ -9842,7 +9854,7 @@
           "runtime_math_observe_fast_p50_ns": 1870.91
         }
       },
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "symbol": "stdout"
     },
     {
@@ -9869,7 +9881,7 @@
           "source": null
         }
       },
-      "capture_priority_score": 10,
+      "capture_priority_score": 30,
       "fixture_covered": false,
       "module": "stdio_abi",
       "perf_class": "coldpath",
@@ -9887,7 +9899,7 @@
           "runtime_math_observe_fast_p50_ns": 1870.91
         }
       },
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "symbol": "ungetc"
     },
     {
