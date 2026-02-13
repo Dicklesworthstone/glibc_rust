@@ -108,7 +108,8 @@ fn bd15n2_fixtures_have_traceability_and_mode_expectations() {
                     panic!("{}: missing spec_traceability.{}", fixture_id, trace_key)
                 });
             assert!(
-                refs.iter().any(|v| v.as_str().map(str::trim).unwrap_or("") != ""),
+                refs.iter()
+                    .any(|v| v.as_str().map(str::trim).unwrap_or("") != ""),
                 "{}: spec_traceability.{} must include at least one non-empty reference",
                 fixture_id,
                 trace_key

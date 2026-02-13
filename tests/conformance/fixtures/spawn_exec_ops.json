@@ -1,0 +1,78 @@
+{
+  "version": "v1",
+  "family": "spawn_exec_ops",
+  "captured_at": "2026-02-13T00:00:00Z",
+  "description": "Mode-specific parity fixtures for process creation (posix_spawn, exec family). Strict: standard POSIX semantics. Hardened: launch surface validation + environment sanitization.",
+  "cases": [
+    {
+      "name": "posix_spawn_echo_strict",
+      "function": "posix_spawn",
+      "spec_section": "POSIX posix_spawn(3)",
+      "inputs": { "path": "/bin/echo", "argv": ["echo", "hello"], "envp": "inherit" },
+      "expected_output": 0,
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "posix_spawn successfully launches /bin/echo"
+    },
+    {
+      "name": "posix_spawn_nonexistent_strict",
+      "function": "posix_spawn",
+      "spec_section": "POSIX posix_spawn(3)",
+      "inputs": { "path": "/nonexistent_binary", "argv": ["x"], "envp": "inherit" },
+      "expected_output": "ENOENT",
+      "expected_errno": "ENOENT",
+      "mode": "strict",
+      "note": "posix_spawn fails with ENOENT for nonexistent binary"
+    },
+    {
+      "name": "execve_replaces_process_strict",
+      "function": "execve",
+      "spec_section": "POSIX execve(2)",
+      "inputs": { "pathname": "/bin/true", "argv": ["true"], "envp": [] },
+      "expected_output": "NO_RETURN",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "execve replaces process image (does not return on success)"
+    },
+    {
+      "name": "execve_eacces_strict",
+      "function": "execve",
+      "spec_section": "POSIX execve(2)",
+      "inputs": { "pathname": "/etc/passwd", "argv": ["passwd"], "envp": [] },
+      "expected_output": -1,
+      "expected_errno": "EACCES",
+      "mode": "strict",
+      "note": "execve fails with EACCES for non-executable file"
+    },
+    {
+      "name": "system_returns_status_strict",
+      "function": "system",
+      "spec_section": "C11 7.22.4.8",
+      "inputs": { "command": "true" },
+      "expected_output": 0,
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "system() runs command and returns exit status"
+    },
+    {
+      "name": "posix_spawn_echo_hardened",
+      "function": "posix_spawn",
+      "spec_section": "POSIX posix_spawn(3)",
+      "inputs": { "path": "/bin/echo", "argv": ["echo", "hello"], "envp": "inherit" },
+      "expected_output": 0,
+      "expected_errno": 0,
+      "mode": "hardened",
+      "note": "Hardened: validates executable path and sanitizes environment before launch"
+    },
+    {
+      "name": "system_returns_status_hardened",
+      "function": "system",
+      "spec_section": "C11 7.22.4.8",
+      "inputs": { "command": "true" },
+      "expected_output": 0,
+      "expected_errno": 0,
+      "mode": "hardened",
+      "note": "Hardened: same semantics, emits spawn evidence for audit chain"
+    }
+  ]
+}

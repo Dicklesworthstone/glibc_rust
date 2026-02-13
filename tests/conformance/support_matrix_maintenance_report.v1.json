@@ -1,0 +1,355 @@
+{
+  "schema_version": "v1",
+  "bead": "bd-3g4p",
+  "generated_at": "2026-02-13T18:50:06Z",
+  "summary": {
+    "total_symbols": 250,
+    "status_validated": 240,
+    "status_invalid": 10,
+    "status_skipped": 0,
+    "status_valid_pct": 96.0,
+    "fixture_linked": 161,
+    "fixture_unlinked": 89,
+    "fixture_coverage_pct": 64.4,
+    "total_warnings": 10
+  },
+  "status_distribution": {
+    "GlibcCallThrough": {
+      "count": 30,
+      "fixture_linked": 13
+    },
+    "Implemented": {
+      "count": 137,
+      "fixture_linked": 104
+    },
+    "RawSyscall": {
+      "count": 83,
+      "fixture_linked": 44
+    }
+  },
+  "module_coverage": {
+    "ctype_abi": {
+      "total": 11,
+      "linked": 11,
+      "coverage_pct": 100.0
+    },
+    "dirent_abi": {
+      "total": 3,
+      "linked": 3,
+      "coverage_pct": 100.0
+    },
+    "dlfcn_abi": {
+      "total": 4,
+      "linked": 4,
+      "coverage_pct": 100.0
+    },
+    "errno_abi": {
+      "total": 1,
+      "linked": 1,
+      "coverage_pct": 100.0
+    },
+    "grp_abi": {
+      "total": 7,
+      "linked": 3,
+      "coverage_pct": 42.9
+    },
+    "iconv_abi": {
+      "total": 3,
+      "linked": 3,
+      "coverage_pct": 100.0
+    },
+    "inet_abi": {
+      "total": 7,
+      "linked": 7,
+      "coverage_pct": 100.0
+    },
+    "io_abi": {
+      "total": 4,
+      "linked": 1,
+      "coverage_pct": 25.0
+    },
+    "locale_abi": {
+      "total": 2,
+      "linked": 2,
+      "coverage_pct": 100.0
+    },
+    "malloc_abi": {
+      "total": 7,
+      "linked": 4,
+      "coverage_pct": 57.1
+    },
+    "math_abi": {
+      "total": 19,
+      "linked": 19,
+      "coverage_pct": 100.0
+    },
+    "mmap_abi": {
+      "total": 5,
+      "linked": 4,
+      "coverage_pct": 80.0
+    },
+    "poll_abi": {
+      "total": 4,
+      "linked": 2,
+      "coverage_pct": 50.0
+    },
+    "process_abi": {
+      "total": 6,
+      "linked": 3,
+      "coverage_pct": 50.0
+    },
+    "pthread_abi": {
+      "total": 20,
+      "linked": 15,
+      "coverage_pct": 75.0
+    },
+    "pwd_abi": {
+      "total": 7,
+      "linked": 3,
+      "coverage_pct": 42.9
+    },
+    "resolv_abi": {
+      "total": 4,
+      "linked": 1,
+      "coverage_pct": 25.0
+    },
+    "resource_abi": {
+      "total": 2,
+      "linked": 1,
+      "coverage_pct": 50.0
+    },
+    "signal_abi": {
+      "total": 4,
+      "linked": 3,
+      "coverage_pct": 75.0
+    },
+    "socket_abi": {
+      "total": 14,
+      "linked": 5,
+      "coverage_pct": 35.7
+    },
+    "startup_abi": {
+      "total": 3,
+      "linked": 3,
+      "coverage_pct": 100.0
+    },
+    "stdio_abi": {
+      "total": 30,
+      "linked": 4,
+      "coverage_pct": 13.3
+    },
+    "stdlib_abi": {
+      "total": 11,
+      "linked": 6,
+      "coverage_pct": 54.5
+    },
+    "string_abi": {
+      "total": 17,
+      "linked": 17,
+      "coverage_pct": 100.0
+    },
+    "termios_abi": {
+      "total": 10,
+      "linked": 5,
+      "coverage_pct": 50.0
+    },
+    "time_abi": {
+      "total": 4,
+      "linked": 4,
+      "coverage_pct": 100.0
+    },
+    "unistd_abi": {
+      "total": 27,
+      "linked": 13,
+      "coverage_pct": 48.1
+    },
+    "wchar_abi": {
+      "total": 14,
+      "linked": 14,
+      "coverage_pct": 100.0
+    }
+  },
+  "status_validation_issues": [
+    {
+      "symbol": "dlerror",
+      "status": "GlibcCallThrough",
+      "module": "dlfcn_abi",
+      "valid": false,
+      "findings": [
+        "GlibcCallThrough but no libc:: references found"
+      ]
+    },
+    {
+      "symbol": "fgets",
+      "status": "GlibcCallThrough",
+      "module": "stdio_abi",
+      "valid": false,
+      "findings": [
+        "GlibcCallThrough but no libc:: references found"
+      ]
+    },
+    {
+      "symbol": "fprintf",
+      "status": "GlibcCallThrough",
+      "module": "stdio_abi",
+      "valid": false,
+      "findings": [
+        "GlibcCallThrough but no libc:: references found"
+      ]
+    },
+    {
+      "symbol": "fread",
+      "status": "GlibcCallThrough",
+      "module": "stdio_abi",
+      "valid": false,
+      "findings": [
+        "GlibcCallThrough but no libc:: references found"
+      ]
+    },
+    {
+      "symbol": "ftell",
+      "status": "GlibcCallThrough",
+      "module": "stdio_abi",
+      "valid": false,
+      "findings": [
+        "GlibcCallThrough but no libc:: references found"
+      ]
+    },
+    {
+      "symbol": "fwrite",
+      "status": "GlibcCallThrough",
+      "module": "stdio_abi",
+      "valid": false,
+      "findings": [
+        "GlibcCallThrough but no libc:: references found"
+      ]
+    },
+    {
+      "symbol": "setbuf",
+      "status": "GlibcCallThrough",
+      "module": "stdio_abi",
+      "valid": false,
+      "findings": [
+        "GlibcCallThrough but no libc:: references found"
+      ]
+    },
+    {
+      "symbol": "setvbuf",
+      "status": "GlibcCallThrough",
+      "module": "stdio_abi",
+      "valid": false,
+      "findings": [
+        "GlibcCallThrough but no libc:: references found"
+      ]
+    },
+    {
+      "symbol": "snprintf",
+      "status": "GlibcCallThrough",
+      "module": "stdio_abi",
+      "valid": false,
+      "findings": [
+        "GlibcCallThrough but no libc:: references found"
+      ]
+    },
+    {
+      "symbol": "sprintf",
+      "status": "GlibcCallThrough",
+      "module": "stdio_abi",
+      "valid": false,
+      "findings": [
+        "GlibcCallThrough but no libc:: references found"
+      ]
+    }
+  ],
+  "unlinked_symbols": [
+    "_exit",
+    "accept",
+    "aligned_alloc",
+    "atexit",
+    "chdir",
+    "clearerr",
+    "connect",
+    "dup",
+    "dup2",
+    "endgrent",
+    "endpwent",
+    "execvp",
+    "exit",
+    "fchdir",
+    "fcntl",
+    "fdatasync",
+    "feof",
+    "ferror",
+    "fflush",
+    "fgetc",
+    "fgets",
+    "fileno",
+    "fputc",
+    "fputs",
+    "fread",
+    "freeaddrinfo",
+    "fseek",
+    "fstat",
+    "fsync",
+    "ftell",
+    "fwrite",
+    "gai_strerror",
+    "getchar",
+    "getenv",
+    "getgrent",
+    "getgrgid_r",
+    "getgrnam_r",
+    "getnameinfo",
+    "getpeername",
+    "getpwent",
+    "getpwnam_r",
+    "getpwuid_r",
+    "getsockopt",
+    "link",
+    "lstat",
+    "memalign",
+    "msync",
+    "perror",
+    "posix_memalign",
+    "ppoll",
+    "printf",
+    "pselect",
+    "pthread_rwlock_destroy",
+    "pthread_rwlock_init",
+    "pthread_rwlock_rdlock",
+    "pthread_rwlock_unlock",
+    "pthread_rwlock_wrlock",
+    "putchar",
+    "puts",
+    "readlink",
+    "recv",
+    "recvfrom",
+    "rewind",
+    "rmdir",
+    "send",
+    "sendto",
+    "setbuf",
+    "setenv",
+    "setrlimit",
+    "setsockopt",
+    "setvbuf",
+    "signal",
+    "sleep",
+    "sprintf",
+    "stat",
+    "stderr",
+    "stdin",
+    "stdout",
+    "symlink",
+    "tcdrain",
+    "tcflow",
+    "tcflush",
+    "tcsendbreak",
+    "tcsetattr",
+    "ungetc",
+    "unlink",
+    "unsetenv",
+    "usleep",
+    "wait"
+  ]
+}

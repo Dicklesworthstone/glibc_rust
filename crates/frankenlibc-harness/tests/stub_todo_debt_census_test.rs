@@ -27,7 +27,11 @@ fn load_json(path: &Path) -> serde_json::Value {
 fn artifact_exists_and_has_required_shape() {
     let root = workspace_root();
     let artifact_path = root.join("tests/conformance/stub_todo_debt_census.v1.json");
-    assert!(artifact_path.exists(), "missing {}", artifact_path.display());
+    assert!(
+        artifact_path.exists(),
+        "missing {}",
+        artifact_path.display()
+    );
     let artifact = load_json(&artifact_path);
 
     assert_eq!(artifact["schema_version"].as_str(), Some("v1"));
@@ -41,7 +45,10 @@ fn artifact_exists_and_has_required_shape() {
         artifact["critical_source_debt"].is_object(),
         "critical_source_debt must be object"
     );
-    assert!(artifact["risk_policy"].is_object(), "risk_policy must be object");
+    assert!(
+        artifact["risk_policy"].is_object(),
+        "risk_policy must be object"
+    );
     assert!(
         artifact["risk_ranked_debt"].is_array(),
         "risk_ranked_debt must be array"
@@ -61,7 +68,10 @@ fn reconciliation_counts_match_entries() {
     let entries = artifact["critical_source_debt"]["entries"]
         .as_array()
         .expect("critical_source_debt.entries must be array");
-    assert!(!entries.is_empty(), "critical_source_debt.entries must not be empty");
+    assert!(
+        !entries.is_empty(),
+        "critical_source_debt.entries must not be empty"
+    );
 
     let mut non_exported = std::collections::BTreeSet::new();
     let mut exported_shadow = std::collections::BTreeSet::new();
@@ -79,13 +89,15 @@ fn reconciliation_counts_match_entries() {
 
     let recon = artifact["reconciliation"].as_object().unwrap();
     assert_eq!(
-        recon.get("critical_non_exported_todo_count")
+        recon
+            .get("critical_non_exported_todo_count")
             .and_then(|v| v.as_u64()),
         Some(non_exported.len() as u64),
         "critical_non_exported_todo_count mismatch"
     );
     assert_eq!(
-        recon.get("critical_exported_shadow_todo_count")
+        recon
+            .get("critical_exported_shadow_todo_count")
             .and_then(|v| v.as_u64()),
         Some(exported_shadow.len() as u64),
         "critical_exported_shadow_todo_count mismatch"

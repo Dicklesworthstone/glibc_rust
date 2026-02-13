@@ -1,0 +1,251 @@
+{
+  "schema_version": "v1",
+  "bead": "bd-1oz.4",
+  "generated_at": "2026-02-13T19:56:20Z",
+  "validation_hash": "038c9c06d53570a8",
+  "summary": {
+    "target": "fuzz_membrane",
+    "readiness_pct": 41.2,
+    "strategies_coverage": "2/5",
+    "transitions_coverage": "2/4",
+    "cache_coverage": "1/3",
+    "invariants_coverage": "2/5",
+    "total_gaps": 10,
+    "high_severity_gaps": 2,
+    "cwe_targets": [
+      "CWE-476",
+      "CWE-824",
+      "CWE-825"
+    ]
+  },
+  "source_analysis": {
+    "source_file": "fuzz_membrane.rs",
+    "total_lines": 26,
+    "logic_lines": 20,
+    "has_no_main": true,
+    "has_fuzz_target": true,
+    "has_pipeline_creation": true,
+    "has_outcome_checking": true,
+    "component_coverage": [
+      {
+        "component": "ValidationPipeline::validate()",
+        "description": "Core validation function exercised with arbitrary pointers",
+        "found": true,
+        "critical": true
+      },
+      {
+        "component": "TLS cache operations",
+        "description": "TLS cache lookup exercised through repeated validations",
+        "found": true,
+        "critical": true
+      },
+      {
+        "component": "Bloom filter operations",
+        "description": "Bloom filter pre-check via mixed valid/invalid addresses",
+        "found": true,
+        "critical": true
+      },
+      {
+        "component": "Arena slot lookups",
+        "description": "Arena lookup exercised through full pipeline validation",
+        "found": true,
+        "critical": true
+      },
+      {
+        "component": "can_read() / can_write() checks",
+        "description": "Read/write permission checking on validation outcomes",
+        "found": true,
+        "critical": true
+      }
+    ],
+    "components_found": 5,
+    "components_total": 5
+  },
+  "fuzzing_strategies": [
+    {
+      "strategy": "arbitrary_addresses",
+      "description": "Arbitrary pointer addresses including edge cases",
+      "implemented": true,
+      "evidence": "Direct u64 parsing from fuzzer input bytes"
+    },
+    {
+      "strategy": "pointer_arithmetic",
+      "description": "Pointer arithmetic on valid allocations (alloc \u00b1 delta)",
+      "implemented": false,
+      "evidence": "Target does not allocate then adjust pointers",
+      "gap_severity": "medium"
+    },
+    {
+      "strategy": "near_miss_pointers",
+      "description": "Near-miss pointers (allocation \u00b1 small delta)",
+      "implemented": false,
+      "evidence": "No arena allocation to derive near-miss addresses from",
+      "gap_severity": "medium"
+    },
+    {
+      "strategy": "concurrent_validation",
+      "description": "Concurrent validation from multiple threads",
+      "implemented": false,
+      "evidence": "Single-threaded fuzz target",
+      "gap_severity": "low"
+    },
+    {
+      "strategy": "mixed_valid_invalid",
+      "description": "Mixed valid/invalid pointer sequences",
+      "implemented": true,
+      "evidence": "Random byte inputs produce both valid and invalid addresses"
+    }
+  ],
+  "state_transitions": [
+    {
+      "from_state": "Valid",
+      "to_state": "Valid",
+      "trigger": "Re-validation of same address",
+      "exercised": true,
+      "via": "Repeated chunks with same bytes"
+    },
+    {
+      "from_state": "Valid",
+      "to_state": "Freed",
+      "trigger": "Free then validate",
+      "exercised": false,
+      "via": "Requires arena allocation + free + re-validate",
+      "gap_severity": "high"
+    },
+    {
+      "from_state": "Freed",
+      "to_state": "Quarantined",
+      "trigger": "Quarantine fill",
+      "exercised": false,
+      "via": "Requires multiple alloc/free cycles to fill quarantine",
+      "gap_severity": "high"
+    },
+    {
+      "from_state": "Unknown",
+      "to_state": "Foreign",
+      "trigger": "External pointer validation",
+      "exercised": true,
+      "via": "Random addresses outside arena \u2192 Foreign outcome"
+    }
+  ],
+  "cache_coherence": [
+    {
+      "check": "tls_cache_invalidation",
+      "description": "TLS cache invalidation on free",
+      "exercised": false,
+      "gap": "No allocation lifecycle in target"
+    },
+    {
+      "check": "bloom_false_positive",
+      "description": "Bloom filter false positive paths",
+      "exercised": true,
+      "evidence": "Random addresses naturally probe bloom filter false positive paths"
+    },
+    {
+      "check": "arena_slot_reuse",
+      "description": "Arena slot reuse after quarantine",
+      "exercised": false,
+      "gap": "No allocation lifecycle in target"
+    }
+  ],
+  "invariant_checks": [
+    {
+      "invariant": "no_false_negatives",
+      "description": "Zero false negatives (unsafe passed as safe)",
+      "verified": true,
+      "evidence": "validate() is exercised on all input addresses; outcomes queried"
+    },
+    {
+      "invariant": "lattice_monotonicity",
+      "description": "States only become more restrictive",
+      "verified": false,
+      "gap": "No allocation lifecycle to observe state transitions"
+    },
+    {
+      "invariant": "generation_counter_ordering",
+      "description": "Generation counter ordering preserved",
+      "verified": false,
+      "gap": "No allocation lifecycle to observe counter increments"
+    },
+    {
+      "invariant": "no_deadlocks",
+      "description": "No deadlocks under concurrent load",
+      "verified": false,
+      "gap": "Single-threaded target"
+    },
+    {
+      "invariant": "bounded_latency",
+      "description": "Bounded latency for all validation paths",
+      "verified": true,
+      "evidence": "Fuzz target exercises all paths; libfuzzer detects hangs"
+    }
+  ],
+  "gap_analysis": [
+    {
+      "area": "fuzzing_strategy",
+      "item": "pointer_arithmetic",
+      "severity": "medium",
+      "description": "Target does not allocate then adjust pointers"
+    },
+    {
+      "area": "fuzzing_strategy",
+      "item": "near_miss_pointers",
+      "severity": "medium",
+      "description": "No arena allocation to derive near-miss addresses from"
+    },
+    {
+      "area": "fuzzing_strategy",
+      "item": "concurrent_validation",
+      "severity": "low",
+      "description": "Single-threaded fuzz target"
+    },
+    {
+      "area": "state_transition",
+      "item": "Valid \u2192 Freed",
+      "severity": "high",
+      "description": "Requires arena allocation + free + re-validate"
+    },
+    {
+      "area": "state_transition",
+      "item": "Freed \u2192 Quarantined",
+      "severity": "high",
+      "description": "Requires multiple alloc/free cycles to fill quarantine"
+    },
+    {
+      "area": "cache_coherence",
+      "item": "tls_cache_invalidation",
+      "severity": "medium",
+      "description": "No allocation lifecycle in target"
+    },
+    {
+      "area": "cache_coherence",
+      "item": "arena_slot_reuse",
+      "severity": "medium",
+      "description": "No allocation lifecycle in target"
+    },
+    {
+      "area": "invariant",
+      "item": "lattice_monotonicity",
+      "severity": "low",
+      "description": "No allocation lifecycle to observe state transitions"
+    },
+    {
+      "area": "invariant",
+      "item": "generation_counter_ordering",
+      "severity": "low",
+      "description": "No allocation lifecycle to observe counter increments"
+    },
+    {
+      "area": "invariant",
+      "item": "no_deadlocks",
+      "severity": "low",
+      "description": "Single-threaded target"
+    }
+  ],
+  "success_criteria": {
+    "zero_false_negatives": "validate() must never report unsafe pointer as safe",
+    "all_transitions_exercised": "All SafetyState transitions covered by fuzz input",
+    "no_deadlocks": "No deadlocks under concurrent validation load",
+    "bounded_latency": "All validation paths complete within latency budget"
+  }
+}

@@ -47,10 +47,15 @@ fn matrix_exists_and_summary_is_consistent() {
 
     let entries = matrix["entries"].as_array().unwrap();
     let classes = matrix["invalid_input_classes"].as_array().unwrap();
-    let summary = matrix["summary"].as_object().expect("summary must be an object");
+    let summary = matrix["summary"]
+        .as_object()
+        .expect("summary must be an object");
 
     assert!(!entries.is_empty(), "entries should not be empty");
-    assert!(!classes.is_empty(), "invalid_input_classes should not be empty");
+    assert!(
+        !classes.is_empty(),
+        "invalid_input_classes should not be empty"
+    );
 
     let declared: std::collections::HashSet<String> = classes
         .iter()
@@ -84,11 +89,15 @@ fn matrix_exists_and_summary_is_consistent() {
     assert!(deny_count > 0, "matrix must include Deny entries");
 
     assert_eq!(
-        summary.get("total_invalid_input_classes").and_then(|v| v.as_u64()),
+        summary
+            .get("total_invalid_input_classes")
+            .and_then(|v| v.as_u64()),
         Some(declared.len() as u64)
     );
     assert_eq!(
-        summary.get("covered_invalid_input_classes").and_then(|v| v.as_u64()),
+        summary
+            .get("covered_invalid_input_classes")
+            .and_then(|v| v.as_u64()),
         Some(covered.len() as u64)
     );
     assert_eq!(
@@ -130,7 +139,9 @@ fn fixture_refs_exist_and_are_hardened_cases() {
                 .split_once("#/cases/")
                 .expect("fixture_case_refs entry must use <path>#/cases/<name>");
             let fixture = load_json(&root.join(fixture_path));
-            let cases = fixture["cases"].as_array().expect("fixture cases must be array");
+            let cases = fixture["cases"]
+                .as_array()
+                .expect("fixture cases must be array");
             let case = cases
                 .iter()
                 .find(|candidate| candidate["name"].as_str() == Some(case_name))

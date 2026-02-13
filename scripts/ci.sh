@@ -71,6 +71,11 @@ if [[ "${FRANKENLIBC_EXTENDED_GATES:-0}" == "1" ]]; then
     echo "PASS"
     echo ""
 
+    echo "--- runtime_math risk+pareto calibration gate ---"
+    scripts/check_runtime_math_risk_pareto_calibration.sh
+    echo "PASS"
+    echo ""
+
     echo "--- expected-loss matrix policy artifact check ---"
     scripts/check_expected_loss_matrix.sh
     echo "PASS"

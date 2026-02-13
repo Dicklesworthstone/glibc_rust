@@ -10,11 +10,11 @@
     },
     "support_matrix": {
       "path": "support_matrix.json",
-      "sha256": "0769c3d2b3e8fd4cbaf536b9adeba996eb55f71a48f71b0816c99067c44ff6f4"
+      "sha256": "2324aa1931efbd4114e7b3789d7c96343f788714ac16c6db1f9b9728c45eba04"
     },
     "callthrough_census": {
       "path": "tests/conformance/callthrough_census.v1.json",
-      "sha256": "fb8852f494f907594fbc64ca661db5870bb981da6faf7f76d04c602e54102039"
+      "sha256": "2cd97b2fec8e001f831fcad886e39d9286347e63d8ead5e858c1e4c4ac87cb13"
     }
   },
   "scoring": {
@@ -35,10 +35,10 @@
   "module_ranking": [
     {
       "module": "stdio_abi",
-      "symbols_remaining": 30,
+      "symbols_remaining": 16,
       "blocked_workloads": 7,
       "weighted_workload_impact": 14.0,
-      "total_symbol_score": 450.0,
+      "total_symbol_score": 240.0,
       "critical_symbol_hits": 0,
       "recommended_beads": [
         "bd-24ug"
@@ -47,10 +47,10 @@
     },
     {
       "module": "pthread_abi",
-      "symbols_remaining": 15,
+      "symbols_remaining": 10,
       "blocked_workloads": 4,
       "weighted_workload_impact": 9.0,
-      "total_symbol_score": 304.0,
+      "total_symbol_score": 204.0,
       "critical_symbol_hits": 4,
       "recommended_beads": [
         "bd-z84",
@@ -97,106 +97,6 @@
       "rank": 1
     },
     {
-      "symbol": "pthread_cond_broadcast",
-      "module": "pthread_abi",
-      "status": "GlibcCallThrough",
-      "perf_class": "strict_hotpath",
-      "severity_weight": 2.0,
-      "blocked_workloads": 4,
-      "weighted_workload_impact": 9.0,
-      "critical_symbol_mentions": 0,
-      "score": 20.0,
-      "wave_id": "pthread-synchronization",
-      "recommended_beads": [
-        "bd-z84",
-        "bd-yos",
-        "bd-rth1",
-        "bd-1f35",
-        "bd-3hud"
-      ],
-      "rank": 2
-    },
-    {
-      "symbol": "pthread_cond_destroy",
-      "module": "pthread_abi",
-      "status": "GlibcCallThrough",
-      "perf_class": "strict_hotpath",
-      "severity_weight": 2.0,
-      "blocked_workloads": 4,
-      "weighted_workload_impact": 9.0,
-      "critical_symbol_mentions": 0,
-      "score": 20.0,
-      "wave_id": "pthread-synchronization",
-      "recommended_beads": [
-        "bd-z84",
-        "bd-yos",
-        "bd-rth1",
-        "bd-1f35",
-        "bd-3hud"
-      ],
-      "rank": 3
-    },
-    {
-      "symbol": "pthread_cond_init",
-      "module": "pthread_abi",
-      "status": "GlibcCallThrough",
-      "perf_class": "strict_hotpath",
-      "severity_weight": 2.0,
-      "blocked_workloads": 4,
-      "weighted_workload_impact": 9.0,
-      "critical_symbol_mentions": 0,
-      "score": 20.0,
-      "wave_id": "pthread-synchronization",
-      "recommended_beads": [
-        "bd-z84",
-        "bd-yos",
-        "bd-rth1",
-        "bd-1f35",
-        "bd-3hud"
-      ],
-      "rank": 4
-    },
-    {
-      "symbol": "pthread_cond_signal",
-      "module": "pthread_abi",
-      "status": "GlibcCallThrough",
-      "perf_class": "strict_hotpath",
-      "severity_weight": 2.0,
-      "blocked_workloads": 4,
-      "weighted_workload_impact": 9.0,
-      "critical_symbol_mentions": 0,
-      "score": 20.0,
-      "wave_id": "pthread-synchronization",
-      "recommended_beads": [
-        "bd-z84",
-        "bd-yos",
-        "bd-rth1",
-        "bd-1f35",
-        "bd-3hud"
-      ],
-      "rank": 5
-    },
-    {
-      "symbol": "pthread_cond_wait",
-      "module": "pthread_abi",
-      "status": "GlibcCallThrough",
-      "perf_class": "strict_hotpath",
-      "severity_weight": 2.0,
-      "blocked_workloads": 4,
-      "weighted_workload_impact": 9.0,
-      "critical_symbol_mentions": 0,
-      "score": 20.0,
-      "wave_id": "pthread-synchronization",
-      "recommended_beads": [
-        "bd-z84",
-        "bd-yos",
-        "bd-rth1",
-        "bd-1f35",
-        "bd-3hud"
-      ],
-      "rank": 6
-    },
-    {
       "symbol": "pthread_detach",
       "module": "pthread_abi",
       "status": "GlibcCallThrough",
@@ -214,7 +114,7 @@
         "bd-1f35",
         "bd-3hud"
       ],
-      "rank": 7
+      "rank": 2
     },
     {
       "symbol": "pthread_equal",
@@ -234,7 +134,7 @@
         "bd-1f35",
         "bd-3hud"
       ],
-      "rank": 8
+      "rank": 3
     },
     {
       "symbol": "pthread_join",
@@ -254,7 +154,7 @@
         "bd-1f35",
         "bd-3hud"
       ],
-      "rank": 9
+      "rank": 4
     },
     {
       "symbol": "pthread_rwlock_destroy",
@@ -274,7 +174,7 @@
         "bd-1f35",
         "bd-3hud"
       ],
-      "rank": 10
+      "rank": 5
     },
     {
       "symbol": "pthread_rwlock_init",
@@ -294,7 +194,7 @@
         "bd-1f35",
         "bd-3hud"
       ],
-      "rank": 11
+      "rank": 6
     },
     {
       "symbol": "pthread_rwlock_rdlock",
@@ -314,7 +214,7 @@
         "bd-1f35",
         "bd-3hud"
       ],
-      "rank": 12
+      "rank": 7
     },
     {
       "symbol": "pthread_rwlock_unlock",
@@ -334,7 +234,7 @@
         "bd-1f35",
         "bd-3hud"
       ],
-      "rank": 13
+      "rank": 8
     },
     {
       "symbol": "pthread_rwlock_wrlock",
@@ -354,7 +254,7 @@
         "bd-1f35",
         "bd-3hud"
       ],
-      "rank": 14
+      "rank": 9
     },
     {
       "symbol": "pthread_self",
@@ -374,23 +274,7 @@
         "bd-1f35",
         "bd-3hud"
       ],
-      "rank": 15
-    },
-    {
-      "symbol": "clearerr",
-      "module": "stdio_abi",
-      "status": "GlibcCallThrough",
-      "perf_class": "coldpath",
-      "severity_weight": 1.0,
-      "blocked_workloads": 7,
-      "weighted_workload_impact": 14.0,
-      "critical_symbol_mentions": 0,
-      "score": 15.0,
-      "wave_id": "stdio-surface",
-      "recommended_beads": [
-        "bd-24ug"
-      ],
-      "rank": 16
+      "rank": 10
     },
     {
       "symbol": "fclose",
@@ -406,71 +290,7 @@
       "recommended_beads": [
         "bd-24ug"
       ],
-      "rank": 17
-    },
-    {
-      "symbol": "feof",
-      "module": "stdio_abi",
-      "status": "GlibcCallThrough",
-      "perf_class": "coldpath",
-      "severity_weight": 1.0,
-      "blocked_workloads": 7,
-      "weighted_workload_impact": 14.0,
-      "critical_symbol_mentions": 0,
-      "score": 15.0,
-      "wave_id": "stdio-surface",
-      "recommended_beads": [
-        "bd-24ug"
-      ],
-      "rank": 18
-    },
-    {
-      "symbol": "ferror",
-      "module": "stdio_abi",
-      "status": "GlibcCallThrough",
-      "perf_class": "coldpath",
-      "severity_weight": 1.0,
-      "blocked_workloads": 7,
-      "weighted_workload_impact": 14.0,
-      "critical_symbol_mentions": 0,
-      "score": 15.0,
-      "wave_id": "stdio-surface",
-      "recommended_beads": [
-        "bd-24ug"
-      ],
-      "rank": 19
-    },
-    {
-      "symbol": "fflush",
-      "module": "stdio_abi",
-      "status": "GlibcCallThrough",
-      "perf_class": "coldpath",
-      "severity_weight": 1.0,
-      "blocked_workloads": 7,
-      "weighted_workload_impact": 14.0,
-      "critical_symbol_mentions": 0,
-      "score": 15.0,
-      "wave_id": "stdio-surface",
-      "recommended_beads": [
-        "bd-24ug"
-      ],
-      "rank": 20
-    },
-    {
-      "symbol": "fgetc",
-      "module": "stdio_abi",
-      "status": "GlibcCallThrough",
-      "perf_class": "coldpath",
-      "severity_weight": 1.0,
-      "blocked_workloads": 7,
-      "weighted_workload_impact": 14.0,
-      "critical_symbol_mentions": 0,
-      "score": 15.0,
-      "wave_id": "stdio-surface",
-      "recommended_beads": [
-        "bd-24ug"
-      ],
-      "rank": 21
+      "rank": 11
     },
     {
       "symbol": "fgets",
@@ -486,23 +306,7 @@
       "recommended_beads": [
         "bd-24ug"
       ],
-      "rank": 22
-    },
-    {
-      "symbol": "fileno",
-      "module": "stdio_abi",
-      "status": "GlibcCallThrough",
-      "perf_class": "coldpath",
-      "severity_weight": 1.0,
-      "blocked_workloads": 7,
-      "weighted_workload_impact": 14.0,
-      "critical_symbol_mentions": 0,
-      "score": 15.0,
-      "wave_id": "stdio-surface",
-      "recommended_beads": [
-        "bd-24ug"
-      ],
-      "rank": 23
+      "rank": 12
     },
     {
       "symbol": "fopen",
@@ -518,10 +322,186 @@
       "recommended_beads": [
         "bd-24ug"
       ],
-      "rank": 24
+      "rank": 13
     },
     {
       "symbol": "fprintf",
+      "module": "stdio_abi",
+      "status": "GlibcCallThrough",
+      "perf_class": "coldpath",
+      "severity_weight": 1.0,
+      "blocked_workloads": 7,
+      "weighted_workload_impact": 14.0,
+      "critical_symbol_mentions": 0,
+      "score": 15.0,
+      "wave_id": "stdio-surface",
+      "recommended_beads": [
+        "bd-24ug"
+      ],
+      "rank": 14
+    },
+    {
+      "symbol": "fputs",
+      "module": "stdio_abi",
+      "status": "GlibcCallThrough",
+      "perf_class": "coldpath",
+      "severity_weight": 1.0,
+      "blocked_workloads": 7,
+      "weighted_workload_impact": 14.0,
+      "critical_symbol_mentions": 0,
+      "score": 15.0,
+      "wave_id": "stdio-surface",
+      "recommended_beads": [
+        "bd-24ug"
+      ],
+      "rank": 15
+    },
+    {
+      "symbol": "fread",
+      "module": "stdio_abi",
+      "status": "GlibcCallThrough",
+      "perf_class": "coldpath",
+      "severity_weight": 1.0,
+      "blocked_workloads": 7,
+      "weighted_workload_impact": 14.0,
+      "critical_symbol_mentions": 0,
+      "score": 15.0,
+      "wave_id": "stdio-surface",
+      "recommended_beads": [
+        "bd-24ug"
+      ],
+      "rank": 16
+    },
+    {
+      "symbol": "fseek",
+      "module": "stdio_abi",
+      "status": "GlibcCallThrough",
+      "perf_class": "coldpath",
+      "severity_weight": 1.0,
+      "blocked_workloads": 7,
+      "weighted_workload_impact": 14.0,
+      "critical_symbol_mentions": 0,
+      "score": 15.0,
+      "wave_id": "stdio-surface",
+      "recommended_beads": [
+        "bd-24ug"
+      ],
+      "rank": 17
+    },
+    {
+      "symbol": "ftell",
+      "module": "stdio_abi",
+      "status": "GlibcCallThrough",
+      "perf_class": "coldpath",
+      "severity_weight": 1.0,
+      "blocked_workloads": 7,
+      "weighted_workload_impact": 14.0,
+      "critical_symbol_mentions": 0,
+      "score": 15.0,
+      "wave_id": "stdio-surface",
+      "recommended_beads": [
+        "bd-24ug"
+      ],
+      "rank": 18
+    },
+    {
+      "symbol": "fwrite",
+      "module": "stdio_abi",
+      "status": "GlibcCallThrough",
+      "perf_class": "coldpath",
+      "severity_weight": 1.0,
+      "blocked_workloads": 7,
+      "weighted_workload_impact": 14.0,
+      "critical_symbol_mentions": 0,
+      "score": 15.0,
+      "wave_id": "stdio-surface",
+      "recommended_beads": [
+        "bd-24ug"
+      ],
+      "rank": 19
+    },
+    {
+      "symbol": "perror",
+      "module": "stdio_abi",
+      "status": "GlibcCallThrough",
+      "perf_class": "coldpath",
+      "severity_weight": 1.0,
+      "blocked_workloads": 7,
+      "weighted_workload_impact": 14.0,
+      "critical_symbol_mentions": 0,
+      "score": 15.0,
+      "wave_id": "stdio-surface",
+      "recommended_beads": [
+        "bd-24ug"
+      ],
+      "rank": 20
+    },
+    {
+      "symbol": "printf",
+      "module": "stdio_abi",
+      "status": "GlibcCallThrough",
+      "perf_class": "coldpath",
+      "severity_weight": 1.0,
+      "blocked_workloads": 7,
+      "weighted_workload_impact": 14.0,
+      "critical_symbol_mentions": 0,
+      "score": 15.0,
+      "wave_id": "stdio-surface",
+      "recommended_beads": [
+        "bd-24ug"
+      ],
+      "rank": 21
+    },
+    {
+      "symbol": "puts",
+      "module": "stdio_abi",
+      "status": "GlibcCallThrough",
+      "perf_class": "coldpath",
+      "severity_weight": 1.0,
+      "blocked_workloads": 7,
+      "weighted_workload_impact": 14.0,
+      "critical_symbol_mentions": 0,
+      "score": 15.0,
+      "wave_id": "stdio-surface",
+      "recommended_beads": [
+        "bd-24ug"
+      ],
+      "rank": 22
+    },
+    {
+      "symbol": "setbuf",
+      "module": "stdio_abi",
+      "status": "GlibcCallThrough",
+      "perf_class": "coldpath",
+      "severity_weight": 1.0,
+      "blocked_workloads": 7,
+      "weighted_workload_impact": 14.0,
+      "critical_symbol_mentions": 0,
+      "score": 15.0,
+      "wave_id": "stdio-surface",
+      "recommended_beads": [
+        "bd-24ug"
+      ],
+      "rank": 23
+    },
+    {
+      "symbol": "setvbuf",
+      "module": "stdio_abi",
+      "status": "GlibcCallThrough",
+      "perf_class": "coldpath",
+      "severity_weight": 1.0,
+      "blocked_workloads": 7,
+      "weighted_workload_impact": 14.0,
+      "critical_symbol_mentions": 0,
+      "score": 15.0,
+      "wave_id": "stdio-surface",
+      "recommended_beads": [
+        "bd-24ug"
+      ],
+      "rank": 24
+    },
+    {
+      "symbol": "snprintf",
       "module": "stdio_abi",
       "status": "GlibcCallThrough",
       "perf_class": "coldpath",
@@ -576,13 +556,8 @@
       "modules": [
         "pthread_abi"
       ],
-      "symbol_count": 10,
+      "symbol_count": 5,
       "top_symbols": [
-        "pthread_cond_broadcast",
-        "pthread_cond_destroy",
-        "pthread_cond_init",
-        "pthread_cond_signal",
-        "pthread_cond_wait",
         "pthread_rwlock_destroy",
         "pthread_rwlock_init",
         "pthread_rwlock_rdlock",
@@ -675,18 +650,18 @@
       "modules": [
         "stdio_abi"
       ],
-      "symbol_count": 30,
+      "symbol_count": 16,
       "top_symbols": [
-        "clearerr",
         "fclose",
-        "feof",
-        "ferror",
-        "fflush",
-        "fgetc",
         "fgets",
-        "fileno",
         "fopen",
-        "fprintf"
+        "fprintf",
+        "fputs",
+        "fread",
+        "fseek",
+        "ftell",
+        "fwrite",
+        "perror"
       ],
       "avg_score": 15.0,
       "max_score": 15.0,
@@ -723,12 +698,12 @@
   },
   "summary": {
     "top_n": 25,
-    "candidate_symbols": 49,
+    "candidate_symbols": 30,
     "module_count": 3,
     "wave_count": 5,
     "top_blocker_module": "stdio_abi",
     "top_symbol": "pthread_create",
-    "baseline_unresolved_symbols": 49,
-    "remaining_after_top_n": 24
+    "baseline_unresolved_symbols": 30,
+    "remaining_after_top_n": 5
   }
 }

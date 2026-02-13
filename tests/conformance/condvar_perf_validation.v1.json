@@ -1,0 +1,169 @@
+{
+  "version": "v1",
+  "family": "pthread/condvar_perf",
+  "bead": "bd-2nzx",
+  "captured_at": "2026-02-13T18:30:00Z",
+  "description": "Condvar performance validation baseline and opportunity matrix for bd-2nzx",
+  "environment": {
+    "arch": "x86_64",
+    "kernel": "6.17.0-14-generic",
+    "profile": "release (optimized)",
+    "mode": "strict"
+  },
+  "baselines": [
+    {
+      "name": "init_destroy",
+      "operation": "condvar_init + condvar_destroy cycle",
+      "category": "uncontended_fast_path",
+      "p50_ns": 3.3,
+      "p95_ns": 6.3,
+      "p99_ns": 35.0,
+      "mean_ns": 7.7,
+      "throughput_ops_s": 305000000,
+      "involves_syscall": false,
+      "budget_ns": 50,
+      "within_budget": true,
+      "notes": "Pure atomic stores. Well within budget."
+    },
+    {
+      "name": "signal_no_waiters",
+      "operation": "condvar_signal with 0 waiters",
+      "category": "uncontended_fast_path",
+      "p50_ns": 2.0,
+      "p95_ns": 3.1,
+      "p99_ns": 15.0,
+      "mean_ns": 2.9,
+      "throughput_ops_s": 498000000,
+      "involves_syscall": false,
+      "budget_ns": 50,
+      "within_budget": true,
+      "notes": "fetch_add + nwaiters check. No futex_wake syscall. Excellent fast-path performance."
+    },
+    {
+      "name": "broadcast_no_waiters",
+      "operation": "condvar_broadcast with 0 waiters",
+      "category": "uncontended_fast_path",
+      "p50_ns": 2.0,
+      "p95_ns": 3.2,
+      "p99_ns": 15.0,
+      "mean_ns": 3.0,
+      "throughput_ops_s": 499000000,
+      "involves_syscall": false,
+      "budget_ns": 50,
+      "within_budget": true,
+      "notes": "Same fast-path as signal: fetch_add + nwaiters check. No syscall."
+    },
+    {
+      "name": "timedwait_past_deadline",
+      "operation": "condvar_timedwait with epoch-0 deadline (ETIMEDOUT)",
+      "category": "syscall_path",
+      "p50_ns": 7545,
+      "p95_ns": 10634,
+      "p99_ns": 16707,
+      "mean_ns": 7973,
+      "throughput_ops_s": 130000,
+      "involves_syscall": true,
+      "syscalls_per_op": 3,
+      "syscall_detail": "futex_wake(mutex) + futex_wait_bitset(cv, ETIMEDOUT) + futex_wait(mutex relock)",
+      "budget_ns": 20000,
+      "within_budget": true,
+      "notes": "3 syscalls per operation: unlock mutex, timedwait (immediate ETIMEDOUT), relock mutex. ~7.5µs is consistent with 3 futex syscalls at ~2.5µs each."
+    },
+    {
+      "name": "wait_signal_roundtrip",
+      "operation": "condvar_wait (block) + condvar_signal (wake) full handshake",
+      "category": "syscall_path",
+      "p50_ns": 1350,
+      "p95_ns": 1625,
+      "p99_ns": 1644,
+      "mean_ns": 1393,
+      "throughput_ops_s": 718000,
+      "involves_syscall": true,
+      "syscalls_per_op": 4,
+      "syscall_detail": "futex_wake(mutex unlock) + futex_wait(cv seq) + futex_wake(signal) + futex_wait(relock)",
+      "budget_ns": 10000,
+      "within_budget": true,
+      "notes": "Full wait/signal/reacquire roundtrip in ~1.4µs. Excellent for a 4-syscall choreography."
+    },
+    {
+      "name": "broadcast_4_waiters",
+      "operation": "condvar_broadcast waking 4 threads + thundering herd mutex reacquisition",
+      "category": "contended_path",
+      "p50_ns": 77875,
+      "p95_ns": 141295,
+      "p99_ns": 160320,
+      "mean_ns": 85878,
+      "throughput_ops_s": 12000,
+      "involves_syscall": true,
+      "includes_thread_spawn": true,
+      "budget_ns": 500000,
+      "within_budget": true,
+      "notes": "Includes 4x thread spawn + join overhead. Actual broadcast+reacquire latency is dominated by thread scheduling. Well within budget."
+    }
+  ],
+  "opportunity_matrix": [
+    {
+      "symbol": "condvar_signal",
+      "operation": "signal_no_waiters",
+      "current_p50_ns": 2.0,
+      "headroom_pct": 96.0,
+      "optimization_score": 0.1,
+      "rationale": "Already at ~2ns (2 atomics). No meaningful optimization possible without changing the memory model. Score < 2.0: no action."
+    },
+    {
+      "symbol": "condvar_broadcast",
+      "operation": "broadcast_no_waiters",
+      "current_p50_ns": 2.0,
+      "headroom_pct": 96.0,
+      "optimization_score": 0.1,
+      "rationale": "Identical fast-path to signal. No optimization needed."
+    },
+    {
+      "symbol": "condvar_init",
+      "operation": "init_destroy",
+      "current_p50_ns": 3.3,
+      "headroom_pct": 93.4,
+      "optimization_score": 0.2,
+      "rationale": "4 atomic stores + 4 atomic stores. Already minimal."
+    },
+    {
+      "symbol": "condvar_timedwait",
+      "operation": "timedwait_past_deadline",
+      "current_p50_ns": 7545,
+      "headroom_pct": 62.3,
+      "optimization_score": 1.2,
+      "rationale": "Dominated by 3 futex syscalls (~2.5µs each). Could potentially avoid mutex unlock/relock for already-expired deadlines by checking clock before releasing mutex. However, POSIX requires atomically releasing mutex even for past deadlines. Score 1.2 < 2.0: document but do not optimize."
+    },
+    {
+      "symbol": "condvar_wait",
+      "operation": "wait_signal_roundtrip",
+      "current_p50_ns": 1350,
+      "headroom_pct": 86.5,
+      "optimization_score": 0.5,
+      "rationale": "4 syscalls at ~337ns each is excellent. Futex-based implementation is already near-optimal. The only theoretical optimization is FUTEX_CMP_REQUEUE for broadcast, which does not apply to single-signal path."
+    },
+    {
+      "symbol": "condvar_broadcast",
+      "operation": "broadcast_4_waiters",
+      "current_p50_ns": 77875,
+      "headroom_pct": 84.4,
+      "optimization_score": 1.5,
+      "rationale": "Dominated by thread spawn/join overhead in benchmark. Real broadcast+requeue is much faster. FUTEX_CMP_REQUEUE could reduce thundering herd but adds complexity. Score 1.5 < 2.0: defer to future optimization pass."
+    }
+  ],
+  "optimization_decision": {
+    "selected": "none",
+    "reason": "All operations are within their performance budgets. No opportunity scores >= 2.0 threshold. Fast-path operations (signal/broadcast with no waiters) are at ~2ns which is near-theoretical-minimum for atomic operations. Syscall-path operations are dominated by kernel futex latency which cannot be optimized in userspace. No optimization action required.",
+    "max_opportunity_score": 1.5,
+    "threshold": 2.0
+  },
+  "isomorphism_proof": {
+    "status": "not_applicable",
+    "reason": "No optimization was applied. Behavior is unchanged from bd-gcy implementation."
+  },
+  "regression_verification": {
+    "all_condvar_tests_pass": true,
+    "test_count": 68,
+    "command": "cargo test -p frankenlibc-core -- cond"
+  }
+}

@@ -77,14 +77,16 @@ symbols = support.get("symbols", [])
 if not isinstance(symbols, list) or not symbols:
     fail("support_matrix symbols must be non-empty array")
 
-stdio_callthrough = sorted(
+stdio_rows = [row for row in symbols if row.get("module") == "stdio_abi"]
+if not stdio_rows:
+    fail("no stdio_abi symbols found in support_matrix")
+stdio_all = sorted(str(row.get("symbol")) for row in stdio_rows)
+stdio_all_set = set(stdio_all)
+status_by_symbol = {
     str(row.get("symbol"))
-    for row in symbols
-    if row.get("status") == "GlibcCallThrough" and row.get("module") == "stdio_abi"
-)
-stdio_set = set(stdio_callthrough)
-if not stdio_set:
-    fail("no stdio_abi GlibcCallThrough symbols found in support_matrix")
+    : str(row.get("status"))
+    for row in stdio_rows
+}
 
 phase_split = artifact.get("phase_split", {})
 if not isinstance(phase_split, dict):
@@ -113,10 +115,41 @@ if phase1_set & deferred_set:
     fail(f"phase split overlap detected: {overlap}")
 
 partition_set = phase1_set | deferred_set
-if partition_set != stdio_set:
-    missing = sorted(stdio_set - partition_set)
-    extra = sorted(partition_set - stdio_set)
-    fail(f"phase split mismatch against stdio callthrough set; missing={missing} extra={extra}")
+if partition_set != stdio_all_set:
+    missing = sorted(stdio_all_set - partition_set)
+    extra = sorted(partition_set - stdio_all_set)
+    fail(f"phase split mismatch against stdio symbol set; missing={missing} extra={extra}")
+
+phase1_required_statuses = set(
+    artifact.get("support_contract", {}).get("phase1_required_statuses", [])
+)
+if not phase1_required_statuses:
+    phase1_required_statuses = {"Implemented", "RawSyscall"}
+deferred_status = str(
+    artifact.get("support_contract", {}).get("deferred_surface_status", "GlibcCallThrough")
+)
+
+bad_phase1 = sorted(
+    symbol
+    for symbol in phase1_set
+    if status_by_symbol.get(symbol) not in phase1_required_statuses
+)
+if bad_phase1:
+    fail(
+        "phase1_required symbols must be non-callthrough in support_matrix; "
+        f"violations={[(s, status_by_symbol.get(s)) for s in bad_phase1]}"
+    )
+
+bad_deferred = sorted(
+    symbol
+    for symbol in deferred_set
+    if status_by_symbol.get(symbol) != deferred_status
+)
+if bad_deferred:
+    fail(
+        "deferred_surface symbols must remain explicit callthrough in support_matrix; "
+        f"violations={[(s, status_by_symbol.get(s)) for s in bad_deferred]}"
+    )
 
 migration = artifact.get("migration_plan", {})
 if not isinstance(migration, dict):
@@ -157,7 +190,7 @@ for row in phases:
         fail(f"migration phase {phase_id} symbols must be non-empty array")
     if len(phase_symbols) != len(set(phase_symbols)):
         fail(f"migration phase {phase_id} has duplicate symbols")
-    invalid = sorted(set(phase_symbols) - stdio_set)
+    invalid = sorted(set(phase_symbols) - stdio_all_set)
     if invalid:
         fail(f"migration phase {phase_id} references unknown stdio symbols: {invalid}")
 
@@ -169,22 +202,26 @@ if phase_numbers != sorted(phase_numbers):
     fail("migration phases must be strictly increasing by phase")
 if len(phase_symbol_union) != len(set(phase_symbol_union)):
     fail("migration phases assign a stdio symbol more than once")
-if set(phase_symbol_union) != stdio_set:
-    missing = sorted(stdio_set - set(phase_symbol_union))
-    extra = sorted(set(phase_symbol_union) - stdio_set)
+if set(phase_symbol_union) != stdio_all_set:
+    missing = sorted(stdio_all_set - set(phase_symbol_union))
+    extra = sorted(set(phase_symbol_union) - stdio_all_set)
     fail(f"migration phase symbol coverage mismatch; missing={missing} extra={extra}")
 if not phase1_set.issubset(set(phases[0].get("symbols", []))):
     fail("phase1_required symbols must be included in the first migration phase")
 
 summary = artifact.get("summary", {})
-if int(summary.get("total_stdio_callthrough_symbols", -1)) != len(stdio_set):
-    fail("summary.total_stdio_callthrough_symbols mismatch")
+if int(summary.get("total_stdio_symbols", -1)) != len(stdio_all_set):
+    fail("summary.total_stdio_symbols mismatch")
 if int(summary.get("phase_count", -1)) != len(phases):
     fail("summary.phase_count mismatch")
 if int(summary.get("phase1_required_count", -1)) != len(phase1_set):
     fail("summary.phase1_required_count mismatch")
 if int(summary.get("deferred_count", -1)) != len(deferred_set):
     fail("summary.deferred_count mismatch")
+if int(summary.get("phase1_non_callthrough_count", -1)) != len(phase1_set):
+    fail("summary.phase1_non_callthrough_count mismatch")
+if int(summary.get("deferred_callthrough_count", -1)) != len(deferred_set):
+    fail("summary.deferred_callthrough_count mismatch")
 
 report = {
     "schema_version": "v1",
@@ -193,11 +230,14 @@ report = {
         "artifact_schema": "pass",
         "support_matrix_alignment": "pass",
         "phase_partition_complete": "pass",
+        "phase_status_contract": "pass",
         "migration_plan_valid": "pass",
         "summary_consistent": "pass",
     },
     "summary": {
-        "stdio_callthrough_count": len(stdio_set),
+        "stdio_symbol_count": len(stdio_all_set),
+        "phase1_non_callthrough_count": len(phase1_set),
+        "deferred_callthrough_count": len(deferred_set),
         "phase_count": len(phases),
         "phase1_required_count": len(phase1_set),
         "deferred_count": len(deferred_set),
@@ -233,6 +273,8 @@ event = {
         "phase_count": len(phases),
         "phase1_required_count": len(phase1_set),
         "deferred_count": len(deferred_set),
+        "phase1_required_statuses": sorted(phase1_required_statuses),
+        "deferred_surface_status": deferred_status,
     },
 }
 line = json.dumps(event, separators=(",", ":"))
@@ -280,7 +322,7 @@ cve_index_path.write_text(json.dumps(index, indent=2) + "\n", encoding="utf-8")
 
 print(
     "PASS: stdio phase strategy validated "
-    f"(symbols={len(stdio_set)}, phase1={len(phase1_set)}, deferred={len(deferred_set)})"
+    f"(symbols={len(stdio_all_set)}, phase1={len(phase1_set)}, deferred={len(deferred_set)})"
 )
 print(f"PASS: wrote report {report_path.relative_to(root).as_posix()}")
 print(f"PASS: wrote logs {log_path.relative_to(root).as_posix()} and {cve_trace_path.relative_to(root).as_posix()}")

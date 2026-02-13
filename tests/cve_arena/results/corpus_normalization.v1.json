@@ -1,0 +1,819 @@
+{
+  "schema_version": "v1",
+  "bead": "bd-1m5.5",
+  "generated_at": "2026-02-13T19:18:10Z",
+  "summary": {
+    "total_cve_tests": 12,
+    "manifests_valid": 12,
+    "with_trigger_files": 12,
+    "total_issues": 0,
+    "manifests_needing_normalization": 12,
+    "unique_cwe_ids": [
+      "CWE-121",
+      "CWE-122",
+      "CWE-131",
+      "CWE-134",
+      "CWE-190",
+      "CWE-415",
+      "CWE-416",
+      "CWE-476",
+      "CWE-787",
+      "CWE-825",
+      "CWE-908"
+    ],
+    "vulnerability_classes": [
+      "double_free",
+      "expired_pointer",
+      "format_string",
+      "heap_overflow",
+      "integer_overflow",
+      "null_dereference",
+      "size_miscalculation",
+      "stack_overflow",
+      "uninitialized_memory",
+      "use_after_free"
+    ],
+    "unique_healing_actions": [
+      "ClampSize",
+      "FreedWithCanaryCorruption",
+      "IgnoreDoubleFree",
+      "IgnoreForeignFree",
+      "ReallocAsMalloc",
+      "ReturnSafeDefault",
+      "TruncateWithNull",
+      "UpgradeToSafeVariant"
+    ],
+    "categories": {
+      "glibc-internal": 4,
+      "synthetic": 3,
+      "external": 5
+    }
+  },
+  "normalization_changes": [
+    {
+      "cve_id": "CVE-2023-6246",
+      "changes": [
+        "run_cmd \u2192 run_cmd_stock/run_cmd_tsm",
+        "expected_stock \u2192 expected_stock_behavior",
+        "expected_tsm \u2192 expected_tsm_behavior"
+      ]
+    },
+    {
+      "cve_id": "CVE-2024-2961",
+      "changes": [
+        "run_cmd \u2192 run_cmd_stock/run_cmd_tsm",
+        "expected_stock \u2192 expected_stock_behavior",
+        "expected_tsm \u2192 expected_tsm_behavior"
+      ]
+    },
+    {
+      "cve_id": "CVE-2024-33599",
+      "changes": [
+        "run_cmd \u2192 run_cmd_stock/run_cmd_tsm",
+        "expected_stock \u2192 expected_stock_behavior",
+        "expected_tsm \u2192 expected_tsm_behavior"
+      ]
+    },
+    {
+      "cve_id": "CVE-2025-8058",
+      "changes": [
+        "run_cmd \u2192 run_cmd_stock/run_cmd_tsm",
+        "expected_stock \u2192 expected_stock_behavior",
+        "expected_tsm \u2192 expected_tsm_behavior"
+      ]
+    },
+    {
+      "cve_id": "CVE-2024-38812 (synthetic)",
+      "changes": [
+        "run_cmd \u2192 run_cmd_stock/run_cmd_tsm",
+        "expected_stock \u2192 expected_stock_behavior",
+        "expected_tsm \u2192 expected_tsm_behavior"
+      ]
+    },
+    {
+      "cve_id": "CVE-2024-23113 (synthetic)",
+      "changes": [
+        "run_cmd \u2192 run_cmd_stock/run_cmd_tsm",
+        "expected_stock \u2192 expected_stock_behavior",
+        "expected_tsm \u2192 expected_tsm_behavior"
+      ]
+    },
+    {
+      "cve_id": "CVE-2024-24990 (synthetic)",
+      "changes": [
+        "run_cmd \u2192 run_cmd_stock/run_cmd_tsm",
+        "expected_stock \u2192 expected_stock_behavior",
+        "expected_tsm \u2192 expected_tsm_behavior"
+      ]
+    },
+    {
+      "cve_id": "CVE-2024-6197",
+      "changes": [
+        "run_cmd \u2192 run_cmd_stock/run_cmd_tsm",
+        "expected_stock \u2192 expected_stock_behavior",
+        "expected_tsm \u2192 expected_tsm_behavior"
+      ]
+    },
+    {
+      "cve_id": "CVE-2024-56406",
+      "changes": [
+        "run_cmd \u2192 run_cmd_stock/run_cmd_tsm",
+        "expected_stock \u2192 expected_stock_behavior",
+        "expected_tsm \u2192 expected_tsm_behavior"
+      ]
+    },
+    {
+      "cve_id": "CVE-2025-49844",
+      "changes": [
+        "run_cmd \u2192 run_cmd_stock/run_cmd_tsm",
+        "expected_stock \u2192 expected_stock_behavior",
+        "expected_tsm \u2192 expected_tsm_behavior"
+      ]
+    },
+    {
+      "cve_id": "CVE-2021-3156",
+      "changes": [
+        "run_cmd \u2192 run_cmd_stock/run_cmd_tsm",
+        "expected_stock \u2192 expected_stock_behavior",
+        "expected_tsm \u2192 expected_tsm_behavior"
+      ]
+    },
+    {
+      "cve_id": "CVE-2024-46461",
+      "changes": [
+        "run_cmd \u2192 run_cmd_stock/run_cmd_tsm",
+        "expected_stock \u2192 expected_stock_behavior",
+        "expected_tsm \u2192 expected_tsm_behavior"
+      ]
+    }
+  ],
+  "corpus_index": [
+    {
+      "cve_id": "CVE-2023-6246",
+      "base_cve_id": "CVE-2023-6246",
+      "test_name": "syslog_heap_overflow_suite",
+      "category_raw": "glibc-internal",
+      "category_canonical": "glibc-internal",
+      "vulnerability_classes": [
+        "heap_overflow",
+        "integer_overflow",
+        "size_miscalculation"
+      ],
+      "cwe_ids": [
+        "CWE-787",
+        "CWE-131",
+        "CWE-190"
+      ],
+      "cvss_score": 8.4,
+      "trigger_files": [
+        "trigger.c"
+      ],
+      "healing_actions": [
+        "ClampSize",
+        "TruncateWithNull"
+      ],
+      "tsm_features": [
+        "canary",
+        "bounds_checking",
+        "clamp_size",
+        "truncate_with_null"
+      ],
+      "manifest_valid": true,
+      "issues": [],
+      "normalization_changes": [
+        "run_cmd \u2192 run_cmd_stock/run_cmd_tsm",
+        "expected_stock \u2192 expected_stock_behavior",
+        "expected_tsm \u2192 expected_tsm_behavior"
+      ],
+      "replay": {
+        "replay_key": "f0de8ab154ac1184",
+        "preconditions": [
+          "c_compiler"
+        ],
+        "expected_strict": {
+          "crashes": true,
+          "signal": "SIGSEGV",
+          "detection_expected": true
+        },
+        "expected_hardened": {
+          "crashes": false,
+          "exit_code": 0,
+          "healing_actions": [
+            "ClampSize",
+            "TruncateWithNull"
+          ]
+        }
+      },
+      "manifest_path": "tests/cve_arena/glibc/cve_2023_6246_syslog_suite/manifest.json"
+    },
+    {
+      "cve_id": "CVE-2024-2961",
+      "base_cve_id": "CVE-2024-2961",
+      "test_name": "iconv_iso2022cn_ext_buffer_overflow",
+      "category_raw": "glibc-internal",
+      "category_canonical": "glibc-internal",
+      "vulnerability_classes": [
+        "heap_overflow"
+      ],
+      "cwe_ids": [
+        "CWE-787"
+      ],
+      "cvss_score": 8.8,
+      "trigger_files": [
+        "trigger.c"
+      ],
+      "healing_actions": [
+        "ClampSize"
+      ],
+      "tsm_features": [
+        "canary",
+        "bounds_checking",
+        "clamp_size"
+      ],
+      "manifest_valid": true,
+      "issues": [],
+      "normalization_changes": [
+        "run_cmd \u2192 run_cmd_stock/run_cmd_tsm",
+        "expected_stock \u2192 expected_stock_behavior",
+        "expected_tsm \u2192 expected_tsm_behavior"
+      ],
+      "replay": {
+        "replay_key": "b46ab43e83076b06",
+        "preconditions": [
+          "c_compiler"
+        ],
+        "expected_strict": {
+          "crashes": true,
+          "signal": "SIGSEGV",
+          "detection_expected": true
+        },
+        "expected_hardened": {
+          "crashes": false,
+          "exit_code": 0,
+          "healing_actions": [
+            "ClampSize"
+          ]
+        }
+      },
+      "manifest_path": "tests/cve_arena/glibc/cve_2024_2961_iconv/manifest.json"
+    },
+    {
+      "cve_id": "CVE-2024-33599",
+      "base_cve_id": "CVE-2024-33599",
+      "test_name": "nscd_netgroup_cache_memory_corruption_suite",
+      "category_raw": "glibc-internal",
+      "category_canonical": "glibc-internal",
+      "vulnerability_classes": [
+        "heap_overflow",
+        "null_dereference",
+        "stack_overflow",
+        "uninitialized_memory"
+      ],
+      "cwe_ids": [
+        "CWE-121",
+        "CWE-476",
+        "CWE-787",
+        "CWE-908"
+      ],
+      "cvss_score": 7.6,
+      "trigger_files": [
+        "trigger.c"
+      ],
+      "healing_actions": [
+        "ClampSize",
+        "ReturnSafeDefault"
+      ],
+      "tsm_features": [
+        "canary",
+        "bounds_checking",
+        "clamp_size",
+        "return_safe_default",
+        "quarantine"
+      ],
+      "manifest_valid": true,
+      "issues": [],
+      "normalization_changes": [
+        "run_cmd \u2192 run_cmd_stock/run_cmd_tsm",
+        "expected_stock \u2192 expected_stock_behavior",
+        "expected_tsm \u2192 expected_tsm_behavior"
+      ],
+      "replay": {
+        "replay_key": "c8d97a4a36bfdb74",
+        "preconditions": [
+          "c_compiler"
+        ],
+        "expected_strict": {
+          "crashes": true,
+          "signal": "SIGSEGV",
+          "detection_expected": true
+        },
+        "expected_hardened": {
+          "crashes": false,
+          "exit_code": 0,
+          "healing_actions": [
+            "ClampSize",
+            "ReturnSafeDefault"
+          ]
+        }
+      },
+      "manifest_path": "tests/cve_arena/glibc/cve_2024_33599_nscd_suite/manifest.json"
+    },
+    {
+      "cve_id": "CVE-2025-8058",
+      "base_cve_id": "CVE-2025-8058",
+      "test_name": "regcomp_double_free_on_alloc_failure",
+      "category_raw": "glibc-internal",
+      "category_canonical": "glibc-internal",
+      "vulnerability_classes": [
+        "double_free"
+      ],
+      "cwe_ids": [
+        "CWE-415"
+      ],
+      "cvss_score": 5.5,
+      "trigger_files": [
+        "trigger.c"
+      ],
+      "healing_actions": [
+        "IgnoreDoubleFree"
+      ],
+      "tsm_features": [
+        "generational_arena",
+        "quarantine",
+        "ignore_double_free",
+        "allocation_fingerprints"
+      ],
+      "manifest_valid": true,
+      "issues": [],
+      "normalization_changes": [
+        "run_cmd \u2192 run_cmd_stock/run_cmd_tsm",
+        "expected_stock \u2192 expected_stock_behavior",
+        "expected_tsm \u2192 expected_tsm_behavior"
+      ],
+      "replay": {
+        "replay_key": "b065a2c95f4fd38e",
+        "preconditions": [
+          "c_compiler"
+        ],
+        "expected_strict": {
+          "crashes": true,
+          "signal": "SIGABRT",
+          "detection_expected": true
+        },
+        "expected_hardened": {
+          "crashes": false,
+          "exit_code": 0,
+          "healing_actions": [
+            "IgnoreDoubleFree"
+          ]
+        }
+      },
+      "manifest_path": "tests/cve_arena/glibc/cve_2025_8058_regcomp/manifest.json"
+    },
+    {
+      "cve_id": "CVE-2024-38812 (synthetic)",
+      "base_cve_id": "CVE-2024-38812",
+      "test_name": "dcerpc_heap_overflow_cve_2024_38812",
+      "category_raw": "synthetic",
+      "category_canonical": "synthetic",
+      "vulnerability_classes": [
+        "heap_overflow"
+      ],
+      "cwe_ids": [
+        "CWE-122"
+      ],
+      "cvss_score": 9.8,
+      "trigger_files": [
+        "trigger.c"
+      ],
+      "healing_actions": [
+        "ClampSize",
+        "FreedWithCanaryCorruption"
+      ],
+      "tsm_features": [
+        "ClampSize",
+        "TrailingCanary",
+        "BoundsComputation",
+        "AllocationFingerprints"
+      ],
+      "manifest_valid": true,
+      "issues": [],
+      "normalization_changes": [
+        "run_cmd \u2192 run_cmd_stock/run_cmd_tsm",
+        "expected_stock \u2192 expected_stock_behavior",
+        "expected_tsm \u2192 expected_tsm_behavior"
+      ],
+      "replay": {
+        "replay_key": "7a62a6eb0f64f0df",
+        "preconditions": [
+          "c_compiler"
+        ],
+        "expected_strict": {
+          "crashes": true,
+          "signal": "SIGABRT",
+          "detection_expected": true
+        },
+        "expected_hardened": {
+          "crashes": false,
+          "exit_code": 0,
+          "healing_actions": [
+            "ClampSize",
+            "FreedWithCanaryCorruption"
+          ]
+        }
+      },
+      "manifest_path": "tests/cve_arena/synthetic/dcerpc_heap_overflow_cve_2024_38812/manifest.json"
+    },
+    {
+      "cve_id": "CVE-2024-23113 (synthetic)",
+      "base_cve_id": "CVE-2024-23113",
+      "test_name": "format_string_cve_2024_23113",
+      "category_raw": "synthetic",
+      "category_canonical": "synthetic",
+      "vulnerability_classes": [
+        "format_string"
+      ],
+      "cwe_ids": [
+        "CWE-134"
+      ],
+      "cvss_score": 9.8,
+      "trigger_files": [
+        "trigger.c"
+      ],
+      "healing_actions": [
+        "UpgradeToSafeVariant"
+      ],
+      "tsm_features": [
+        "UpgradeToSafeVariant"
+      ],
+      "manifest_valid": true,
+      "issues": [],
+      "normalization_changes": [
+        "run_cmd \u2192 run_cmd_stock/run_cmd_tsm",
+        "expected_stock \u2192 expected_stock_behavior",
+        "expected_tsm \u2192 expected_tsm_behavior"
+      ],
+      "replay": {
+        "replay_key": "f9059bd70cf9d6a8",
+        "preconditions": [
+          "c_compiler"
+        ],
+        "expected_strict": {
+          "crashes": true,
+          "signal": "SIGSEGV",
+          "detection_expected": true
+        },
+        "expected_hardened": {
+          "crashes": false,
+          "exit_code": 0,
+          "healing_actions": [
+            "UpgradeToSafeVariant"
+          ]
+        }
+      },
+      "manifest_path": "tests/cve_arena/synthetic/format_string_cve_2024_23113/manifest.json"
+    },
+    {
+      "cve_id": "CVE-2024-24990 (synthetic)",
+      "base_cve_id": "CVE-2024-24990",
+      "test_name": "quic_uaf_cve_2024_24990",
+      "category_raw": "synthetic",
+      "category_canonical": "synthetic",
+      "vulnerability_classes": [
+        "use_after_free"
+      ],
+      "cwe_ids": [
+        "CWE-416"
+      ],
+      "cvss_score": 7.5,
+      "trigger_files": [
+        "trigger.c"
+      ],
+      "healing_actions": [
+        "ReturnSafeDefault",
+        "IgnoreDoubleFree"
+      ],
+      "tsm_features": [
+        "GenerationalArena",
+        "QuarantineQueue",
+        "BloomFilter",
+        "PageOracle",
+        "ReturnSafeDefault",
+        "AllocationFingerprints"
+      ],
+      "manifest_valid": true,
+      "issues": [],
+      "normalization_changes": [
+        "run_cmd \u2192 run_cmd_stock/run_cmd_tsm",
+        "expected_stock \u2192 expected_stock_behavior",
+        "expected_tsm \u2192 expected_tsm_behavior"
+      ],
+      "replay": {
+        "replay_key": "b0724e5311311951",
+        "preconditions": [
+          "c_compiler"
+        ],
+        "expected_strict": {
+          "crashes": true,
+          "signal": "SIGSEGV",
+          "detection_expected": true
+        },
+        "expected_hardened": {
+          "crashes": false,
+          "exit_code": 0,
+          "healing_actions": [
+            "ReturnSafeDefault",
+            "IgnoreDoubleFree"
+          ]
+        }
+      },
+      "manifest_path": "tests/cve_arena/synthetic/quic_uaf_cve_2024_24990/manifest.json"
+    },
+    {
+      "cve_id": "CVE-2024-6197",
+      "base_cve_id": "CVE-2024-6197",
+      "test_name": "curl_asn1_stack_use_after_free",
+      "category_raw": "external",
+      "category_canonical": "external",
+      "vulnerability_classes": [
+        "expired_pointer",
+        "use_after_free"
+      ],
+      "cwe_ids": [
+        "CWE-416",
+        "CWE-825"
+      ],
+      "cvss_score": 7.5,
+      "trigger_files": [
+        "trigger.sh"
+      ],
+      "healing_actions": [
+        "IgnoreForeignFree"
+      ],
+      "tsm_features": [
+        "bloom_filter_precheck",
+        "page_oracle",
+        "foreign_free_detection",
+        "ignore_foreign_free_healing",
+        "stack_vs_heap_discrimination"
+      ],
+      "manifest_valid": true,
+      "issues": [],
+      "normalization_changes": [
+        "run_cmd \u2192 run_cmd_stock/run_cmd_tsm",
+        "expected_stock \u2192 expected_stock_behavior",
+        "expected_tsm \u2192 expected_tsm_behavior"
+      ],
+      "replay": {
+        "replay_key": "31d335f5302082a7",
+        "preconditions": [
+          "c_compiler",
+          "software:curl"
+        ],
+        "expected_strict": {
+          "crashes": true,
+          "signal": "SIGSEGV",
+          "detection_expected": true
+        },
+        "expected_hardened": {
+          "crashes": false,
+          "exit_code": 0,
+          "healing_actions": [
+            "IgnoreForeignFree"
+          ]
+        }
+      },
+      "manifest_path": "tests/cve_arena/targets/curl/manifest.json"
+    },
+    {
+      "cve_id": "CVE-2024-56406",
+      "base_cve_id": "CVE-2024-56406",
+      "test_name": "perl_tr_transliteration_heap_overflow",
+      "category_raw": "external",
+      "category_canonical": "external",
+      "vulnerability_classes": [
+        "heap_overflow"
+      ],
+      "cwe_ids": [
+        "CWE-122",
+        "CWE-787"
+      ],
+      "cvss_score": 8.6,
+      "trigger_files": [
+        "trigger.sh",
+        "trigger.pl"
+      ],
+      "healing_actions": [
+        "ClampSize",
+        "TruncateWithNull"
+      ],
+      "tsm_features": [
+        "allocation_fingerprint",
+        "canary_verification",
+        "heap_overflow_detection",
+        "clamp_size_healing",
+        "truncate_with_null"
+      ],
+      "manifest_valid": true,
+      "issues": [],
+      "normalization_changes": [
+        "run_cmd \u2192 run_cmd_stock/run_cmd_tsm",
+        "expected_stock \u2192 expected_stock_behavior",
+        "expected_tsm \u2192 expected_tsm_behavior"
+      ],
+      "replay": {
+        "replay_key": "6902f7733d05bea7",
+        "preconditions": [
+          "c_compiler",
+          "software:perl"
+        ],
+        "expected_strict": {
+          "crashes": true,
+          "signal": "SIGSEGV",
+          "detection_expected": true
+        },
+        "expected_hardened": {
+          "crashes": false,
+          "exit_code": 0,
+          "healing_actions": [
+            "ClampSize",
+            "TruncateWithNull"
+          ]
+        }
+      },
+      "manifest_path": "tests/cve_arena/targets/perl/manifest.json"
+    },
+    {
+      "cve_id": "CVE-2025-49844",
+      "base_cve_id": "CVE-2025-49844",
+      "test_name": "redis_lua_gc_use_after_free",
+      "category_raw": "external",
+      "category_canonical": "external",
+      "vulnerability_classes": [
+        "use_after_free"
+      ],
+      "cwe_ids": [
+        "CWE-416"
+      ],
+      "cvss_score": 10.0,
+      "trigger_files": [
+        "trigger.sh",
+        "trigger.py"
+      ],
+      "healing_actions": [
+        "IgnoreDoubleFree",
+        "ReturnSafeDefault"
+      ],
+      "tsm_features": [
+        "generational_arena",
+        "quarantine_queue",
+        "generation_mismatch_detection",
+        "use_after_free_healing",
+        "allocation_fingerprint"
+      ],
+      "manifest_valid": true,
+      "issues": [],
+      "normalization_changes": [
+        "run_cmd \u2192 run_cmd_stock/run_cmd_tsm",
+        "expected_stock \u2192 expected_stock_behavior",
+        "expected_tsm \u2192 expected_tsm_behavior"
+      ],
+      "replay": {
+        "replay_key": "3ba35bb272fdda76",
+        "preconditions": [
+          "c_compiler",
+          "software:redis"
+        ],
+        "expected_strict": {
+          "crashes": true,
+          "signal": "SIGSEGV",
+          "detection_expected": true
+        },
+        "expected_hardened": {
+          "crashes": false,
+          "exit_code": 0,
+          "healing_actions": [
+            "IgnoreDoubleFree",
+            "ReturnSafeDefault"
+          ]
+        }
+      },
+      "manifest_path": "tests/cve_arena/targets/redis/manifest.json"
+    },
+    {
+      "cve_id": "CVE-2021-3156",
+      "base_cve_id": "CVE-2021-3156",
+      "test_name": "sudo_baron_samedit_heap_overflow",
+      "category_raw": "external",
+      "category_canonical": "external",
+      "vulnerability_classes": [
+        "heap_overflow"
+      ],
+      "cwe_ids": [
+        "CWE-122",
+        "CWE-787"
+      ],
+      "cvss_score": 7.8,
+      "trigger_files": [
+        "trigger.sh"
+      ],
+      "healing_actions": [
+        "ClampSize",
+        "TruncateWithNull"
+      ],
+      "tsm_features": [
+        "allocation_fingerprint",
+        "canary_verification",
+        "heap_overflow_detection",
+        "clamp_size_healing",
+        "truncate_with_null"
+      ],
+      "manifest_valid": true,
+      "issues": [],
+      "normalization_changes": [
+        "run_cmd \u2192 run_cmd_stock/run_cmd_tsm",
+        "expected_stock \u2192 expected_stock_behavior",
+        "expected_tsm \u2192 expected_tsm_behavior"
+      ],
+      "replay": {
+        "replay_key": "0ba895e09c823da3",
+        "preconditions": [
+          "c_compiler",
+          "software:sudo"
+        ],
+        "expected_strict": {
+          "crashes": true,
+          "signal": "SIGSEGV",
+          "detection_expected": true
+        },
+        "expected_hardened": {
+          "crashes": false,
+          "exit_code": 0,
+          "healing_actions": [
+            "ClampSize",
+            "TruncateWithNull"
+          ]
+        }
+      },
+      "manifest_path": "tests/cve_arena/targets/sudo/manifest.json"
+    },
+    {
+      "cve_id": "CVE-2024-46461",
+      "base_cve_id": "CVE-2024-46461",
+      "test_name": "vlc_mms_integer_overflow_heap_overflow",
+      "category_raw": "external",
+      "category_canonical": "external",
+      "vulnerability_classes": [
+        "heap_overflow",
+        "integer_overflow"
+      ],
+      "cwe_ids": [
+        "CWE-190",
+        "CWE-122"
+      ],
+      "cvss_score": 7.5,
+      "trigger_files": [
+        "trigger.sh"
+      ],
+      "healing_actions": [
+        "ClampSize",
+        "ReallocAsMalloc"
+      ],
+      "tsm_features": [
+        "allocation_fingerprint",
+        "canary_verification",
+        "heap_overflow_detection",
+        "clamp_size_healing",
+        "integer_overflow_resilience"
+      ],
+      "manifest_valid": true,
+      "issues": [],
+      "normalization_changes": [
+        "run_cmd \u2192 run_cmd_stock/run_cmd_tsm",
+        "expected_stock \u2192 expected_stock_behavior",
+        "expected_tsm \u2192 expected_tsm_behavior"
+      ],
+      "replay": {
+        "replay_key": "1d73a74140226a9d",
+        "preconditions": [
+          "c_compiler",
+          "software:vlc"
+        ],
+        "expected_strict": {
+          "crashes": true,
+          "signal": "SIGSEGV",
+          "detection_expected": true
+        },
+        "expected_hardened": {
+          "crashes": false,
+          "exit_code": 0,
+          "healing_actions": [
+            "ClampSize",
+            "ReallocAsMalloc"
+          ]
+        }
+      },
+      "manifest_path": "tests/cve_arena/targets/vlc/manifest.json"
+    }
+  ]
+}

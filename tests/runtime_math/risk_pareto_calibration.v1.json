@@ -1,0 +1,471 @@
+{
+  "bead": "bd-w2c3.5.1",
+  "config": {
+    "iters": 2000,
+    "samples": 2,
+    "seed": "0xDEADBEEF",
+    "steps": 256,
+    "trend_stride": 32,
+    "warmup_iters": 128
+  },
+  "generator": "scripts/generate_runtime_math_risk_pareto_calibration.py",
+  "hardened": {
+    "action_summary": {
+      "action_allow": 0,
+      "action_deny": 0,
+      "action_full_validate": 256,
+      "action_repair": 0,
+      "decisions": 256,
+      "profile_fast": 0,
+      "profile_full": 256
+    },
+    "family_diagnostics": [
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 37,
+        "family": "Allocator",
+        "full_profile_rate_ppm": 1000000,
+        "mean_decision_latency_ns": 120,
+        "mean_risk_ppm": 396574,
+        "p95_risk_ppm": 509667
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "Ctype",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 36,
+        "family": "Inet",
+        "full_profile_rate_ppm": 1000000,
+        "mean_decision_latency_ns": 120,
+        "mean_risk_ppm": 400507,
+        "p95_risk_ppm": 495179
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "IoFd",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "Loader",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "Locale",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "MathFenv",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 37,
+        "family": "PointerValidation",
+        "full_profile_rate_ppm": 1000000,
+        "mean_decision_latency_ns": 120,
+        "mean_risk_ppm": 395315,
+        "p95_risk_ppm": 494915
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "Poll",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "Process",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "Resolver",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "Signal",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 36,
+        "family": "Socket",
+        "full_profile_rate_ppm": 1000000,
+        "mean_decision_latency_ns": 120,
+        "mean_risk_ppm": 399696,
+        "p95_risk_ppm": 494915
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "Stdio",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "Stdlib",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 37,
+        "family": "StringMemory",
+        "full_profile_rate_ppm": 1000000,
+        "mean_decision_latency_ns": 120,
+        "mean_risk_ppm": 400987,
+        "p95_risk_ppm": 509667
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "Termios",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 37,
+        "family": "Threading",
+        "full_profile_rate_ppm": 1000000,
+        "mean_decision_latency_ns": 120,
+        "mean_risk_ppm": 401774,
+        "p95_risk_ppm": 509667
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 36,
+        "family": "Time",
+        "full_profile_rate_ppm": 1000000,
+        "mean_decision_latency_ns": 120,
+        "mean_risk_ppm": 402288,
+        "p95_risk_ppm": 495179
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "VirtualMemory",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      }
+    ],
+    "mode": "hardened",
+    "risk_summary": {
+      "mean_risk_ppm": 399577.5,
+      "p95_risk_ppm": 509667,
+      "p99_risk_ppm": 509667
+    },
+    "seed": 3735928559,
+    "snapshot": {
+      "full_validation_trigger_ppm": 80092,
+      "pareto_cap_enforcements": 0,
+      "pareto_cumulative_regret_milli": 30720,
+      "pareto_exhausted_families": 0,
+      "repair_trigger_ppm": 140046,
+      "sampled_risk_bonus_ppm": 0
+    },
+    "steps": 256
+  },
+  "schema_version": "v1",
+  "strict": {
+    "action_summary": {
+      "action_allow": 7,
+      "action_deny": 0,
+      "action_full_validate": 249,
+      "action_repair": 0,
+      "decisions": 256,
+      "profile_fast": 7,
+      "profile_full": 249
+    },
+    "family_diagnostics": [
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 37,
+        "family": "Allocator",
+        "full_profile_rate_ppm": 972972,
+        "mean_decision_latency_ns": 117,
+        "mean_risk_ppm": 392306,
+        "p95_risk_ppm": 504974
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "Ctype",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 36,
+        "family": "Inet",
+        "full_profile_rate_ppm": 972222,
+        "mean_decision_latency_ns": 117,
+        "mean_risk_ppm": 396188,
+        "p95_risk_ppm": 490187
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "IoFd",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "Loader",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "Locale",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "MathFenv",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 37,
+        "family": "PointerValidation",
+        "full_profile_rate_ppm": 972972,
+        "mean_decision_latency_ns": 117,
+        "mean_risk_ppm": 391008,
+        "p95_risk_ppm": 489974
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "Poll",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "Process",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "Resolver",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "Signal",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 36,
+        "family": "Socket",
+        "full_profile_rate_ppm": 972222,
+        "mean_decision_latency_ns": 117,
+        "mean_risk_ppm": 395365,
+        "p95_risk_ppm": 489974
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "Stdio",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "Stdlib",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 37,
+        "family": "StringMemory",
+        "full_profile_rate_ppm": 972972,
+        "mean_decision_latency_ns": 117,
+        "mean_risk_ppm": 396603,
+        "p95_risk_ppm": 504974
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "Termios",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 37,
+        "family": "Threading",
+        "full_profile_rate_ppm": 972972,
+        "mean_decision_latency_ns": 117,
+        "mean_risk_ppm": 397407,
+        "p95_risk_ppm": 504974
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 36,
+        "family": "Time",
+        "full_profile_rate_ppm": 972222,
+        "mean_decision_latency_ns": 117,
+        "mean_risk_ppm": 397847,
+        "p95_risk_ppm": 490187
+      },
+      {
+        "adverse_events": 0,
+        "adverse_rate_ppm": 0,
+        "decisions": 0,
+        "family": "VirtualMemory",
+        "full_profile_rate_ppm": 0,
+        "mean_decision_latency_ns": 0,
+        "mean_risk_ppm": 0,
+        "p95_risk_ppm": 0
+      }
+    ],
+    "mode": "strict",
+    "risk_summary": {
+      "mean_risk_ppm": 395232.4375,
+      "p95_risk_ppm": 504974,
+      "p99_risk_ppm": 504974
+    },
+    "seed": 3735928559,
+    "snapshot": {
+      "full_validation_trigger_ppm": 220089,
+      "pareto_cap_enforcements": 0,
+      "pareto_cumulative_regret_milli": 100596,
+      "pareto_exhausted_families": 0,
+      "repair_trigger_ppm": 980000,
+      "sampled_risk_bonus_ppm": 0
+    },
+    "steps": 256
+  }
+}

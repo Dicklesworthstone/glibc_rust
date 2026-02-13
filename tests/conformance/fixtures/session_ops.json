@@ -1,0 +1,68 @@
+{
+  "version": "v1",
+  "family": "session_ops",
+  "captured_at": "2026-02-13T00:00:00Z",
+  "description": "Mode-specific parity fixtures for session accounting operations (utmp/wtmp/login). Strict: standard record semantics. Hardened: tamper-evident session ledger with anomaly thresholds.",
+  "cases": [
+    {
+      "name": "getlogin_returns_user_strict",
+      "function": "getlogin",
+      "spec_section": "POSIX getlogin(3)",
+      "inputs": {},
+      "expected_output": "non_null_string",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Returns login name of the user associated with the controlling terminal"
+    },
+    {
+      "name": "getlogin_r_returns_user_strict",
+      "function": "getlogin_r",
+      "spec_section": "POSIX getlogin_r(3)",
+      "inputs": { "buf": "valid_buffer", "bufsize": 256 },
+      "expected_output": 0,
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Thread-safe version stores login name in buffer"
+    },
+    {
+      "name": "setsid_creates_session_strict",
+      "function": "setsid",
+      "spec_section": "POSIX setsid(2)",
+      "inputs": {},
+      "expected_output": "new_session_id",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Creates a new session and sets the process group ID"
+    },
+    {
+      "name": "getsid_returns_sid_strict",
+      "function": "getsid",
+      "spec_section": "POSIX getsid(2)",
+      "inputs": { "pid": 0 },
+      "expected_output": "valid_sid",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Returns session ID of the calling process"
+    },
+    {
+      "name": "getlogin_returns_user_hardened",
+      "function": "getlogin",
+      "spec_section": "POSIX getlogin(3)",
+      "inputs": {},
+      "expected_output": "non_null_string",
+      "expected_errno": 0,
+      "mode": "hardened",
+      "note": "Hardened: validates terminal association before returning login name"
+    },
+    {
+      "name": "setsid_creates_session_hardened",
+      "function": "setsid",
+      "spec_section": "POSIX setsid(2)",
+      "inputs": {},
+      "expected_output": "new_session_id",
+      "expected_errno": 0,
+      "mode": "hardened",
+      "note": "Hardened: session creation with deterministic ledger transition"
+    }
+  ]
+}

@@ -40,7 +40,10 @@ fn waiver_policy_has_required_shape() {
     assert_eq!(policy["bead"].as_str(), Some("bd-1p5v"));
     assert!(policy["policy"].is_object(), "policy must be object");
     assert!(policy["waivers"].is_array(), "waivers must be array");
-    assert!(policy["matrix_waivers"].is_array(), "matrix_waivers must be array");
+    assert!(
+        policy["matrix_waivers"].is_array(),
+        "matrix_waivers must be array"
+    );
     assert!(policy["summary"].is_object(), "summary must be object");
 
     let waivers = policy["waivers"].as_array().unwrap();
@@ -141,7 +144,11 @@ fn guard_script_fails_when_required_waiver_missing() {
             .as_nanos()
     );
     let tmp_path = std::env::temp_dir().join(tmp_name);
-    std::fs::write(&tmp_path, serde_json::to_string_pretty(&policy).unwrap() + "\n").unwrap();
+    std::fs::write(
+        &tmp_path,
+        serde_json::to_string_pretty(&policy).unwrap() + "\n",
+    )
+    .unwrap();
 
     let output = Command::new(&script)
         .env("FRANKENLIBC_STUB_WAIVER_POLICY_PATH", &tmp_path)

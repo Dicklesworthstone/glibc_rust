@@ -1,0 +1,756 @@
+{
+  "schema_version": "v1",
+  "bead": "bd-3ot.2",
+  "generated_at": "2026-02-13T18:08:26Z",
+  "status": "pass",
+  "summary": {
+    "total_modules": 69,
+    "production_retain": 25,
+    "research_retire": 44,
+    "blocked": 0,
+    "errors": 0,
+    "warnings": 0
+  },
+  "partition_decisions": [
+    {
+      "module": "admm_budget",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Online ADMM for joint resource optimization",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "alpha_investing",
+      "tier": "production_monitor",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production monitor (cadence-gated): Alpha-Investing FDR controller; wealth-based alarm acceptance",
+      "migration_action": "none"
+    },
+    {
+      "module": "approachability",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Blackwell approachability; multi-objective routing convergence",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "atiyah_bott",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Atiyah-Bott fixed-point localization; hot path compression",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "azuma_hoeffding",
+      "tier": "production_monitor",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production monitor (cadence-gated): Martingale concentration monitor; detects noise exceeding bounds",
+      "migration_action": "none"
+    },
+    {
+      "module": "bandit",
+      "tier": "production_core",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production core: Constrained bandit router for validation depth selection; hot-path caching",
+      "migration_action": "none"
+    },
+    {
+      "module": "barrier",
+      "tier": "production_core",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production core: Safety admissibility filter; constant-time guard for safe set enforcement",
+      "migration_action": "none"
+    },
+    {
+      "module": "bifurcation_detector",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Critical slowing down; universal early warning for bifurcations",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "birkhoff_ergodic",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Birkhoff ergodic convergence; detects non-ergodic state trapping",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "borel_cantelli",
+      "tier": "production_monitor",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production monitor (cadence-gated): Recurrence monitor; classifies transient vs recurrent exceedances",
+      "migration_action": "none"
+    },
+    {
+      "module": "changepoint",
+      "tier": "production_monitor",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production monitor (cadence-gated): Bayesian online change-point detection; eliminates threshold drift",
+      "migration_action": "none"
+    },
+    {
+      "module": "clifford",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Clifford/geometric algebra SIMD alignment; Spin/Pin symmetry",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "cohomology",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Incremental overlap-consistency monitor; cocycle-like constraints",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "commitment_audit",
+      "tier": "production_core",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production core: Tamper-evident hash-chain session traces; commitment algebra",
+      "migration_action": "none"
+    },
+    {
+      "module": "conformal",
+      "tier": "production_core",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production core: Split conformal prediction for finite-sample decision guarantees",
+      "migration_action": "none"
+    },
+    {
+      "module": "control",
+      "tier": "production_core",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production core: Primal-dual runtime controller adjusting latency/safety thresholds",
+      "migration_action": "none"
+    },
+    {
+      "module": "coupling",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Optimal probabilistic coupling; strict/hardened decision alignment",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "covering_array",
+      "tier": "production_monitor",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production monitor (cadence-gated): t-wise interaction coverage for conformance scheduling",
+      "migration_action": "none"
+    },
+    {
+      "module": "cvar",
+      "tier": "production_monitor",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production monitor (cadence-gated): Distributionally-robust CVaR tail controller; heavy-tail protection",
+      "migration_action": "none"
+    },
+    {
+      "module": "derived_tstructure",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Derived-category t-structure bootstrap ordering",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "design",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Runtime optimal experimental design; budget-feasible probe selection",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "dispersion_index",
+      "tier": "production_monitor",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production monitor (cadence-gated): Dispersion index for monitoring variance-to-mean ratio",
+      "migration_action": "none"
+    },
+    {
+      "module": "dobrushin_contraction",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Dobrushin contraction coefficient; Markov chain ergodicity loss",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "doob_decomposition",
+      "tier": "production_monitor",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production monitor (cadence-gated): Separates systematic drift from pure noise in monitoring",
+      "migration_action": "none"
+    },
+    {
+      "module": "entropy_rate",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Shannon entropy rate for stationary Markov chains",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "eprocess",
+      "tier": "production_monitor",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production monitor (cadence-gated): Anytime-valid e-process monitor for online drift alarms",
+      "migration_action": "none"
+    },
+    {
+      "module": "equivariant",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Equivariant transport controller; representation stability",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "evidence",
+      "tier": "production_core",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production core: Runtime evidence symbol record format; systematic ring buffer for logging",
+      "migration_action": "none"
+    },
+    {
+      "module": "fano_bound",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Fano inequality; information-theoretic prediction error lower bound",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "fusion",
+      "tier": "production_core",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production core: Runtime robust signal fusion controller; aggregates 64+ monitor outputs",
+      "migration_action": "none"
+    },
+    {
+      "module": "grobner_normalizer",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Grobner-basis constraint normalization; confluent polynomial division",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "grothendieck_glue",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Topos theory descent/stackification; local-to-global coherence",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "higher_topos",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Higher-topos internal logic descent; locale fallback chain",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "hodge_decomposition",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Combinatorial Hodge decomposition; gradient/curl/harmonic separation",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "hurst_exponent",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Rescaled range (R/S); persistent trends vs independence",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "info_geometry",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Fisher-Rao geodesic distance; structural regime shift detection",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "ito_quadratic_variation",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Ito quadratic variation; realized volatility tracking",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "kernel_mmd",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Maximum Mean Discrepancy; universal nonparametric two-sample test",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "ktheory",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: K-theory transport ABI compatibility; topological obstruction detection",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "lempel_ziv",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: LZ76 complexity; compressibility analysis for anomalous patterns",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "localization_chooser",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Localization-based policy arm selection; fixed-point weights",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "loss_minimizer",
+      "tier": "production_core",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production core: Decision-theoretic expected-loss minimization; per-family loss matrices",
+      "migration_action": "none"
+    },
+    {
+      "module": "lyapunov_stability",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Maximal Lyapunov exponent; chaotic/divergent ensemble dynamics",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "malliavin_sensitivity",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Discrete Malliavin calculus; sensitivity to state perturbations",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "matrix_concentration",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Matrix Bernstein inequality; spectral bounds on ensemble covariance",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "microlocal",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Kashiwara-Schapira microlocal sheaf propagation; fault-surface control",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "nerve_complex",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Cech nerve theorem; Betti numbers for structural fragmentation",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "obstruction_detector",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Spectral-sequence obstruction detector; cross-layer defects",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "operator_norm",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Online power iteration for spectral radius; emergent instability",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "ornstein_uhlenbeck",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: OU mean-reversion estimator; loss of equilibrium tendency",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "pac_bayes",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: PAC-Bayes generalization bound; finite-sample ensemble prediction error",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "pareto",
+      "tier": "production_monitor",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production monitor (cadence-gated): Latency-risk Pareto controller with online regret accounting",
+      "migration_action": "none"
+    },
+    {
+      "module": "policy_table",
+      "tier": "production_core",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production core: Proof-carrying policy table loader/verifier; deterministic init-time",
+      "migration_action": "none"
+    },
+    {
+      "module": "pomdp_repair",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Constrained POMDP repair policy; point-based value iteration",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "provenance_info",
+      "tier": "production_core",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production core: Information-theoretic provenance tag design with collision bounds",
+      "migration_action": "none"
+    },
+    {
+      "module": "rademacher_complexity",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Data-dependent generalization bound; capacity of severity space",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "redundancy_tuner",
+      "tier": "production_core",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production core: Adaptive redundancy tuner; anytime-valid loss/corruption monitoring",
+      "migration_action": "none"
+    },
+    {
+      "module": "renewal_theory",
+      "tier": "production_monitor",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production monitor (cadence-gated): Inter-arrival time monitoring for recovery capability tracking",
+      "migration_action": "none"
+    },
+    {
+      "module": "risk",
+      "tier": "production_core",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production core: Conformal online risk envelope; conservative upper-bound ppm estimator",
+      "migration_action": "none"
+    },
+    {
+      "module": "serre_spectral",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Serre spectral sequence invariant lifting; cross-layer consistency",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "sobol",
+      "tier": "production_monitor",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production monitor (cadence-gated): Low-discrepancy probe scheduling for validation coverage",
+      "migration_action": "none"
+    },
+    {
+      "module": "sos_barrier",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: SOS polynomial evaluator for pre-computed barrier certificates",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "sos_invariant",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: SOS polynomial invariant guard for nonlinear cross-controller invariants",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "sparse",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Online L1-regularized sparse recovery (ISTA); latent fault inference",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "spectral_gap",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Spectral gap via Cheeger inequality; slow mixing/metastability",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "stein_discrepancy",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Kernelized Stein Discrepancy; distribution-free goodness-of-fit",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "submodular_coverage",
+      "tier": "production_monitor",
+      "decision": "RETAIN",
+      "partition": "production",
+      "reason": "Production monitor (cadence-gated): Submodular validation stage coverage; greedy approximation",
+      "migration_action": "none"
+    },
+    {
+      "module": "transfer_entropy",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: Schreiber transfer entropy; directed causality between controllers",
+      "migration_action": "move behind runtime-math-research feature gate"
+    },
+    {
+      "module": "wasserstein_drift",
+      "tier": "research",
+      "decision": "RETIRE",
+      "partition": "research_annex",
+      "reason": "Research/alien artifact: 1-Wasserstein distance for distributional shift detection",
+      "migration_action": "move behind runtime-math-research feature gate"
+    }
+  ],
+  "migration_plan": {
+    "description": "Migration plan for research-only controllers to feature-gated annex",
+    "feature_gate": "runtime-math-research",
+    "total_to_retire": 44,
+    "compile_time_enforcement": "Research modules require explicit feature flag; production builds exclude them",
+    "modules": [
+      {
+        "module": "admm_budget",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "approachability",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "atiyah_bott",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "bifurcation_detector",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "birkhoff_ergodic",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "clifford",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "cohomology",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "coupling",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "derived_tstructure",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "design",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "dobrushin_contraction",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "entropy_rate",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "equivariant",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "fano_bound",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "grobner_normalizer",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "grothendieck_glue",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "higher_topos",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "hodge_decomposition",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "hurst_exponent",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "info_geometry",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "ito_quadratic_variation",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "kernel_mmd",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "ktheory",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "lempel_ziv",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "localization_chooser",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "lyapunov_stability",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "malliavin_sensitivity",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "matrix_concentration",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "microlocal",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "nerve_complex",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "obstruction_detector",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "operator_norm",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "ornstein_uhlenbeck",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "pac_bayes",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "pomdp_repair",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "rademacher_complexity",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "serre_spectral",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "sos_barrier",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "sos_invariant",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "sparse",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "spectral_gap",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "stein_discrepancy",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "transfer_entropy",
+        "action": "move behind runtime-math-research feature gate"
+      },
+      {
+        "module": "wasserstein_drift",
+        "action": "move behind runtime-math-research feature gate"
+      }
+    ],
+    "verification": "After migration, production build must compile and pass all tests without runtime-math-research feature"
+  },
+  "findings": [],
+  "governance_source": "tests/conformance/math_governance.json",
+  "manifest_source": "tests/runtime_math/production_kernel_manifest.v1.json"
+}

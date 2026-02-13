@@ -1,0 +1,643 @@
+{
+  "schema_version": "v1",
+  "bead": "bd-1m5.7",
+  "generated_at": "2026-02-13T19:23:21Z",
+  "summary": {
+    "total_paired_scenarios": 12,
+    "strict_detected": 12,
+    "hardened_prevented": 12,
+    "with_detection_flags": 12,
+    "unique_detection_flags": [
+      "arithmetic_violation",
+      "bounds_violation",
+      "dangling_pointer",
+      "double_free",
+      "expired_pointer",
+      "format_string_violation",
+      "heap_overflow_detected",
+      "integer_overflow",
+      "invalid_free",
+      "memory_safety",
+      "null_dereference",
+      "null_pointer",
+      "out_of_bounds_write",
+      "size_miscalculation",
+      "stack_overflow_detected",
+      "uninitialized_read",
+      "unsafe_printf",
+      "use_after_free"
+    ],
+    "unique_dossier_ids": 12,
+    "validation_errors": 0,
+    "validation_warnings": 0
+  },
+  "paired_evidence": [
+    {
+      "cve_id": "CVE-2023-6246",
+      "test_name": "syslog_heap_overflow_suite",
+      "dossier_id": "dossier-8cca65617f9b",
+      "cvss_score": 8.4,
+      "vulnerability_classes": [
+        "heap_overflow",
+        "integer_overflow",
+        "size_miscalculation"
+      ],
+      "trigger_files": [
+        "trigger.c"
+      ],
+      "strict_mode": {
+        "crashes_expected": true,
+        "detection_expected": true,
+        "detection_flags": [
+          "arithmetic_violation",
+          "bounds_violation",
+          "integer_overflow",
+          "out_of_bounds_write",
+          "size_miscalculation"
+        ],
+        "signal": "SIGSEGV",
+        "verdict": "detected"
+      },
+      "hardened_mode": {
+        "crashes_expected": false,
+        "exit_code": 0,
+        "healing_actions": [
+          "ClampSize",
+          "TruncateWithNull"
+        ],
+        "no_uncontrolled_unsafety": true,
+        "verdict": "prevented"
+      },
+      "evidence_bundle": {
+        "dossier_ref": "dossier-8cca65617f9b",
+        "artifacts": [
+          "dossier-8cca65617f9b/strict/stdout.log",
+          "dossier-8cca65617f9b/strict/stderr.log",
+          "dossier-8cca65617f9b/strict/metrics.json",
+          "dossier-8cca65617f9b/hardened/stdout.log",
+          "dossier-8cca65617f9b/hardened/stderr.log",
+          "dossier-8cca65617f9b/hardened/metrics.json",
+          "dossier-8cca65617f9b/paired_verdict.json"
+        ],
+        "joinable_on": [
+          "dossier_id",
+          "cve_id",
+          "test_name"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-2961",
+      "test_name": "iconv_iso2022cn_ext_buffer_overflow",
+      "dossier_id": "dossier-04fe53b4a67c",
+      "cvss_score": 8.8,
+      "vulnerability_classes": [
+        "heap_overflow"
+      ],
+      "trigger_files": [
+        "trigger.c"
+      ],
+      "strict_mode": {
+        "crashes_expected": true,
+        "detection_expected": true,
+        "detection_flags": [
+          "bounds_violation",
+          "out_of_bounds_write"
+        ],
+        "signal": "SIGSEGV",
+        "verdict": "detected"
+      },
+      "hardened_mode": {
+        "crashes_expected": false,
+        "exit_code": 0,
+        "healing_actions": [
+          "ClampSize"
+        ],
+        "no_uncontrolled_unsafety": true,
+        "verdict": "prevented"
+      },
+      "evidence_bundle": {
+        "dossier_ref": "dossier-04fe53b4a67c",
+        "artifacts": [
+          "dossier-04fe53b4a67c/strict/stdout.log",
+          "dossier-04fe53b4a67c/strict/stderr.log",
+          "dossier-04fe53b4a67c/strict/metrics.json",
+          "dossier-04fe53b4a67c/hardened/stdout.log",
+          "dossier-04fe53b4a67c/hardened/stderr.log",
+          "dossier-04fe53b4a67c/hardened/metrics.json",
+          "dossier-04fe53b4a67c/paired_verdict.json"
+        ],
+        "joinable_on": [
+          "dossier_id",
+          "cve_id",
+          "test_name"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-33599",
+      "test_name": "nscd_netgroup_cache_memory_corruption_suite",
+      "dossier_id": "dossier-cffcb20dfd00",
+      "cvss_score": 7.6,
+      "vulnerability_classes": [
+        "heap_overflow",
+        "null_dereference",
+        "stack_overflow",
+        "uninitialized_memory"
+      ],
+      "trigger_files": [
+        "trigger.c"
+      ],
+      "strict_mode": {
+        "crashes_expected": true,
+        "detection_expected": true,
+        "detection_flags": [
+          "bounds_violation",
+          "memory_safety",
+          "null_dereference",
+          "null_pointer",
+          "out_of_bounds_write",
+          "stack_overflow_detected",
+          "uninitialized_read"
+        ],
+        "signal": "SIGSEGV",
+        "verdict": "detected"
+      },
+      "hardened_mode": {
+        "crashes_expected": false,
+        "exit_code": 0,
+        "healing_actions": [
+          "ClampSize",
+          "ReturnSafeDefault"
+        ],
+        "no_uncontrolled_unsafety": true,
+        "verdict": "prevented"
+      },
+      "evidence_bundle": {
+        "dossier_ref": "dossier-cffcb20dfd00",
+        "artifacts": [
+          "dossier-cffcb20dfd00/strict/stdout.log",
+          "dossier-cffcb20dfd00/strict/stderr.log",
+          "dossier-cffcb20dfd00/strict/metrics.json",
+          "dossier-cffcb20dfd00/hardened/stdout.log",
+          "dossier-cffcb20dfd00/hardened/stderr.log",
+          "dossier-cffcb20dfd00/hardened/metrics.json",
+          "dossier-cffcb20dfd00/paired_verdict.json"
+        ],
+        "joinable_on": [
+          "dossier_id",
+          "cve_id",
+          "test_name"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2025-8058",
+      "test_name": "regcomp_double_free_on_alloc_failure",
+      "dossier_id": "dossier-00ed24f9a8b1",
+      "cvss_score": 5.5,
+      "vulnerability_classes": [
+        "double_free"
+      ],
+      "trigger_files": [
+        "trigger.c"
+      ],
+      "strict_mode": {
+        "crashes_expected": true,
+        "detection_expected": true,
+        "detection_flags": [
+          "double_free",
+          "invalid_free"
+        ],
+        "signal": "SIGABRT",
+        "verdict": "detected"
+      },
+      "hardened_mode": {
+        "crashes_expected": false,
+        "exit_code": 0,
+        "healing_actions": [
+          "IgnoreDoubleFree"
+        ],
+        "no_uncontrolled_unsafety": true,
+        "verdict": "prevented"
+      },
+      "evidence_bundle": {
+        "dossier_ref": "dossier-00ed24f9a8b1",
+        "artifacts": [
+          "dossier-00ed24f9a8b1/strict/stdout.log",
+          "dossier-00ed24f9a8b1/strict/stderr.log",
+          "dossier-00ed24f9a8b1/strict/metrics.json",
+          "dossier-00ed24f9a8b1/hardened/stdout.log",
+          "dossier-00ed24f9a8b1/hardened/stderr.log",
+          "dossier-00ed24f9a8b1/hardened/metrics.json",
+          "dossier-00ed24f9a8b1/paired_verdict.json"
+        ],
+        "joinable_on": [
+          "dossier_id",
+          "cve_id",
+          "test_name"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-38812 (synthetic)",
+      "test_name": "dcerpc_heap_overflow_cve_2024_38812",
+      "dossier_id": "dossier-f62d4ecb58e8",
+      "cvss_score": 9.8,
+      "vulnerability_classes": [
+        "heap_overflow"
+      ],
+      "trigger_files": [
+        "trigger.c"
+      ],
+      "strict_mode": {
+        "crashes_expected": true,
+        "detection_expected": true,
+        "detection_flags": [
+          "bounds_violation",
+          "heap_overflow_detected"
+        ],
+        "signal": "SIGABRT",
+        "verdict": "detected"
+      },
+      "hardened_mode": {
+        "crashes_expected": false,
+        "exit_code": 0,
+        "healing_actions": [
+          "ClampSize",
+          "FreedWithCanaryCorruption"
+        ],
+        "no_uncontrolled_unsafety": true,
+        "verdict": "prevented"
+      },
+      "evidence_bundle": {
+        "dossier_ref": "dossier-f62d4ecb58e8",
+        "artifacts": [
+          "dossier-f62d4ecb58e8/strict/stdout.log",
+          "dossier-f62d4ecb58e8/strict/stderr.log",
+          "dossier-f62d4ecb58e8/strict/metrics.json",
+          "dossier-f62d4ecb58e8/hardened/stdout.log",
+          "dossier-f62d4ecb58e8/hardened/stderr.log",
+          "dossier-f62d4ecb58e8/hardened/metrics.json",
+          "dossier-f62d4ecb58e8/paired_verdict.json"
+        ],
+        "joinable_on": [
+          "dossier_id",
+          "cve_id",
+          "test_name"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-23113 (synthetic)",
+      "test_name": "format_string_cve_2024_23113",
+      "dossier_id": "dossier-6395aa19eab9",
+      "cvss_score": 9.8,
+      "vulnerability_classes": [
+        "format_string"
+      ],
+      "trigger_files": [
+        "trigger.c"
+      ],
+      "strict_mode": {
+        "crashes_expected": true,
+        "detection_expected": true,
+        "detection_flags": [
+          "format_string_violation",
+          "unsafe_printf"
+        ],
+        "signal": "SIGSEGV",
+        "verdict": "detected"
+      },
+      "hardened_mode": {
+        "crashes_expected": false,
+        "exit_code": 0,
+        "healing_actions": [
+          "UpgradeToSafeVariant"
+        ],
+        "no_uncontrolled_unsafety": true,
+        "verdict": "prevented"
+      },
+      "evidence_bundle": {
+        "dossier_ref": "dossier-6395aa19eab9",
+        "artifacts": [
+          "dossier-6395aa19eab9/strict/stdout.log",
+          "dossier-6395aa19eab9/strict/stderr.log",
+          "dossier-6395aa19eab9/strict/metrics.json",
+          "dossier-6395aa19eab9/hardened/stdout.log",
+          "dossier-6395aa19eab9/hardened/stderr.log",
+          "dossier-6395aa19eab9/hardened/metrics.json",
+          "dossier-6395aa19eab9/paired_verdict.json"
+        ],
+        "joinable_on": [
+          "dossier_id",
+          "cve_id",
+          "test_name"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-24990 (synthetic)",
+      "test_name": "quic_uaf_cve_2024_24990",
+      "dossier_id": "dossier-2704c3f4d1db",
+      "cvss_score": 7.5,
+      "vulnerability_classes": [
+        "use_after_free"
+      ],
+      "trigger_files": [
+        "trigger.c"
+      ],
+      "strict_mode": {
+        "crashes_expected": true,
+        "detection_expected": true,
+        "detection_flags": [
+          "dangling_pointer",
+          "use_after_free"
+        ],
+        "signal": "SIGSEGV",
+        "verdict": "detected"
+      },
+      "hardened_mode": {
+        "crashes_expected": false,
+        "exit_code": 0,
+        "healing_actions": [
+          "ReturnSafeDefault",
+          "IgnoreDoubleFree"
+        ],
+        "no_uncontrolled_unsafety": true,
+        "verdict": "prevented"
+      },
+      "evidence_bundle": {
+        "dossier_ref": "dossier-2704c3f4d1db",
+        "artifacts": [
+          "dossier-2704c3f4d1db/strict/stdout.log",
+          "dossier-2704c3f4d1db/strict/stderr.log",
+          "dossier-2704c3f4d1db/strict/metrics.json",
+          "dossier-2704c3f4d1db/hardened/stdout.log",
+          "dossier-2704c3f4d1db/hardened/stderr.log",
+          "dossier-2704c3f4d1db/hardened/metrics.json",
+          "dossier-2704c3f4d1db/paired_verdict.json"
+        ],
+        "joinable_on": [
+          "dossier_id",
+          "cve_id",
+          "test_name"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-6197",
+      "test_name": "curl_asn1_stack_use_after_free",
+      "dossier_id": "dossier-0971c8e2d14f",
+      "cvss_score": 7.5,
+      "vulnerability_classes": [
+        "expired_pointer",
+        "use_after_free"
+      ],
+      "trigger_files": [
+        "trigger.sh"
+      ],
+      "strict_mode": {
+        "crashes_expected": true,
+        "detection_expected": true,
+        "detection_flags": [
+          "dangling_pointer",
+          "expired_pointer",
+          "use_after_free"
+        ],
+        "signal": "SIGSEGV",
+        "verdict": "detected"
+      },
+      "hardened_mode": {
+        "crashes_expected": false,
+        "exit_code": 0,
+        "healing_actions": [
+          "IgnoreForeignFree"
+        ],
+        "no_uncontrolled_unsafety": true,
+        "verdict": "prevented"
+      },
+      "evidence_bundle": {
+        "dossier_ref": "dossier-0971c8e2d14f",
+        "artifacts": [
+          "dossier-0971c8e2d14f/strict/stdout.log",
+          "dossier-0971c8e2d14f/strict/stderr.log",
+          "dossier-0971c8e2d14f/strict/metrics.json",
+          "dossier-0971c8e2d14f/hardened/stdout.log",
+          "dossier-0971c8e2d14f/hardened/stderr.log",
+          "dossier-0971c8e2d14f/hardened/metrics.json",
+          "dossier-0971c8e2d14f/paired_verdict.json"
+        ],
+        "joinable_on": [
+          "dossier_id",
+          "cve_id",
+          "test_name"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-56406",
+      "test_name": "perl_tr_transliteration_heap_overflow",
+      "dossier_id": "dossier-c945f72d7ca0",
+      "cvss_score": 8.6,
+      "vulnerability_classes": [
+        "heap_overflow"
+      ],
+      "trigger_files": [
+        "trigger.sh",
+        "trigger.pl"
+      ],
+      "strict_mode": {
+        "crashes_expected": true,
+        "detection_expected": true,
+        "detection_flags": [
+          "bounds_violation",
+          "heap_overflow_detected",
+          "out_of_bounds_write"
+        ],
+        "signal": "SIGSEGV",
+        "verdict": "detected"
+      },
+      "hardened_mode": {
+        "crashes_expected": false,
+        "exit_code": 0,
+        "healing_actions": [
+          "ClampSize",
+          "TruncateWithNull"
+        ],
+        "no_uncontrolled_unsafety": true,
+        "verdict": "prevented"
+      },
+      "evidence_bundle": {
+        "dossier_ref": "dossier-c945f72d7ca0",
+        "artifacts": [
+          "dossier-c945f72d7ca0/strict/stdout.log",
+          "dossier-c945f72d7ca0/strict/stderr.log",
+          "dossier-c945f72d7ca0/strict/metrics.json",
+          "dossier-c945f72d7ca0/hardened/stdout.log",
+          "dossier-c945f72d7ca0/hardened/stderr.log",
+          "dossier-c945f72d7ca0/hardened/metrics.json",
+          "dossier-c945f72d7ca0/paired_verdict.json"
+        ],
+        "joinable_on": [
+          "dossier_id",
+          "cve_id",
+          "test_name"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2025-49844",
+      "test_name": "redis_lua_gc_use_after_free",
+      "dossier_id": "dossier-879d016e738d",
+      "cvss_score": 10.0,
+      "vulnerability_classes": [
+        "use_after_free"
+      ],
+      "trigger_files": [
+        "trigger.sh",
+        "trigger.py"
+      ],
+      "strict_mode": {
+        "crashes_expected": true,
+        "detection_expected": true,
+        "detection_flags": [
+          "dangling_pointer",
+          "use_after_free"
+        ],
+        "signal": "SIGSEGV",
+        "verdict": "detected"
+      },
+      "hardened_mode": {
+        "crashes_expected": false,
+        "exit_code": 0,
+        "healing_actions": [
+          "IgnoreDoubleFree",
+          "ReturnSafeDefault"
+        ],
+        "no_uncontrolled_unsafety": true,
+        "verdict": "prevented"
+      },
+      "evidence_bundle": {
+        "dossier_ref": "dossier-879d016e738d",
+        "artifacts": [
+          "dossier-879d016e738d/strict/stdout.log",
+          "dossier-879d016e738d/strict/stderr.log",
+          "dossier-879d016e738d/strict/metrics.json",
+          "dossier-879d016e738d/hardened/stdout.log",
+          "dossier-879d016e738d/hardened/stderr.log",
+          "dossier-879d016e738d/hardened/metrics.json",
+          "dossier-879d016e738d/paired_verdict.json"
+        ],
+        "joinable_on": [
+          "dossier_id",
+          "cve_id",
+          "test_name"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2021-3156",
+      "test_name": "sudo_baron_samedit_heap_overflow",
+      "dossier_id": "dossier-c9bf18faaf80",
+      "cvss_score": 7.8,
+      "vulnerability_classes": [
+        "heap_overflow"
+      ],
+      "trigger_files": [
+        "trigger.sh"
+      ],
+      "strict_mode": {
+        "crashes_expected": true,
+        "detection_expected": true,
+        "detection_flags": [
+          "bounds_violation",
+          "heap_overflow_detected",
+          "out_of_bounds_write"
+        ],
+        "signal": "SIGSEGV",
+        "verdict": "detected"
+      },
+      "hardened_mode": {
+        "crashes_expected": false,
+        "exit_code": 0,
+        "healing_actions": [
+          "ClampSize",
+          "TruncateWithNull"
+        ],
+        "no_uncontrolled_unsafety": true,
+        "verdict": "prevented"
+      },
+      "evidence_bundle": {
+        "dossier_ref": "dossier-c9bf18faaf80",
+        "artifacts": [
+          "dossier-c9bf18faaf80/strict/stdout.log",
+          "dossier-c9bf18faaf80/strict/stderr.log",
+          "dossier-c9bf18faaf80/strict/metrics.json",
+          "dossier-c9bf18faaf80/hardened/stdout.log",
+          "dossier-c9bf18faaf80/hardened/stderr.log",
+          "dossier-c9bf18faaf80/hardened/metrics.json",
+          "dossier-c9bf18faaf80/paired_verdict.json"
+        ],
+        "joinable_on": [
+          "dossier_id",
+          "cve_id",
+          "test_name"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-46461",
+      "test_name": "vlc_mms_integer_overflow_heap_overflow",
+      "dossier_id": "dossier-382e0154a887",
+      "cvss_score": 7.5,
+      "vulnerability_classes": [
+        "heap_overflow",
+        "integer_overflow"
+      ],
+      "trigger_files": [
+        "trigger.sh"
+      ],
+      "strict_mode": {
+        "crashes_expected": true,
+        "detection_expected": true,
+        "detection_flags": [
+          "arithmetic_violation",
+          "bounds_violation",
+          "heap_overflow_detected",
+          "integer_overflow"
+        ],
+        "signal": "SIGSEGV",
+        "verdict": "detected"
+      },
+      "hardened_mode": {
+        "crashes_expected": false,
+        "exit_code": 0,
+        "healing_actions": [
+          "ClampSize",
+          "ReallocAsMalloc"
+        ],
+        "no_uncontrolled_unsafety": true,
+        "verdict": "prevented"
+      },
+      "evidence_bundle": {
+        "dossier_ref": "dossier-382e0154a887",
+        "artifacts": [
+          "dossier-382e0154a887/strict/stdout.log",
+          "dossier-382e0154a887/strict/stderr.log",
+          "dossier-382e0154a887/strict/metrics.json",
+          "dossier-382e0154a887/hardened/stdout.log",
+          "dossier-382e0154a887/hardened/stderr.log",
+          "dossier-382e0154a887/hardened/metrics.json",
+          "dossier-382e0154a887/paired_verdict.json"
+        ],
+        "joinable_on": [
+          "dossier_id",
+          "cve_id",
+          "test_name"
+        ]
+      }
+    }
+  ],
+  "validation_issues": []
+}

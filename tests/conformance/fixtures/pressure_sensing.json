@@ -1,0 +1,136 @@
+{
+  "version": "v1",
+  "family": "pressure_sensing",
+  "captured_at": "2026-02-13T00:00:00Z",
+  "description": "Mode-specific parity fixtures for the pressure sensing + overload state machine. Strict: deterministic regime transitions with bounded latency. Hardened: adaptive thresholds with self-healing degradation policies.",
+  "cases": [
+    {
+      "name": "nominal_under_calm_strict",
+      "function": "PressureSensor::observe",
+      "spec_section": "bd-w2c3.7.1 §Regime-Classifier",
+      "inputs": {
+        "scheduler_delay_ns": 100000,
+        "queue_depth": 5,
+        "error_burst_count": 0,
+        "latency_envelope_ns": 500000,
+        "resource_pressure_pct": 10.0
+      },
+      "expected_output": "Nominal",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Calm signals keep sensor in Nominal regime"
+    },
+    {
+      "name": "escalate_to_pressured_strict",
+      "function": "PressureSensor::observe",
+      "spec_section": "bd-w2c3.7.1 §Regime-Transitions",
+      "inputs": {
+        "scheduler_delay_ns": 5000000,
+        "queue_depth": 500,
+        "error_burst_count": 10,
+        "latency_envelope_ns": 20000000,
+        "resource_pressure_pct": 65.0
+      },
+      "expected_output": "Pressured",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Sustained moderate signals escalate Nominal to Pressured after cooldown"
+    },
+    {
+      "name": "escalate_to_overloaded_strict",
+      "function": "PressureSensor::observe",
+      "spec_section": "bd-w2c3.7.1 §Regime-Transitions",
+      "inputs": {
+        "scheduler_delay_ns": 10000000,
+        "queue_depth": 1000,
+        "error_burst_count": 50,
+        "latency_envelope_ns": 50000000,
+        "resource_pressure_pct": 95.0
+      },
+      "expected_output": "Overloaded",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Heavy signals escalate through Pressured to Overloaded"
+    },
+    {
+      "name": "recovery_hold_before_nominal_strict",
+      "function": "PressureSensor::observe",
+      "spec_section": "bd-w2c3.7.1 §Recovery-Protocol",
+      "inputs": {
+        "sequence": "heavy*30 then calm*30",
+        "expected_states": ["Overloaded", "Recovery", "Nominal"]
+      },
+      "expected_output": "Nominal",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Overloaded must pass through Recovery hold before returning to Nominal"
+    },
+    {
+      "name": "hysteresis_prevents_flapping_strict",
+      "function": "PressureSensor::observe",
+      "spec_section": "bd-w2c3.7.1 §Hysteresis",
+      "inputs": {
+        "sequence": "alternate moderate/calm for 20 epochs",
+        "max_transitions": 4
+      },
+      "expected_output": "bounded_transitions",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Oscillating signals near threshold do not cause excessive state changes"
+    },
+    {
+      "name": "deterministic_replay_strict",
+      "function": "PressureSensor::observe",
+      "spec_section": "bd-w2c3.7.1 §Determinism",
+      "inputs": {
+        "replay_count": 2,
+        "signal_sequence": "calm*10 heavy*20 calm*20"
+      },
+      "expected_output": "identical_histories",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Same signal sequence always produces identical state history"
+    },
+    {
+      "name": "nominal_under_calm_hardened",
+      "function": "PressureSensor::observe",
+      "spec_section": "bd-w2c3.7.1 §Hardened-Regime",
+      "inputs": {
+        "scheduler_delay_ns": 100000,
+        "queue_depth": 5,
+        "error_burst_count": 0,
+        "latency_envelope_ns": 500000,
+        "resource_pressure_pct": 10.0
+      },
+      "expected_output": "Nominal",
+      "expected_errno": 0,
+      "mode": "hardened",
+      "note": "Hardened: calm signals keep Nominal with self-healing ready"
+    },
+    {
+      "name": "degradation_active_in_overloaded_hardened",
+      "function": "SystemRegime::degradation_active",
+      "spec_section": "bd-w2c3.7.1 §Degradation-Policy",
+      "inputs": {
+        "regime": "Overloaded"
+      },
+      "expected_output": true,
+      "expected_errno": 0,
+      "mode": "hardened",
+      "note": "Hardened: degradation policies activate in Overloaded regime for graceful service reduction"
+    },
+    {
+      "name": "recovery_re_escalation_hardened",
+      "function": "PressureSensor::observe",
+      "spec_section": "bd-w2c3.7.1 §Recovery-Protocol",
+      "inputs": {
+        "sequence": "heavy*30 calm*5 heavy*10",
+        "expected_states": ["Overloaded", "Recovery", "Overloaded"]
+      },
+      "expected_output": "re_escalated",
+      "expected_errno": 0,
+      "mode": "hardened",
+      "note": "Hardened: recovery detects pressure spike and re-escalates to Overloaded"
+    }
+  ]
+}

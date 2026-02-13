@@ -1,0 +1,296 @@
+{
+  "schema_version": "v1",
+  "bead": "bd-5fw.3",
+  "generated_at": "2026-02-13T18:17:07Z",
+  "status": "fail",
+  "verdict": "FAIL",
+  "summary": {
+    "total_artifacts": 15,
+    "valid": 13,
+    "present_with_issues": 1,
+    "missing": 1,
+    "critical_missing": 0,
+    "errors": 1,
+    "warnings": 1
+  },
+  "dossier_manifest_version": "v1",
+  "compatibility_policy": {
+    "format": "Additive-only evolution: new artifacts may be added, existing paths are stable",
+    "schema_versions": "Each artifact tracks its own schema_version independently",
+    "integrity": "SHA256 checksums computed at validation time; dossier is revalidatable offline"
+  },
+  "artifact_results": [
+    {
+      "id": "support_matrix",
+      "path": "support_matrix.json",
+      "kind": "report",
+      "required": true,
+      "critical": true,
+      "sha256": "2324aa1931efbd4114e7b3789d7c96343f788714ac16c6db1f9b9728c45eba04",
+      "size_bytes": 94740,
+      "status": "VALID",
+      "schema_valid": true,
+      "findings": []
+    },
+    {
+      "id": "reality_report",
+      "path": "tests/conformance/reality_report.v1.json",
+      "kind": "report",
+      "required": true,
+      "critical": true,
+      "sha256": "65773489ab4f63f6635aab70894b16a982938561276fb4f33ec1a635b821e23d",
+      "size_bytes": 198,
+      "status": "PRESENT",
+      "schema_valid": false,
+      "findings": [
+        {
+          "severity": "error",
+          "message": "Artifact 'reality_report' missing required keys: ['schema_version']"
+        }
+      ]
+    },
+    {
+      "id": "conformance_coverage",
+      "path": "tests/conformance/conformance_coverage_baseline.v1.json",
+      "kind": "report",
+      "required": true,
+      "critical": true,
+      "sha256": "1845a98a857857fde48f90dd42fe42901816bc5393d047dad40ab975f944c2b9",
+      "size_bytes": 23144,
+      "status": "VALID",
+      "schema_valid": true,
+      "findings": []
+    },
+    {
+      "id": "claim_reconciliation",
+      "path": "tests/conformance/claim_reconciliation_report.v1.json",
+      "kind": "report",
+      "required": true,
+      "critical": true,
+      "sha256": "f1c423bb9038aec7b81040767cb8d72e688f110b435fa64529cf303599f7e47d",
+      "size_bytes": 404,
+      "status": "VALID",
+      "schema_valid": true,
+      "findings": []
+    },
+    {
+      "id": "closure_sweep",
+      "path": "tests/conformance/closure_sweep_report.v1.json",
+      "kind": "report",
+      "required": true,
+      "critical": true,
+      "sha256": "503cfe0bbea583fc9691aa12cd7a4b3d15ab9c6eaab2bc265fa5f61bea80aad7",
+      "size_bytes": 6806,
+      "status": "VALID",
+      "schema_valid": true,
+      "findings": []
+    },
+    {
+      "id": "replacement_levels",
+      "path": "tests/conformance/replacement_levels.json",
+      "kind": "report",
+      "required": true,
+      "critical": true,
+      "sha256": "453329e43db3a24e7e0eec5da539047317331e9fd0d768ab99a1fed19fda9c31",
+      "size_bytes": 6344,
+      "status": "VALID",
+      "schema_valid": true,
+      "findings": []
+    },
+    {
+      "id": "opportunity_matrix",
+      "path": "tests/conformance/opportunity_matrix.json",
+      "kind": "report",
+      "required": true,
+      "critical": false,
+      "sha256": "33602c6ae430cb8d0de683e6c3b4bc803ea610a366a0a64c98ce40efc34d9262",
+      "size_bytes": 8891,
+      "status": "VALID",
+      "schema_valid": true,
+      "findings": []
+    },
+    {
+      "id": "math_governance",
+      "path": "tests/conformance/math_governance.json",
+      "kind": "report",
+      "required": true,
+      "critical": true,
+      "sha256": "6eb3ebf8ca062357a010be1ab5344034c91003295def1aa32a75ff1d33acbc4b",
+      "size_bytes": 10618,
+      "status": "VALID",
+      "schema_valid": true,
+      "findings": []
+    },
+    {
+      "id": "controller_ablation",
+      "path": "tests/runtime_math/controller_ablation_report.v1.json",
+      "kind": "report",
+      "required": true,
+      "critical": true,
+      "sha256": "c00cbdf0d1cde452d023f93d40996dbd12441fa74d826f7af84a9e05859a341f",
+      "size_bytes": 27378,
+      "status": "VALID",
+      "schema_valid": true,
+      "findings": []
+    },
+    {
+      "id": "admission_gate",
+      "path": "tests/runtime_math/admission_gate_report.v1.json",
+      "kind": "report",
+      "required": true,
+      "critical": true,
+      "sha256": "9f2c960eb6fbe55423b6361e8c4a5620b37a5cb1481f68f81f84718ad27cd3a6",
+      "size_bytes": 15248,
+      "status": "VALID",
+      "schema_valid": true,
+      "findings": []
+    },
+    {
+      "id": "production_kernel_manifest",
+      "path": "tests/runtime_math/production_kernel_manifest.v1.json",
+      "kind": "manifest",
+      "required": true,
+      "critical": true,
+      "sha256": "70a072e133e25bda2572f3660886afdcfd1893378868414211f5e48823b7518a",
+      "size_bytes": 2503,
+      "status": "VALID",
+      "schema_valid": true,
+      "findings": []
+    },
+    {
+      "id": "release_gate_dag",
+      "path": "tests/conformance/release_gate_dag.v1.json",
+      "kind": "manifest",
+      "required": true,
+      "critical": true,
+      "sha256": "41bb69da45fb2ef1df6e78a412a7d2c55fd87c63d233400bc8d1951447b6f453",
+      "size_bytes": 5084,
+      "status": "VALID",
+      "schema_valid": true,
+      "findings": []
+    },
+    {
+      "id": "symbol_fixture_coverage",
+      "path": "tests/conformance/symbol_fixture_coverage.v1.json",
+      "kind": "report",
+      "required": true,
+      "critical": false,
+      "sha256": "fe3205c643e3645d933a455d65a9dba77f391334fe849b907b1fc03a722b4754",
+      "size_bytes": 144543,
+      "status": "VALID",
+      "schema_valid": true,
+      "findings": []
+    },
+    {
+      "id": "e2e_scenario_manifest",
+      "path": "tests/cve_arena/e2e_scenario_manifest.v1.json",
+      "kind": "manifest",
+      "required": false,
+      "critical": false,
+      "status": "MISSING",
+      "sha256": null,
+      "size_bytes": 0,
+      "schema_valid": false,
+      "findings": [
+        {
+          "severity": "warning",
+          "message": "Artifact 'e2e_scenario_manifest' not found at tests/cve_arena/e2e_scenario_manifest.v1.json"
+        }
+      ]
+    },
+    {
+      "id": "closure_contract",
+      "path": "tests/conformance/closure_contract.v1.json",
+      "kind": "manifest",
+      "required": true,
+      "critical": true,
+      "sha256": "b1001c17a5b3a1d97b0df41da454ccaf78b161fc8892a592fe078b823f4fdb82",
+      "size_bytes": 12241,
+      "status": "VALID",
+      "schema_valid": true,
+      "findings": []
+    }
+  ],
+  "integrity_index": {
+    "support_matrix": {
+      "path": "support_matrix.json",
+      "sha256": "2324aa1931efbd4114e7b3789d7c96343f788714ac16c6db1f9b9728c45eba04",
+      "size_bytes": 94740
+    },
+    "reality_report": {
+      "path": "tests/conformance/reality_report.v1.json",
+      "sha256": "65773489ab4f63f6635aab70894b16a982938561276fb4f33ec1a635b821e23d",
+      "size_bytes": 198
+    },
+    "conformance_coverage": {
+      "path": "tests/conformance/conformance_coverage_baseline.v1.json",
+      "sha256": "1845a98a857857fde48f90dd42fe42901816bc5393d047dad40ab975f944c2b9",
+      "size_bytes": 23144
+    },
+    "claim_reconciliation": {
+      "path": "tests/conformance/claim_reconciliation_report.v1.json",
+      "sha256": "f1c423bb9038aec7b81040767cb8d72e688f110b435fa64529cf303599f7e47d",
+      "size_bytes": 404
+    },
+    "closure_sweep": {
+      "path": "tests/conformance/closure_sweep_report.v1.json",
+      "sha256": "503cfe0bbea583fc9691aa12cd7a4b3d15ab9c6eaab2bc265fa5f61bea80aad7",
+      "size_bytes": 6806
+    },
+    "replacement_levels": {
+      "path": "tests/conformance/replacement_levels.json",
+      "sha256": "453329e43db3a24e7e0eec5da539047317331e9fd0d768ab99a1fed19fda9c31",
+      "size_bytes": 6344
+    },
+    "opportunity_matrix": {
+      "path": "tests/conformance/opportunity_matrix.json",
+      "sha256": "33602c6ae430cb8d0de683e6c3b4bc803ea610a366a0a64c98ce40efc34d9262",
+      "size_bytes": 8891
+    },
+    "math_governance": {
+      "path": "tests/conformance/math_governance.json",
+      "sha256": "6eb3ebf8ca062357a010be1ab5344034c91003295def1aa32a75ff1d33acbc4b",
+      "size_bytes": 10618
+    },
+    "controller_ablation": {
+      "path": "tests/runtime_math/controller_ablation_report.v1.json",
+      "sha256": "c00cbdf0d1cde452d023f93d40996dbd12441fa74d826f7af84a9e05859a341f",
+      "size_bytes": 27378
+    },
+    "admission_gate": {
+      "path": "tests/runtime_math/admission_gate_report.v1.json",
+      "sha256": "9f2c960eb6fbe55423b6361e8c4a5620b37a5cb1481f68f81f84718ad27cd3a6",
+      "size_bytes": 15248
+    },
+    "production_kernel_manifest": {
+      "path": "tests/runtime_math/production_kernel_manifest.v1.json",
+      "sha256": "70a072e133e25bda2572f3660886afdcfd1893378868414211f5e48823b7518a",
+      "size_bytes": 2503
+    },
+    "release_gate_dag": {
+      "path": "tests/conformance/release_gate_dag.v1.json",
+      "sha256": "41bb69da45fb2ef1df6e78a412a7d2c55fd87c63d233400bc8d1951447b6f453",
+      "size_bytes": 5084
+    },
+    "symbol_fixture_coverage": {
+      "path": "tests/conformance/symbol_fixture_coverage.v1.json",
+      "sha256": "fe3205c643e3645d933a455d65a9dba77f391334fe849b907b1fc03a722b4754",
+      "size_bytes": 144543
+    },
+    "closure_contract": {
+      "path": "tests/conformance/closure_contract.v1.json",
+      "sha256": "b1001c17a5b3a1d97b0df41da454ccaf78b161fc8892a592fe078b823f4fdb82",
+      "size_bytes": 12241
+    }
+  },
+  "findings": [
+    {
+      "severity": "error",
+      "message": "Artifact 'reality_report' missing required keys: ['schema_version']"
+    },
+    {
+      "severity": "warning",
+      "message": "Artifact 'e2e_scenario_manifest' not found at tests/cve_arena/e2e_scenario_manifest.v1.json"
+    }
+  ]
+}

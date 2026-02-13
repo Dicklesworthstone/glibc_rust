@@ -1,0 +1,1827 @@
+{
+  "schema_version": "v1",
+  "bead": "bd-2hh.5",
+  "generated_at": "2026-02-13T19:30:45Z",
+  "summary": {
+    "total_fixture_files": 49,
+    "valid_fixture_files": 49,
+    "total_cases": 479,
+    "total_issues": 0,
+    "total_warnings": 0,
+    "unique_families": 48,
+    "unique_symbols": 206,
+    "determinism_verified": true
+  },
+  "fixture_results": [
+    {
+      "file": "allocator.json",
+      "version": "v1",
+      "family": "allocator",
+      "case_count": 5,
+      "fixture_hash": "8ee56b39ca629d89",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "backtrace_ops.json",
+      "version": "v1",
+      "family": "backtrace_ops",
+      "case_count": 5,
+      "fixture_hash": "dd050173a976f63d",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "ctype_ops.json",
+      "version": "v1",
+      "family": "ctype",
+      "case_count": 37,
+      "fixture_hash": "12a0c0b064e4353a",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "dirent_ops.json",
+      "version": "v1",
+      "family": "dirent_ops",
+      "case_count": 6,
+      "fixture_hash": "4e9c312a0f919e0f",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "dlfcn_ops.json",
+      "version": "v1",
+      "family": "dlfcn_ops",
+      "case_count": 7,
+      "fixture_hash": "137631159d7d54df",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "elf_loader.json",
+      "version": "v1",
+      "family": "elf/loader",
+      "case_count": 17,
+      "fixture_hash": "f299aa5ce910bb8b",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "errno_ops.json",
+      "version": "v1",
+      "family": "errno_ops",
+      "case_count": 3,
+      "fixture_hash": "6aa46d1f231e16d3",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "grp_ops.json",
+      "version": "v1",
+      "family": "grp_ops",
+      "case_count": 7,
+      "fixture_hash": "7122a77bba736909",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "iconv_phase1.json",
+      "version": "v1",
+      "family": "iconv/phase1",
+      "case_count": 11,
+      "fixture_hash": "bb2229c8ddbbc315",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "inet_ops.json",
+      "version": "v1",
+      "family": "inet",
+      "case_count": 15,
+      "fixture_hash": "62799ba849186b2f",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "loader_edges.json",
+      "version": "v1",
+      "family": "loader_edges",
+      "case_count": 7,
+      "fixture_hash": "94470b86850542ab",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "locale_ops.json",
+      "version": "v1",
+      "family": "locale_ops",
+      "case_count": 6,
+      "fixture_hash": "c0bf57996da9588e",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "math_ops.json",
+      "version": "v1",
+      "family": "math",
+      "case_count": 33,
+      "fixture_hash": "d8fa7f90d4c4e242",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "membrane_mode_split.json",
+      "version": "v1",
+      "family": "membrane/mode-split",
+      "case_count": 4,
+      "fixture_hash": "bd8641139f333985",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "memcpy_strict.json",
+      "version": "v1",
+      "family": "string/memcpy",
+      "case_count": 4,
+      "fixture_hash": "eef9a5b6413ab2fb",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "memory_ops.json",
+      "version": "v1",
+      "family": "memory_ops",
+      "case_count": 11,
+      "fixture_hash": "c870298b53f8fd75",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "poll_ops.json",
+      "version": "v1",
+      "family": "poll_ops",
+      "case_count": 6,
+      "fixture_hash": "aa3ea68175ae73b6",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "pressure_sensing.json",
+      "version": "v1",
+      "family": "pressure_sensing",
+      "case_count": 9,
+      "fixture_hash": "591a298eb979e2e1",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "process_ops.json",
+      "version": "v1",
+      "family": "process_ops",
+      "case_count": 7,
+      "fixture_hash": "a8eac4848383515a",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "pthread_cond.json",
+      "version": "v1",
+      "family": "pthread/cond",
+      "case_count": 24,
+      "fixture_hash": "70bdcf72eada9e47",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "pthread_mutex.json",
+      "version": "v1",
+      "family": "pthread/mutex",
+      "case_count": 8,
+      "fixture_hash": "3e4572f2cebbff4e",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "pthread_thread.json",
+      "version": "v1",
+      "family": "pthread/thread",
+      "case_count": 11,
+      "fixture_hash": "7e1c508cf49a09ef",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "pthread_tls_keys.json",
+      "version": "v1",
+      "family": "pthread/tls_keys",
+      "case_count": 16,
+      "fixture_hash": "be6e8e18f3c8f265",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "pwd_ops.json",
+      "version": "v1",
+      "family": "pwd_ops",
+      "case_count": 7,
+      "fixture_hash": "87794147b2af3cc1",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "regex_glob_ops.json",
+      "version": "v1",
+      "family": "regex_glob_ops",
+      "case_count": 8,
+      "fixture_hash": "7ab27e21d7007486",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "resolver.json",
+      "version": "v1",
+      "family": "resolv/dns",
+      "case_count": 16,
+      "fixture_hash": "d0e191def4c4cd44",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "resource_ops.json",
+      "version": "v1",
+      "family": "resource_ops",
+      "case_count": 5,
+      "fixture_hash": "3b779fa2599094c9",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "session_ops.json",
+      "version": "v1",
+      "family": "session_ops",
+      "case_count": 6,
+      "fixture_hash": "5af770c141efd100",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "setjmp_ops.json",
+      "version": "v1",
+      "family": "setjmp_ops",
+      "case_count": 7,
+      "fixture_hash": "5f4c3e9a87d89872",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "signal_ops.json",
+      "version": "v1",
+      "family": "signal_ops",
+      "case_count": 6,
+      "fixture_hash": "51213c6ed30f1f86",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "socket_ops.json",
+      "version": "v1",
+      "family": "socket_ops",
+      "case_count": 9,
+      "fixture_hash": "a7aff9da3b994a10",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "spawn_exec_ops.json",
+      "version": "v1",
+      "family": "spawn_exec_ops",
+      "case_count": 7,
+      "fixture_hash": "01c7e1a2984e37e9",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "startup_ops.json",
+      "version": "v1",
+      "family": "startup_ops",
+      "case_count": 5,
+      "fixture_hash": "d23f8f0af5b43429",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "stdio_file_ops.json",
+      "version": "v1",
+      "family": "stdio_file_ops",
+      "case_count": 8,
+      "fixture_hash": "43ddbb5d54e910c2",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "stdlib_conversion.json",
+      "version": "v1",
+      "family": "stdlib/conversion",
+      "case_count": 7,
+      "fixture_hash": "17f389b5edfb0577",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "stdlib_numeric.json",
+      "version": "v1",
+      "family": "stdlib/numeric",
+      "case_count": 10,
+      "fixture_hash": "3dc93afa7d51bf38",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "stdlib_sort.json",
+      "version": "v1",
+      "family": "stdlib/sort",
+      "case_count": 3,
+      "fixture_hash": "90d0d3a6e451be81",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "string_memory_full.json",
+      "version": "v1",
+      "family": "string/memory",
+      "case_count": 14,
+      "fixture_hash": "7a37d26dbfc77fef",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "string_ops.json",
+      "version": "v1",
+      "family": "string/narrow",
+      "case_count": 15,
+      "fixture_hash": "757adc1d5e1210ee",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "string_strtok.json",
+      "version": "v1",
+      "family": "string/strtok",
+      "case_count": 8,
+      "fixture_hash": "1583e3ee178be3c6",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "strlen_strict.json",
+      "version": "v1",
+      "family": "string/strlen",
+      "case_count": 3,
+      "fixture_hash": "c6f04f65a2d41763",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "sysv_ipc_ops.json",
+      "version": "v1",
+      "family": "sysv_ipc_ops",
+      "case_count": 9,
+      "fixture_hash": "ce94800f46362daf",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "termios_ops.json",
+      "version": "v1",
+      "family": "termios_ops",
+      "case_count": 8,
+      "fixture_hash": "9e1582831d56273a",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "time_ops.json",
+      "version": "v1",
+      "family": "time_ops",
+      "case_count": 8,
+      "fixture_hash": "05f2c95398f01680",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "unistd_ops.json",
+      "version": "v1",
+      "family": "unistd",
+      "case_count": 17,
+      "fixture_hash": "34a343368a287270",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "virtual_memory_ops.json",
+      "version": "v1",
+      "family": "virtual_memory_ops",
+      "case_count": 8,
+      "fixture_hash": "677248cdc30d10fe",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "wide_memory.json",
+      "version": "v1",
+      "family": "string/wide_memory",
+      "case_count": 6,
+      "fixture_hash": "0bcf13d7c7220745",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "wide_string.json",
+      "version": "v1",
+      "family": "string/wide",
+      "case_count": 4,
+      "fixture_hash": "9429433b57c4a3af",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    },
+    {
+      "file": "wide_string_ops.json",
+      "version": "v1",
+      "family": "string/wide",
+      "case_count": 16,
+      "fixture_hash": "e3567ecafe880397",
+      "valid": true,
+      "issues": [],
+      "warnings": []
+    }
+  ],
+  "regression_baseline": {
+    "symbol_count": 206,
+    "total_cases": 479,
+    "symbols": {
+      "DnsHeader::new_query": {
+        "count": 1,
+        "fixtures": [
+          "resolver.json"
+        ]
+      },
+      "Elf64Header::parse": {
+        "count": 2,
+        "fixtures": [
+          "elf_loader.json"
+        ]
+      },
+      "PressureSensor::observe": {
+        "count": 8,
+        "fixtures": [
+          "pressure_sensing.json"
+        ]
+      },
+      "ProgramFlags::to_mmap_prot": {
+        "count": 2,
+        "fixtures": [
+          "elf_loader.json"
+        ]
+      },
+      "ResolverConfig::default": {
+        "count": 1,
+        "fixtures": [
+          "resolver.json"
+        ]
+      },
+      "ResolverConfig::parse": {
+        "count": 6,
+        "fixtures": [
+          "resolver.json"
+        ]
+      },
+      "SymbolBinding::from": {
+        "count": 3,
+        "fixtures": [
+          "elf_loader.json"
+        ]
+      },
+      "SymbolType::from": {
+        "count": 2,
+        "fixtures": [
+          "elf_loader.json"
+        ]
+      },
+      "SystemRegime::degradation_active": {
+        "count": 1,
+        "fixtures": [
+          "pressure_sensing.json"
+        ]
+      },
+      "__errno_location": {
+        "count": 3,
+        "fixtures": [
+          "errno_ops.json"
+        ]
+      },
+      "__frankenlibc_startup_phase0": {
+        "count": 2,
+        "fixtures": [
+          "startup_ops.json"
+        ]
+      },
+      "__frankenlibc_startup_snapshot": {
+        "count": 2,
+        "fixtures": [
+          "startup_ops.json"
+        ]
+      },
+      "__libc_start_main": {
+        "count": 1,
+        "fixtures": [
+          "startup_ops.json"
+        ]
+      },
+      "_setjmp": {
+        "count": 1,
+        "fixtures": [
+          "setjmp_ops.json"
+        ]
+      },
+      "access": {
+        "count": 2,
+        "fixtures": [
+          "unistd_ops.json"
+        ]
+      },
+      "acos": {
+        "count": 2,
+        "fixtures": [
+          "math_ops.json"
+        ]
+      },
+      "asin": {
+        "count": 2,
+        "fixtures": [
+          "math_ops.json"
+        ]
+      },
+      "atan": {
+        "count": 1,
+        "fixtures": [
+          "math_ops.json"
+        ]
+      },
+      "atan2": {
+        "count": 2,
+        "fixtures": [
+          "math_ops.json"
+        ]
+      },
+      "atoi": {
+        "count": 6,
+        "fixtures": [
+          "stdlib_conversion.json",
+          "stdlib_numeric.json"
+        ]
+      },
+      "atol": {
+        "count": 3,
+        "fixtures": [
+          "stdlib_numeric.json"
+        ]
+      },
+      "backtrace": {
+        "count": 3,
+        "fixtures": [
+          "backtrace_ops.json"
+        ]
+      },
+      "backtrace_symbols": {
+        "count": 1,
+        "fixtures": [
+          "backtrace_ops.json"
+        ]
+      },
+      "backtrace_symbols_fd": {
+        "count": 1,
+        "fixtures": [
+          "backtrace_ops.json"
+        ]
+      },
+      "bind": {
+        "count": 1,
+        "fixtures": [
+          "socket_ops.json"
+        ]
+      },
+      "bsearch": {
+        "count": 2,
+        "fixtures": [
+          "stdlib_sort.json"
+        ]
+      },
+      "calloc": {
+        "count": 1,
+        "fixtures": [
+          "allocator.json"
+        ]
+      },
+      "ceil": {
+        "count": 2,
+        "fixtures": [
+          "math_ops.json"
+        ]
+      },
+      "cfgetispeed": {
+        "count": 1,
+        "fixtures": [
+          "termios_ops.json"
+        ]
+      },
+      "cfgetospeed": {
+        "count": 1,
+        "fixtures": [
+          "termios_ops.json"
+        ]
+      },
+      "cfsetispeed": {
+        "count": 1,
+        "fixtures": [
+          "termios_ops.json"
+        ]
+      },
+      "cfsetospeed": {
+        "count": 1,
+        "fixtures": [
+          "termios_ops.json"
+        ]
+      },
+      "clock": {
+        "count": 1,
+        "fixtures": [
+          "time_ops.json"
+        ]
+      },
+      "clock_gettime": {
+        "count": 4,
+        "fixtures": [
+          "time_ops.json"
+        ]
+      },
+      "close": {
+        "count": 2,
+        "fixtures": [
+          "unistd_ops.json"
+        ]
+      },
+      "closedir": {
+        "count": 1,
+        "fixtures": [
+          "dirent_ops.json"
+        ]
+      },
+      "compute_relocation": {
+        "count": 5,
+        "fixtures": [
+          "elf_loader.json"
+        ]
+      },
+      "cos": {
+        "count": 2,
+        "fixtures": [
+          "math_ops.json"
+        ]
+      },
+      "dladdr": {
+        "count": 1,
+        "fixtures": [
+          "loader_edges.json"
+        ]
+      },
+      "dlclose": {
+        "count": 2,
+        "fixtures": [
+          "loader_edges.json"
+        ]
+      },
+      "dlerror": {
+        "count": 1,
+        "fixtures": [
+          "dlfcn_ops.json"
+        ]
+      },
+      "dlinfo": {
+        "count": 1,
+        "fixtures": [
+          "loader_edges.json"
+        ]
+      },
+      "dlopen": {
+        "count": 5,
+        "fixtures": [
+          "dlfcn_ops.json",
+          "loader_edges.json"
+        ]
+      },
+      "dlsym": {
+        "count": 4,
+        "fixtures": [
+          "dlfcn_ops.json",
+          "loader_edges.json"
+        ]
+      },
+      "elf_hash": {
+        "count": 2,
+        "fixtures": [
+          "elf_loader.json"
+        ]
+      },
+      "encode_domain_name": {
+        "count": 2,
+        "fixtures": [
+          "resolver.json"
+        ]
+      },
+      "erf": {
+        "count": 1,
+        "fixtures": [
+          "math_ops.json"
+        ]
+      },
+      "execve": {
+        "count": 2,
+        "fixtures": [
+          "spawn_exec_ops.json"
+        ]
+      },
+      "exp": {
+        "count": 2,
+        "fixtures": [
+          "math_ops.json"
+        ]
+      },
+      "fabs": {
+        "count": 2,
+        "fixtures": [
+          "math_ops.json"
+        ]
+      },
+      "fclose": {
+        "count": 1,
+        "fixtures": [
+          "stdio_file_ops.json"
+        ]
+      },
+      "floor": {
+        "count": 2,
+        "fixtures": [
+          "math_ops.json"
+        ]
+      },
+      "fmod": {
+        "count": 1,
+        "fixtures": [
+          "math_ops.json"
+        ]
+      },
+      "fnmatch": {
+        "count": 2,
+        "fixtures": [
+          "regex_glob_ops.json"
+        ]
+      },
+      "fopen": {
+        "count": 3,
+        "fixtures": [
+          "stdio_file_ops.json"
+        ]
+      },
+      "fork": {
+        "count": 2,
+        "fixtures": [
+          "process_ops.json"
+        ]
+      },
+      "fprintf": {
+        "count": 1,
+        "fixtures": [
+          "stdio_file_ops.json"
+        ]
+      },
+      "free": {
+        "count": 1,
+        "fixtures": [
+          "allocator.json"
+        ]
+      },
+      "getaddrinfo": {
+        "count": 3,
+        "fixtures": [
+          "resolver.json"
+        ]
+      },
+      "getcwd": {
+        "count": 1,
+        "fixtures": [
+          "unistd_ops.json"
+        ]
+      },
+      "getegid": {
+        "count": 1,
+        "fixtures": [
+          "unistd_ops.json"
+        ]
+      },
+      "geteuid": {
+        "count": 1,
+        "fixtures": [
+          "unistd_ops.json"
+        ]
+      },
+      "getgid": {
+        "count": 1,
+        "fixtures": [
+          "unistd_ops.json"
+        ]
+      },
+      "getgrgid": {
+        "count": 3,
+        "fixtures": [
+          "grp_ops.json"
+        ]
+      },
+      "getgrnam": {
+        "count": 3,
+        "fixtures": [
+          "grp_ops.json"
+        ]
+      },
+      "getlogin": {
+        "count": 2,
+        "fixtures": [
+          "session_ops.json"
+        ]
+      },
+      "getlogin_r": {
+        "count": 1,
+        "fixtures": [
+          "session_ops.json"
+        ]
+      },
+      "getpid": {
+        "count": 3,
+        "fixtures": [
+          "process_ops.json",
+          "unistd_ops.json"
+        ]
+      },
+      "getppid": {
+        "count": 2,
+        "fixtures": [
+          "process_ops.json",
+          "unistd_ops.json"
+        ]
+      },
+      "getpwnam": {
+        "count": 3,
+        "fixtures": [
+          "pwd_ops.json"
+        ]
+      },
+      "getpwuid": {
+        "count": 3,
+        "fixtures": [
+          "pwd_ops.json"
+        ]
+      },
+      "getrlimit": {
+        "count": 5,
+        "fixtures": [
+          "resource_ops.json"
+        ]
+      },
+      "getsid": {
+        "count": 1,
+        "fixtures": [
+          "session_ops.json"
+        ]
+      },
+      "getsockname": {
+        "count": 1,
+        "fixtures": [
+          "socket_ops.json"
+        ]
+      },
+      "getuid": {
+        "count": 1,
+        "fixtures": [
+          "unistd_ops.json"
+        ]
+      },
+      "glob": {
+        "count": 2,
+        "fixtures": [
+          "regex_glob_ops.json"
+        ]
+      },
+      "gnu_hash": {
+        "count": 1,
+        "fixtures": [
+          "elf_loader.json"
+        ]
+      },
+      "htonl": {
+        "count": 2,
+        "fixtures": [
+          "inet_ops.json"
+        ]
+      },
+      "htons": {
+        "count": 3,
+        "fixtures": [
+          "inet_ops.json"
+        ]
+      },
+      "iconv": {
+        "count": 8,
+        "fixtures": [
+          "iconv_phase1.json"
+        ]
+      },
+      "iconv_close": {
+        "count": 1,
+        "fixtures": [
+          "iconv_phase1.json"
+        ]
+      },
+      "iconv_open": {
+        "count": 2,
+        "fixtures": [
+          "iconv_phase1.json"
+        ]
+      },
+      "inet_addr": {
+        "count": 3,
+        "fixtures": [
+          "inet_ops.json"
+        ]
+      },
+      "inet_ntop": {
+        "count": 2,
+        "fixtures": [
+          "inet_ops.json"
+        ]
+      },
+      "inet_pton": {
+        "count": 3,
+        "fixtures": [
+          "inet_ops.json"
+        ]
+      },
+      "isalnum": {
+        "count": 3,
+        "fixtures": [
+          "ctype_ops.json"
+        ]
+      },
+      "isalpha": {
+        "count": 4,
+        "fixtures": [
+          "ctype_ops.json"
+        ]
+      },
+      "isatty": {
+        "count": 2,
+        "fixtures": [
+          "unistd_ops.json"
+        ]
+      },
+      "isdigit": {
+        "count": 3,
+        "fixtures": [
+          "ctype_ops.json"
+        ]
+      },
+      "islower": {
+        "count": 2,
+        "fixtures": [
+          "ctype_ops.json"
+        ]
+      },
+      "isprint": {
+        "count": 4,
+        "fixtures": [
+          "ctype_ops.json"
+        ]
+      },
+      "ispunct": {
+        "count": 3,
+        "fixtures": [
+          "ctype_ops.json"
+        ]
+      },
+      "isspace": {
+        "count": 4,
+        "fixtures": [
+          "ctype_ops.json"
+        ]
+      },
+      "isupper": {
+        "count": 2,
+        "fixtures": [
+          "ctype_ops.json"
+        ]
+      },
+      "isxdigit": {
+        "count": 4,
+        "fixtures": [
+          "ctype_ops.json"
+        ]
+      },
+      "kill": {
+        "count": 3,
+        "fixtures": [
+          "signal_ops.json"
+        ]
+      },
+      "lgamma": {
+        "count": 1,
+        "fixtures": [
+          "math_ops.json"
+        ]
+      },
+      "listen": {
+        "count": 1,
+        "fixtures": [
+          "socket_ops.json"
+        ]
+      },
+      "localeconv": {
+        "count": 1,
+        "fixtures": [
+          "locale_ops.json"
+        ]
+      },
+      "localtime_r": {
+        "count": 1,
+        "fixtures": [
+          "time_ops.json"
+        ]
+      },
+      "log": {
+        "count": 2,
+        "fixtures": [
+          "math_ops.json"
+        ]
+      },
+      "log10": {
+        "count": 2,
+        "fixtures": [
+          "math_ops.json"
+        ]
+      },
+      "longjmp": {
+        "count": 4,
+        "fixtures": [
+          "setjmp_ops.json"
+        ]
+      },
+      "lookup_hosts": {
+        "count": 3,
+        "fixtures": [
+          "resolver.json"
+        ]
+      },
+      "lseek": {
+        "count": 1,
+        "fixtures": [
+          "unistd_ops.json"
+        ]
+      },
+      "madvise": {
+        "count": 1,
+        "fixtures": [
+          "virtual_memory_ops.json"
+        ]
+      },
+      "malloc": {
+        "count": 2,
+        "fixtures": [
+          "allocator.json"
+        ]
+      },
+      "memchr": {
+        "count": 4,
+        "fixtures": [
+          "memory_ops.json",
+          "string_memory_full.json",
+          "string_ops.json"
+        ]
+      },
+      "memcmp": {
+        "count": 7,
+        "fixtures": [
+          "memory_ops.json",
+          "string_memory_full.json",
+          "string_ops.json"
+        ]
+      },
+      "memcpy": {
+        "count": 9,
+        "fixtures": [
+          "membrane_mode_split.json",
+          "memcpy_strict.json",
+          "memory_ops.json"
+        ]
+      },
+      "memmove": {
+        "count": 2,
+        "fixtures": [
+          "memory_ops.json",
+          "string_ops.json"
+        ]
+      },
+      "memrchr": {
+        "count": 2,
+        "fixtures": [
+          "string_memory_full.json",
+          "string_ops.json"
+        ]
+      },
+      "memset": {
+        "count": 4,
+        "fixtures": [
+          "memory_ops.json",
+          "string_memory_full.json",
+          "string_ops.json"
+        ]
+      },
+      "mmap": {
+        "count": 5,
+        "fixtures": [
+          "virtual_memory_ops.json"
+        ]
+      },
+      "mprotect": {
+        "count": 1,
+        "fixtures": [
+          "virtual_memory_ops.json"
+        ]
+      },
+      "msgget": {
+        "count": 1,
+        "fixtures": [
+          "sysv_ipc_ops.json"
+        ]
+      },
+      "munmap": {
+        "count": 1,
+        "fixtures": [
+          "virtual_memory_ops.json"
+        ]
+      },
+      "ntohl": {
+        "count": 1,
+        "fixtures": [
+          "inet_ops.json"
+        ]
+      },
+      "ntohs": {
+        "count": 1,
+        "fixtures": [
+          "inet_ops.json"
+        ]
+      },
+      "opendir": {
+        "count": 4,
+        "fixtures": [
+          "dirent_ops.json"
+        ]
+      },
+      "pipe": {
+        "count": 1,
+        "fixtures": [
+          "unistd_ops.json"
+        ]
+      },
+      "poll": {
+        "count": 5,
+        "fixtures": [
+          "poll_ops.json"
+        ]
+      },
+      "posix_spawn": {
+        "count": 3,
+        "fixtures": [
+          "spawn_exec_ops.json"
+        ]
+      },
+      "pow": {
+        "count": 2,
+        "fixtures": [
+          "math_ops.json"
+        ]
+      },
+      "pthread_cond_broadcast": {
+        "count": 3,
+        "fixtures": [
+          "pthread_cond.json"
+        ]
+      },
+      "pthread_cond_destroy": {
+        "count": 3,
+        "fixtures": [
+          "pthread_cond.json"
+        ]
+      },
+      "pthread_cond_init": {
+        "count": 4,
+        "fixtures": [
+          "pthread_cond.json"
+        ]
+      },
+      "pthread_cond_signal": {
+        "count": 3,
+        "fixtures": [
+          "pthread_cond.json"
+        ]
+      },
+      "pthread_cond_timedwait": {
+        "count": 5,
+        "fixtures": [
+          "pthread_cond.json"
+        ]
+      },
+      "pthread_cond_wait": {
+        "count": 6,
+        "fixtures": [
+          "pthread_cond.json"
+        ]
+      },
+      "pthread_create": {
+        "count": 2,
+        "fixtures": [
+          "pthread_thread.json"
+        ]
+      },
+      "pthread_detach": {
+        "count": 3,
+        "fixtures": [
+          "pthread_thread.json"
+        ]
+      },
+      "pthread_equal": {
+        "count": 2,
+        "fixtures": [
+          "pthread_thread.json"
+        ]
+      },
+      "pthread_getspecific": {
+        "count": 2,
+        "fixtures": [
+          "pthread_tls_keys.json"
+        ]
+      },
+      "pthread_join": {
+        "count": 3,
+        "fixtures": [
+          "pthread_thread.json"
+        ]
+      },
+      "pthread_key_create": {
+        "count": 3,
+        "fixtures": [
+          "pthread_tls_keys.json"
+        ]
+      },
+      "pthread_key_delete": {
+        "count": 4,
+        "fixtures": [
+          "pthread_tls_keys.json"
+        ]
+      },
+      "pthread_mutex_destroy": {
+        "count": 1,
+        "fixtures": [
+          "pthread_mutex.json"
+        ]
+      },
+      "pthread_mutex_init": {
+        "count": 2,
+        "fixtures": [
+          "pthread_mutex.json"
+        ]
+      },
+      "pthread_mutex_lock": {
+        "count": 2,
+        "fixtures": [
+          "pthread_mutex.json"
+        ]
+      },
+      "pthread_mutex_trylock": {
+        "count": 2,
+        "fixtures": [
+          "pthread_mutex.json"
+        ]
+      },
+      "pthread_mutex_unlock": {
+        "count": 1,
+        "fixtures": [
+          "pthread_mutex.json"
+        ]
+      },
+      "pthread_self": {
+        "count": 1,
+        "fixtures": [
+          "pthread_thread.json"
+        ]
+      },
+      "pthread_setspecific": {
+        "count": 3,
+        "fixtures": [
+          "pthread_tls_keys.json"
+        ]
+      },
+      "qsort": {
+        "count": 1,
+        "fixtures": [
+          "stdlib_sort.json"
+        ]
+      },
+      "raise": {
+        "count": 2,
+        "fixtures": [
+          "signal_ops.json"
+        ]
+      },
+      "read": {
+        "count": 1,
+        "fixtures": [
+          "unistd_ops.json"
+        ]
+      },
+      "readdir": {
+        "count": 1,
+        "fixtures": [
+          "dirent_ops.json"
+        ]
+      },
+      "realloc": {
+        "count": 1,
+        "fixtures": [
+          "allocator.json"
+        ]
+      },
+      "regcomp": {
+        "count": 2,
+        "fixtures": [
+          "regex_glob_ops.json"
+        ]
+      },
+      "regexec": {
+        "count": 2,
+        "fixtures": [
+          "regex_glob_ops.json"
+        ]
+      },
+      "round": {
+        "count": 2,
+        "fixtures": [
+          "math_ops.json"
+        ]
+      },
+      "select": {
+        "count": 1,
+        "fixtures": [
+          "poll_ops.json"
+        ]
+      },
+      "semctl": {
+        "count": 1,
+        "fixtures": [
+          "sysv_ipc_ops.json"
+        ]
+      },
+      "semget": {
+        "count": 2,
+        "fixtures": [
+          "sysv_ipc_ops.json"
+        ]
+      },
+      "semop": {
+        "count": 1,
+        "fixtures": [
+          "sysv_ipc_ops.json"
+        ]
+      },
+      "setgrent": {
+        "count": 1,
+        "fixtures": [
+          "grp_ops.json"
+        ]
+      },
+      "setjmp": {
+        "count": 2,
+        "fixtures": [
+          "setjmp_ops.json"
+        ]
+      },
+      "setlocale": {
+        "count": 5,
+        "fixtures": [
+          "locale_ops.json"
+        ]
+      },
+      "setpwent": {
+        "count": 1,
+        "fixtures": [
+          "pwd_ops.json"
+        ]
+      },
+      "setsid": {
+        "count": 2,
+        "fixtures": [
+          "session_ops.json"
+        ]
+      },
+      "shmat": {
+        "count": 1,
+        "fixtures": [
+          "sysv_ipc_ops.json"
+        ]
+      },
+      "shmdt": {
+        "count": 1,
+        "fixtures": [
+          "sysv_ipc_ops.json"
+        ]
+      },
+      "shmget": {
+        "count": 2,
+        "fixtures": [
+          "sysv_ipc_ops.json"
+        ]
+      },
+      "shutdown": {
+        "count": 1,
+        "fixtures": [
+          "socket_ops.json"
+        ]
+      },
+      "sigaction": {
+        "count": 1,
+        "fixtures": [
+          "signal_ops.json"
+        ]
+      },
+      "sin": {
+        "count": 2,
+        "fixtures": [
+          "math_ops.json"
+        ]
+      },
+      "snprintf": {
+        "count": 3,
+        "fixtures": [
+          "stdio_file_ops.json"
+        ]
+      },
+      "socket": {
+        "count": 5,
+        "fixtures": [
+          "socket_ops.json"
+        ]
+      },
+      "strcat": {
+        "count": 3,
+        "fixtures": [
+          "string_memory_full.json",
+          "string_ops.json"
+        ]
+      },
+      "strchr": {
+        "count": 2,
+        "fixtures": [
+          "string_memory_full.json",
+          "string_ops.json"
+        ]
+      },
+      "strcmp": {
+        "count": 3,
+        "fixtures": [
+          "string_memory_full.json",
+          "string_ops.json"
+        ]
+      },
+      "strcpy": {
+        "count": 3,
+        "fixtures": [
+          "string_memory_full.json",
+          "string_ops.json"
+        ]
+      },
+      "strlen": {
+        "count": 5,
+        "fixtures": [
+          "membrane_mode_split.json",
+          "strlen_strict.json"
+        ]
+      },
+      "strncat": {
+        "count": 1,
+        "fixtures": [
+          "string_memory_full.json"
+        ]
+      },
+      "strncpy": {
+        "count": 2,
+        "fixtures": [
+          "string_memory_full.json",
+          "string_ops.json"
+        ]
+      },
+      "strrchr": {
+        "count": 2,
+        "fixtures": [
+          "string_memory_full.json",
+          "string_ops.json"
+        ]
+      },
+      "strstr": {
+        "count": 2,
+        "fixtures": [
+          "string_memory_full.json",
+          "string_ops.json"
+        ]
+      },
+      "strtok": {
+        "count": 5,
+        "fixtures": [
+          "string_strtok.json"
+        ]
+      },
+      "strtok_r": {
+        "count": 3,
+        "fixtures": [
+          "string_strtok.json"
+        ]
+      },
+      "strtol": {
+        "count": 6,
+        "fixtures": [
+          "stdlib_conversion.json",
+          "stdlib_numeric.json"
+        ]
+      },
+      "strtoul": {
+        "count": 2,
+        "fixtures": [
+          "stdlib_numeric.json"
+        ]
+      },
+      "system": {
+        "count": 2,
+        "fixtures": [
+          "spawn_exec_ops.json"
+        ]
+      },
+      "tan": {
+        "count": 1,
+        "fixtures": [
+          "math_ops.json"
+        ]
+      },
+      "tcgetattr": {
+        "count": 4,
+        "fixtures": [
+          "termios_ops.json"
+        ]
+      },
+      "teardown_thread_tls": {
+        "count": 4,
+        "fixtures": [
+          "pthread_tls_keys.json"
+        ]
+      },
+      "tgamma": {
+        "count": 2,
+        "fixtures": [
+          "math_ops.json"
+        ]
+      },
+      "time": {
+        "count": 2,
+        "fixtures": [
+          "time_ops.json"
+        ]
+      },
+      "tolower": {
+        "count": 4,
+        "fixtures": [
+          "ctype_ops.json"
+        ]
+      },
+      "toupper": {
+        "count": 4,
+        "fixtures": [
+          "ctype_ops.json"
+        ]
+      },
+      "waitpid": {
+        "count": 2,
+        "fixtures": [
+          "process_ops.json"
+        ]
+      },
+      "wcscat": {
+        "count": 1,
+        "fixtures": [
+          "wide_string_ops.json"
+        ]
+      },
+      "wcschr": {
+        "count": 2,
+        "fixtures": [
+          "wide_string_ops.json"
+        ]
+      },
+      "wcscmp": {
+        "count": 4,
+        "fixtures": [
+          "wide_string.json",
+          "wide_string_ops.json"
+        ]
+      },
+      "wcscpy": {
+        "count": 3,
+        "fixtures": [
+          "wide_string.json",
+          "wide_string_ops.json"
+        ]
+      },
+      "wcslen": {
+        "count": 3,
+        "fixtures": [
+          "wide_string.json",
+          "wide_string_ops.json"
+        ]
+      },
+      "wcsncmp": {
+        "count": 2,
+        "fixtures": [
+          "wide_string_ops.json"
+        ]
+      },
+      "wcsncpy": {
+        "count": 2,
+        "fixtures": [
+          "wide_string_ops.json"
+        ]
+      },
+      "wcsrchr": {
+        "count": 2,
+        "fixtures": [
+          "wide_string_ops.json"
+        ]
+      },
+      "wcsstr": {
+        "count": 1,
+        "fixtures": [
+          "wide_string_ops.json"
+        ]
+      },
+      "wmemchr": {
+        "count": 1,
+        "fixtures": [
+          "wide_memory.json"
+        ]
+      },
+      "wmemcmp": {
+        "count": 2,
+        "fixtures": [
+          "wide_memory.json"
+        ]
+      },
+      "wmemcpy": {
+        "count": 1,
+        "fixtures": [
+          "wide_memory.json"
+        ]
+      },
+      "wmemmove": {
+        "count": 1,
+        "fixtures": [
+          "wide_memory.json"
+        ]
+      },
+      "wmemset": {
+        "count": 1,
+        "fixtures": [
+          "wide_memory.json"
+        ]
+      },
+      "write": {
+        "count": 1,
+        "fixtures": [
+          "unistd_ops.json"
+        ]
+      }
+    }
+  },
+  "fixture_hashes": {
+    "allocator.json": "8ee56b39ca629d89",
+    "backtrace_ops.json": "dd050173a976f63d",
+    "ctype_ops.json": "12a0c0b064e4353a",
+    "dirent_ops.json": "4e9c312a0f919e0f",
+    "dlfcn_ops.json": "137631159d7d54df",
+    "elf_loader.json": "f299aa5ce910bb8b",
+    "errno_ops.json": "6aa46d1f231e16d3",
+    "grp_ops.json": "7122a77bba736909",
+    "iconv_phase1.json": "bb2229c8ddbbc315",
+    "inet_ops.json": "62799ba849186b2f",
+    "loader_edges.json": "94470b86850542ab",
+    "locale_ops.json": "c0bf57996da9588e",
+    "math_ops.json": "d8fa7f90d4c4e242",
+    "membrane_mode_split.json": "bd8641139f333985",
+    "memcpy_strict.json": "eef9a5b6413ab2fb",
+    "memory_ops.json": "c870298b53f8fd75",
+    "poll_ops.json": "aa3ea68175ae73b6",
+    "pressure_sensing.json": "591a298eb979e2e1",
+    "process_ops.json": "a8eac4848383515a",
+    "pthread_cond.json": "70bdcf72eada9e47",
+    "pthread_mutex.json": "3e4572f2cebbff4e",
+    "pthread_thread.json": "7e1c508cf49a09ef",
+    "pthread_tls_keys.json": "be6e8e18f3c8f265",
+    "pwd_ops.json": "87794147b2af3cc1",
+    "regex_glob_ops.json": "7ab27e21d7007486",
+    "resolver.json": "d0e191def4c4cd44",
+    "resource_ops.json": "3b779fa2599094c9",
+    "session_ops.json": "5af770c141efd100",
+    "setjmp_ops.json": "5f4c3e9a87d89872",
+    "signal_ops.json": "51213c6ed30f1f86",
+    "socket_ops.json": "a7aff9da3b994a10",
+    "spawn_exec_ops.json": "01c7e1a2984e37e9",
+    "startup_ops.json": "d23f8f0af5b43429",
+    "stdio_file_ops.json": "43ddbb5d54e910c2",
+    "stdlib_conversion.json": "17f389b5edfb0577",
+    "stdlib_numeric.json": "3dc93afa7d51bf38",
+    "stdlib_sort.json": "90d0d3a6e451be81",
+    "string_memory_full.json": "7a37d26dbfc77fef",
+    "string_ops.json": "757adc1d5e1210ee",
+    "string_strtok.json": "1583e3ee178be3c6",
+    "strlen_strict.json": "c6f04f65a2d41763",
+    "sysv_ipc_ops.json": "ce94800f46362daf",
+    "termios_ops.json": "9e1582831d56273a",
+    "time_ops.json": "05f2c95398f01680",
+    "unistd_ops.json": "34a343368a287270",
+    "virtual_memory_ops.json": "677248cdc30d10fe",
+    "wide_memory.json": "0bcf13d7c7220745",
+    "wide_string.json": "9429433b57c4a3af",
+    "wide_string_ops.json": "e3567ecafe880397"
+  }
+}

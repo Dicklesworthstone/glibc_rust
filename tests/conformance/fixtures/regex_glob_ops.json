@@ -1,0 +1,88 @@
+{
+  "version": "v1",
+  "family": "regex_glob_ops",
+  "captured_at": "2026-02-13T00:00:00Z",
+  "description": "Mode-specific parity fixtures for pattern matching (regex, glob, fnmatch). Strict: standard POSIX semantics. Hardened: complexity-bounded execution.",
+  "cases": [
+    {
+      "name": "regcomp_basic_strict",
+      "function": "regcomp",
+      "spec_section": "POSIX regcomp(3)",
+      "inputs": { "pattern": "^hello$", "cflags": "REG_EXTENDED" },
+      "expected_output": 0,
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Compiles a simple extended regex successfully"
+    },
+    {
+      "name": "regexec_match_strict",
+      "function": "regexec",
+      "spec_section": "POSIX regexec(3)",
+      "inputs": { "compiled_regex": "^hello$", "string": "hello", "nmatch": 0, "eflags": 0 },
+      "expected_output": 0,
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Regex matches the target string"
+    },
+    {
+      "name": "regexec_nomatch_strict",
+      "function": "regexec",
+      "spec_section": "POSIX regexec(3)",
+      "inputs": { "compiled_regex": "^hello$", "string": "world", "nmatch": 0, "eflags": 0 },
+      "expected_output": "REG_NOMATCH",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Regex does not match, returns REG_NOMATCH"
+    },
+    {
+      "name": "fnmatch_wildcard_strict",
+      "function": "fnmatch",
+      "spec_section": "POSIX fnmatch(3)",
+      "inputs": { "pattern": "*.txt", "string": "file.txt", "flags": 0 },
+      "expected_output": 0,
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "fnmatch matches wildcard pattern"
+    },
+    {
+      "name": "fnmatch_no_match_strict",
+      "function": "fnmatch",
+      "spec_section": "POSIX fnmatch(3)",
+      "inputs": { "pattern": "*.txt", "string": "file.c", "flags": 0 },
+      "expected_output": "FNM_NOMATCH",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "fnmatch returns FNM_NOMATCH for non-matching string"
+    },
+    {
+      "name": "glob_star_strict",
+      "function": "glob",
+      "spec_section": "POSIX glob(3)",
+      "inputs": { "pattern": "/tmp/*", "flags": 0 },
+      "expected_output": 0,
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "glob expands wildcard pattern in /tmp"
+    },
+    {
+      "name": "regcomp_basic_hardened",
+      "function": "regcomp",
+      "spec_section": "POSIX regcomp(3)",
+      "inputs": { "pattern": "^hello$", "cflags": "REG_EXTENDED" },
+      "expected_output": 0,
+      "expected_errno": 0,
+      "mode": "hardened",
+      "note": "Hardened: compiles with complexity check to prevent ReDoS"
+    },
+    {
+      "name": "glob_star_hardened",
+      "function": "glob",
+      "spec_section": "POSIX glob(3)",
+      "inputs": { "pattern": "/tmp/*", "flags": 0 },
+      "expected_output": 0,
+      "expected_errno": 0,
+      "mode": "hardened",
+      "note": "Hardened: glob with result count limit to prevent resource exhaustion"
+    }
+  ]
+}

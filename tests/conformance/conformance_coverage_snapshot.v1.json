@@ -1,14 +1,14 @@
 {
   "schema_version": "v1",
   "bead": "bd-15n.3",
-  "generated_at": "2026-02-13T17:57:42Z",
+  "generated_at": "2026-02-13T18:28:51Z",
   "summary": {
     "total_symbols": 250,
-    "symbols_with_fixtures": 159,
+    "symbols_with_fixtures": 161,
     "coverage_pct": 64,
-    "total_fixture_files": 41,
-    "total_fixture_cases": 421,
-    "total_families": 32
+    "total_fixture_files": 48,
+    "total_fixture_cases": 470,
+    "total_families": 39
   },
   "module_coverage": {
     "ctype_abi": {
@@ -23,8 +23,8 @@
     },
     "dlfcn_abi": {
       "total": 4,
-      "covered": 3,
-      "pct": 75
+      "covered": 4,
+      "pct": 100
     },
     "errno_abi": {
       "total": 1,
@@ -78,8 +78,8 @@
     },
     "process_abi": {
       "total": 6,
-      "covered": 2,
-      "pct": 33
+      "covered": 3,
+      "pct": 50
     },
     "pthread_abi": {
       "total": 20,
@@ -162,6 +162,14 @@
         "realloc"
       ]
     },
+    "backtrace": {
+      "function_count": 3,
+      "functions": [
+        "backtrace",
+        "backtrace_symbols",
+        "backtrace_symbols_fd"
+      ]
+    },
     "ctype": {
       "function_count": 11,
       "functions": [
@@ -238,6 +246,16 @@
         "inet_pton",
         "ntohl",
         "ntohs"
+      ]
+    },
+    "loader": {
+      "function_count": 5,
+      "functions": [
+        "dladdr",
+        "dlclose",
+        "dlinfo",
+        "dlopen",
+        "dlsym"
       ]
     },
     "locale": {
@@ -344,6 +362,15 @@
         "setpwent"
       ]
     },
+    "regex": {
+      "function_count": 4,
+      "functions": [
+        "fnmatch",
+        "glob",
+        "regcomp",
+        "regexec"
+      ]
+    },
     "resolver": {
       "function_count": 6,
       "functions": [
@@ -359,6 +386,23 @@
       "function_count": 1,
       "functions": [
         "getrlimit"
+      ]
+    },
+    "session": {
+      "function_count": 4,
+      "functions": [
+        "getlogin",
+        "getlogin_r",
+        "getsid",
+        "setsid"
+      ]
+    },
+    "setjmp": {
+      "function_count": 3,
+      "functions": [
+        "_setjmp",
+        "longjmp",
+        "setjmp"
       ]
     },
     "signal": {
@@ -377,6 +421,14 @@
         "listen",
         "shutdown",
         "socket"
+      ]
+    },
+    "spawn": {
+      "function_count": 3,
+      "functions": [
+        "execve",
+        "posix_spawn",
+        "system"
       ]
     },
     "startup": {
@@ -431,6 +483,18 @@
       "function_count": 1,
       "functions": [
         "strlen"
+      ]
+    },
+    "sysv": {
+      "function_count": 7,
+      "functions": [
+        "msgget",
+        "semctl",
+        "semget",
+        "semop",
+        "shmat",
+        "shmdt",
+        "shmget"
       ]
     },
     "termios": {
@@ -513,6 +577,19 @@
       ],
       "families": [
         "allocator"
+      ]
+    },
+    "backtrace_ops": {
+      "file": "backtrace_ops.json",
+      "sha256": "674d7b701936af39c82584b4cfdfb3805a6e0d819472a2d1eef0548821bceeb0",
+      "case_count": 5,
+      "functions": [
+        "backtrace",
+        "backtrace_symbols",
+        "backtrace_symbols_fd"
+      ],
+      "families": [
+        "backtrace"
       ]
     },
     "ctype_ops": {
@@ -631,6 +708,21 @@
       ],
       "families": [
         "inet"
+      ]
+    },
+    "loader_edges": {
+      "file": "loader_edges.json",
+      "sha256": "9edc36e71269c8d543f896d861f505e55ca7794665627c58bcfd66463253c566",
+      "case_count": 7,
+      "functions": [
+        "dladdr",
+        "dlclose",
+        "dlinfo",
+        "dlopen",
+        "dlsym"
+      ],
+      "families": [
+        "loader"
       ]
     },
     "locale_ops": {
@@ -812,6 +904,20 @@
         "pwd"
       ]
     },
+    "regex_glob_ops": {
+      "file": "regex_glob_ops.json",
+      "sha256": "4a2633272b190540e9e84eb5aba5dd244677bf2c806d00f3bfa64373bbb5e80b",
+      "case_count": 8,
+      "functions": [
+        "fnmatch",
+        "glob",
+        "regcomp",
+        "regexec"
+      ],
+      "families": [
+        "regex"
+      ]
+    },
     "resolver": {
       "file": "resolver.json",
       "sha256": "2f602aa67f0ff9ac5a105db276981be1ab0b33f3ab9baa2f9d1b0a6e7f58c4fe",
@@ -837,6 +943,33 @@
       ],
       "families": [
         "resource"
+      ]
+    },
+    "session_ops": {
+      "file": "session_ops.json",
+      "sha256": "9ec86c91f2efc7185a7bb806530e42964fa36f0cc3b79d87207c51d8c45c51c9",
+      "case_count": 6,
+      "functions": [
+        "getlogin",
+        "getlogin_r",
+        "getsid",
+        "setsid"
+      ],
+      "families": [
+        "session"
+      ]
+    },
+    "setjmp_ops": {
+      "file": "setjmp_ops.json",
+      "sha256": "6c2a3a4e0cd8a7ac65c6d040de52ff638a6f19018a642597704398033ee70d5a",
+      "case_count": 7,
+      "functions": [
+        "_setjmp",
+        "longjmp",
+        "setjmp"
+      ],
+      "families": [
+        "setjmp"
       ]
     },
     "signal_ops": {
@@ -865,6 +998,19 @@
       ],
       "families": [
         "socket"
+      ]
+    },
+    "spawn_exec_ops": {
+      "file": "spawn_exec_ops.json",
+      "sha256": "8bb21d0ac9c25b3363e520dc0d9d7f183c6d1720b7d3dd6e9694b963e85b5ec3",
+      "case_count": 7,
+      "functions": [
+        "execve",
+        "posix_spawn",
+        "system"
+      ],
+      "families": [
+        "spawn"
       ]
     },
     "startup_ops": {
@@ -997,6 +1143,23 @@
       ],
       "families": [
         "strlen"
+      ]
+    },
+    "sysv_ipc_ops": {
+      "file": "sysv_ipc_ops.json",
+      "sha256": "cb6e5265b34f174ca475366a249d098bffb24f9e593ae66db94c8d2f02fe23e4",
+      "case_count": 9,
+      "functions": [
+        "msgget",
+        "semctl",
+        "semget",
+        "semop",
+        "shmat",
+        "shmdt",
+        "shmget"
+      ],
+      "families": [
+        "sysv"
       ]
     },
     "termios_ops": {

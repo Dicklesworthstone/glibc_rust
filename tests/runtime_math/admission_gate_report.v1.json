@@ -1,0 +1,592 @@
+{
+  "schema_version": "v1",
+  "bead": "bd-3ot.3",
+  "generated_at": "2026-02-13T18:12:30Z",
+  "status": "pass",
+  "summary": {
+    "total_modules": 69,
+    "admitted": 25,
+    "retired": 44,
+    "blocked": 0,
+    "errors": 0,
+    "warnings": 0
+  },
+  "policies_enforced": [
+    "admission: governance_classification_required",
+    "admission: ablation_evidence_required",
+    "retirement_lockout: research_must_have_migration_action",
+    "retirement_lockout: retired_module_cannot_be_production",
+    "unknown_block: unclassified_module_blocked",
+    "completeness: production_core_must_be_in_manifest"
+  ],
+  "admission_ledger": [
+    {
+      "module": "admm_budget",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "alpha_investing",
+      "tier": "production_monitor",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "approachability",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "atiyah_bott",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "azuma_hoeffding",
+      "tier": "production_monitor",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "bandit",
+      "tier": "production_core",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "barrier",
+      "tier": "production_core",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "bifurcation_detector",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "birkhoff_ergodic",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "borel_cantelli",
+      "tier": "production_monitor",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "changepoint",
+      "tier": "production_monitor",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "clifford",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "cohomology",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "commitment_audit",
+      "tier": "production_core",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "conformal",
+      "tier": "production_core",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "control",
+      "tier": "production_core",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "coupling",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "covering_array",
+      "tier": "production_monitor",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "cvar",
+      "tier": "production_monitor",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "derived_tstructure",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "design",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "dispersion_index",
+      "tier": "production_monitor",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "dobrushin_contraction",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "doob_decomposition",
+      "tier": "production_monitor",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "entropy_rate",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "eprocess",
+      "tier": "production_monitor",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "equivariant",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "evidence",
+      "tier": "production_core",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "fano_bound",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "fusion",
+      "tier": "production_core",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "grobner_normalizer",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "grothendieck_glue",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "higher_topos",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "hodge_decomposition",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "hurst_exponent",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "info_geometry",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "ito_quadratic_variation",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "kernel_mmd",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "ktheory",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "lempel_ziv",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "localization_chooser",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "loss_minimizer",
+      "tier": "production_core",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "lyapunov_stability",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "malliavin_sensitivity",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "matrix_concentration",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "microlocal",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "nerve_complex",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "obstruction_detector",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "operator_norm",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "ornstein_uhlenbeck",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "pac_bayes",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "pareto",
+      "tier": "production_monitor",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "policy_table",
+      "tier": "production_core",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "pomdp_repair",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "provenance_info",
+      "tier": "production_core",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "rademacher_complexity",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "redundancy_tuner",
+      "tier": "production_core",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "renewal_theory",
+      "tier": "production_monitor",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "risk",
+      "tier": "production_core",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "serre_spectral",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "sobol",
+      "tier": "production_monitor",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "sos_barrier",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "sos_invariant",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "sparse",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "spectral_gap",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "stein_discrepancy",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "submodular_coverage",
+      "tier": "production_monitor",
+      "ablation_decision": "RETAIN",
+      "admission_status": "ADMITTED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "transfer_entropy",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    },
+    {
+      "module": "wasserstein_drift",
+      "tier": "research",
+      "ablation_decision": "RETIRE",
+      "admission_status": "RETIRED",
+      "in_manifest": true,
+      "in_governance": true
+    }
+  ],
+  "findings": [],
+  "feature_gate_config": {
+    "default": [
+      "runtime-math-production"
+    ],
+    "optional": [
+      "runtime-math-research"
+    ],
+    "production_gate": "runtime-math-production",
+    "research_gate": "runtime-math-research"
+  },
+  "artifacts_consumed": {
+    "governance": "tests/conformance/math_governance.json",
+    "manifest": "tests/runtime_math/production_kernel_manifest.v1.json",
+    "ablation_report": "tests/runtime_math/controller_ablation_report.v1.json"
+  }
+}

@@ -1,0 +1,552 @@
+{
+  "schema_version": "v1",
+  "bead": "bd-1m5.6",
+  "generated_at": "2026-02-13T19:21:16Z",
+  "summary": {
+    "total_assertions": 12,
+    "no_crash_in_hardened": 12,
+    "with_healing_actions": 12,
+    "prevention_strategies": {
+      "prevent": 7,
+      "quarantine": 4,
+      "deny": 1
+    },
+    "unique_healing_actions": [
+      "ClampSize",
+      "FreedWithCanaryCorruption",
+      "IgnoreDoubleFree",
+      "IgnoreForeignFree",
+      "ReallocAsMalloc",
+      "ReturnSafeDefault",
+      "TruncateWithNull",
+      "UpgradeToSafeVariant"
+    ],
+    "validation_errors": 0,
+    "validation_warnings": 0
+  },
+  "assertion_matrix": [
+    {
+      "cve_id": "CVE-2023-6246",
+      "test_name": "syslog_heap_overflow_suite",
+      "cvss_score": 8.4,
+      "vulnerability_classes": [
+        "heap_overflow",
+        "integer_overflow",
+        "size_miscalculation"
+      ],
+      "prevention_strategy": "prevent",
+      "hardened_expectations": {
+        "crashes": false,
+        "exit_code": 0,
+        "healing_actions_required": [
+          "ClampSize",
+          "TruncateWithNull"
+        ],
+        "no_uncontrolled_unsafety": true
+      },
+      "cwe_prevention": [
+        {
+          "cwe_id": "CWE-787",
+          "strategy": "prevent",
+          "description": "Out-of-bounds write prevented"
+        },
+        {
+          "cwe_id": "CWE-131",
+          "strategy": "prevent",
+          "description": "Size miscalculation clamped"
+        },
+        {
+          "cwe_id": "CWE-190",
+          "strategy": "prevent",
+          "description": "Integer overflow clamped"
+        }
+      ],
+      "regression_checks": {
+        "no_crash": true,
+        "expected_exit_code": 0,
+        "healing_actions_emitted": true,
+        "healing_actions_list": [
+          "ClampSize",
+          "TruncateWithNull"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-2961",
+      "test_name": "iconv_iso2022cn_ext_buffer_overflow",
+      "cvss_score": 8.8,
+      "vulnerability_classes": [
+        "heap_overflow"
+      ],
+      "prevention_strategy": "prevent",
+      "hardened_expectations": {
+        "crashes": false,
+        "exit_code": 0,
+        "healing_actions_required": [
+          "ClampSize"
+        ],
+        "no_uncontrolled_unsafety": true
+      },
+      "cwe_prevention": [
+        {
+          "cwe_id": "CWE-787",
+          "strategy": "prevent",
+          "description": "Out-of-bounds write prevented"
+        }
+      ],
+      "regression_checks": {
+        "no_crash": true,
+        "expected_exit_code": 0,
+        "healing_actions_emitted": true,
+        "healing_actions_list": [
+          "ClampSize"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-33599",
+      "test_name": "nscd_netgroup_cache_memory_corruption_suite",
+      "cvss_score": 7.6,
+      "vulnerability_classes": [
+        "heap_overflow",
+        "null_dereference",
+        "stack_overflow",
+        "uninitialized_memory"
+      ],
+      "prevention_strategy": "prevent",
+      "hardened_expectations": {
+        "crashes": false,
+        "exit_code": 0,
+        "healing_actions_required": [
+          "ClampSize",
+          "ReturnSafeDefault"
+        ],
+        "no_uncontrolled_unsafety": true
+      },
+      "cwe_prevention": [
+        {
+          "cwe_id": "CWE-121",
+          "strategy": "prevent",
+          "description": "Stack overflow detected"
+        },
+        {
+          "cwe_id": "CWE-476",
+          "strategy": "safe-default",
+          "description": "Null dereference returns safe default"
+        },
+        {
+          "cwe_id": "CWE-787",
+          "strategy": "prevent",
+          "description": "Out-of-bounds write prevented"
+        },
+        {
+          "cwe_id": "CWE-908",
+          "strategy": "safe-default",
+          "description": "Uninitialized memory zeroed"
+        }
+      ],
+      "regression_checks": {
+        "no_crash": true,
+        "expected_exit_code": 0,
+        "healing_actions_emitted": true,
+        "healing_actions_list": [
+          "ClampSize",
+          "ReturnSafeDefault"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2025-8058",
+      "test_name": "regcomp_double_free_on_alloc_failure",
+      "cvss_score": 5.5,
+      "vulnerability_classes": [
+        "double_free"
+      ],
+      "prevention_strategy": "quarantine",
+      "hardened_expectations": {
+        "crashes": false,
+        "exit_code": 0,
+        "healing_actions_required": [
+          "IgnoreDoubleFree"
+        ],
+        "no_uncontrolled_unsafety": true
+      },
+      "cwe_prevention": [
+        {
+          "cwe_id": "CWE-415",
+          "strategy": "quarantine",
+          "description": "Double-free silently ignored"
+        }
+      ],
+      "regression_checks": {
+        "no_crash": true,
+        "expected_exit_code": 0,
+        "healing_actions_emitted": true,
+        "healing_actions_list": [
+          "IgnoreDoubleFree"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-38812 (synthetic)",
+      "test_name": "dcerpc_heap_overflow_cve_2024_38812",
+      "cvss_score": 9.8,
+      "vulnerability_classes": [
+        "heap_overflow"
+      ],
+      "prevention_strategy": "deny",
+      "hardened_expectations": {
+        "crashes": false,
+        "exit_code": 0,
+        "healing_actions_required": [
+          "ClampSize",
+          "FreedWithCanaryCorruption"
+        ],
+        "no_uncontrolled_unsafety": true
+      },
+      "cwe_prevention": [
+        {
+          "cwe_id": "CWE-122",
+          "strategy": "prevent",
+          "description": "Heap overflow clamped/bounded"
+        }
+      ],
+      "regression_checks": {
+        "no_crash": true,
+        "expected_exit_code": 0,
+        "healing_actions_emitted": true,
+        "healing_actions_list": [
+          "ClampSize",
+          "FreedWithCanaryCorruption"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-23113 (synthetic)",
+      "test_name": "format_string_cve_2024_23113",
+      "cvss_score": 9.8,
+      "vulnerability_classes": [
+        "format_string"
+      ],
+      "prevention_strategy": "prevent",
+      "hardened_expectations": {
+        "crashes": false,
+        "exit_code": 0,
+        "healing_actions_required": [
+          "UpgradeToSafeVariant"
+        ],
+        "no_uncontrolled_unsafety": true
+      },
+      "cwe_prevention": [
+        {
+          "cwe_id": "CWE-134",
+          "strategy": "prevent",
+          "description": "Format string upgraded to safe variant"
+        }
+      ],
+      "regression_checks": {
+        "no_crash": true,
+        "expected_exit_code": 0,
+        "healing_actions_emitted": true,
+        "healing_actions_list": [
+          "UpgradeToSafeVariant"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-24990 (synthetic)",
+      "test_name": "quic_uaf_cve_2024_24990",
+      "cvss_score": 7.5,
+      "vulnerability_classes": [
+        "use_after_free"
+      ],
+      "prevention_strategy": "quarantine",
+      "hardened_expectations": {
+        "crashes": false,
+        "exit_code": 0,
+        "healing_actions_required": [
+          "ReturnSafeDefault",
+          "IgnoreDoubleFree"
+        ],
+        "no_uncontrolled_unsafety": true
+      },
+      "cwe_prevention": [
+        {
+          "cwe_id": "CWE-416",
+          "strategy": "quarantine",
+          "description": "Use-after-free detected via generation check"
+        }
+      ],
+      "regression_checks": {
+        "no_crash": true,
+        "expected_exit_code": 0,
+        "healing_actions_emitted": true,
+        "healing_actions_list": [
+          "ReturnSafeDefault",
+          "IgnoreDoubleFree"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-6197",
+      "test_name": "curl_asn1_stack_use_after_free",
+      "cvss_score": 7.5,
+      "vulnerability_classes": [
+        "expired_pointer",
+        "use_after_free"
+      ],
+      "prevention_strategy": "quarantine",
+      "hardened_expectations": {
+        "crashes": false,
+        "exit_code": 0,
+        "healing_actions_required": [
+          "IgnoreForeignFree"
+        ],
+        "no_uncontrolled_unsafety": true
+      },
+      "cwe_prevention": [
+        {
+          "cwe_id": "CWE-416",
+          "strategy": "quarantine",
+          "description": "Use-after-free detected via generation check"
+        },
+        {
+          "cwe_id": "CWE-825",
+          "strategy": "quarantine",
+          "description": "Expired pointer detected"
+        }
+      ],
+      "regression_checks": {
+        "no_crash": true,
+        "expected_exit_code": 0,
+        "healing_actions_emitted": true,
+        "healing_actions_list": [
+          "IgnoreForeignFree"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-56406",
+      "test_name": "perl_tr_transliteration_heap_overflow",
+      "cvss_score": 8.6,
+      "vulnerability_classes": [
+        "heap_overflow"
+      ],
+      "prevention_strategy": "prevent",
+      "hardened_expectations": {
+        "crashes": false,
+        "exit_code": 0,
+        "healing_actions_required": [
+          "ClampSize",
+          "TruncateWithNull"
+        ],
+        "no_uncontrolled_unsafety": true
+      },
+      "cwe_prevention": [
+        {
+          "cwe_id": "CWE-122",
+          "strategy": "prevent",
+          "description": "Heap overflow clamped/bounded"
+        },
+        {
+          "cwe_id": "CWE-787",
+          "strategy": "prevent",
+          "description": "Out-of-bounds write prevented"
+        }
+      ],
+      "regression_checks": {
+        "no_crash": true,
+        "expected_exit_code": 0,
+        "healing_actions_emitted": true,
+        "healing_actions_list": [
+          "ClampSize",
+          "TruncateWithNull"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2025-49844",
+      "test_name": "redis_lua_gc_use_after_free",
+      "cvss_score": 10.0,
+      "vulnerability_classes": [
+        "use_after_free"
+      ],
+      "prevention_strategy": "quarantine",
+      "hardened_expectations": {
+        "crashes": false,
+        "exit_code": 0,
+        "healing_actions_required": [
+          "IgnoreDoubleFree",
+          "ReturnSafeDefault"
+        ],
+        "no_uncontrolled_unsafety": true
+      },
+      "cwe_prevention": [
+        {
+          "cwe_id": "CWE-416",
+          "strategy": "quarantine",
+          "description": "Use-after-free detected via generation check"
+        }
+      ],
+      "regression_checks": {
+        "no_crash": true,
+        "expected_exit_code": 0,
+        "healing_actions_emitted": true,
+        "healing_actions_list": [
+          "IgnoreDoubleFree",
+          "ReturnSafeDefault"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2021-3156",
+      "test_name": "sudo_baron_samedit_heap_overflow",
+      "cvss_score": 7.8,
+      "vulnerability_classes": [
+        "heap_overflow"
+      ],
+      "prevention_strategy": "prevent",
+      "hardened_expectations": {
+        "crashes": false,
+        "exit_code": 0,
+        "healing_actions_required": [
+          "ClampSize",
+          "TruncateWithNull"
+        ],
+        "no_uncontrolled_unsafety": true
+      },
+      "cwe_prevention": [
+        {
+          "cwe_id": "CWE-122",
+          "strategy": "prevent",
+          "description": "Heap overflow clamped/bounded"
+        },
+        {
+          "cwe_id": "CWE-787",
+          "strategy": "prevent",
+          "description": "Out-of-bounds write prevented"
+        }
+      ],
+      "regression_checks": {
+        "no_crash": true,
+        "expected_exit_code": 0,
+        "healing_actions_emitted": true,
+        "healing_actions_list": [
+          "ClampSize",
+          "TruncateWithNull"
+        ]
+      }
+    },
+    {
+      "cve_id": "CVE-2024-46461",
+      "test_name": "vlc_mms_integer_overflow_heap_overflow",
+      "cvss_score": 7.5,
+      "vulnerability_classes": [
+        "heap_overflow",
+        "integer_overflow"
+      ],
+      "prevention_strategy": "prevent",
+      "hardened_expectations": {
+        "crashes": false,
+        "exit_code": 0,
+        "healing_actions_required": [
+          "ClampSize",
+          "ReallocAsMalloc"
+        ],
+        "no_uncontrolled_unsafety": true
+      },
+      "cwe_prevention": [
+        {
+          "cwe_id": "CWE-190",
+          "strategy": "prevent",
+          "description": "Integer overflow clamped"
+        },
+        {
+          "cwe_id": "CWE-122",
+          "strategy": "prevent",
+          "description": "Heap overflow clamped/bounded"
+        }
+      ],
+      "regression_checks": {
+        "no_crash": true,
+        "expected_exit_code": 0,
+        "healing_actions_emitted": true,
+        "healing_actions_list": [
+          "ClampSize",
+          "ReallocAsMalloc"
+        ]
+      }
+    }
+  ],
+  "healing_expectation_map": {
+    "ClampSize": {
+      "strategy": "prevent",
+      "cve_ids": [
+        "CVE-2023-6246",
+        "CVE-2024-2961",
+        "CVE-2024-33599",
+        "CVE-2024-38812 (synthetic)",
+        "CVE-2024-56406",
+        "CVE-2021-3156",
+        "CVE-2024-46461"
+      ],
+      "count": 7
+    },
+    "TruncateWithNull": {
+      "strategy": "prevent",
+      "cve_ids": [
+        "CVE-2023-6246",
+        "CVE-2024-56406",
+        "CVE-2021-3156"
+      ],
+      "count": 3
+    },
+    "ReturnSafeDefault": {
+      "strategy": "safe-default",
+      "cve_ids": [
+        "CVE-2024-33599",
+        "CVE-2024-24990 (synthetic)",
+        "CVE-2025-49844"
+      ],
+      "count": 3
+    },
+    "IgnoreDoubleFree": {
+      "strategy": "quarantine",
+      "cve_ids": [
+        "CVE-2025-8058",
+        "CVE-2024-24990 (synthetic)",
+        "CVE-2025-49844"
+      ],
+      "count": 3
+    },
+    "FreedWithCanaryCorruption": {
+      "strategy": "deny",
+      "cve_ids": [
+        "CVE-2024-38812 (synthetic)"
+      ],
+      "count": 1
+    },
+    "UpgradeToSafeVariant": {
+      "strategy": "prevent",
+      "cve_ids": [
+        "CVE-2024-23113 (synthetic)"
+      ],
+      "count": 1
+    },
+    "IgnoreForeignFree": {
+      "strategy": "quarantine",
+      "cve_ids": [
+        "CVE-2024-6197"
+      ],
+      "count": 1
+    },
+    "ReallocAsMalloc": {
+      "strategy": "safe-default",
+      "cve_ids": [
+        "CVE-2024-46461"
+      ],
+      "count": 1
+    }
+  },
+  "validation_issues": []
+}

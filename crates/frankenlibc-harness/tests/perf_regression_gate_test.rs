@@ -44,7 +44,12 @@ fn resolve_threshold(policy: &serde_json::Value, mode: &str, benchmark_id: &str)
         .or_else(|| policy["threshold_policy"]["default_max_regression_pct"].as_f64())
 }
 
-fn classify_regression(observed: f64, baseline: f64, target: f64, threshold_pct: f64) -> &'static str {
+fn classify_regression(
+    observed: f64,
+    baseline: f64,
+    target: f64,
+    threshold_pct: f64,
+) -> &'static str {
     let threshold = baseline * (1.0 + threshold_pct / 100.0);
     let baseline_ok = observed <= threshold;
     let target_ok = observed <= target;
@@ -60,14 +65,21 @@ fn resolve_suspect_component(policy: &serde_json::Value, benchmark_id: &str) -> 
     policy["attribution"]["suspect_component_map"][benchmark_id]
         .as_str()
         .map(str::to_owned)
-        .or_else(|| policy["attribution"]["unknown_component_label"].as_str().map(str::to_owned))
+        .or_else(|| {
+            policy["attribution"]["unknown_component_label"]
+                .as_str()
+                .map(str::to_owned)
+        })
         .unwrap_or_else(|| "unknown_component".to_string())
 }
 
 #[test]
 fn policy_exists_and_valid() {
     let policy = load_policy();
-    assert!(policy["schema_version"].is_number(), "Missing schema_version");
+    assert!(
+        policy["schema_version"].is_number(),
+        "Missing schema_version"
+    );
     assert!(
         policy["threshold_policy"].is_object(),
         "Missing threshold_policy"

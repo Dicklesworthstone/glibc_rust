@@ -1,0 +1,172 @@
+{
+  "schema_version": "v1",
+  "bead": "bd-2vv.11",
+  "generated_at": "2026-02-13T19:53:37Z",
+  "consistency_hash": "6e8cc0cdbe958d22",
+  "summary": {
+    "overall_verdict": "fail",
+    "total_findings": 14,
+    "by_severity": {
+      "error": 7,
+      "info": 3,
+      "warning": 4
+    },
+    "by_verdict": {
+      "drift": 1,
+      "inconsistent": 10,
+      "pass": 3
+    },
+    "reports_loaded": 5,
+    "reports_total": 5
+  },
+  "reports_loaded": {
+    "support_matrix": true,
+    "reality_report": true,
+    "replacement_levels": true,
+    "replacement_profile": true,
+    "stub_census": true
+  },
+  "findings": [
+    {
+      "rule": "symbol_count",
+      "severity": "info",
+      "report_pair": "all",
+      "verdict": "pass",
+      "description": "All reports agree on 250 symbols"
+    },
+    {
+      "rule": "status_distribution",
+      "severity": "info",
+      "report_pair": "all",
+      "verdict": "pass",
+      "description": "Status distributions consistent across reports"
+    },
+    {
+      "rule": "claim_alignment",
+      "severity": "warning",
+      "report_pair": "support_matrix vs stub_census",
+      "affected_symbols": [
+        "tcgetattr"
+      ],
+      "verdict": "inconsistent",
+      "description": "Symbol tcgetattr: classification mismatch"
+    },
+    {
+      "rule": "claim_alignment",
+      "severity": "warning",
+      "report_pair": "support_matrix vs stub_census",
+      "affected_symbols": [
+        "tcsetattr"
+      ],
+      "verdict": "inconsistent",
+      "description": "Symbol tcsetattr: classification mismatch"
+    },
+    {
+      "rule": "claim_alignment",
+      "severity": "error",
+      "report_pair": "support_matrix vs stub_census",
+      "affected_symbols": [
+        "getaddrinfo"
+      ],
+      "verdict": "inconsistent",
+      "description": "Symbol getaddrinfo: classification mismatch"
+    },
+    {
+      "rule": "claim_alignment",
+      "severity": "error",
+      "report_pair": "support_matrix vs stub_census",
+      "affected_symbols": [
+        "getnameinfo"
+      ],
+      "verdict": "inconsistent",
+      "description": "Symbol getnameinfo: classification mismatch"
+    },
+    {
+      "rule": "claim_alignment",
+      "severity": "error",
+      "report_pair": "support_matrix vs stub_census",
+      "affected_symbols": [
+        "freeaddrinfo"
+      ],
+      "verdict": "inconsistent",
+      "description": "Symbol freeaddrinfo: classification mismatch"
+    },
+    {
+      "rule": "claim_alignment",
+      "severity": "warning",
+      "report_pair": "support_matrix vs stub_census",
+      "affected_symbols": [
+        "gai_strerror"
+      ],
+      "verdict": "inconsistent",
+      "description": "Symbol gai_strerror: classification mismatch"
+    },
+    {
+      "rule": "claim_alignment",
+      "severity": "error",
+      "report_pair": "support_matrix vs stub_census",
+      "affected_symbols": [
+        "pthread_create"
+      ],
+      "verdict": "inconsistent",
+      "description": "Symbol pthread_create: classification mismatch"
+    },
+    {
+      "rule": "claim_alignment",
+      "severity": "error",
+      "report_pair": "support_matrix vs stub_census",
+      "affected_symbols": [
+        "pthread_join"
+      ],
+      "verdict": "inconsistent",
+      "description": "Symbol pthread_join: classification mismatch"
+    },
+    {
+      "rule": "claim_alignment",
+      "severity": "error",
+      "report_pair": "support_matrix vs stub_census",
+      "affected_symbols": [
+        "pthread_detach"
+      ],
+      "verdict": "inconsistent",
+      "description": "Symbol pthread_detach: classification mismatch"
+    },
+    {
+      "rule": "claim_alignment",
+      "severity": "error",
+      "report_pair": "support_matrix vs stub_census",
+      "affected_symbols": [
+        "pthread_self"
+      ],
+      "verdict": "inconsistent",
+      "description": "Symbol pthread_self: classification mismatch"
+    },
+    {
+      "rule": "census_alignment",
+      "severity": "warning",
+      "report_pair": "support_matrix vs replacement_profile",
+      "affected_symbols": [],
+      "verdict": "drift",
+      "description": "Module total_call_throughs: support_matrix has 0 callthrough, profile census claims 75"
+    },
+    {
+      "rule": "no_unknown_status",
+      "severity": "info",
+      "verdict": "pass",
+      "description": "All symbols have valid status classification"
+    }
+  ],
+  "consistency_rules": {
+    "symbol_count": "Symbol totals must match across all reports",
+    "status_distribution": "Status counts must be consistent",
+    "level_gates": "Current replacement level must satisfy gate criteria",
+    "claim_alignment": "Claims in profiles must match support_matrix reality",
+    "no_unknown_status": "No symbols with unknown/ambiguous status"
+  },
+  "ci_policy": {
+    "critical_findings": "Block release; must be resolved",
+    "error_findings": "Block CI merge; require investigation",
+    "warning_findings": "Informational; track as drift",
+    "info_findings": "Passing checks; no action needed"
+  }
+}

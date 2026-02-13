@@ -4,11 +4,11 @@
   "generated_at": "2026-02-13T17:57:28Z",
   "summary": {
     "total_symbols": 250,
-    "symbols_with_fixtures": 159,
+    "symbols_with_fixtures": 161,
     "coverage_pct": 64,
-    "total_fixture_files": 41,
-    "total_fixture_cases": 421,
-    "total_families": 32
+    "total_fixture_files": 49,
+    "total_fixture_cases": 479,
+    "total_families": 40
   },
   "module_coverage": {
     "ctype_abi": {

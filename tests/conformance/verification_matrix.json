@@ -3636,7 +3636,7 @@
       "bead_id": "bd-24ug",
       "title": "bd-h5x subtask: stdio callthrough replacement strategy and phased execution",
       "priority": 1,
-      "status": "in_progress",
+      "status": "closed",
       "assignee": "RedLotus",
       "labels": [
         "callthrough",
@@ -3713,8 +3713,9 @@
         ],
         "e2e_cmds": [],
         "expected_assertions": [
-          "stdio phase split is a deterministic, complete partition of support_matrix stdio_abi callthrough symbols",
-          "migration phases are strictly ordered, non-overlapping, and fully cover stdio_abi callthrough symbols",
+          "stdio phase split is a deterministic, complete partition of exported stdio_abi symbols",
+          "phase-1 required symbols are non-callthrough while deferred symbols remain explicit GlibcCallThrough in support_matrix",
+          "migration phases are strictly ordered, non-overlapping, and fully cover stdio_abi symbols",
           "gate emits schema-conformant structured logs and report/index evidence under target/conformance and tests/cve_arena/results/bd-24ug"
         ],
         "log_schema_refs": [
@@ -3731,7 +3732,7 @@
         ],
         "perf_proof_refs": [],
         "close_blockers": [],
-        "notes": "Updated for bd-24ug: stdio phased replacement strategy artifact + deterministic gate + harness verification."
+        "notes": "Closed: phase-1 stdio symbols migrated to non-callthrough classification with deferred stdio surface explicit and gate-validated."
       }
     },
     {

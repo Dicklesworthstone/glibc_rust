@@ -5,7 +5,7 @@
   "generated_from": {
     "support_matrix": "support_matrix.json",
     "callthrough_census": "tests/conformance/callthrough_census.v1.json",
-    "generated_utc": "2026-02-13T09:06:00Z"
+    "generated_utc": "2026-02-13T18:07:59Z"
   },
   "phase_split": {
     "phase1_required": {
@@ -53,9 +53,10 @@
   "migration_plan": {
     "strategy_version": 1,
     "invariants": [
-      "phase split is a strict partition of stdio_abi GlibcCallThrough symbols",
+      "phase split is a strict partition of stdio_abi exported symbols",
       "phase ordering is deterministic and strictly increasing",
-      "phase-1 required subset remains non-empty and gate-enforced"
+      "phase-1 required subset remains non-empty and gate-enforced",
+      "phase-1 required symbols are non-callthrough and deferred symbols remain explicit GlibcCallThrough in support_matrix"
     ],
     "phases": [
       {
@@ -86,7 +87,7 @@
           "scripts/check_stdio_phase_strategy.sh"
         ],
         "completion_criteria": [
-          "phase-1 symbol list matches support_matrix-derived stdio callthrough partition",
+          "phase-1 symbol list is non-callthrough in support_matrix and fully covered by migration phase 1",
           "strict and hardened logs include deterministic phase-plan evidence"
         ]
       },
@@ -153,9 +154,18 @@
     ]
   },
   "summary": {
-    "total_stdio_callthrough_symbols": 30,
+    "total_stdio_symbols": 30,
     "phase_count": 3,
     "phase1_required_count": 14,
-    "deferred_count": 16
+    "deferred_count": 16,
+    "phase1_non_callthrough_count": 14,
+    "deferred_callthrough_count": 16
+  },
+  "support_contract": {
+    "phase1_required_statuses": [
+      "Implemented",
+      "RawSyscall"
+    ],
+    "deferred_surface_status": "GlibcCallThrough"
   }
 }

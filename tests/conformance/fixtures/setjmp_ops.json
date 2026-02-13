@@ -1,0 +1,78 @@
+{
+  "version": "v1",
+  "family": "setjmp_ops",
+  "captured_at": "2026-02-13T00:00:00Z",
+  "description": "Mode-specific parity fixtures for setjmp/longjmp non-local jump operations. Strict: standard setjmp/longjmp semantics. Hardened: validates jump buffer integrity before restore.",
+  "cases": [
+    {
+      "name": "setjmp_returns_zero_strict",
+      "function": "setjmp",
+      "spec_section": "C11 7.13.1.1",
+      "inputs": { "env": "valid_jmp_buf" },
+      "expected_output": 0,
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "setjmp returns 0 on direct invocation"
+    },
+    {
+      "name": "longjmp_restores_strict",
+      "function": "longjmp",
+      "spec_section": "C11 7.13.2.1",
+      "inputs": { "env": "saved_jmp_buf", "val": 42 },
+      "expected_output": 42,
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "longjmp causes setjmp to return the specified value"
+    },
+    {
+      "name": "longjmp_zero_becomes_one_strict",
+      "function": "longjmp",
+      "spec_section": "C11 7.13.2.1",
+      "inputs": { "env": "saved_jmp_buf", "val": 0 },
+      "expected_output": 1,
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "longjmp with val=0 causes setjmp to return 1 (per spec)"
+    },
+    {
+      "name": "sigsetjmp_returns_zero_strict",
+      "function": "_setjmp",
+      "spec_section": "POSIX sigsetjmp",
+      "inputs": { "env": "valid_sigjmp_buf", "savemask": 1 },
+      "expected_output": 0,
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "sigsetjmp returns 0 on direct invocation, saves signal mask if savemask!=0"
+    },
+    {
+      "name": "setjmp_returns_zero_hardened",
+      "function": "setjmp",
+      "spec_section": "C11 7.13.1.1",
+      "inputs": { "env": "valid_jmp_buf" },
+      "expected_output": 0,
+      "expected_errno": 0,
+      "mode": "hardened",
+      "note": "Hardened: setjmp stores canary in jmp_buf for integrity validation"
+    },
+    {
+      "name": "longjmp_restores_hardened",
+      "function": "longjmp",
+      "spec_section": "C11 7.13.2.1",
+      "inputs": { "env": "saved_jmp_buf", "val": 42 },
+      "expected_output": 42,
+      "expected_errno": 0,
+      "mode": "hardened",
+      "note": "Hardened: validates jmp_buf canary before restoring context"
+    },
+    {
+      "name": "longjmp_corrupted_buf_hardened",
+      "function": "longjmp",
+      "spec_section": "FrankenLibC TSM repair",
+      "inputs": { "env": "corrupted_jmp_buf", "val": 1 },
+      "expected_output": "REPAIR_ABORT",
+      "expected_errno": 0,
+      "mode": "hardened",
+      "note": "Hardened: detects corrupted jmp_buf, triggers repair/abort instead of undefined behavior"
+    }
+  ]
+}

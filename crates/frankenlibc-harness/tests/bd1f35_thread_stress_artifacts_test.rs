@@ -100,7 +100,9 @@ fn thread_stress_gate_emits_valid_bd1f35_artifacts() {
     let index = load_json(&index_path);
     assert_eq!(index["index_version"].as_i64(), Some(1));
     assert_eq!(index["bead_id"].as_str(), Some("bd-1f35"));
-    let artifacts = index["artifacts"].as_array().expect("artifacts should be array");
+    let artifacts = index["artifacts"]
+        .as_array()
+        .expect("artifacts should be array");
     assert!(!artifacts.is_empty(), "artifact index should not be empty");
 
     let report = load_json(&report_path);

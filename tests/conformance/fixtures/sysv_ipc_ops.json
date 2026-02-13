@@ -1,0 +1,98 @@
+{
+  "version": "v1",
+  "family": "sysv_ipc_ops",
+  "captured_at": "2026-02-13T00:00:00Z",
+  "description": "Mode-specific parity fixtures for System V IPC operations (semaphores, shared memory, message queues). Strict: standard POSIX semantics. Hardened: deadlock detection + capability verification.",
+  "cases": [
+    {
+      "name": "semget_create_strict",
+      "function": "semget",
+      "spec_section": "POSIX semget(2)",
+      "inputs": { "key": "IPC_PRIVATE", "nsems": 1, "semflg": "IPC_CREAT|0600" },
+      "expected_output": "valid_semid",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Creates a new semaphore set with IPC_PRIVATE"
+    },
+    {
+      "name": "semop_wait_strict",
+      "function": "semop",
+      "spec_section": "POSIX semop(2)",
+      "inputs": { "semid": "valid_semid", "sops": [{"sem_num": 0, "sem_op": -1, "sem_flg": "IPC_NOWAIT"}], "nsops": 1 },
+      "expected_output": -1,
+      "expected_errno": "EAGAIN",
+      "mode": "strict",
+      "note": "semop with IPC_NOWAIT on zero-valued sem returns EAGAIN"
+    },
+    {
+      "name": "semctl_setval_strict",
+      "function": "semctl",
+      "spec_section": "POSIX semctl(2)",
+      "inputs": { "semid": "valid_semid", "semnum": 0, "cmd": "SETVAL", "val": 5 },
+      "expected_output": 0,
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Sets semaphore value to 5"
+    },
+    {
+      "name": "shmget_create_strict",
+      "function": "shmget",
+      "spec_section": "POSIX shmget(2)",
+      "inputs": { "key": "IPC_PRIVATE", "size": 4096, "shmflg": "IPC_CREAT|0600" },
+      "expected_output": "valid_shmid",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Creates a new shared memory segment"
+    },
+    {
+      "name": "shmat_attach_strict",
+      "function": "shmat",
+      "spec_section": "POSIX shmat(2)",
+      "inputs": { "shmid": "valid_shmid", "shmaddr": "NULL", "shmflg": 0 },
+      "expected_output": "valid_ptr",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Attaches shared memory at system-chosen address"
+    },
+    {
+      "name": "shmdt_detach_strict",
+      "function": "shmdt",
+      "spec_section": "POSIX shmdt(2)",
+      "inputs": { "shmaddr": "attached_ptr" },
+      "expected_output": 0,
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Detaches shared memory segment"
+    },
+    {
+      "name": "msgget_create_strict",
+      "function": "msgget",
+      "spec_section": "POSIX msgget(2)",
+      "inputs": { "key": "IPC_PRIVATE", "msgflg": "IPC_CREAT|0600" },
+      "expected_output": "valid_msqid",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Creates a new message queue"
+    },
+    {
+      "name": "semget_create_hardened",
+      "function": "semget",
+      "spec_section": "POSIX semget(2)",
+      "inputs": { "key": "IPC_PRIVATE", "nsems": 1, "semflg": "IPC_CREAT|0600" },
+      "expected_output": "valid_semid",
+      "expected_errno": 0,
+      "mode": "hardened",
+      "note": "Hardened: semaphore creation with admissibility guard and deadlock-cut certificate"
+    },
+    {
+      "name": "shmget_create_hardened",
+      "function": "shmget",
+      "spec_section": "POSIX shmget(2)",
+      "inputs": { "key": "IPC_PRIVATE", "size": 4096, "shmflg": "IPC_CREAT|0600" },
+      "expected_output": "valid_shmid",
+      "expected_errno": 0,
+      "mode": "hardened",
+      "note": "Hardened: shared memory creation with capability drift detection"
+    }
+  ]
+}

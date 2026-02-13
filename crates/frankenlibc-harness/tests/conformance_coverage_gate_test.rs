@@ -40,14 +40,14 @@ fn conformance_coverage_gate_no_regression() {
 
     if code == 0 {
         // Parse report and verify no errors
-        let report: serde_json::Value =
-            serde_json::from_str(&stdout).unwrap_or_else(|e| {
-                panic!("Failed to parse coverage report: {}\nstdout: {}", e, stdout);
-            });
+        let report: serde_json::Value = serde_json::from_str(&stdout).unwrap_or_else(|e| {
+            panic!("Failed to parse coverage report: {}\nstdout: {}", e, stdout);
+        });
 
         let errors = report["summary"]["errors"].as_u64().unwrap_or(999);
         assert_eq!(
-            errors, 0,
+            errors,
+            0,
             "Coverage gate found {} error(s). Findings:\n{}",
             errors,
             serde_json::to_string_pretty(&report["findings"]).unwrap_or_default()

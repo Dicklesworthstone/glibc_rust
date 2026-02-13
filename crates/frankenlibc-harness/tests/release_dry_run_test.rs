@@ -16,8 +16,7 @@ fn release_dag_schema_valid() {
     assert!(dag_path.exists(), "DAG file not found at {:?}", dag_path);
 
     let content = std::fs::read_to_string(&dag_path).expect("failed to read DAG file");
-    let dag: serde_json::Value =
-        serde_json::from_str(&content).expect("DAG is not valid JSON");
+    let dag: serde_json::Value = serde_json::from_str(&content).expect("DAG is not valid JSON");
 
     // Validate schema version
     assert_eq!(
@@ -60,11 +59,7 @@ fn release_dag_schema_valid() {
 
     // Validate no duplicate gate names
     let unique: std::collections::HashSet<&str> = names.iter().copied().collect();
-    assert_eq!(
-        unique.len(),
-        names.len(),
-        "gate_name values must be unique"
-    );
+    assert_eq!(unique.len(), names.len(), "gate_name values must be unique");
 }
 
 #[test]
@@ -168,11 +163,7 @@ fn release_dry_run_fail_fast_produces_resume_state() {
 
     let output = Command::new("bash")
         .arg(&script)
-        .args([
-            "--mode",
-            "dry-run",
-            "--state-path",
-        ])
+        .args(["--mode", "dry-run", "--state-path"])
         .arg(&state_path)
         .args(["--log-path"])
         .arg(&log_path)
@@ -195,8 +186,7 @@ fn release_dry_run_fail_fast_produces_resume_state() {
     );
 
     let content = std::fs::read_to_string(&state_path).expect("failed to read state");
-    let state: serde_json::Value =
-        serde_json::from_str(&content).expect("state is not valid JSON");
+    let state: serde_json::Value = serde_json::from_str(&content).expect("state is not valid JSON");
 
     assert_eq!(
         state["failed_gate"].as_str().unwrap_or(""),
@@ -209,17 +199,15 @@ fn release_dry_run_fail_fast_produces_resume_state() {
         "state must contain blocker_chain"
     );
 
-    let chain = state["blocker_chain"]
-        .as_array()
-        .unwrap();
-    assert!(
-        !chain.is_empty(),
-        "blocker_chain must not be empty"
-    );
+    let chain = state["blocker_chain"].as_array().unwrap();
+    assert!(!chain.is_empty(), "blocker_chain must not be empty");
 
     assert!(
         state["resume_token"].is_string()
-            && state["resume_token"].as_str().unwrap_or("").starts_with("v1:"),
+            && state["resume_token"]
+                .as_str()
+                .unwrap_or("")
+                .starts_with("v1:"),
         "resume_token must start with v1:"
     );
 

@@ -19,11 +19,15 @@
         "test_gate": "cargo test --workspace passes"
       },
       "current_state": {
-        "implemented_pct": 47,
+        "implemented_pct": 55,
         "raw_syscall_pct": 33,
-        "callthrough_pct": 20,
+        "callthrough_pct": 12,
         "stub_pct": 0,
-        "callthrough_modules": ["stdio_abi", "pthread_abi", "dlfcn_abi"],
+        "callthrough_modules": [
+          "dlfcn_abi",
+          "pthread_abi",
+          "stdio_abi"
+        ],
         "stub_modules": []
       },
       "status": "achieved"
@@ -31,7 +35,7 @@
     {
       "level": "L1",
       "name": "Hardened Interpose",
-      "description": "LD_PRELOAD with hardened mode active. All call-throughs validated by membrane. Healing actions applied for safety-critical APIs. Stubs eliminated — all symbols either Implemented, RawSyscall, or GlibcCallThrough.",
+      "description": "LD_PRELOAD with hardened mode active. All call-throughs validated by membrane. Healing actions applied for safety-critical APIs. Stubs eliminated \u2014 all symbols either Implemented, RawSyscall, or GlibcCallThrough.",
       "deployment": "FRANKENLIBC_MODE=hardened LD_PRELOAD=libfrankenlibc_abi.so",
       "host_glibc_required": true,
       "gate_criteria": {
@@ -42,7 +46,10 @@
         "perf_budget_strict_ns": 20,
         "perf_budget_hardened_ns": 200,
         "test_gate": "cargo test --workspace + E2E smoke suite passes in both modes",
-        "additional": ["All stubs eliminated", "Hardened mode E2E validated"]
+        "additional": [
+          "All stubs eliminated",
+          "Hardened mode E2E validated"
+        ]
       },
       "blockers": [
         "E2E smoke harness needs hardened mode validation"
@@ -100,8 +107,8 @@
         ]
       },
       "blockers": [
-        "pthread_abi: 20 call-throughs need futex-based implementation (bd-z84, bd-yos)",
-        "stdio_abi: 30 call-throughs need native implementation",
+        "pthread_abi: 10 call-throughs need futex-based implementation (bd-z84, bd-yos)",
+        "stdio_abi: 16 call-throughs need native implementation",
         "CRT bootstrap (bd-qwm) not started",
         "rtld (bd-3rn) not started",
         "NSS backend (bd-1rf) not started",
@@ -113,18 +120,18 @@
   "current_level": "L0",
   "current_assessment": {
     "total_symbols": 250,
-    "implemented": 113,
+    "implemented": 137,
     "raw_syscall": 83,
-    "callthrough": 54,
+    "callthrough": 30,
     "stub": 0,
-    "implemented_pct": 45,
+    "implemented_pct": 55,
     "raw_syscall_pct": 33,
-    "callthrough_pct": 22,
+    "callthrough_pct": 12,
     "stub_pct": 0,
     "callthrough_breakdown": {
-      "stdio_abi": 30,
-      "pthread_abi": 20,
-      "dlfcn_abi": 4
+      "dlfcn_abi": 4,
+      "pthread_abi": 10,
+      "stdio_abi": 16
     },
     "stub_breakdown": {}
   },
@@ -153,8 +160,8 @@
       "Replacement profile guard passes with only stdio/pthread exceptions"
     ],
     "L2_to_L3": [
-      "Implement futex-based pthread (20 symbols)",
-      "Implement native stdio (30 symbols)",
+      "Implement futex-based pthread (10 symbols)",
+      "Implement native stdio (16 symbols)",
       "Build custom CRT bootstrap",
       "Build minimal rtld",
       "Build NSS files backend",

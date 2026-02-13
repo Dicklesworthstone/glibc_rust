@@ -1,0 +1,69 @@
+{
+  "schema_version": "v1",
+  "bead": "bd-w2c3.7.1",
+  "description": "Deterministic state-transition scenarios for the pressure sensing + overload state machine. Each scenario defines a signal sequence and expected regime history.",
+  "replay_controls": {
+    "deterministic": true,
+    "note": "No randomness or clock dependencies. All transitions are signal-driven."
+  },
+  "thresholds": {
+    "pressured_enter": 60.0,
+    "pressured_exit": 45.0,
+    "overloaded_enter": 85.0,
+    "overloaded_exit": 70.0,
+    "cooldown_epochs": 3,
+    "recovery_hold_epochs": 5
+  },
+  "scenarios": [
+    {
+      "id": "steady_state_nominal",
+      "description": "Calm signals for 50 epochs. Regime stays Nominal throughout.",
+      "signal_pattern": "calm",
+      "epochs": 50,
+      "expected_final_regime": "Nominal",
+      "expected_transitions": 0
+    },
+    {
+      "id": "escalation_calm_to_overloaded",
+      "description": "Start calm, then heavy load for 30 epochs. Should escalate through Pressured to Overloaded.",
+      "signal_pattern": "calm*10 then heavy*30",
+      "epochs": 40,
+      "expected_final_regime": "Overloaded",
+      "expected_min_transitions": 2
+    },
+    {
+      "id": "full_cycle_nominal_overloaded_recovery_nominal",
+      "description": "Full lifecycle: calm → heavy → calm. Must traverse all four regimes.",
+      "signal_pattern": "calm*5 heavy*30 calm*30",
+      "epochs": 65,
+      "expected_final_regime": "Nominal",
+      "expected_regimes_visited": ["Nominal", "Pressured", "Overloaded", "Recovery"]
+    },
+    {
+      "id": "hysteresis_oscillation",
+      "description": "Alternating moderate/calm signals. Transitions should be bounded.",
+      "signal_pattern": "alternate moderate/calm for 40 epochs",
+      "epochs": 40,
+      "max_transitions": 6
+    },
+    {
+      "id": "recovery_spike",
+      "description": "Enter recovery then spike back to heavy. Should re-escalate.",
+      "signal_pattern": "heavy*30 calm*5 heavy*15",
+      "epochs": 50,
+      "expected_sees_recovery": true,
+      "expected_sees_re_escalation": true
+    }
+  ],
+  "summary": {
+    "scenario_count": 5,
+    "regimes_tested": ["Nominal", "Pressured", "Overloaded", "Recovery"],
+    "properties_validated": [
+      "steady-state stability",
+      "monotonic escalation",
+      "full lifecycle traversal",
+      "hysteresis flap prevention",
+      "recovery re-escalation"
+    ]
+  }
+}

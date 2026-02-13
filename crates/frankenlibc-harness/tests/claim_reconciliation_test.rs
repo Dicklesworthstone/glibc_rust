@@ -29,13 +29,12 @@ fn claim_reconciliation_gate_passes() {
     let stderr = String::from_utf8_lossy(&output.stderr);
 
     // Parse the JSON report
-    let report: serde_json::Value =
-        serde_json::from_str(&stdout).unwrap_or_else(|e| {
-            panic!(
-                "Failed to parse reconciliation report: {}\nstdout: {}\nstderr: {}",
-                e, stdout, stderr
-            );
-        });
+    let report: serde_json::Value = serde_json::from_str(&stdout).unwrap_or_else(|e| {
+        panic!(
+            "Failed to parse reconciliation report: {}\nstdout: {}\nstderr: {}",
+            e, stdout, stderr
+        );
+    });
 
     let status = report["status"].as_str().unwrap_or("unknown");
     let errors = report["summary"]["errors"].as_u64().unwrap_or(999);
@@ -43,7 +42,8 @@ fn claim_reconciliation_gate_passes() {
 
     // Gate: zero errors required, warnings are informational
     assert_eq!(
-        status, "pass",
+        status,
+        "pass",
         "Claim reconciliation failed with {} errors and {} warnings.\nFindings:\n{}",
         errors,
         warnings,

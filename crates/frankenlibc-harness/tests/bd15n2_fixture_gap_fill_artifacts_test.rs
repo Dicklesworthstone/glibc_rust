@@ -102,7 +102,9 @@ fn fixture_gap_fill_gate_emits_valid_bd15n2_artifacts() {
     let index = load_json(&index_path);
     assert_eq!(index["index_version"].as_i64(), Some(1));
     assert_eq!(index["bead_id"].as_str(), Some("bd-15n.2"));
-    let artifacts = index["artifacts"].as_array().expect("artifacts should be array");
+    let artifacts = index["artifacts"]
+        .as_array()
+        .expect("artifacts should be array");
     assert!(!artifacts.is_empty(), "artifact index should not be empty");
 
     let report = load_json(&report_path);
@@ -112,6 +114,11 @@ fn fixture_gap_fill_gate_emits_valid_bd15n2_artifacts() {
     assert!(report["mode_profiles"]["strict"].is_object());
     assert!(report["mode_profiles"]["hardened"].is_object());
 
-    let fixtures = report["fixtures"].as_array().expect("fixtures should be array");
-    assert!(fixtures.len() >= 3, "expected at least three fixture metadata entries");
+    let fixtures = report["fixtures"]
+        .as_array()
+        .expect("fixtures should be array");
+    assert!(
+        fixtures.len() >= 3,
+        "expected at least three fixture metadata entries"
+    );
 }

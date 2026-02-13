@@ -1,0 +1,58 @@
+{
+  "version": "v1",
+  "family": "backtrace_ops",
+  "captured_at": "2026-02-13T00:00:00Z",
+  "description": "Mode-specific parity fixtures for backtrace/unwinding operations. Strict: standard frame walking. Hardened: safe-cut fallback on corrupt frames.",
+  "cases": [
+    {
+      "name": "backtrace_captures_frames_strict",
+      "function": "backtrace",
+      "spec_section": "GNU backtrace(3)",
+      "inputs": { "buffer": "valid_array_64", "size": 64 },
+      "expected_output": "positive_count",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Captures at least 1 frame from current call stack"
+    },
+    {
+      "name": "backtrace_symbols_strict",
+      "function": "backtrace_symbols",
+      "spec_section": "GNU backtrace_symbols(3)",
+      "inputs": { "buffer": "valid_frame_array", "size": 3 },
+      "expected_output": "valid_strings_array",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Returns string array for captured frame addresses"
+    },
+    {
+      "name": "backtrace_symbols_fd_strict",
+      "function": "backtrace_symbols_fd",
+      "spec_section": "GNU backtrace_symbols_fd(3)",
+      "inputs": { "buffer": "valid_frame_array", "size": 3, "fd": "STDERR_FILENO" },
+      "expected_output": "void",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Writes symbol names directly to file descriptor"
+    },
+    {
+      "name": "backtrace_captures_frames_hardened",
+      "function": "backtrace",
+      "spec_section": "GNU backtrace(3)",
+      "inputs": { "buffer": "valid_array_64", "size": 64 },
+      "expected_output": "positive_count",
+      "expected_errno": 0,
+      "mode": "hardened",
+      "note": "Hardened: validates frame pointer chain, truncates on corruption"
+    },
+    {
+      "name": "backtrace_corrupted_stack_hardened",
+      "function": "backtrace",
+      "spec_section": "FrankenLibC TSM repair",
+      "inputs": { "buffer": "valid_array_64", "size": 64 },
+      "expected_output": "truncated_count",
+      "expected_errno": 0,
+      "mode": "hardened",
+      "note": "Hardened: stops unwinding at first invalid frame pointer (safe-cut fallback)"
+    }
+  ]
+}

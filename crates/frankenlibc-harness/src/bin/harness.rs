@@ -243,6 +243,27 @@ enum Command {
         )]
         report: PathBuf,
     },
+    /// Generate differential conformance matrix (host vs implementation).
+    ConformanceMatrix {
+        /// Directory containing fixture JSON files.
+        #[arg(long)]
+        fixture: PathBuf,
+        /// Output JSON path for matrix artifact.
+        #[arg(
+            long,
+            default_value = "target/conformance/conformance_matrix.current.v1.json"
+        )]
+        output: PathBuf,
+        /// Mode to evaluate (`strict`, `hardened`, or `both`).
+        #[arg(long, default_value = "both")]
+        mode: String,
+        /// Logical campaign identifier used in trace ids.
+        #[arg(long, default_value = "franken_shadow")]
+        campaign: String,
+        /// Return non-zero when any case fails or errors.
+        #[arg(long)]
+        fail_on_mismatch: bool,
+    },
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -721,6 +742,52 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 report.display()
             );
         }
+        Command::ConformanceMatrix {
+            fixture,
+            output,
+            mode,
+            campaign,
+            fail_on_mismatch,
+        } => {
+            let fixture_sets = load_fixture_sets(&fixture)?;
+            if fixture_sets.is_empty() {
+                return Err(format!("No fixture JSON files found in {}", fixture.display()).into());
+            }
+
+            let mode = frankenlibc_harness::conformance_matrix::MatrixMode::from_str_loose(&mode)
+                .ok_or_else(|| {
+                format!("Unsupported mode '{mode}', expected strict|hardened|both")
+            })?;
+
+            let matrix = frankenlibc_harness::conformance_matrix::build_conformance_matrix(
+                &fixture_sets,
+                mode,
+                &campaign,
+            );
+            let body = serde_json::to_string_pretty(&matrix)?;
+
+            if let Some(parent) = output.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+            std::fs::write(&output, body)?;
+
+            eprintln!(
+                "Conformance matrix complete: total={}, passed={}, failed={}, errors={} -> {}",
+                matrix.summary.total_cases,
+                matrix.summary.passed,
+                matrix.summary.failed,
+                matrix.summary.errors,
+                output.display()
+            );
+
+            if fail_on_mismatch && !matrix.all_passed() {
+                return Err(format!(
+                    "Conformance matrix mismatch: failed={}, errors={}",
+                    matrix.summary.failed, matrix.summary.errors
+                )
+                .into());
+            }
+        }
     }
 
     Ok(())
@@ -864,4 +931,24 @@ fn parse_seed(raw: &str) -> Result<u64, Box<dyn std::error::Error>> {
         dec.parse::<u64>()?
     };
     Ok(seed)
+}
+
+fn load_fixture_sets(
+    dir: &std::path::Path,
+) -> Result<Vec<frankenlibc_harness::FixtureSet>, Box<dyn std::error::Error>> {
+    let mut fixture_sets = Vec::new();
+    let mut fixture_paths: Vec<PathBuf> = std::fs::read_dir(dir)?
+        .filter_map(|entry| entry.ok().map(|entry| entry.path()))
+        .filter(|path| path.extension().and_then(|s| s.to_str()) == Some("json"))
+        .collect();
+    fixture_paths.sort();
+
+    for path in fixture_paths {
+        match frankenlibc_harness::FixtureSet::from_file(&path) {
+            Ok(set) => fixture_sets.push(set),
+            Err(err) => eprintln!("Skipping {}: {}", path.display(), err),
+        }
+    }
+
+    Ok(fixture_sets)
 }

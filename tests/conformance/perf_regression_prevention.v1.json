@@ -1,0 +1,152 @@
+{
+  "schema_version": "v1",
+  "bead": "bd-1qfc",
+  "generated_at": "2026-02-13T18:57:26Z",
+  "summary": {
+    "total_suites_in_spec": 4,
+    "suites_with_bench_files": 4,
+    "suites_enforced_in_gate": 2,
+    "suites_with_full_baselines": 2,
+    "baseline_slot_fill_pct": 28.6,
+    "hotpath_symbol_coverage_pct": 62.9,
+    "total_hotpath_symbols": 70,
+    "extra_bench_files_beyond_spec": 4,
+    "total_issues": 0,
+    "total_warnings": 0
+  },
+  "bench_file_inventory": [
+    {
+      "suite_id": "runtime_math",
+      "bench_file": "crates/frankenlibc-bench/benches/runtime_math_bench.rs",
+      "exists": true,
+      "benchmark_count": 3,
+      "enforced_in_gate": true
+    },
+    {
+      "suite_id": "membrane",
+      "bench_file": "crates/frankenlibc-bench/benches/membrane_bench.rs",
+      "exists": true,
+      "benchmark_count": 1,
+      "enforced_in_gate": true
+    },
+    {
+      "suite_id": "string",
+      "bench_file": "crates/frankenlibc-bench/benches/string_bench.rs",
+      "exists": true,
+      "benchmark_count": 8,
+      "enforced_in_gate": false
+    },
+    {
+      "suite_id": "malloc",
+      "bench_file": "crates/frankenlibc-bench/benches/malloc_bench.rs",
+      "exists": true,
+      "benchmark_count": 2,
+      "enforced_in_gate": false
+    }
+  ],
+  "baseline_coverage": [
+    {
+      "suite_id": "runtime_math",
+      "total_benchmarks_x_modes": 6,
+      "baselines_present": 6,
+      "baselines_missing": [],
+      "coverage_pct": 100.0
+    },
+    {
+      "suite_id": "membrane",
+      "total_benchmarks_x_modes": 2,
+      "baselines_present": 2,
+      "baselines_missing": [],
+      "coverage_pct": 100.0
+    },
+    {
+      "suite_id": "string",
+      "total_benchmarks_x_modes": 16,
+      "baselines_present": 0,
+      "baselines_missing": [
+        "strict/memcpy_16",
+        "strict/memcpy_64",
+        "strict/memcpy_256",
+        "strict/memcpy_1024",
+        "strict/memcpy_4096",
+        "strict/memcpy_65536",
+        "strict/strlen_16",
+        "strict/strlen_256",
+        "hardened/memcpy_16",
+        "hardened/memcpy_64",
+        "hardened/memcpy_256",
+        "hardened/memcpy_1024",
+        "hardened/memcpy_4096",
+        "hardened/memcpy_65536",
+        "hardened/strlen_16",
+        "hardened/strlen_256"
+      ],
+      "coverage_pct": 0.0
+    },
+    {
+      "suite_id": "malloc",
+      "total_benchmarks_x_modes": 4,
+      "baselines_present": 0,
+      "baselines_missing": [
+        "strict/alloc_free_cycle",
+        "strict/alloc_burst",
+        "hardened/alloc_free_cycle",
+        "hardened/alloc_burst"
+      ],
+      "coverage_pct": 0.0
+    }
+  ],
+  "gate_wiring": {
+    "exists": true,
+    "enforced_suites": [
+      "runtime_math",
+      "membrane",
+      "runtime_math_kernels"
+    ],
+    "features": {
+      "load_guard": true,
+      "attribution_policy": true,
+      "event_logging": true,
+      "injection_support": true
+    },
+    "issues": []
+  },
+  "hotpath_symbol_coverage": {
+    "total_hotpath_symbols": 70,
+    "covered_by_bench_suite": 44,
+    "not_covered": 26,
+    "coverage_pct": 62.9,
+    "uncovered_modules": [
+      "ctype_abi",
+      "errno_abi",
+      "wchar_abi"
+    ],
+    "uncovered_symbols_sample": [
+      "__errno_location",
+      "isalnum",
+      "isalpha",
+      "isdigit",
+      "islower",
+      "isprint",
+      "ispunct",
+      "isspace",
+      "isupper",
+      "isxdigit"
+    ]
+  },
+  "config_consistency": {
+    "baseline_version": 3,
+    "regression_max_pct": 15,
+    "strict_target_ns": 20,
+    "hardened_target_ns": 200,
+    "active_waivers": 1,
+    "expired_waivers": 0,
+    "issues": []
+  },
+  "extra_bench_files": [
+    "condvar",
+    "mutex",
+    "runtime_math_kernels",
+    "stdio"
+  ]
+}

@@ -27,6 +27,29 @@ const SCENARIO_FAMILIES: &[ApiFamily] = &[
     ApiFamily::Time,
 ];
 
+const ALL_API_FAMILIES: [ApiFamily; ApiFamily::COUNT] = [
+    ApiFamily::PointerValidation,
+    ApiFamily::Allocator,
+    ApiFamily::StringMemory,
+    ApiFamily::Stdio,
+    ApiFamily::Threading,
+    ApiFamily::Resolver,
+    ApiFamily::MathFenv,
+    ApiFamily::Loader,
+    ApiFamily::Stdlib,
+    ApiFamily::Ctype,
+    ApiFamily::Time,
+    ApiFamily::Signal,
+    ApiFamily::IoFd,
+    ApiFamily::Socket,
+    ApiFamily::Locale,
+    ApiFamily::Termios,
+    ApiFamily::Inet,
+    ApiFamily::Process,
+    ApiFamily::VirtualMemory,
+    ApiFamily::Poll,
+];
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct MicrobenchConfig {
     pub warmup_iters: u64,
@@ -82,6 +105,18 @@ pub struct KernelRiskStats {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KernelFamilyDiagnostics {
+    pub family: String,
+    pub decisions: u64,
+    pub adverse_events: u64,
+    pub adverse_rate_ppm: u32,
+    pub mean_risk_ppm: u32,
+    pub p95_risk_ppm: u32,
+    pub mean_decision_latency_ns: u64,
+    pub full_profile_rate_ppm: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ParetoTrendPoint {
     pub step: u32,
     pub regret_milli: u64,
@@ -112,6 +147,7 @@ pub struct KernelModeMetrics {
     pub bench: KernelBenchSuite,
     pub actions: KernelActionStats,
     pub risk: KernelRiskStats,
+    pub family_diagnostics: Vec<KernelFamilyDiagnostics>,
     pub snapshot: KernelSnapshotKey,
     pub pareto_trend: Vec<ParetoTrendPoint>,
     pub notes: Vec<String>,
@@ -160,6 +196,8 @@ pub fn collect_mode_metrics(
     let kernel = RuntimeMathKernel::new();
     let mut actions = ActionStatsBuilder::default();
     let mut risks: Vec<u32> = Vec::with_capacity(cfg.steps as usize);
+    let mut family_stats: [FamilyDiagnosticsBuilder; ApiFamily::COUNT] =
+        std::array::from_fn(|_| FamilyDiagnosticsBuilder::default());
     let mut pareto_trend = Vec::new();
 
     let stride = cfg.trend_stride.max(1);
@@ -185,6 +223,12 @@ pub fn collect_mode_metrics(
         // Exercise the regret controller (Pareto) and other observe-driven kernels.
         let estimated_cost_ns = if d.profile.requires_full() { 120 } else { 12 };
         let adverse = matches!(d.action, MembraneAction::Repair(_) | MembraneAction::Deny);
+        family_stats[usize::from(ctx.family as u8)].observe(
+            d.profile,
+            estimated_cost_ns,
+            d.risk_upper_bound_ppm,
+            adverse,
+        );
         kernel.observe_validation_result(mode, ctx.family, d.profile, estimated_cost_ns, adverse);
 
         // Deterministically exercise overlap-consistency monitoring.
@@ -208,6 +252,11 @@ pub fn collect_mode_metrics(
 
     let action_stats = actions.finish();
     let risk_stats = compute_risk_stats(&risks);
+    let family_diagnostics = ALL_API_FAMILIES
+        .into_iter()
+        .zip(family_stats)
+        .map(|(family, stats)| stats.finish(family))
+        .collect();
 
     let snap = kernel.snapshot(mode);
     let snapshot_key = KernelSnapshotKey {
@@ -244,6 +293,7 @@ pub fn collect_mode_metrics(
         bench,
         actions: action_stats,
         risk: risk_stats,
+        family_diagnostics,
         snapshot: snapshot_key,
         pareto_trend,
         notes,
@@ -358,6 +408,36 @@ pub fn render_regression_markdown(report: &KernelRegressionReport) -> String {
         }
         writeln!(out).ok();
     }
+
+    writeln!(out, "## Per-Family Risk/Latency Tradeoff").ok();
+    writeln!(out).ok();
+    writeln!(
+        out,
+        "| Family | strict adverse_ppm | strict mean_risk_ppm | strict mean_latency_ns | strict full_profile_ppm | hardened adverse_ppm | hardened mean_risk_ppm | hardened mean_latency_ns | hardened full_profile_ppm |"
+    )
+    .ok();
+    writeln!(
+        out,
+        "|-------|-------------------:|---------------------:|-----------------------:|------------------------:|---------------------:|-----------------------:|-------------------------:|--------------------------:|"
+    )
+    .ok();
+    for row in merged_family_rows(&s.family_diagnostics, &h.family_diagnostics) {
+        writeln!(
+            out,
+            "| {} | {} | {} | {} | {} | {} | {} | {} | {} |",
+            row.family,
+            row.strict_adverse_rate_ppm,
+            row.strict_mean_risk_ppm,
+            row.strict_mean_latency_ns,
+            row.strict_full_profile_rate_ppm,
+            row.hardened_adverse_rate_ppm,
+            row.hardened_mean_risk_ppm,
+            row.hardened_mean_latency_ns,
+            row.hardened_full_profile_rate_ppm,
+        )
+        .ok();
+    }
+    writeln!(out).ok();
 
     writeln!(out, "## Pareto Regret (Trend)").ok();
     writeln!(out).ok();
@@ -515,6 +595,112 @@ fn percentile_u32_sorted(sorted: &[u32], p: f64) -> u32 {
     }
     let idx = ((sorted.len() - 1) as f64 * p).round() as usize;
     sorted[idx.min(sorted.len() - 1)]
+}
+
+#[derive(Default)]
+struct FamilyDiagnosticsBuilder {
+    decisions: u64,
+    adverse_events: u64,
+    full_profile_events: u64,
+    latency_sum_ns: u64,
+    risk_sum_ppm: u64,
+    risk_samples_ppm: Vec<u32>,
+}
+
+impl FamilyDiagnosticsBuilder {
+    fn observe(
+        &mut self,
+        profile: frankenlibc_membrane::ValidationProfile,
+        decision_latency_ns: u64,
+        risk_upper_bound_ppm: u32,
+        adverse: bool,
+    ) {
+        self.decisions = self.decisions.saturating_add(1);
+        if adverse {
+            self.adverse_events = self.adverse_events.saturating_add(1);
+        }
+        if profile.requires_full() {
+            self.full_profile_events = self.full_profile_events.saturating_add(1);
+        }
+        self.latency_sum_ns = self.latency_sum_ns.saturating_add(decision_latency_ns);
+        self.risk_sum_ppm = self
+            .risk_sum_ppm
+            .saturating_add(u64::from(risk_upper_bound_ppm));
+        self.risk_samples_ppm.push(risk_upper_bound_ppm);
+    }
+
+    fn finish(self, family: ApiFamily) -> KernelFamilyDiagnostics {
+        let decisions = self.decisions.max(1);
+        let mut sorted_risks = self.risk_samples_ppm;
+        sorted_risks.sort_unstable();
+        KernelFamilyDiagnostics {
+            family: format!("{family:?}"),
+            decisions: self.decisions,
+            adverse_events: self.adverse_events,
+            adverse_rate_ppm: ((self.adverse_events.saturating_mul(1_000_000)) / decisions)
+                .min(1_000_000) as u32,
+            mean_risk_ppm: ((self.risk_sum_ppm / decisions).min(1_000_000)) as u32,
+            p95_risk_ppm: percentile_u32_sorted(&sorted_risks, 0.95),
+            mean_decision_latency_ns: self.latency_sum_ns / decisions,
+            full_profile_rate_ppm: ((self.full_profile_events.saturating_mul(1_000_000))
+                / decisions)
+                .min(1_000_000) as u32,
+        }
+    }
+}
+
+#[derive(Debug)]
+struct MergedFamilyRow {
+    family: String,
+    strict_adverse_rate_ppm: u32,
+    strict_mean_risk_ppm: u32,
+    strict_mean_latency_ns: u64,
+    strict_full_profile_rate_ppm: u32,
+    hardened_adverse_rate_ppm: u32,
+    hardened_mean_risk_ppm: u32,
+    hardened_mean_latency_ns: u64,
+    hardened_full_profile_rate_ppm: u32,
+}
+
+fn merged_family_rows(
+    strict: &[KernelFamilyDiagnostics],
+    hardened: &[KernelFamilyDiagnostics],
+) -> Vec<MergedFamilyRow> {
+    let mut strict_map: BTreeMap<&str, &KernelFamilyDiagnostics> = BTreeMap::new();
+    let mut hardened_map: BTreeMap<&str, &KernelFamilyDiagnostics> = BTreeMap::new();
+    for row in strict {
+        strict_map.insert(row.family.as_str(), row);
+    }
+    for row in hardened {
+        hardened_map.insert(row.family.as_str(), row);
+    }
+
+    let mut families: Vec<&str> = strict_map
+        .keys()
+        .copied()
+        .chain(hardened_map.keys().copied())
+        .collect();
+    families.sort_unstable();
+    families.dedup();
+
+    families
+        .into_iter()
+        .map(|family| {
+            let s = strict_map.get(family).copied();
+            let h = hardened_map.get(family).copied();
+            MergedFamilyRow {
+                family: family.to_string(),
+                strict_adverse_rate_ppm: s.map_or(0, |r| r.adverse_rate_ppm),
+                strict_mean_risk_ppm: s.map_or(0, |r| r.mean_risk_ppm),
+                strict_mean_latency_ns: s.map_or(0, |r| r.mean_decision_latency_ns),
+                strict_full_profile_rate_ppm: s.map_or(0, |r| r.full_profile_rate_ppm),
+                hardened_adverse_rate_ppm: h.map_or(0, |r| r.adverse_rate_ppm),
+                hardened_mean_risk_ppm: h.map_or(0, |r| r.mean_risk_ppm),
+                hardened_mean_latency_ns: h.map_or(0, |r| r.mean_decision_latency_ns),
+                hardened_full_profile_rate_ppm: h.map_or(0, |r| r.full_profile_rate_ppm),
+            }
+        })
+        .collect()
 }
 
 fn run_microbench(mode: SafetyLevel, cfg: MicrobenchConfig) -> KernelBenchSuite {

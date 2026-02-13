@@ -31,7 +31,11 @@ fn load_json(path: &Path) -> serde_json::Value {
 fn artifact_exists_and_has_required_shape() {
     let root = workspace_root();
     let artifact_path = root.join("tests/conformance/callthrough_census.v1.json");
-    assert!(artifact_path.exists(), "missing {}", artifact_path.display());
+    assert!(
+        artifact_path.exists(),
+        "missing {}",
+        artifact_path.display()
+    );
     let artifact = load_json(&artifact_path);
 
     assert_eq!(artifact["schema_version"].as_str(), Some("v1"));
@@ -176,9 +180,6 @@ fn gate_script_passes_and_emits_artifacts() {
         "module_count",
         "wave_count",
     ] {
-        assert!(
-            event.get(key).is_some(),
-            "structured log row missing {key}"
-        );
+        assert!(event.get(key).is_some(), "structured log row missing {key}");
     }
 }

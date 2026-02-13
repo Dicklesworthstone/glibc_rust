@@ -1,0 +1,531 @@
+{
+  "schema_version": "v1",
+  "bead": "bd-1oz.5",
+  "generated_at": "2026-02-13T19:37:31Z",
+  "summary": {
+    "total_targets": 4,
+    "functional_targets": 2,
+    "stub_targets": 2,
+    "checks_passed": 20,
+    "checks_total": 20,
+    "quality_score_pct": 100.0,
+    "total_seed_corpus": 29,
+    "total_dict_entries": 25,
+    "cwe_coverage": [
+      "CWE-120",
+      "CWE-122",
+      "CWE-125",
+      "CWE-131",
+      "CWE-134",
+      "CWE-415",
+      "CWE-416",
+      "CWE-476",
+      "CWE-787",
+      "CWE-824",
+      "CWE-825"
+    ],
+    "unique_cwes": 11,
+    "domains_covered": [
+      "abi-entrypoint",
+      "allocator",
+      "membrane"
+    ]
+  },
+  "harness_conventions": {
+    "required_attributes": [
+      "#![no_main]"
+    ],
+    "required_macros": [
+      "fuzz_target!"
+    ],
+    "input_handling": {
+      "size_guard": "All targets must check data.len() before parsing",
+      "null_termination": "String targets must ensure null-terminated input",
+      "chunk_parsing": "Multi-op targets parse data in fixed-size chunks"
+    },
+    "safety_rules": [
+      "No unwrap() \u2014 use safe alternatives or early return",
+      "No explicit panic! \u2014 let libfuzzer handle assertion failures",
+      "All allocations must be cleaned up on all paths",
+      "Fuzzer must not depend on external state (filesystem, network)"
+    ],
+    "artifact_layout": {
+      "corpus": "crates/frankenlibc-fuzz/corpus/<target_name>/",
+      "dictionary": "crates/frankenlibc-fuzz/dictionaries/<target_name>.dict",
+      "crashes": "crates/frankenlibc-fuzz/artifacts/<target_name>/"
+    },
+    "domains": {
+      "abi-entrypoint": "Fuzz exported C ABI symbols (string, printf, stdlib)",
+      "allocator": "Fuzz malloc/free/realloc sequences and edge cases",
+      "membrane": "Fuzz TSM validation pipeline with arbitrary inputs",
+      "runtime-math": "Fuzz math library functions (future)"
+    }
+  },
+  "target_analyses": [
+    {
+      "target": "fuzz_malloc",
+      "source": "crates/frankenlibc-fuzz/fuzz_targets/fuzz_malloc.rs",
+      "domain": "allocator",
+      "category": "heap-ops",
+      "description": "Malloc/free/realloc sequence fuzzing via ValidationPipeline",
+      "priority": "critical",
+      "cwe_coverage": [
+        "CWE-415",
+        "CWE-416",
+        "CWE-122",
+        "CWE-131"
+      ],
+      "checks": [
+        {
+          "check": "no_main_attr",
+          "passed": true,
+          "description": "Must use #![no_main] attribute"
+        },
+        {
+          "check": "fuzz_target_macro",
+          "passed": true,
+          "description": "Must use fuzz_target! macro"
+        },
+        {
+          "check": "input_size_guard",
+          "passed": true,
+          "description": "Should have input size guard"
+        },
+        {
+          "check": "no_unwrap",
+          "passed": true,
+          "description": "Should avoid unwrap (use safe alternatives)"
+        },
+        {
+          "check": "no_panic",
+          "passed": true,
+          "description": "Should avoid explicit panics"
+        }
+      ],
+      "checks_passed": 5,
+      "checks_total": 5,
+      "todos": [
+        "fuzz malloc/free sequences"
+      ],
+      "implementation_status": "functional",
+      "lines": 47
+    },
+    {
+      "target": "fuzz_membrane",
+      "source": "crates/frankenlibc-fuzz/fuzz_targets/fuzz_membrane.rs",
+      "domain": "membrane",
+      "category": "ptr-validation",
+      "description": "Pointer validation pipeline with arbitrary addresses",
+      "priority": "critical",
+      "cwe_coverage": [
+        "CWE-476",
+        "CWE-824",
+        "CWE-825"
+      ],
+      "checks": [
+        {
+          "check": "no_main_attr",
+          "passed": true,
+          "description": "Must use #![no_main] attribute"
+        },
+        {
+          "check": "fuzz_target_macro",
+          "passed": true,
+          "description": "Must use fuzz_target! macro"
+        },
+        {
+          "check": "input_size_guard",
+          "passed": true,
+          "description": "Should have input size guard"
+        },
+        {
+          "check": "no_unwrap",
+          "passed": true,
+          "description": "Should avoid unwrap (use safe alternatives)"
+        },
+        {
+          "check": "no_panic",
+          "passed": true,
+          "description": "Should avoid explicit panics"
+        }
+      ],
+      "checks_passed": 5,
+      "checks_total": 5,
+      "todos": [],
+      "implementation_status": "functional",
+      "lines": 26
+    },
+    {
+      "target": "fuzz_printf",
+      "source": "crates/frankenlibc-fuzz/fuzz_targets/fuzz_printf.rs",
+      "domain": "abi-entrypoint",
+      "category": "format-string",
+      "description": "Printf format string parsing and safety",
+      "priority": "high",
+      "cwe_coverage": [
+        "CWE-134",
+        "CWE-787"
+      ],
+      "checks": [
+        {
+          "check": "no_main_attr",
+          "passed": true,
+          "description": "Must use #![no_main] attribute"
+        },
+        {
+          "check": "fuzz_target_macro",
+          "passed": true,
+          "description": "Must use fuzz_target! macro"
+        },
+        {
+          "check": "input_size_guard",
+          "passed": true,
+          "description": "Should have input size guard"
+        },
+        {
+          "check": "no_unwrap",
+          "passed": true,
+          "description": "Should avoid unwrap (use safe alternatives)"
+        },
+        {
+          "check": "no_panic",
+          "passed": true,
+          "description": "Should avoid explicit panics"
+        }
+      ],
+      "checks_passed": 5,
+      "checks_total": 5,
+      "todos": [
+        "fuzz printf format string parsing",
+        "wire to printf format engine once implemented"
+      ],
+      "implementation_status": "stub",
+      "lines": 14
+    },
+    {
+      "target": "fuzz_string",
+      "source": "crates/frankenlibc-fuzz/fuzz_targets/fuzz_string.rs",
+      "domain": "abi-entrypoint",
+      "category": "string-ops",
+      "description": "String function fuzzing (strlen, strcmp, strcpy, strstr)",
+      "priority": "high",
+      "cwe_coverage": [
+        "CWE-120",
+        "CWE-125",
+        "CWE-787"
+      ],
+      "checks": [
+        {
+          "check": "no_main_attr",
+          "passed": true,
+          "description": "Must use #![no_main] attribute"
+        },
+        {
+          "check": "fuzz_target_macro",
+          "passed": true,
+          "description": "Must use fuzz_target! macro"
+        },
+        {
+          "check": "input_size_guard",
+          "passed": true,
+          "description": "Should have input size guard"
+        },
+        {
+          "check": "no_unwrap",
+          "passed": true,
+          "description": "Should avoid unwrap (use safe alternatives)"
+        },
+        {
+          "check": "no_panic",
+          "passed": true,
+          "description": "Should avoid explicit panics"
+        }
+      ],
+      "checks_passed": 5,
+      "checks_total": 5,
+      "todos": [
+        "fuzz string functions with arbitrary byte inputs"
+      ],
+      "implementation_status": "stub",
+      "lines": 19
+    }
+  ],
+  "corpus_strategy": {
+    "approach": "deterministic",
+    "description": "Each target gets hand-crafted seed inputs covering boundary conditions, typical usage, and attack patterns. Seeds are content-addressed for reproducibility.",
+    "manifests": [
+      {
+        "target": "fuzz_malloc",
+        "seeds": [
+          {
+            "index": 0,
+            "seed_id": "seed-c4fed88578f3",
+            "size_bytes": 4,
+            "sha256_prefix": "c4fed88578f3"
+          },
+          {
+            "index": 1,
+            "seed_id": "seed-6f27b0c9d1de",
+            "size_bytes": 8,
+            "sha256_prefix": "6f27b0c9d1de"
+          },
+          {
+            "index": 2,
+            "seed_id": "seed-357a09ae45e2",
+            "size_bytes": 12,
+            "sha256_prefix": "357a09ae45e2"
+          },
+          {
+            "index": 3,
+            "seed_id": "seed-a046e9188820",
+            "size_bytes": 12,
+            "sha256_prefix": "a046e9188820"
+          },
+          {
+            "index": 4,
+            "seed_id": "seed-df643cc38835",
+            "size_bytes": 4,
+            "sha256_prefix": "df643cc38835"
+          },
+          {
+            "index": 5,
+            "seed_id": "seed-a03df85a885d",
+            "size_bytes": 12,
+            "sha256_prefix": "a03df85a885d"
+          },
+          {
+            "index": 6,
+            "seed_id": "seed-5f2148f2b96a",
+            "size_bytes": 8,
+            "sha256_prefix": "5f2148f2b96a"
+          }
+        ],
+        "count": 7,
+        "strategy": "deterministic",
+        "reproducible": true
+      },
+      {
+        "target": "fuzz_membrane",
+        "seeds": [
+          {
+            "index": 0,
+            "seed_id": "seed-34fc762f3402",
+            "size_bytes": 8,
+            "sha256_prefix": "34fc762f3402"
+          },
+          {
+            "index": 1,
+            "seed_id": "seed-ea7d023d2fb0",
+            "size_bytes": 8,
+            "sha256_prefix": "ea7d023d2fb0"
+          },
+          {
+            "index": 2,
+            "seed_id": "seed-b84dd1856327",
+            "size_bytes": 8,
+            "sha256_prefix": "b84dd1856327"
+          },
+          {
+            "index": 3,
+            "seed_id": "seed-34af8f697230",
+            "size_bytes": 8,
+            "sha256_prefix": "34af8f697230"
+          },
+          {
+            "index": 4,
+            "seed_id": "seed-a43dad001e5e",
+            "size_bytes": 8,
+            "sha256_prefix": "a43dad001e5e"
+          },
+          {
+            "index": 5,
+            "seed_id": "seed-a248111ea422",
+            "size_bytes": 8,
+            "sha256_prefix": "a248111ea422"
+          },
+          {
+            "index": 6,
+            "seed_id": "seed-e12c53eb3071",
+            "size_bytes": 16,
+            "sha256_prefix": "e12c53eb3071"
+          }
+        ],
+        "count": 7,
+        "strategy": "deterministic",
+        "reproducible": true
+      },
+      {
+        "target": "fuzz_printf",
+        "seeds": [
+          {
+            "index": 0,
+            "seed_id": "seed-5c0377408e6f",
+            "size_bytes": 5,
+            "sha256_prefix": "5c0377408e6f"
+          },
+          {
+            "index": 1,
+            "seed_id": "seed-fd5ac76f24f4",
+            "size_bytes": 8,
+            "sha256_prefix": "fd5ac76f24f4"
+          },
+          {
+            "index": 2,
+            "seed_id": "seed-d10032916c5b",
+            "size_bytes": 10,
+            "sha256_prefix": "d10032916c5b"
+          },
+          {
+            "index": 3,
+            "seed_id": "seed-2301b8ad9fbf",
+            "size_bytes": 9,
+            "sha256_prefix": "2301b8ad9fbf"
+          },
+          {
+            "index": 4,
+            "seed_id": "seed-f641187d09f2",
+            "size_bytes": 100,
+            "sha256_prefix": "f641187d09f2"
+          },
+          {
+            "index": 5,
+            "seed_id": "seed-1486dfbaf82e",
+            "size_bytes": 8,
+            "sha256_prefix": "1486dfbaf82e"
+          },
+          {
+            "index": 6,
+            "seed_id": "seed-8ce0a26b31cb",
+            "size_bytes": 27,
+            "sha256_prefix": "8ce0a26b31cb"
+          }
+        ],
+        "count": 7,
+        "strategy": "deterministic",
+        "reproducible": true
+      },
+      {
+        "target": "fuzz_string",
+        "seeds": [
+          {
+            "index": 0,
+            "seed_id": "seed-1eccdf725938",
+            "size_bytes": 1,
+            "sha256_prefix": "1eccdf725938"
+          },
+          {
+            "index": 1,
+            "seed_id": "seed-47a64091b19d",
+            "size_bytes": 2,
+            "sha256_prefix": "47a64091b19d"
+          },
+          {
+            "index": 2,
+            "seed_id": "seed-958ff0b1b4bb",
+            "size_bytes": 12,
+            "sha256_prefix": "958ff0b1b4bb"
+          },
+          {
+            "index": 3,
+            "seed_id": "seed-0d9e4f6170cf",
+            "size_bytes": 256,
+            "sha256_prefix": "0d9e4f6170cf"
+          },
+          {
+            "index": 4,
+            "seed_id": "seed-64d2db98ebff",
+            "size_bytes": 12,
+            "sha256_prefix": "64d2db98ebff"
+          },
+          {
+            "index": 5,
+            "seed_id": "seed-3bd1f0f89e72",
+            "size_bytes": 17,
+            "sha256_prefix": "3bd1f0f89e72"
+          },
+          {
+            "index": 6,
+            "seed_id": "seed-65502815c854",
+            "size_bytes": 14,
+            "sha256_prefix": "65502815c854"
+          },
+          {
+            "index": 7,
+            "seed_id": "seed-7fa2ee6b9b48",
+            "size_bytes": 8,
+            "sha256_prefix": "7fa2ee6b9b48"
+          }
+        ],
+        "count": 8,
+        "strategy": "deterministic",
+        "reproducible": true
+      }
+    ]
+  },
+  "dictionary_strategy": {
+    "format": "libfuzzer",
+    "description": "Per-target dictionaries with domain-specific tokens to guide mutation toward high-signal inputs.",
+    "manifests": [
+      {
+        "target": "fuzz_malloc",
+        "entries": [
+          "\"\\x00\\x01\\x00\\x00\"",
+          "\"\\x00\\x00\\x01\\x00\"",
+          "\"\\x01\\x00\\x00\\x00\"",
+          "\"\\x02\\x00\\x00\\x00\""
+        ],
+        "count": 4,
+        "format": "libfuzzer"
+      },
+      {
+        "target": "fuzz_membrane",
+        "entries": [
+          "\"\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\"",
+          "\"\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\""
+        ],
+        "count": 2,
+        "format": "libfuzzer"
+      },
+      {
+        "target": "fuzz_printf",
+        "entries": [
+          "\"%d\"",
+          "\"%s\"",
+          "\"%f\"",
+          "\"%p\"",
+          "\"%x\"",
+          "\"%n\"",
+          "\"%10d\"",
+          "\"%.5f\"",
+          "\"%*d\"",
+          "\"%1$d\"",
+          "\"%%\""
+        ],
+        "count": 11,
+        "format": "libfuzzer"
+      },
+      {
+        "target": "fuzz_string",
+        "entries": [
+          "\"\"",
+          "\"\\x00\"",
+          "\"AAAA\"",
+          "\"\\xff\\xff\"",
+          "\"hello\"",
+          "\"\\n\"",
+          "\"\\t\"",
+          "\"\\r\\n\""
+        ],
+        "count": 8,
+        "format": "libfuzzer"
+      }
+    ]
+  },
+  "quality_checklist": {
+    "convention_compliance": "20/20 checks passed",
+    "implementation_coverage": "2/4 targets functional",
+    "corpus_seeded": "4/4 targets with seeds",
+    "dictionary_created": "4/4 targets with dictionaries",
+    "cwe_mapping": "11 CWEs covered across targets"
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "version": "v1",
+  "family": "loader_edges",
+  "captured_at": "2026-02-13T00:00:00Z",
+  "description": "Mode-specific parity fixtures for ELF loader edge cases beyond basic dlopen/dlsym. Covers IFUNC resolution, symbol versioning, audit hooks, and secure mode. Strict: standard semantics. Hardened: compatibility witness verification.",
+  "cases": [
+    {
+      "name": "dlopen_nonexistent_strict",
+      "function": "dlopen",
+      "spec_section": "POSIX dlopen(3)",
+      "inputs": { "filename": "/nonexistent/lib.so", "flags": "RTLD_NOW" },
+      "expected_output": "NULL",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "dlopen returns NULL for nonexistent library, dlerror set"
+    },
+    {
+      "name": "dlsym_undefined_strict",
+      "function": "dlsym",
+      "spec_section": "POSIX dlsym(3)",
+      "inputs": { "handle": "RTLD_DEFAULT", "symbol": "__nonexistent_symbol_42__" },
+      "expected_output": "NULL",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "dlsym returns NULL for undefined symbol"
+    },
+    {
+      "name": "dlclose_double_close_strict",
+      "function": "dlclose",
+      "spec_section": "POSIX dlclose(3)",
+      "inputs": { "handle": "already_closed_handle" },
+      "expected_output": -1,
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Double dlclose is implementation-defined; typically returns error"
+    },
+    {
+      "name": "dladdr_valid_address_strict",
+      "function": "dladdr",
+      "spec_section": "GNU dladdr(3)",
+      "inputs": { "addr": "valid_function_ptr" },
+      "expected_output": "nonzero",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "dladdr resolves a valid function pointer to Dl_info"
+    },
+    {
+      "name": "dlinfo_rtld_di_linkmap_strict",
+      "function": "dlinfo",
+      "spec_section": "GNU dlinfo(3)",
+      "inputs": { "handle": "valid_handle", "request": "RTLD_DI_LINKMAP" },
+      "expected_output": "valid_link_map",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Retrieves link_map structure for loaded library"
+    },
+    {
+      "name": "dlopen_nonexistent_hardened",
+      "function": "dlopen",
+      "spec_section": "POSIX dlopen(3)",
+      "inputs": { "filename": "/nonexistent/lib.so", "flags": "RTLD_NOW" },
+      "expected_output": "NULL",
+      "expected_errno": 0,
+      "mode": "hardened",
+      "note": "Hardened: same result but with evidence emission for audit"
+    },
+    {
+      "name": "dlclose_double_close_hardened",
+      "function": "dlclose",
+      "spec_section": "POSIX dlclose(3)",
+      "inputs": { "handle": "already_closed_handle" },
+      "expected_output": -1,
+      "expected_errno": 0,
+      "mode": "hardened",
+      "note": "Hardened: detects double-close, emits repair evidence instead of UB"
+    }
+  ]
+}

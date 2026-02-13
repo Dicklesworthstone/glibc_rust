@@ -27,12 +27,19 @@ fn load_json(path: &Path) -> serde_json::Value {
 fn artifact_exists_and_has_required_shape() {
     let root = workspace_root();
     let artifact_path = root.join("tests/conformance/stdio_phase_strategy.v1.json");
-    assert!(artifact_path.exists(), "missing {}", artifact_path.display());
+    assert!(
+        artifact_path.exists(),
+        "missing {}",
+        artifact_path.display()
+    );
 
     let artifact = load_json(&artifact_path);
     assert_eq!(artifact["schema_version"].as_str(), Some("v1"));
     assert_eq!(artifact["bead"].as_str(), Some("bd-24ug"));
-    assert!(artifact["phase_split"].is_object(), "phase_split must be object");
+    assert!(
+        artifact["phase_split"].is_object(),
+        "phase_split must be object"
+    );
     assert!(
         artifact["migration_plan"]["phases"].is_array(),
         "migration_plan.phases must be array"
@@ -83,8 +90,16 @@ fn gate_script_passes_and_emits_artifacts() {
 
     assert!(report_path.exists(), "missing {}", report_path.display());
     assert!(log_path.exists(), "missing {}", log_path.display());
-    assert!(cve_trace_path.exists(), "missing {}", cve_trace_path.display());
-    assert!(cve_index_path.exists(), "missing {}", cve_index_path.display());
+    assert!(
+        cve_trace_path.exists(),
+        "missing {}",
+        cve_trace_path.display()
+    );
+    assert!(
+        cve_index_path.exists(),
+        "missing {}",
+        cve_index_path.display()
+    );
 
     let report = load_json(&report_path);
     assert_eq!(report["schema_version"].as_str(), Some("v1"));
@@ -137,11 +152,25 @@ fn gate_script_passes_and_emits_artifacts() {
     let index = load_json(&cve_index_path);
     assert_eq!(index["index_version"].as_i64(), Some(1));
     assert_eq!(index["bead_id"].as_str(), Some("bd-24ug"));
-    let artifacts = index["artifacts"].as_array().expect("artifacts should be array");
-    assert!(artifacts.len() >= 4, "artifact index should contain >=4 entries");
+    let artifacts = index["artifacts"]
+        .as_array()
+        .expect("artifacts should be array");
+    assert!(
+        artifacts.len() >= 4,
+        "artifact index should contain >=4 entries"
+    );
     for artifact in artifacts {
-        assert!(artifact["path"].is_string(), "artifact.path should be string");
-        assert!(artifact["kind"].is_string(), "artifact.kind should be string");
-        assert!(artifact["sha256"].is_string(), "artifact.sha256 should be string");
+        assert!(
+            artifact["path"].is_string(),
+            "artifact.path should be string"
+        );
+        assert!(
+            artifact["kind"].is_string(),
+            "artifact.kind should be string"
+        );
+        assert!(
+            artifact["sha256"].is_string(),
+            "artifact.sha256 should be string"
+        );
     }
 }

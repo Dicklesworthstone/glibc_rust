@@ -7642,17 +7642,6 @@
       "title": "bd-z84 subtask: Strict+hardened mutex fixture suite with failure artifact capture"
     },
     {
-      "assignee": "RedLotus",
-      "bead_id": "bd-24ug",
-      "blocker_count": 0,
-      "priority": 1,
-      "required_categories": 4,
-      "status": "in_progress",
-      "stream": "perf",
-      "subsystem": "perf/callthrough",
-      "title": "bd-h5x subtask: stdio callthrough replacement strategy and phased execution"
-    },
-    {
       "assignee": "WhiteMeadow",
       "bead_id": "bd-yos",
       "blocker_count": 5,
@@ -9559,13 +9548,13 @@
       "subsystem": "perf/baseline"
     },
     {
-      "bead_count": 2,
+      "bead_count": 1,
       "categories": {
         "conformance_fixtures": {
-          "complete": 1,
+          "complete": 0,
           "missing": 1,
           "partial": 0,
-          "required": 2
+          "required": 1
         },
         "e2e_scripts": {
           "complete": 0,
@@ -9574,10 +9563,10 @@
           "required": 1
         },
         "golden_artifacts": {
-          "complete": 1,
+          "complete": 0,
           "missing": 1,
           "partial": 0,
-          "required": 2
+          "required": 1
         },
         "perf_evidence": {
           "complete": 0,
@@ -9586,16 +9575,16 @@
           "required": 0
         },
         "structured_logs": {
-          "complete": 1,
+          "complete": 0,
           "missing": 1,
           "partial": 0,
-          "required": 2
+          "required": 1
         },
         "unit_tests": {
-          "complete": 1,
+          "complete": 0,
           "missing": 1,
           "partial": 0,
-          "required": 2
+          "required": 1
         }
       },
       "stream": "perf",
@@ -10957,7 +10946,7 @@
       "structured_logs": 74,
       "unit_tests": 74
     },
-    "entry_count": 98,
+    "entry_count": 97,
     "subsystem_count": 53
   }
 }

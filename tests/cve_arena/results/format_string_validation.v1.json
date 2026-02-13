@@ -1,0 +1,81 @@
+{
+  "schema_version": "v1",
+  "bead": "bd-1m5.2",
+  "generated_at": "2026-02-13T19:06:50Z",
+  "summary": {
+    "total_format_string_tests": 1,
+    "manifests_valid": 1,
+    "with_trigger_files": 1,
+    "c_triggers_compile": 1,
+    "c_triggers_total": 1,
+    "unique_healing_actions": [
+      "UpgradeToSafeVariant"
+    ],
+    "attack_vectors_covered": [
+      "crash",
+      "info_leak",
+      "write"
+    ],
+    "attack_vectors_target": [
+      "crash",
+      "info_leak",
+      "write"
+    ],
+    "coverage_matrix_present": true,
+    "total_issues": 0
+  },
+  "tests": [
+    {
+      "cve_id": "CVE-2024-23113 (synthetic)",
+      "test_name": "format_string_cve_2024_23113",
+      "category": "synthetic",
+      "cwe_ids": [
+        "CWE-134"
+      ],
+      "cvss_score": 9.8,
+      "trigger_files": [
+        "trigger.c"
+      ],
+      "c_compiles": true,
+      "healing_actions": [
+        "UpgradeToSafeVariant"
+      ],
+      "tsm_features": [
+        "UpgradeToSafeVariant"
+      ],
+      "attack_vectors": {
+        "total": 3,
+        "covered": [
+          "crash",
+          "info_leak",
+          "write"
+        ],
+        "missing": [],
+        "vector_details": [
+          {
+            "name": "info_leak",
+            "payload": "%08x.%08x.%08x.%08x",
+            "effect": "Leaks 16 bytes of stack data"
+          },
+          {
+            "name": "crash",
+            "payload": "%s%s%s%s%s%s%s%s",
+            "effect": "Dereferences invalid stack pointers causing SIGSEGV"
+          },
+          {
+            "name": "write",
+            "payload": "AAAA%n",
+            "effect": "Writes byte count to stack-derived address"
+          }
+        ]
+      },
+      "manifest_valid": true,
+      "issues": []
+    }
+  ],
+  "coverage_matrix_check": {
+    "exists": true,
+    "total_cves_in_matrix": 17,
+    "format_cves_missing": []
+  }
+}

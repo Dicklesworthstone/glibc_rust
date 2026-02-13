@@ -87,7 +87,9 @@ fn mutex_fixture_gate_emits_valid_bd1qy_artifacts() {
     let index = load_json(&index_path);
     assert_eq!(index["index_version"].as_i64(), Some(1));
     assert_eq!(index["bead_id"].as_str(), Some("bd-1qy"));
-    let artifacts = index["artifacts"].as_array().expect("artifacts should be array");
+    let artifacts = index["artifacts"]
+        .as_array()
+        .expect("artifacts should be array");
     assert!(!artifacts.is_empty(), "artifact index should not be empty");
 
     let report = load_json(&report_path);

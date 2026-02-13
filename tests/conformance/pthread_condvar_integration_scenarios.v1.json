@@ -1,0 +1,78 @@
+{
+  "version": "v1",
+  "family": "pthread/condvar_integration",
+  "captured_at": "2026-02-13T18:10:00Z",
+  "description": "Deterministic condvar integration scenarios for strict+hardened verification",
+  "scenarios": [
+    {
+      "name": "producer_consumer_bounded_queue",
+      "description": "Single producer, single consumer with bounded queue of capacity 4. Producer enqueues 20 items, consumer dequeues in order. Tests cv_not_empty and cv_not_full condvars with predicate loops.",
+      "mode": "both",
+      "waiters": 1,
+      "signals": "signal_per_item",
+      "verification": "all 20 items received in order",
+      "test_fn": "scenario_producer_consumer_bounded_queue"
+    },
+    {
+      "name": "stress_many_waiters_mixed_wake",
+      "description": "8 waiter threads blocked on predicate. Controller sends 2 individual signals then sets go flag + broadcast. All 8 threads must wake and count.",
+      "mode": "both",
+      "waiters": 8,
+      "signals": "2x_signal_then_broadcast",
+      "verification": "counter equals 8 at end",
+      "test_fn": "scenario_stress_many_waiters_mixed_wake"
+    },
+    {
+      "name": "timedwait_monotonic_past_deadline",
+      "description": "CLOCK_MONOTONIC condvar with deadline 1 second from epoch (far in past). Verifies ETIMEDOUT returns quickly without blocking indefinitely.",
+      "mode": "both",
+      "clock": "CLOCK_MONOTONIC",
+      "deadline_sec": 1,
+      "deadline_nsec": 0,
+      "expected_errno": 110,
+      "max_wall_time_sec": 2,
+      "test_fn": "scenario_timedwait_monotonic_past_deadline"
+    },
+    {
+      "name": "signal_before_wait_not_queued",
+      "description": "3 signals sent with no waiters, then a thread waits with timedwait (past deadline). Verifies the prior signals are NOT queued and the waiter times out.",
+      "mode": "both",
+      "pre_signals": 3,
+      "expected_errno": 110,
+      "test_fn": "scenario_signal_before_wait_not_queued"
+    },
+    {
+      "name": "wait_signal_roundtrip",
+      "description": "Single waiter blocks, signaler wakes it after 50ms. Verifies mutex is reacquired on return and waiter count returns to 0.",
+      "mode": "both",
+      "waiters": 1,
+      "signals": "signal_one",
+      "test_fn": "core_condvar_wait_signal_roundtrip"
+    },
+    {
+      "name": "broadcast_wakes_all",
+      "description": "4 waiter threads block on condvar. Broadcast wakes all. Verifies all 4 threads wake and waiter count returns to 0.",
+      "mode": "both",
+      "waiters": 4,
+      "signals": "broadcast",
+      "test_fn": "core_condvar_broadcast_wakes_all"
+    },
+    {
+      "name": "timedwait_realtime_past_deadline",
+      "description": "CLOCK_REALTIME condvar with epoch-0 deadline. Verifies ETIMEDOUT returns quickly.",
+      "mode": "both",
+      "clock": "CLOCK_REALTIME",
+      "deadline_sec": 0,
+      "deadline_nsec": 0,
+      "expected_errno": 110,
+      "test_fn": "core_condvar_timedwait_expires"
+    },
+    {
+      "name": "mutex_association_mismatch",
+      "description": "Condvar associated with mutex_a. Wait attempted with mutex_b. Verifies EINVAL returned for mutex mismatch.",
+      "mode": "both",
+      "expected_errno": 22,
+      "test_fn": "core_condvar_mutex_association_mismatch"
+    }
+  ]
+}

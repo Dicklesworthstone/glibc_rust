@@ -116,12 +116,22 @@ fn validate_candidate(
     }
 
     let measurement = &candidate["measurement"];
-    for field in ["metric", "mode", "before", "after", "perf_delta_pct", "evidence_refs"] {
+    for field in [
+        "metric",
+        "mode",
+        "before",
+        "after",
+        "perf_delta_pct",
+        "evidence_refs",
+    ] {
         if measurement[field].is_null() {
             errors.push(format!("{cid}: measurement missing {field}"));
         }
     }
-    let evidence_refs = measurement["evidence_refs"].as_array().unwrap_or(&Vec::new()).len();
+    let evidence_refs = measurement["evidence_refs"]
+        .as_array()
+        .unwrap_or(&Vec::new())
+        .len();
     if evidence_refs < 2 {
         errors.push(format!(
             "{cid}: measurement.evidence_refs must include before+after artifacts"
@@ -158,13 +168,17 @@ fn validate_candidate(
     if proof_status == "verified" {
         for cls in &min_coverage {
             if !coverage.contains(*cls) {
-                errors.push(format!("{cid}: missing required input class coverage {cls}"));
+                errors.push(format!(
+                    "{cid}: missing required input class coverage {cls}"
+                ));
             }
         }
         if failed_checks > 0 {
             errors.push(format!("{cid}: verified candidate includes failed checks"));
         }
-        let delta = measurement["perf_delta_pct"].as_f64().unwrap_or(f64::INFINITY);
+        let delta = measurement["perf_delta_pct"]
+            .as_f64()
+            .unwrap_or(f64::INFINITY);
         if delta > -min_improvement {
             errors.push(format!(
                 "{cid}: verified candidate perf_delta_pct={delta} must be <= -{min_improvement}"
@@ -194,9 +208,18 @@ fn validate_candidate(
 #[test]
 fn ledger_exists_and_valid() {
     let ledger = load_ledger();
-    assert!(ledger["schema_version"].is_number(), "Missing schema_version");
-    assert!(ledger["proof_template"].is_object(), "Missing proof_template");
-    assert!(ledger["logging_contract"].is_object(), "Missing logging_contract");
+    assert!(
+        ledger["schema_version"].is_number(),
+        "Missing schema_version"
+    );
+    assert!(
+        ledger["proof_template"].is_object(),
+        "Missing proof_template"
+    );
+    assert!(
+        ledger["logging_contract"].is_object(),
+        "Missing logging_contract"
+    );
     assert!(ledger["candidates"].is_array(), "Missing candidates");
     assert!(ledger["summary"].is_object(), "Missing summary");
 }
@@ -307,7 +330,10 @@ fn validator_accepts_verified_sample() {
         .find(|c| c["proof_status"].as_str() == Some("verified"))
         .expect("must have a verified candidate");
     let result = validate_candidate(verified, template);
-    assert!(result.is_ok(), "verified sample should validate: {result:?}");
+    assert!(
+        result.is_ok(),
+        "verified sample should validate: {result:?}"
+    );
 }
 
 #[test]

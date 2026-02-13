@@ -1,0 +1,2884 @@
+{
+  "schema_version": "v1",
+  "bead": "bd-2hh.1",
+  "generated_at": "2026-02-13T19:28:35Z",
+  "summary": {
+    "total_fixture_files": 49,
+    "total_fixture_cases": 479,
+    "unique_symbols_in_fixtures": 206,
+    "implemented_symbols": 220,
+    "symbols_with_fixtures": 148,
+    "symbols_at_threshold": 0,
+    "symbols_below_threshold": 220,
+    "symbols_with_zero_fixtures": 72,
+    "coverage_pct": 67.3,
+    "threshold_pct": 0.0,
+    "min_cases_threshold": 10,
+    "fixture_format_issues": 0
+  },
+  "module_summary": [
+    {
+      "module": "ctype_abi",
+      "total_symbols": 11,
+      "covered_symbols": 11,
+      "at_threshold": 0,
+      "total_cases": 37,
+      "coverage_pct": 100.0,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "dirent_abi",
+      "total_symbols": 3,
+      "covered_symbols": 3,
+      "at_threshold": 0,
+      "total_cases": 6,
+      "coverage_pct": 100.0,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "errno_abi",
+      "total_symbols": 1,
+      "covered_symbols": 1,
+      "at_threshold": 0,
+      "total_cases": 3,
+      "coverage_pct": 100.0,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "grp_abi",
+      "total_symbols": 7,
+      "covered_symbols": 3,
+      "at_threshold": 0,
+      "total_cases": 7,
+      "coverage_pct": 42.9,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "iconv_abi",
+      "total_symbols": 3,
+      "covered_symbols": 3,
+      "at_threshold": 0,
+      "total_cases": 11,
+      "coverage_pct": 100.0,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "inet_abi",
+      "total_symbols": 7,
+      "covered_symbols": 7,
+      "at_threshold": 0,
+      "total_cases": 15,
+      "coverage_pct": 100.0,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "io_abi",
+      "total_symbols": 4,
+      "covered_symbols": 1,
+      "at_threshold": 0,
+      "total_cases": 1,
+      "coverage_pct": 25.0,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "locale_abi",
+      "total_symbols": 2,
+      "covered_symbols": 2,
+      "at_threshold": 0,
+      "total_cases": 6,
+      "coverage_pct": 100.0,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "malloc_abi",
+      "total_symbols": 7,
+      "covered_symbols": 4,
+      "at_threshold": 0,
+      "total_cases": 5,
+      "coverage_pct": 57.1,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "math_abi",
+      "total_symbols": 19,
+      "covered_symbols": 19,
+      "at_threshold": 0,
+      "total_cases": 33,
+      "coverage_pct": 100.0,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "mmap_abi",
+      "total_symbols": 5,
+      "covered_symbols": 4,
+      "at_threshold": 0,
+      "total_cases": 8,
+      "coverage_pct": 80.0,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "poll_abi",
+      "total_symbols": 4,
+      "covered_symbols": 2,
+      "at_threshold": 0,
+      "total_cases": 6,
+      "coverage_pct": 50.0,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "process_abi",
+      "total_symbols": 6,
+      "covered_symbols": 3,
+      "at_threshold": 0,
+      "total_cases": 6,
+      "coverage_pct": 50.0,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "pthread_abi",
+      "total_symbols": 10,
+      "covered_symbols": 10,
+      "at_threshold": 0,
+      "total_cases": 27,
+      "coverage_pct": 100.0,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "pwd_abi",
+      "total_symbols": 7,
+      "covered_symbols": 3,
+      "at_threshold": 0,
+      "total_cases": 7,
+      "coverage_pct": 42.9,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "resolv_abi",
+      "total_symbols": 4,
+      "covered_symbols": 1,
+      "at_threshold": 0,
+      "total_cases": 3,
+      "coverage_pct": 25.0,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "resource_abi",
+      "total_symbols": 2,
+      "covered_symbols": 1,
+      "at_threshold": 0,
+      "total_cases": 5,
+      "coverage_pct": 50.0,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "signal_abi",
+      "total_symbols": 4,
+      "covered_symbols": 3,
+      "at_threshold": 0,
+      "total_cases": 6,
+      "coverage_pct": 75.0,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "socket_abi",
+      "total_symbols": 14,
+      "covered_symbols": 5,
+      "at_threshold": 0,
+      "total_cases": 9,
+      "coverage_pct": 35.7,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "startup_abi",
+      "total_symbols": 3,
+      "covered_symbols": 3,
+      "at_threshold": 0,
+      "total_cases": 5,
+      "coverage_pct": 100.0,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "stdio_abi",
+      "total_symbols": 14,
+      "covered_symbols": 0,
+      "at_threshold": 0,
+      "total_cases": 0,
+      "coverage_pct": 0.0,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "stdlib_abi",
+      "total_symbols": 11,
+      "covered_symbols": 6,
+      "at_threshold": 0,
+      "total_cases": 20,
+      "coverage_pct": 54.5,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "string_abi",
+      "total_symbols": 17,
+      "covered_symbols": 17,
+      "at_threshold": 0,
+      "total_cases": 59,
+      "coverage_pct": 100.0,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "termios_abi",
+      "total_symbols": 10,
+      "covered_symbols": 5,
+      "at_threshold": 0,
+      "total_cases": 8,
+      "coverage_pct": 50.0,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "time_abi",
+      "total_symbols": 4,
+      "covered_symbols": 4,
+      "at_threshold": 0,
+      "total_cases": 8,
+      "coverage_pct": 100.0,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "unistd_abi",
+      "total_symbols": 27,
+      "covered_symbols": 13,
+      "at_threshold": 0,
+      "total_cases": 19,
+      "coverage_pct": 48.1,
+      "threshold_pct": 0.0
+    },
+    {
+      "module": "wchar_abi",
+      "total_symbols": 14,
+      "covered_symbols": 14,
+      "at_threshold": 0,
+      "total_cases": 26,
+      "coverage_pct": 100.0,
+      "threshold_pct": 0.0
+    }
+  ],
+  "symbol_coverage": [
+    {
+      "symbol": "__errno_location",
+      "module": "errno_abi",
+      "status": "Implemented",
+      "fixture_cases": 3,
+      "meets_threshold": false,
+      "gap": 7
+    },
+    {
+      "symbol": "__frankenlibc_startup_phase0",
+      "module": "startup_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "__frankenlibc_startup_snapshot",
+      "module": "startup_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "__libc_start_main",
+      "module": "startup_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "_exit",
+      "module": "process_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "accept",
+      "module": "socket_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "access",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "acos",
+      "module": "math_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "aligned_alloc",
+      "module": "malloc_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "asin",
+      "module": "math_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "atan",
+      "module": "math_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "atan2",
+      "module": "math_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "atexit",
+      "module": "stdlib_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "atoi",
+      "module": "stdlib_abi",
+      "status": "Implemented",
+      "fixture_cases": 6,
+      "meets_threshold": false,
+      "gap": 4
+    },
+    {
+      "symbol": "atol",
+      "module": "stdlib_abi",
+      "status": "Implemented",
+      "fixture_cases": 3,
+      "meets_threshold": false,
+      "gap": 7
+    },
+    {
+      "symbol": "bind",
+      "module": "socket_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "bsearch",
+      "module": "stdlib_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "calloc",
+      "module": "malloc_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "ceil",
+      "module": "math_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "cfgetispeed",
+      "module": "termios_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "cfgetospeed",
+      "module": "termios_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "cfsetispeed",
+      "module": "termios_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "cfsetospeed",
+      "module": "termios_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "chdir",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "clearerr",
+      "module": "stdio_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "clock",
+      "module": "time_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "clock_gettime",
+      "module": "time_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 4,
+      "meets_threshold": false,
+      "gap": 6
+    },
+    {
+      "symbol": "close",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "closedir",
+      "module": "dirent_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "connect",
+      "module": "socket_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "cos",
+      "module": "math_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "dup",
+      "module": "io_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "dup2",
+      "module": "io_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "endgrent",
+      "module": "grp_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "endpwent",
+      "module": "pwd_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "erf",
+      "module": "math_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "execve",
+      "module": "process_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "execvp",
+      "module": "process_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "exit",
+      "module": "stdlib_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "exp",
+      "module": "math_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "fabs",
+      "module": "math_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "fchdir",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "fcntl",
+      "module": "io_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "fdatasync",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "feof",
+      "module": "stdio_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "ferror",
+      "module": "stdio_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "fflush",
+      "module": "stdio_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "fgetc",
+      "module": "stdio_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "fileno",
+      "module": "stdio_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "floor",
+      "module": "math_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "fmod",
+      "module": "math_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "fork",
+      "module": "process_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "fputc",
+      "module": "stdio_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "free",
+      "module": "malloc_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "freeaddrinfo",
+      "module": "resolv_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "fstat",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "fsync",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "gai_strerror",
+      "module": "resolv_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "getaddrinfo",
+      "module": "resolv_abi",
+      "status": "Implemented",
+      "fixture_cases": 3,
+      "meets_threshold": false,
+      "gap": 7
+    },
+    {
+      "symbol": "getchar",
+      "module": "stdio_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "getcwd",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "getegid",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "getenv",
+      "module": "stdlib_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "geteuid",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "getgid",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "getgrent",
+      "module": "grp_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "getgrgid",
+      "module": "grp_abi",
+      "status": "Implemented",
+      "fixture_cases": 3,
+      "meets_threshold": false,
+      "gap": 7
+    },
+    {
+      "symbol": "getgrgid_r",
+      "module": "grp_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "getgrnam",
+      "module": "grp_abi",
+      "status": "Implemented",
+      "fixture_cases": 3,
+      "meets_threshold": false,
+      "gap": 7
+    },
+    {
+      "symbol": "getgrnam_r",
+      "module": "grp_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "getnameinfo",
+      "module": "resolv_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "getpeername",
+      "module": "socket_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "getpid",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 3,
+      "meets_threshold": false,
+      "gap": 7
+    },
+    {
+      "symbol": "getppid",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "getpwent",
+      "module": "pwd_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "getpwnam",
+      "module": "pwd_abi",
+      "status": "Implemented",
+      "fixture_cases": 3,
+      "meets_threshold": false,
+      "gap": 7
+    },
+    {
+      "symbol": "getpwnam_r",
+      "module": "pwd_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "getpwuid",
+      "module": "pwd_abi",
+      "status": "Implemented",
+      "fixture_cases": 3,
+      "meets_threshold": false,
+      "gap": 7
+    },
+    {
+      "symbol": "getpwuid_r",
+      "module": "pwd_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "getrlimit",
+      "module": "resource_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 5,
+      "meets_threshold": false,
+      "gap": 5
+    },
+    {
+      "symbol": "getsockname",
+      "module": "socket_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "getsockopt",
+      "module": "socket_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "getuid",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "htonl",
+      "module": "inet_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "htons",
+      "module": "inet_abi",
+      "status": "Implemented",
+      "fixture_cases": 3,
+      "meets_threshold": false,
+      "gap": 7
+    },
+    {
+      "symbol": "iconv",
+      "module": "iconv_abi",
+      "status": "Implemented",
+      "fixture_cases": 8,
+      "meets_threshold": false,
+      "gap": 2
+    },
+    {
+      "symbol": "iconv_close",
+      "module": "iconv_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "iconv_open",
+      "module": "iconv_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "inet_addr",
+      "module": "inet_abi",
+      "status": "Implemented",
+      "fixture_cases": 3,
+      "meets_threshold": false,
+      "gap": 7
+    },
+    {
+      "symbol": "inet_ntop",
+      "module": "inet_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "inet_pton",
+      "module": "inet_abi",
+      "status": "Implemented",
+      "fixture_cases": 3,
+      "meets_threshold": false,
+      "gap": 7
+    },
+    {
+      "symbol": "isalnum",
+      "module": "ctype_abi",
+      "status": "Implemented",
+      "fixture_cases": 3,
+      "meets_threshold": false,
+      "gap": 7
+    },
+    {
+      "symbol": "isalpha",
+      "module": "ctype_abi",
+      "status": "Implemented",
+      "fixture_cases": 4,
+      "meets_threshold": false,
+      "gap": 6
+    },
+    {
+      "symbol": "isatty",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "isdigit",
+      "module": "ctype_abi",
+      "status": "Implemented",
+      "fixture_cases": 3,
+      "meets_threshold": false,
+      "gap": 7
+    },
+    {
+      "symbol": "islower",
+      "module": "ctype_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "isprint",
+      "module": "ctype_abi",
+      "status": "Implemented",
+      "fixture_cases": 4,
+      "meets_threshold": false,
+      "gap": 6
+    },
+    {
+      "symbol": "ispunct",
+      "module": "ctype_abi",
+      "status": "Implemented",
+      "fixture_cases": 3,
+      "meets_threshold": false,
+      "gap": 7
+    },
+    {
+      "symbol": "isspace",
+      "module": "ctype_abi",
+      "status": "Implemented",
+      "fixture_cases": 4,
+      "meets_threshold": false,
+      "gap": 6
+    },
+    {
+      "symbol": "isupper",
+      "module": "ctype_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "isxdigit",
+      "module": "ctype_abi",
+      "status": "Implemented",
+      "fixture_cases": 4,
+      "meets_threshold": false,
+      "gap": 6
+    },
+    {
+      "symbol": "kill",
+      "module": "signal_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 3,
+      "meets_threshold": false,
+      "gap": 7
+    },
+    {
+      "symbol": "lgamma",
+      "module": "math_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "link",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "listen",
+      "module": "socket_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "localeconv",
+      "module": "locale_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "localtime_r",
+      "module": "time_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "log",
+      "module": "math_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "log10",
+      "module": "math_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "lseek",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "lstat",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "madvise",
+      "module": "mmap_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "malloc",
+      "module": "malloc_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "memalign",
+      "module": "malloc_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "memchr",
+      "module": "string_abi",
+      "status": "Implemented",
+      "fixture_cases": 4,
+      "meets_threshold": false,
+      "gap": 6
+    },
+    {
+      "symbol": "memcmp",
+      "module": "string_abi",
+      "status": "Implemented",
+      "fixture_cases": 7,
+      "meets_threshold": false,
+      "gap": 3
+    },
+    {
+      "symbol": "memcpy",
+      "module": "string_abi",
+      "status": "Implemented",
+      "fixture_cases": 9,
+      "meets_threshold": false,
+      "gap": 1
+    },
+    {
+      "symbol": "memmove",
+      "module": "string_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "memrchr",
+      "module": "string_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "memset",
+      "module": "string_abi",
+      "status": "Implemented",
+      "fixture_cases": 4,
+      "meets_threshold": false,
+      "gap": 6
+    },
+    {
+      "symbol": "mmap",
+      "module": "mmap_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 5,
+      "meets_threshold": false,
+      "gap": 5
+    },
+    {
+      "symbol": "mprotect",
+      "module": "mmap_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "msync",
+      "module": "mmap_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "munmap",
+      "module": "mmap_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "ntohl",
+      "module": "inet_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "ntohs",
+      "module": "inet_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "opendir",
+      "module": "dirent_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 4,
+      "meets_threshold": false,
+      "gap": 6
+    },
+    {
+      "symbol": "pipe",
+      "module": "io_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "poll",
+      "module": "poll_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 5,
+      "meets_threshold": false,
+      "gap": 5
+    },
+    {
+      "symbol": "posix_memalign",
+      "module": "malloc_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "pow",
+      "module": "math_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "ppoll",
+      "module": "poll_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "pselect",
+      "module": "poll_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "pthread_cond_broadcast",
+      "module": "pthread_abi",
+      "status": "Implemented",
+      "fixture_cases": 3,
+      "meets_threshold": false,
+      "gap": 7
+    },
+    {
+      "symbol": "pthread_cond_destroy",
+      "module": "pthread_abi",
+      "status": "Implemented",
+      "fixture_cases": 3,
+      "meets_threshold": false,
+      "gap": 7
+    },
+    {
+      "symbol": "pthread_cond_init",
+      "module": "pthread_abi",
+      "status": "Implemented",
+      "fixture_cases": 4,
+      "meets_threshold": false,
+      "gap": 6
+    },
+    {
+      "symbol": "pthread_cond_signal",
+      "module": "pthread_abi",
+      "status": "Implemented",
+      "fixture_cases": 3,
+      "meets_threshold": false,
+      "gap": 7
+    },
+    {
+      "symbol": "pthread_cond_wait",
+      "module": "pthread_abi",
+      "status": "Implemented",
+      "fixture_cases": 6,
+      "meets_threshold": false,
+      "gap": 4
+    },
+    {
+      "symbol": "pthread_mutex_destroy",
+      "module": "pthread_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "pthread_mutex_init",
+      "module": "pthread_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "pthread_mutex_lock",
+      "module": "pthread_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "pthread_mutex_trylock",
+      "module": "pthread_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "pthread_mutex_unlock",
+      "module": "pthread_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "putchar",
+      "module": "stdio_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "qsort",
+      "module": "stdlib_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "raise",
+      "module": "signal_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "read",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "readdir",
+      "module": "dirent_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "readlink",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "realloc",
+      "module": "malloc_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "recv",
+      "module": "socket_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "recvfrom",
+      "module": "socket_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "rewind",
+      "module": "stdio_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "rmdir",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "round",
+      "module": "math_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "select",
+      "module": "poll_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "send",
+      "module": "socket_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "sendto",
+      "module": "socket_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "setenv",
+      "module": "stdlib_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "setgrent",
+      "module": "grp_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "setlocale",
+      "module": "locale_abi",
+      "status": "Implemented",
+      "fixture_cases": 5,
+      "meets_threshold": false,
+      "gap": 5
+    },
+    {
+      "symbol": "setpwent",
+      "module": "pwd_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "setrlimit",
+      "module": "resource_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "setsockopt",
+      "module": "socket_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "shutdown",
+      "module": "socket_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "sigaction",
+      "module": "signal_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "signal",
+      "module": "signal_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "sin",
+      "module": "math_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "sleep",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "socket",
+      "module": "socket_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 5,
+      "meets_threshold": false,
+      "gap": 5
+    },
+    {
+      "symbol": "stat",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "stderr",
+      "module": "stdio_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "stdin",
+      "module": "stdio_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "stdout",
+      "module": "stdio_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "strcat",
+      "module": "string_abi",
+      "status": "Implemented",
+      "fixture_cases": 3,
+      "meets_threshold": false,
+      "gap": 7
+    },
+    {
+      "symbol": "strchr",
+      "module": "string_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "strcmp",
+      "module": "string_abi",
+      "status": "Implemented",
+      "fixture_cases": 3,
+      "meets_threshold": false,
+      "gap": 7
+    },
+    {
+      "symbol": "strcpy",
+      "module": "string_abi",
+      "status": "Implemented",
+      "fixture_cases": 3,
+      "meets_threshold": false,
+      "gap": 7
+    },
+    {
+      "symbol": "strlen",
+      "module": "string_abi",
+      "status": "Implemented",
+      "fixture_cases": 5,
+      "meets_threshold": false,
+      "gap": 5
+    },
+    {
+      "symbol": "strncat",
+      "module": "string_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "strncpy",
+      "module": "string_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "strrchr",
+      "module": "string_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "strstr",
+      "module": "string_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "strtok",
+      "module": "string_abi",
+      "status": "Implemented",
+      "fixture_cases": 5,
+      "meets_threshold": false,
+      "gap": 5
+    },
+    {
+      "symbol": "strtok_r",
+      "module": "string_abi",
+      "status": "Implemented",
+      "fixture_cases": 3,
+      "meets_threshold": false,
+      "gap": 7
+    },
+    {
+      "symbol": "strtol",
+      "module": "stdlib_abi",
+      "status": "Implemented",
+      "fixture_cases": 6,
+      "meets_threshold": false,
+      "gap": 4
+    },
+    {
+      "symbol": "strtoul",
+      "module": "stdlib_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "symlink",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "tan",
+      "module": "math_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "tcdrain",
+      "module": "termios_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "tcflow",
+      "module": "termios_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "tcflush",
+      "module": "termios_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "tcgetattr",
+      "module": "termios_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 4,
+      "meets_threshold": false,
+      "gap": 6
+    },
+    {
+      "symbol": "tcsendbreak",
+      "module": "termios_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "tcsetattr",
+      "module": "termios_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "tgamma",
+      "module": "math_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "time",
+      "module": "time_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "tolower",
+      "module": "ctype_abi",
+      "status": "Implemented",
+      "fixture_cases": 4,
+      "meets_threshold": false,
+      "gap": 6
+    },
+    {
+      "symbol": "toupper",
+      "module": "ctype_abi",
+      "status": "Implemented",
+      "fixture_cases": 4,
+      "meets_threshold": false,
+      "gap": 6
+    },
+    {
+      "symbol": "ungetc",
+      "module": "stdio_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "unlink",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "unsetenv",
+      "module": "stdlib_abi",
+      "status": "Implemented",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "usleep",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "wait",
+      "module": "process_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 0,
+      "meets_threshold": false,
+      "gap": 10
+    },
+    {
+      "symbol": "waitpid",
+      "module": "process_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "wcscat",
+      "module": "wchar_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "wcschr",
+      "module": "wchar_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "wcscmp",
+      "module": "wchar_abi",
+      "status": "Implemented",
+      "fixture_cases": 4,
+      "meets_threshold": false,
+      "gap": 6
+    },
+    {
+      "symbol": "wcscpy",
+      "module": "wchar_abi",
+      "status": "Implemented",
+      "fixture_cases": 3,
+      "meets_threshold": false,
+      "gap": 7
+    },
+    {
+      "symbol": "wcslen",
+      "module": "wchar_abi",
+      "status": "Implemented",
+      "fixture_cases": 3,
+      "meets_threshold": false,
+      "gap": 7
+    },
+    {
+      "symbol": "wcsncmp",
+      "module": "wchar_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "wcsncpy",
+      "module": "wchar_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "wcsrchr",
+      "module": "wchar_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "wcsstr",
+      "module": "wchar_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "wmemchr",
+      "module": "wchar_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "wmemcmp",
+      "module": "wchar_abi",
+      "status": "Implemented",
+      "fixture_cases": 2,
+      "meets_threshold": false,
+      "gap": 8
+    },
+    {
+      "symbol": "wmemcpy",
+      "module": "wchar_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "wmemmove",
+      "module": "wchar_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "wmemset",
+      "module": "wchar_abi",
+      "status": "Implemented",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    },
+    {
+      "symbol": "write",
+      "module": "unistd_abi",
+      "status": "RawSyscall",
+      "fixture_cases": 1,
+      "meets_threshold": false,
+      "gap": 9
+    }
+  ],
+  "fixture_files": [
+    {
+      "file": "allocator.json",
+      "total_cases": 5,
+      "symbols_covered": 4,
+      "symbols": {
+        "malloc": 2,
+        "calloc": 1,
+        "free": 1,
+        "realloc": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "backtrace_ops.json",
+      "total_cases": 5,
+      "symbols_covered": 3,
+      "symbols": {
+        "backtrace": 3,
+        "backtrace_symbols": 1,
+        "backtrace_symbols_fd": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "ctype_ops.json",
+      "total_cases": 37,
+      "symbols_covered": 11,
+      "symbols": {
+        "isalpha": 4,
+        "isdigit": 3,
+        "isalnum": 3,
+        "isupper": 2,
+        "islower": 2,
+        "isspace": 4,
+        "isprint": 4,
+        "ispunct": 3,
+        "isxdigit": 4,
+        "tolower": 4,
+        "toupper": 4
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "dirent_ops.json",
+      "total_cases": 6,
+      "symbols_covered": 3,
+      "symbols": {
+        "opendir": 4,
+        "readdir": 1,
+        "closedir": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "dlfcn_ops.json",
+      "total_cases": 7,
+      "symbols_covered": 3,
+      "symbols": {
+        "dlopen": 3,
+        "dlsym": 3,
+        "dlerror": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "elf_loader.json",
+      "total_cases": 17,
+      "symbols_covered": 7,
+      "symbols": {
+        "Elf64Header::parse": 2,
+        "compute_relocation": 5,
+        "elf_hash": 2,
+        "gnu_hash": 1,
+        "SymbolBinding::from": 3,
+        "SymbolType::from": 2,
+        "ProgramFlags::to_mmap_prot": 2
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "errno_ops.json",
+      "total_cases": 3,
+      "symbols_covered": 1,
+      "symbols": {
+        "__errno_location": 3
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "grp_ops.json",
+      "total_cases": 7,
+      "symbols_covered": 3,
+      "symbols": {
+        "getgrnam": 3,
+        "getgrgid": 3,
+        "setgrent": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "iconv_phase1.json",
+      "total_cases": 11,
+      "symbols_covered": 3,
+      "symbols": {
+        "iconv": 8,
+        "iconv_open": 2,
+        "iconv_close": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "inet_ops.json",
+      "total_cases": 15,
+      "symbols_covered": 7,
+      "symbols": {
+        "htons": 3,
+        "htonl": 2,
+        "ntohs": 1,
+        "ntohl": 1,
+        "inet_addr": 3,
+        "inet_pton": 3,
+        "inet_ntop": 2
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "loader_edges.json",
+      "total_cases": 7,
+      "symbols_covered": 5,
+      "symbols": {
+        "dlopen": 2,
+        "dlsym": 1,
+        "dlclose": 2,
+        "dladdr": 1,
+        "dlinfo": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "locale_ops.json",
+      "total_cases": 6,
+      "symbols_covered": 2,
+      "symbols": {
+        "setlocale": 5,
+        "localeconv": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "math_ops.json",
+      "total_cases": 33,
+      "symbols_covered": 19,
+      "symbols": {
+        "sin": 2,
+        "cos": 2,
+        "tan": 1,
+        "asin": 2,
+        "acos": 2,
+        "atan": 1,
+        "atan2": 2,
+        "exp": 2,
+        "log": 2,
+        "log10": 2,
+        "pow": 2,
+        "fabs": 2,
+        "ceil": 2,
+        "floor": 2,
+        "round": 2,
+        "fmod": 1,
+        "erf": 1,
+        "tgamma": 2,
+        "lgamma": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "membrane_mode_split.json",
+      "total_cases": 4,
+      "symbols_covered": 2,
+      "symbols": {
+        "memcpy": 2,
+        "strlen": 2
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "memcpy_strict.json",
+      "total_cases": 4,
+      "symbols_covered": 1,
+      "symbols": {
+        "memcpy": 4
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "memory_ops.json",
+      "total_cases": 11,
+      "symbols_covered": 5,
+      "symbols": {
+        "memcpy": 3,
+        "memmove": 1,
+        "memset": 2,
+        "memcmp": 3,
+        "memchr": 2
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "poll_ops.json",
+      "total_cases": 6,
+      "symbols_covered": 2,
+      "symbols": {
+        "poll": 5,
+        "select": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "pressure_sensing.json",
+      "total_cases": 9,
+      "symbols_covered": 2,
+      "symbols": {
+        "PressureSensor::observe": 8,
+        "SystemRegime::degradation_active": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "process_ops.json",
+      "total_cases": 7,
+      "symbols_covered": 4,
+      "symbols": {
+        "getpid": 2,
+        "getppid": 1,
+        "fork": 2,
+        "waitpid": 2
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "pthread_cond.json",
+      "total_cases": 24,
+      "symbols_covered": 6,
+      "symbols": {
+        "pthread_cond_init": 4,
+        "pthread_cond_destroy": 3,
+        "pthread_cond_wait": 6,
+        "pthread_cond_timedwait": 5,
+        "pthread_cond_signal": 3,
+        "pthread_cond_broadcast": 3
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "pthread_mutex.json",
+      "total_cases": 8,
+      "symbols_covered": 5,
+      "symbols": {
+        "pthread_mutex_init": 2,
+        "pthread_mutex_lock": 2,
+        "pthread_mutex_trylock": 2,
+        "pthread_mutex_unlock": 1,
+        "pthread_mutex_destroy": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "pthread_thread.json",
+      "total_cases": 11,
+      "symbols_covered": 5,
+      "symbols": {
+        "pthread_create": 2,
+        "pthread_join": 3,
+        "pthread_detach": 3,
+        "pthread_self": 1,
+        "pthread_equal": 2
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "pthread_tls_keys.json",
+      "total_cases": 16,
+      "symbols_covered": 5,
+      "symbols": {
+        "pthread_key_create": 3,
+        "pthread_key_delete": 4,
+        "pthread_getspecific": 2,
+        "pthread_setspecific": 3,
+        "teardown_thread_tls": 4
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "pwd_ops.json",
+      "total_cases": 7,
+      "symbols_covered": 3,
+      "symbols": {
+        "getpwnam": 3,
+        "getpwuid": 3,
+        "setpwent": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "regex_glob_ops.json",
+      "total_cases": 8,
+      "symbols_covered": 4,
+      "symbols": {
+        "regcomp": 2,
+        "regexec": 2,
+        "fnmatch": 2,
+        "glob": 2
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "resolver.json",
+      "total_cases": 16,
+      "symbols_covered": 6,
+      "symbols": {
+        "ResolverConfig::default": 1,
+        "ResolverConfig::parse": 6,
+        "DnsHeader::new_query": 1,
+        "encode_domain_name": 2,
+        "lookup_hosts": 3,
+        "getaddrinfo": 3
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "resource_ops.json",
+      "total_cases": 5,
+      "symbols_covered": 1,
+      "symbols": {
+        "getrlimit": 5
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "session_ops.json",
+      "total_cases": 6,
+      "symbols_covered": 4,
+      "symbols": {
+        "getlogin": 2,
+        "getlogin_r": 1,
+        "setsid": 2,
+        "getsid": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "setjmp_ops.json",
+      "total_cases": 7,
+      "symbols_covered": 3,
+      "symbols": {
+        "setjmp": 2,
+        "longjmp": 4,
+        "_setjmp": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "signal_ops.json",
+      "total_cases": 6,
+      "symbols_covered": 3,
+      "symbols": {
+        "raise": 2,
+        "kill": 3,
+        "sigaction": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "socket_ops.json",
+      "total_cases": 9,
+      "symbols_covered": 5,
+      "symbols": {
+        "socket": 5,
+        "bind": 1,
+        "listen": 1,
+        "shutdown": 1,
+        "getsockname": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "spawn_exec_ops.json",
+      "total_cases": 7,
+      "symbols_covered": 3,
+      "symbols": {
+        "posix_spawn": 3,
+        "execve": 2,
+        "system": 2
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "startup_ops.json",
+      "total_cases": 5,
+      "symbols_covered": 3,
+      "symbols": {
+        "__frankenlibc_startup_phase0": 2,
+        "__frankenlibc_startup_snapshot": 2,
+        "__libc_start_main": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "stdio_file_ops.json",
+      "total_cases": 8,
+      "symbols_covered": 4,
+      "symbols": {
+        "fopen": 3,
+        "fclose": 1,
+        "fprintf": 1,
+        "snprintf": 3
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "stdlib_conversion.json",
+      "total_cases": 7,
+      "symbols_covered": 2,
+      "symbols": {
+        "atoi": 3,
+        "strtol": 4
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "stdlib_numeric.json",
+      "total_cases": 10,
+      "symbols_covered": 4,
+      "symbols": {
+        "atoi": 3,
+        "strtol": 2,
+        "strtoul": 2,
+        "atol": 3
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "stdlib_sort.json",
+      "total_cases": 3,
+      "symbols_covered": 2,
+      "symbols": {
+        "qsort": 1,
+        "bsearch": 2
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "string_memory_full.json",
+      "total_cases": 14,
+      "symbols_covered": 12,
+      "symbols": {
+        "memset": 1,
+        "memcmp": 2,
+        "memchr": 1,
+        "memrchr": 1,
+        "strcmp": 2,
+        "strcpy": 1,
+        "strncpy": 1,
+        "strcat": 1,
+        "strncat": 1,
+        "strchr": 1,
+        "strrchr": 1,
+        "strstr": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "string_ops.json",
+      "total_cases": 15,
+      "symbols_covered": 12,
+      "symbols": {
+        "memmove": 1,
+        "memset": 1,
+        "memcmp": 2,
+        "memchr": 1,
+        "memrchr": 1,
+        "strcpy": 2,
+        "strncpy": 1,
+        "strcat": 2,
+        "strcmp": 1,
+        "strchr": 1,
+        "strrchr": 1,
+        "strstr": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "string_strtok.json",
+      "total_cases": 8,
+      "symbols_covered": 2,
+      "symbols": {
+        "strtok": 5,
+        "strtok_r": 3
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "strlen_strict.json",
+      "total_cases": 3,
+      "symbols_covered": 1,
+      "symbols": {
+        "strlen": 3
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "sysv_ipc_ops.json",
+      "total_cases": 9,
+      "symbols_covered": 7,
+      "symbols": {
+        "semget": 2,
+        "semop": 1,
+        "semctl": 1,
+        "shmget": 2,
+        "shmat": 1,
+        "shmdt": 1,
+        "msgget": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "termios_ops.json",
+      "total_cases": 8,
+      "symbols_covered": 5,
+      "symbols": {
+        "tcgetattr": 4,
+        "cfgetispeed": 1,
+        "cfgetospeed": 1,
+        "cfsetispeed": 1,
+        "cfsetospeed": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "time_ops.json",
+      "total_cases": 8,
+      "symbols_covered": 4,
+      "symbols": {
+        "time": 2,
+        "clock_gettime": 4,
+        "clock": 1,
+        "localtime_r": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "unistd_ops.json",
+      "total_cases": 17,
+      "symbols_covered": 14,
+      "symbols": {
+        "getpid": 1,
+        "getppid": 1,
+        "getuid": 1,
+        "getgid": 1,
+        "geteuid": 1,
+        "getegid": 1,
+        "getcwd": 1,
+        "isatty": 2,
+        "access": 2,
+        "write": 1,
+        "read": 1,
+        "close": 2,
+        "lseek": 1,
+        "pipe": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "virtual_memory_ops.json",
+      "total_cases": 8,
+      "symbols_covered": 4,
+      "symbols": {
+        "mmap": 5,
+        "munmap": 1,
+        "mprotect": 1,
+        "madvise": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "wide_memory.json",
+      "total_cases": 6,
+      "symbols_covered": 5,
+      "symbols": {
+        "wmemcpy": 1,
+        "wmemmove": 1,
+        "wmemset": 1,
+        "wmemcmp": 2,
+        "wmemchr": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "wide_string.json",
+      "total_cases": 4,
+      "symbols_covered": 3,
+      "symbols": {
+        "wcslen": 1,
+        "wcscmp": 2,
+        "wcscpy": 1
+      },
+      "valid": true,
+      "issues": []
+    },
+    {
+      "file": "wide_string_ops.json",
+      "total_cases": 16,
+      "symbols_covered": 9,
+      "symbols": {
+        "wcslen": 2,
+        "wcscpy": 2,
+        "wcscmp": 2,
+        "wcsncpy": 2,
+        "wcscat": 1,
+        "wcschr": 2,
+        "wcsstr": 1,
+        "wcsncmp": 2,
+        "wcsrchr": 2
+      },
+      "valid": true,
+      "issues": []
+    }
+  ],
+  "extra_symbols": [
+    {
+      "symbol": "DnsHeader::new_query",
+      "fixture_cases": 1
+    },
+    {
+      "symbol": "Elf64Header::parse",
+      "fixture_cases": 2
+    },
+    {
+      "symbol": "PressureSensor::observe",
+      "fixture_cases": 8
+    },
+    {
+      "symbol": "ProgramFlags::to_mmap_prot",
+      "fixture_cases": 2
+    },
+    {
+      "symbol": "ResolverConfig::default",
+      "fixture_cases": 1
+    },
+    {
+      "symbol": "ResolverConfig::parse",
+      "fixture_cases": 6
+    },
+    {
+      "symbol": "SymbolBinding::from",
+      "fixture_cases": 3
+    },
+    {
+      "symbol": "SymbolType::from",
+      "fixture_cases": 2
+    },
+    {
+      "symbol": "SystemRegime::degradation_active",
+      "fixture_cases": 1
+    },
+    {
+      "symbol": "_setjmp",
+      "fixture_cases": 1
+    },
+    {
+      "symbol": "backtrace",
+      "fixture_cases": 3
+    },
+    {
+      "symbol": "backtrace_symbols",
+      "fixture_cases": 1
+    },
+    {
+      "symbol": "backtrace_symbols_fd",
+      "fixture_cases": 1
+    },
+    {
+      "symbol": "compute_relocation",
+      "fixture_cases": 5
+    },
+    {
+      "symbol": "dladdr",
+      "fixture_cases": 1
+    },
+    {
+      "symbol": "dlinfo",
+      "fixture_cases": 1
+    },
+    {
+      "symbol": "elf_hash",
+      "fixture_cases": 2
+    },
+    {
+      "symbol": "encode_domain_name",
+      "fixture_cases": 2
+    },
+    {
+      "symbol": "fnmatch",
+      "fixture_cases": 2
+    },
+    {
+      "symbol": "getlogin",
+      "fixture_cases": 2
+    },
+    {
+      "symbol": "getlogin_r",
+      "fixture_cases": 1
+    },
+    {
+      "symbol": "getsid",
+      "fixture_cases": 1
+    },
+    {
+      "symbol": "glob",
+      "fixture_cases": 2
+    },
+    {
+      "symbol": "gnu_hash",
+      "fixture_cases": 1
+    },
+    {
+      "symbol": "longjmp",
+      "fixture_cases": 4
+    },
+    {
+      "symbol": "lookup_hosts",
+      "fixture_cases": 3
+    },
+    {
+      "symbol": "msgget",
+      "fixture_cases": 1
+    },
+    {
+      "symbol": "posix_spawn",
+      "fixture_cases": 3
+    },
+    {
+      "symbol": "pthread_cond_timedwait",
+      "fixture_cases": 5
+    },
+    {
+      "symbol": "pthread_getspecific",
+      "fixture_cases": 2
+    },
+    {
+      "symbol": "pthread_key_create",
+      "fixture_cases": 3
+    },
+    {
+      "symbol": "pthread_key_delete",
+      "fixture_cases": 4
+    },
+    {
+      "symbol": "pthread_setspecific",
+      "fixture_cases": 3
+    },
+    {
+      "symbol": "regcomp",
+      "fixture_cases": 2
+    },
+    {
+      "symbol": "regexec",
+      "fixture_cases": 2
+    },
+    {
+      "symbol": "semctl",
+      "fixture_cases": 1
+    },
+    {
+      "symbol": "semget",
+      "fixture_cases": 2
+    },
+    {
+      "symbol": "semop",
+      "fixture_cases": 1
+    },
+    {
+      "symbol": "setjmp",
+      "fixture_cases": 2
+    },
+    {
+      "symbol": "setsid",
+      "fixture_cases": 2
+    },
+    {
+      "symbol": "shmat",
+      "fixture_cases": 1
+    },
+    {
+      "symbol": "shmdt",
+      "fixture_cases": 1
+    },
+    {
+      "symbol": "shmget",
+      "fixture_cases": 2
+    },
+    {
+      "symbol": "system",
+      "fixture_cases": 2
+    },
+    {
+      "symbol": "teardown_thread_tls",
+      "fixture_cases": 4
+    }
+  ]
+}

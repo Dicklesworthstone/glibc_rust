@@ -33,7 +33,11 @@ fn load_json(path: &Path) -> serde_json::Value {
 fn artifact_shape_is_valid() {
     let root = workspace_root();
     let artifact_path = root.join("tests/conformance/thread_hotpath_optimization.v1.json");
-    assert!(artifact_path.exists(), "missing {}", artifact_path.display());
+    assert!(
+        artifact_path.exists(),
+        "missing {}",
+        artifact_path.display()
+    );
 
     let artifact = load_json(&artifact_path);
     assert_eq!(artifact["schema_version"].as_str(), Some("v1"));
@@ -50,7 +54,10 @@ fn artifact_shape_is_valid() {
     let threshold = artifact["opportunity_selection"]["threshold"]
         .as_f64()
         .expect("threshold must be f64");
-    assert!(selected >= threshold, "selected score must satisfy threshold");
+    assert!(
+        selected >= threshold,
+        "selected score must satisfy threshold"
+    );
 }
 
 #[test]
@@ -111,7 +118,9 @@ fn guard_script_fails_when_opportunity_score_below_threshold() {
     let script = root.join("scripts/check_thread_hotpath_optimization.sh");
     let opp_path = root.join("tests/conformance/opportunity_matrix.json");
     let mut opp = load_json(&opp_path);
-    let entries = opp["entries"].as_array_mut().expect("entries should be array");
+    let entries = opp["entries"]
+        .as_array_mut()
+        .expect("entries should be array");
     let mut touched = false;
     for row in entries.iter_mut() {
         if row["id"].as_str() == Some("opp-005") {
@@ -131,7 +140,11 @@ fn guard_script_fails_when_opportunity_score_below_threshold() {
             .as_nanos()
     );
     let tmp_path = std::env::temp_dir().join(tmp_name);
-    std::fs::write(&tmp_path, serde_json::to_string_pretty(&opp).unwrap() + "\n").unwrap();
+    std::fs::write(
+        &tmp_path,
+        serde_json::to_string_pretty(&opp).unwrap() + "\n",
+    )
+    .unwrap();
 
     let output = Command::new(&script)
         .env("FRANKENLIBC_THREAD_OPP_MATRIX_PATH", &tmp_path)

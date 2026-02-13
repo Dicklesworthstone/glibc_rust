@@ -55,7 +55,10 @@ fn e2e_manifest_validator_and_catalog_exist() {
     let root = workspace_root();
     let validator = root.join("scripts/validate_e2e_manifest.py");
     let manifest = root.join("tests/conformance/e2e_scenario_manifest.v1.json");
-    assert!(validator.exists(), "scripts/validate_e2e_manifest.py must exist");
+    assert!(
+        validator.exists(),
+        "scripts/validate_e2e_manifest.py must exist"
+    );
     assert!(
         manifest.exists(),
         "tests/conformance/e2e_scenario_manifest.v1.json must exist"
@@ -131,10 +134,7 @@ fn e2e_suite_runs_and_produces_jsonl() {
                 );
                 let event = obj["event"].as_str().unwrap();
                 if event.starts_with("case_") || event == "manifest_case" {
-                    assert!(
-                        obj["mode"].is_string(),
-                        "{event} must include mode field"
-                    );
+                    assert!(obj["mode"].is_string(), "{event} must include mode field");
                     assert!(
                         obj["scenario_id"].is_string(),
                         "{event} must include scenario_id field"
@@ -381,12 +381,14 @@ fn e2e_quarantine_and_pack_reports_valid() {
             quarantine_report.exists(),
             "flake_quarantine_report.json should exist"
         );
-        assert!(pack_report.exists(), "scenario_pack_report.json should exist");
+        assert!(
+            pack_report.exists(),
+            "scenario_pack_report.json should exist"
+        );
 
-        let q: serde_json::Value = serde_json::from_str(
-            &std::fs::read_to_string(&quarantine_report).unwrap(),
-        )
-        .expect("flake_quarantine_report.json should be valid JSON");
+        let q: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&quarantine_report).unwrap())
+                .expect("flake_quarantine_report.json should be valid JSON");
         assert_eq!(
             q["schema_version"].as_str().unwrap(),
             "v1",
@@ -488,7 +490,9 @@ fn replay_keys_are_deterministic_for_same_seed_and_manifest() {
                 continue;
             }
             let obj: serde_json::Value = serde_json::from_str(line).expect("valid JSONL line");
-            if obj["event"].as_str() == Some("manifest_case") && obj["mode"].as_str() == Some("strict") {
+            if obj["event"].as_str() == Some("manifest_case")
+                && obj["mode"].as_str() == Some("strict")
+            {
                 map.insert(
                     obj["scenario_id"].as_str().unwrap().to_string(),
                     obj["replay_key"].as_str().unwrap().to_string(),

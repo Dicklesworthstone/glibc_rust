@@ -38,7 +38,8 @@ fn closure_sweep_passes() {
     // Gate: status must be "pass" (zero errors)
     let status = report["status"].as_str().unwrap_or("unknown");
     assert_eq!(
-        status, "pass",
+        status,
+        "pass",
         "Closure sweep failed.\nErrors: {}\nFindings: {}",
         report["summary"]["errors"],
         serde_json::to_string_pretty(&report["findings"]).unwrap_or_default()

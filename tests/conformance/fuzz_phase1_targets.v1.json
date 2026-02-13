@@ -1,0 +1,549 @@
+{
+  "schema_version": "v1",
+  "bead": "bd-1oz.6",
+  "generated_at": "2026-02-13T19:43:01Z",
+  "summary": {
+    "phase": 1,
+    "total_targets": 4,
+    "functional_targets": 3,
+    "partial_targets": 1,
+    "stub_targets": 0,
+    "smoke_viable_targets": 4,
+    "average_readiness_score": 78.8,
+    "total_symbols_covered": 30,
+    "total_cwes_targeted": 11,
+    "crash_severity_classes": 12,
+    "triage_steps": 6
+  },
+  "target_assessments": [
+    {
+      "target": "fuzz_string",
+      "family": "string",
+      "attack_surface": "buffer-overflow, off-by-one, null-termination",
+      "cwe_targets": [
+        "CWE-120",
+        "CWE-125",
+        "CWE-787"
+      ],
+      "source_analysis": {
+        "source_exists": true,
+        "total_lines": 19,
+        "logic_lines": 12,
+        "todo_count": 1,
+        "todos": [
+          "// TODO: fuzz string functions with arbitrary byte inputs"
+        ],
+        "uses_frankenlibc_crates": false,
+        "has_cleanup_logic": false,
+        "has_size_guard": true,
+        "has_iteration": true,
+        "has_chunk_parsing": false,
+        "ready": true
+      },
+      "symbol_coverage": {
+        "target_symbols": [
+          "memchr",
+          "memcmp",
+          "memcpy",
+          "memmove",
+          "memrchr",
+          "memset",
+          "strcat",
+          "strchr",
+          "strcmp",
+          "strcpy",
+          "strlen",
+          "strncat",
+          "strncmp",
+          "strncpy",
+          "strrchr",
+          "strstr",
+          "strtok",
+          "strtok_r"
+        ],
+        "available_symbols": [
+          "memchr",
+          "memcmp",
+          "memcpy",
+          "memmove",
+          "memrchr",
+          "memset",
+          "strcat",
+          "strchr",
+          "strcmp",
+          "strcpy",
+          "strlen",
+          "strncat",
+          "strncpy",
+          "strrchr",
+          "strstr",
+          "strtok",
+          "strtok_r"
+        ],
+        "covered_count": 17,
+        "available_count": 17,
+        "coverage_pct": 100.0,
+        "uncovered": []
+      },
+      "readiness_score": 70,
+      "implementation_status": "functional",
+      "smoke_viable": true
+    },
+    {
+      "target": "fuzz_malloc",
+      "family": "malloc",
+      "attack_surface": "double-free, use-after-free, heap-overflow, size-overflow",
+      "cwe_targets": [
+        "CWE-415",
+        "CWE-416",
+        "CWE-122",
+        "CWE-131"
+      ],
+      "source_analysis": {
+        "source_exists": true,
+        "total_lines": 47,
+        "logic_lines": 36,
+        "todo_count": 1,
+        "todos": [
+          "// TODO: fuzz malloc/free sequences"
+        ],
+        "uses_frankenlibc_crates": true,
+        "has_cleanup_logic": true,
+        "has_size_guard": true,
+        "has_iteration": true,
+        "has_chunk_parsing": true,
+        "ready": true
+      },
+      "symbol_coverage": {
+        "target_symbols": [
+          "aligned_alloc",
+          "calloc",
+          "free",
+          "malloc",
+          "memalign",
+          "posix_memalign",
+          "realloc"
+        ],
+        "available_symbols": [
+          "aligned_alloc",
+          "calloc",
+          "free",
+          "malloc",
+          "memalign",
+          "posix_memalign",
+          "realloc"
+        ],
+        "covered_count": 7,
+        "available_count": 7,
+        "coverage_pct": 100.0,
+        "uncovered": []
+      },
+      "readiness_score": 100,
+      "implementation_status": "functional",
+      "smoke_viable": true
+    },
+    {
+      "target": "fuzz_membrane",
+      "family": "membrane",
+      "attack_surface": "null-deref, temporal-violation, foreign-ptr",
+      "cwe_targets": [
+        "CWE-476",
+        "CWE-824",
+        "CWE-825"
+      ],
+      "source_analysis": {
+        "source_exists": true,
+        "total_lines": 26,
+        "logic_lines": 20,
+        "todo_count": 0,
+        "todos": [],
+        "uses_frankenlibc_crates": true,
+        "has_cleanup_logic": false,
+        "has_size_guard": true,
+        "has_iteration": true,
+        "has_chunk_parsing": true,
+        "ready": true
+      },
+      "symbol_coverage": {
+        "target_symbols": [
+          "__membrane_validate"
+        ],
+        "available_symbols": [],
+        "covered_count": 0,
+        "available_count": 0,
+        "coverage_pct": 0,
+        "uncovered": []
+      },
+      "readiness_score": 90,
+      "implementation_status": "functional",
+      "smoke_viable": true
+    },
+    {
+      "target": "fuzz_printf",
+      "family": "stdio",
+      "attack_surface": "format-string, unbounded-write, stack-read",
+      "cwe_targets": [
+        "CWE-134",
+        "CWE-787"
+      ],
+      "source_analysis": {
+        "source_exists": true,
+        "total_lines": 14,
+        "logic_lines": 8,
+        "todo_count": 2,
+        "todos": [
+          "// TODO: fuzz printf format string parsing",
+          "// TODO: wire to printf format engine once implemented"
+        ],
+        "uses_frankenlibc_crates": false,
+        "has_cleanup_logic": false,
+        "has_size_guard": true,
+        "has_iteration": true,
+        "has_chunk_parsing": false,
+        "ready": false
+      },
+      "symbol_coverage": {
+        "target_symbols": [
+          "fprintf",
+          "printf",
+          "snprintf",
+          "sprintf"
+        ],
+        "available_symbols": [
+          "clearerr",
+          "fclose",
+          "feof",
+          "ferror",
+          "fflush",
+          "fgetc",
+          "fgets",
+          "fileno",
+          "fopen",
+          "fprintf",
+          "fputc",
+          "fputs",
+          "fread",
+          "fseek",
+          "ftell",
+          "fwrite",
+          "getchar",
+          "perror",
+          "printf",
+          "putchar",
+          "puts",
+          "rewind",
+          "setbuf",
+          "setvbuf",
+          "snprintf",
+          "sprintf",
+          "stderr",
+          "stdin",
+          "stdout",
+          "ungetc"
+        ],
+        "covered_count": 4,
+        "available_count": 30,
+        "coverage_pct": 13.3,
+        "uncovered": [
+          "clearerr",
+          "fclose",
+          "feof",
+          "ferror",
+          "fflush",
+          "fgetc",
+          "fgets",
+          "fileno",
+          "fopen",
+          "fputc",
+          "fputs",
+          "fread",
+          "fseek",
+          "ftell",
+          "fwrite",
+          "getchar",
+          "perror",
+          "putchar",
+          "puts",
+          "rewind",
+          "setbuf",
+          "setvbuf",
+          "stderr",
+          "stdin",
+          "stdout",
+          "ungetc"
+        ]
+      },
+      "readiness_score": 55,
+      "implementation_status": "partial",
+      "smoke_viable": true
+    }
+  ],
+  "crash_triage_policy": {
+    "classification": {
+      "description": "Crashes are classified by sanitizer signal and stack trace.",
+      "severity_levels": {
+        "heap-buffer-overflow": {
+          "severity": "critical",
+          "cwe": "CWE-122"
+        },
+        "stack-buffer-overflow": {
+          "severity": "critical",
+          "cwe": "CWE-121"
+        },
+        "use-after-free": {
+          "severity": "critical",
+          "cwe": "CWE-416"
+        },
+        "double-free": {
+          "severity": "high",
+          "cwe": "CWE-415"
+        },
+        "null-deref": {
+          "severity": "medium",
+          "cwe": "CWE-476"
+        },
+        "integer-overflow": {
+          "severity": "high",
+          "cwe": "CWE-190"
+        },
+        "out-of-memory": {
+          "severity": "low",
+          "cwe": "CWE-400"
+        },
+        "timeout": {
+          "severity": "low",
+          "cwe": "CWE-835"
+        },
+        "assertion-failure": {
+          "severity": "medium",
+          "cwe": "CWE-617"
+        },
+        "stack-overflow": {
+          "severity": "medium",
+          "cwe": "CWE-674"
+        },
+        "format-string": {
+          "severity": "critical",
+          "cwe": "CWE-134"
+        },
+        "uninitialized-read": {
+          "severity": "high",
+          "cwe": "CWE-457"
+        }
+      },
+      "priority_order": [
+        "critical",
+        "high",
+        "medium",
+        "low"
+      ]
+    },
+    "minimization": {
+      "tool": "cargo-fuzz tmin",
+      "description": "Minimize crash inputs to smallest reproducing case.",
+      "max_time_secs": 60,
+      "strategy": "binary-search reduction with coverage-guided pruning"
+    },
+    "dedup": {
+      "method": "stack-hash",
+      "description": "Crashes are deduplicated by hashing the top 5 stack frames (function name + offset) after symbolization.",
+      "frame_depth": 5,
+      "hash_function": "sha256",
+      "ignore_frames": [
+        "libfuzzer",
+        "asan",
+        "msan",
+        "ubsan",
+        "__sanitizer",
+        "fuzzer::Fuzzer"
+      ]
+    },
+    "triage_flow": [
+      {
+        "step": 1,
+        "action": "capture",
+        "description": "Save crash input to artifacts/<target>/<crash_id>"
+      },
+      {
+        "step": 2,
+        "action": "classify",
+        "description": "Run with ASan/UBSan to classify crash type"
+      },
+      {
+        "step": 3,
+        "action": "minimize",
+        "description": "Minimize crash input with cargo-fuzz tmin"
+      },
+      {
+        "step": 4,
+        "action": "dedup",
+        "description": "Hash top-5 stack frames for dedup"
+      },
+      {
+        "step": 5,
+        "action": "file",
+        "description": "Create crash bundle per crash_bundle_spec.json"
+      },
+      {
+        "step": 6,
+        "action": "assess",
+        "description": "Map to CWE and assign severity via CRASH_SEVERITY table"
+      }
+    ],
+    "artifact_layout": {
+      "crashes": "crates/frankenlibc-fuzz/artifacts/<target>/crash-<hash>",
+      "minimized": "crates/frankenlibc-fuzz/artifacts/<target>/min-<hash>",
+      "bundles": "crates/frankenlibc-fuzz/artifacts/<target>/bundle-<hash>/",
+      "dedup_db": "crates/frankenlibc-fuzz/artifacts/dedup.json"
+    },
+    "retention": {
+      "critical_crashes": "permanent",
+      "high_crashes": "90 days",
+      "medium_crashes": "30 days",
+      "low_crashes": "7 days"
+    }
+  },
+  "smoke_test_configs": {
+    "fuzz_string": {
+      "max_total_time_secs": 30,
+      "max_len": 4096,
+      "seed_corpus": "crates/frankenlibc-fuzz/corpus/fuzz_string/",
+      "dictionary": "crates/frankenlibc-fuzz/dictionaries/fuzz_string.dict",
+      "sanitizers": [
+        "address"
+      ],
+      "jobs": 1,
+      "runs": 10000,
+      "expected_outcome": "no_crash"
+    },
+    "fuzz_malloc": {
+      "max_total_time_secs": 30,
+      "max_len": 4096,
+      "seed_corpus": "crates/frankenlibc-fuzz/corpus/fuzz_malloc/",
+      "dictionary": "crates/frankenlibc-fuzz/dictionaries/fuzz_malloc.dict",
+      "sanitizers": [
+        "address"
+      ],
+      "jobs": 1,
+      "runs": 10000,
+      "expected_outcome": "no_crash"
+    },
+    "fuzz_membrane": {
+      "max_total_time_secs": 30,
+      "max_len": 4096,
+      "seed_corpus": "crates/frankenlibc-fuzz/corpus/fuzz_membrane/",
+      "dictionary": "crates/frankenlibc-fuzz/dictionaries/fuzz_membrane.dict",
+      "sanitizers": [
+        "address"
+      ],
+      "jobs": 1,
+      "runs": 10000,
+      "expected_outcome": "no_crash"
+    },
+    "fuzz_printf": {
+      "max_total_time_secs": 30,
+      "max_len": 4096,
+      "seed_corpus": "crates/frankenlibc-fuzz/corpus/fuzz_printf/",
+      "dictionary": "crates/frankenlibc-fuzz/dictionaries/fuzz_printf.dict",
+      "sanitizers": [
+        "address"
+      ],
+      "jobs": 1,
+      "runs": 10000,
+      "expected_outcome": "no_crash"
+    }
+  },
+  "coverage_summary": {
+    "symbols_by_family": {
+      "string": [
+        "memchr",
+        "memcmp",
+        "memcpy",
+        "memmove",
+        "memrchr",
+        "memset",
+        "strcat",
+        "strchr",
+        "strcmp",
+        "strcpy",
+        "strlen",
+        "strncat",
+        "strncmp",
+        "strncpy",
+        "strrchr",
+        "strstr",
+        "strtok",
+        "strtok_r"
+      ],
+      "malloc": [
+        "aligned_alloc",
+        "calloc",
+        "free",
+        "malloc",
+        "memalign",
+        "posix_memalign",
+        "realloc"
+      ],
+      "membrane": [
+        "__membrane_validate"
+      ],
+      "stdio": [
+        "fprintf",
+        "printf",
+        "snprintf",
+        "sprintf"
+      ]
+    },
+    "all_symbols": [
+      "__membrane_validate",
+      "aligned_alloc",
+      "calloc",
+      "fprintf",
+      "free",
+      "malloc",
+      "memalign",
+      "memchr",
+      "memcmp",
+      "memcpy",
+      "memmove",
+      "memrchr",
+      "memset",
+      "posix_memalign",
+      "printf",
+      "realloc",
+      "snprintf",
+      "sprintf",
+      "strcat",
+      "strchr",
+      "strcmp",
+      "strcpy",
+      "strlen",
+      "strncat",
+      "strncmp",
+      "strncpy",
+      "strrchr",
+      "strstr",
+      "strtok",
+      "strtok_r"
+    ],
+    "all_cwes": [
+      "CWE-120",
+      "CWE-122",
+      "CWE-125",
+      "CWE-131",
+      "CWE-134",
+      "CWE-415",
+      "CWE-416",
+      "CWE-476",
+      "CWE-787",
+      "CWE-824",
+      "CWE-825"
+    ],
+    "attack_surfaces": {
+      "fuzz_string": "buffer-overflow, off-by-one, null-termination",
+      "fuzz_malloc": "double-free, use-after-free, heap-overflow, size-overflow",
+      "fuzz_membrane": "null-deref, temporal-violation, foreign-ptr",
+      "fuzz_printf": "format-string, unbounded-write, stack-read"
+    }
+  }
+}

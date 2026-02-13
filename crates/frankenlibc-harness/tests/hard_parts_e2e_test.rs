@@ -41,7 +41,11 @@ fn hard_parts_e2e_artifacts_have_expected_schema() {
     let required_subsystems = catalog["summary"]["required_subsystems"]
         .as_array()
         .expect("required_subsystems must be an array");
-    assert_eq!(required_subsystems.len(), 6, "expected six hard-part subsystems");
+    assert_eq!(
+        required_subsystems.len(),
+        6,
+        "expected six hard-part subsystems"
+    );
 
     let matrix = load_json(&matrix_path);
     assert_eq!(matrix["schema_version"].as_str(), Some("v1"));
