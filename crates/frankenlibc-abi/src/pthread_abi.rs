@@ -5,12 +5,8 @@
 
 #![allow(clippy::missing_safety_doc)]
 
-use std::cell::Cell;
-use std::collections::HashMap;
 use std::ffi::{c_int, c_void};
 use std::sync::atomic::{AtomicI32, AtomicU32, AtomicU64, Ordering};
-use std::sync::{Mutex, OnceLock};
-use std::thread;
 
 use frankenlibc_membrane::check_oracle::CheckStage;
 use frankenlibc_membrane::runtime_math::{ApiFamily, MembraneAction};
@@ -18,42 +14,7 @@ use frankenlibc_membrane::runtime_math::{ApiFamily, MembraneAction};
 use crate::malloc_abi::known_remaining;
 use crate::runtime_policy;
 
-type JoinTable = HashMap<libc::pthread_t, thread::JoinHandle<usize>>;
 type StartRoutine = unsafe extern "C" fn(*mut c_void) -> *mut c_void;
-
-static NEXT_THREAD_ID: AtomicU64 = AtomicU64::new(1);
-
-thread_local! {
-    static SELF_ID: Cell<libc::pthread_t> = const { Cell::new(0) };
-}
-
-fn join_table() -> &'static Mutex<JoinTable> {
-    static TABLE: OnceLock<Mutex<JoinTable>> = OnceLock::new();
-    TABLE.get_or_init(|| Mutex::new(HashMap::new()))
-}
-
-fn lock_join_table() -> std::sync::MutexGuard<'static, JoinTable> {
-    match join_table().lock() {
-        Ok(guard) => guard,
-        Err(poisoned) => poisoned.into_inner(),
-    }
-}
-
-fn fresh_thread_id() -> libc::pthread_t {
-    NEXT_THREAD_ID.fetch_add(1, Ordering::Relaxed) as libc::pthread_t
-}
-
-fn current_thread_id() -> libc::pthread_t {
-    SELF_ID.with(|slot| {
-        let existing = slot.get();
-        if existing != 0 {
-            return existing;
-        }
-        let new_id = fresh_thread_id();
-        slot.set(new_id);
-        new_id
-    })
-}
 
 // ---------------------------------------------------------------------------
 // Futex-backed NORMAL mutex core (bd-z84)
@@ -120,6 +81,22 @@ fn clear_managed_mutex(mutex: *mut libc::pthread_mutex_t) {
 }
 
 unsafe extern "C" {
+    #[link_name = "pthread_self@@GLIBC_2.2.5"]
+    fn host_pthread_self_sym() -> libc::pthread_t;
+    #[link_name = "pthread_equal@@GLIBC_2.2.5"]
+    fn host_pthread_equal_sym(a: libc::pthread_t, b: libc::pthread_t) -> c_int;
+    #[link_name = "pthread_create@GLIBC_2.2.5"]
+    fn host_pthread_create_sym(
+        thread_out: *mut libc::pthread_t,
+        attr: *const libc::pthread_attr_t,
+        start_routine: StartRoutine,
+        arg: *mut c_void,
+    ) -> c_int;
+    #[link_name = "pthread_join@GLIBC_2.2.5"]
+    fn host_pthread_join_sym(thread: libc::pthread_t, retval: *mut *mut c_void) -> c_int;
+    #[link_name = "pthread_detach@GLIBC_2.2.5"]
+    fn host_pthread_detach_sym(thread: libc::pthread_t) -> c_int;
+
     #[link_name = "__pthread_mutex_init@GLIBC_2.2.5"]
     fn host_pthread_mutex_init_sym(
         mutex: *mut libc::pthread_mutex_t,
@@ -133,6 +110,36 @@ unsafe extern "C" {
     fn host_pthread_mutex_trylock_sym(mutex: *mut libc::pthread_mutex_t) -> c_int;
     #[link_name = "__pthread_mutex_unlock@GLIBC_2.2.5"]
     fn host_pthread_mutex_unlock_sym(mutex: *mut libc::pthread_mutex_t) -> c_int;
+}
+
+unsafe fn host_pthread_self() -> libc::pthread_t {
+    // SAFETY: direct call to glibc symbol with matching signature.
+    unsafe { host_pthread_self_sym() }
+}
+
+unsafe fn host_pthread_equal(a: libc::pthread_t, b: libc::pthread_t) -> c_int {
+    // SAFETY: direct call to glibc symbol with matching signature.
+    unsafe { host_pthread_equal_sym(a, b) }
+}
+
+unsafe fn host_pthread_create(
+    thread_out: *mut libc::pthread_t,
+    attr: *const libc::pthread_attr_t,
+    start_routine: StartRoutine,
+    arg: *mut c_void,
+) -> c_int {
+    // SAFETY: direct call to glibc symbol with matching signature.
+    unsafe { host_pthread_create_sym(thread_out, attr, start_routine, arg) }
+}
+
+unsafe fn host_pthread_join(thread: libc::pthread_t, retval: *mut *mut c_void) -> c_int {
+    // SAFETY: direct call to glibc symbol with matching signature.
+    unsafe { host_pthread_join_sym(thread, retval) }
+}
+
+unsafe fn host_pthread_detach(thread: libc::pthread_t) -> c_int {
+    // SAFETY: direct call to glibc symbol with matching signature.
+    unsafe { host_pthread_detach_sym(thread) }
 }
 
 unsafe fn host_pthread_mutex_init(
@@ -337,7 +344,8 @@ pub unsafe extern "C" fn pthread_self() -> libc::pthread_t {
         runtime_policy::observe(ApiFamily::Threading, decision.profile, 4, true);
         return 0;
     }
-    let id = current_thread_id();
+    // SAFETY: call-through to host glibc pthread runtime.
+    let id = unsafe { host_pthread_self() };
     record_threading_stage_outcome(&ordering, aligned, recent_page, None);
     runtime_policy::observe(ApiFamily::Threading, decision.profile, 4, false);
     id
@@ -359,7 +367,8 @@ pub unsafe extern "C" fn pthread_equal(a: libc::pthread_t, b: libc::pthread_t) -
         runtime_policy::observe(ApiFamily::Threading, decision.profile, 4, true);
         return 0;
     }
-    let equal = if a == b { 1 } else { 0 };
+    // SAFETY: call-through to host glibc pthread runtime.
+    let equal = unsafe { host_pthread_equal(a, b) };
     record_threading_stage_outcome(&ordering, aligned, recent_page, None);
     runtime_policy::observe(ApiFamily::Threading, decision.profile, 4, false);
     equal
@@ -406,40 +415,21 @@ pub unsafe extern "C" fn pthread_create(
         return libc::EAGAIN;
     }
 
-    let tid = fresh_thread_id();
-    let start = match start_routine {
-        Some(start) => start,
-        None => return libc::EINVAL,
-    };
-    let arg_addr = arg as usize;
-    let spawned = thread::Builder::new().spawn(move || {
-        SELF_ID.with(|slot| slot.set(tid));
-        let arg_ptr = arg_addr as *mut c_void;
-        // SAFETY: pthread_create contract supplies valid start routine pointer.
-        let retval = unsafe { start(arg_ptr) };
-        retval as usize
-    });
-
-    match spawned {
-        Ok(handle) => {
-            // SAFETY: `thread_out` was validated non-null above.
-            unsafe { *thread_out = tid };
-            lock_join_table().insert(tid, handle);
-            record_threading_stage_outcome(&ordering, aligned, recent_page, None);
-            runtime_policy::observe(ApiFamily::Threading, decision.profile, 40, false);
-            0
-        }
-        Err(_) => {
-            record_threading_stage_outcome(
-                &ordering,
-                aligned,
-                recent_page,
-                Some(stage_index(&ordering, CheckStage::Arena)),
-            );
-            runtime_policy::observe(ApiFamily::Threading, decision.profile, 40, true);
-            libc::EAGAIN
-        }
-    }
+    let start = start_routine.unwrap_or_else(|| unreachable!("start routine checked above"));
+    // SAFETY: call-through to host glibc pthread runtime (no recursive Rust std thread spawn).
+    let rc = unsafe { host_pthread_create(thread_out, _attr, start, arg) };
+    record_threading_stage_outcome(
+        &ordering,
+        aligned,
+        recent_page,
+        if rc == 0 {
+            None
+        } else {
+            Some(stage_index(&ordering, CheckStage::Arena))
+        },
+    );
+    runtime_policy::observe(ApiFamily::Threading, decision.profile, 40, rc != 0);
+    rc
 }
 
 /// POSIX `pthread_join`.
@@ -459,40 +449,20 @@ pub unsafe extern "C" fn pthread_join(thread: libc::pthread_t, retval: *mut *mut
         runtime_policy::observe(ApiFamily::Threading, decision.profile, 24, true);
         return libc::EINVAL;
     }
-
-    let handle = lock_join_table().remove(&thread);
-    let Some(handle) = handle else {
-        record_threading_stage_outcome(
-            &ordering,
-            aligned,
-            recent_page,
-            Some(stage_index(&ordering, CheckStage::Arena)),
-        );
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 24, true);
-        return libc::ESRCH;
-    };
-
-    match handle.join() {
-        Ok(rv) => {
-            if !retval.is_null() {
-                // SAFETY: caller-provided output pointer.
-                unsafe { *retval = rv as *mut c_void };
-            }
-            record_threading_stage_outcome(&ordering, aligned, recent_page, None);
-            runtime_policy::observe(ApiFamily::Threading, decision.profile, 24, false);
-            0
-        }
-        Err(_) => {
-            record_threading_stage_outcome(
-                &ordering,
-                aligned,
-                recent_page,
-                Some(stage_index(&ordering, CheckStage::Arena)),
-            );
-            runtime_policy::observe(ApiFamily::Threading, decision.profile, 24, true);
-            libc::EDEADLK
-        }
-    }
+    // SAFETY: call-through to host glibc pthread runtime.
+    let rc = unsafe { host_pthread_join(thread, retval) };
+    record_threading_stage_outcome(
+        &ordering,
+        aligned,
+        recent_page,
+        if rc == 0 {
+            None
+        } else {
+            Some(stage_index(&ordering, CheckStage::Arena))
+        },
+    );
+    runtime_policy::observe(ApiFamily::Threading, decision.profile, 24, rc != 0);
+    rc
 }
 
 /// POSIX `pthread_detach`.
@@ -511,21 +481,20 @@ pub unsafe extern "C" fn pthread_detach(thread: libc::pthread_t) -> c_int {
         runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, true);
         return libc::EINVAL;
     }
-
-    let removed = lock_join_table().remove(&thread);
-    let adverse = removed.is_none();
+    // SAFETY: call-through to host glibc pthread runtime.
+    let rc = unsafe { host_pthread_detach(thread) };
     record_threading_stage_outcome(
         &ordering,
         aligned,
         recent_page,
-        if adverse {
-            Some(stage_index(&ordering, CheckStage::Arena))
-        } else {
+        if rc == 0 {
             None
+        } else {
+            Some(stage_index(&ordering, CheckStage::Arena))
         },
     );
-    runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, adverse);
-    if adverse { libc::ESRCH } else { 0 }
+    runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, rc != 0);
+    rc
 }
 
 // ===========================================================================
