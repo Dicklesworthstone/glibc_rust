@@ -6,6 +6,7 @@
 
 use std::ffi::{c_char, c_int, c_void};
 use std::os::raw::c_long;
+use std::os::unix::ffi::OsStrExt;
 
 use frankenlibc_core::process;
 use frankenlibc_membrane::heal::{HealingAction, global_healing_policy};
@@ -13,10 +14,64 @@ use frankenlibc_membrane::runtime_math::{ApiFamily, MembraneAction};
 
 use crate::runtime_policy;
 
+unsafe extern "C" {
+    static mut environ: *mut *mut c_char;
+}
+
 #[inline]
 unsafe fn set_abi_errno(val: c_int) {
     let p = unsafe { super::errno_abi::__errno_location() };
     unsafe { *p = val };
+}
+
+unsafe fn execvp_via_execve(file: *const c_char, argv: *const *const c_char) -> c_int {
+    if file.is_null() || argv.is_null() {
+        unsafe { set_abi_errno(libc::EFAULT) };
+        return -1;
+    }
+
+    let file_bytes = unsafe { std::ffi::CStr::from_ptr(file) }.to_bytes();
+    if file_bytes.is_empty() {
+        unsafe { set_abi_errno(libc::ENOENT) };
+        return -1;
+    }
+
+    if file_bytes.contains(&b'/') {
+        return unsafe { libc::syscall(libc::SYS_execve as c_long, file, argv, environ) } as c_int;
+    }
+
+    let path =
+        std::env::var_os("PATH").unwrap_or_else(|| std::ffi::OsString::from("/bin:/usr/bin"));
+    let path_bytes = path.as_os_str().as_bytes();
+
+    for dir in path_bytes.split(|b| *b == b':') {
+        let dir = if dir.is_empty() { b"." as &[u8] } else { dir };
+        let mut candidate = Vec::with_capacity(dir.len() + 1 + file_bytes.len() + 1);
+        candidate.extend_from_slice(dir);
+        candidate.push(b'/');
+        candidate.extend_from_slice(file_bytes);
+        candidate.push(0);
+
+        let rc = unsafe {
+            libc::syscall(
+                libc::SYS_execve as c_long,
+                candidate.as_ptr().cast::<c_char>(),
+                argv,
+                environ,
+            ) as c_int
+        };
+        if rc == 0 {
+            return rc;
+        }
+
+        let err = unsafe { *super::errno_abi::__errno_location() };
+        if err != libc::ENOENT && err != libc::ENOTDIR {
+            return -1;
+        }
+    }
+
+    unsafe { set_abi_errno(libc::ENOENT) };
+    -1
 }
 
 // ---------------------------------------------------------------------------
@@ -24,7 +79,7 @@ unsafe fn set_abi_errno(val: c_int) {
 // ---------------------------------------------------------------------------
 
 /// POSIX `fork` — create a child process.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn fork() -> libc::pid_t {
     let (_, decision) = runtime_policy::decide(ApiFamily::Process, 0, 0, true, false, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -48,7 +103,7 @@ pub unsafe extern "C" fn fork() -> libc::pid_t {
 // ---------------------------------------------------------------------------
 
 /// POSIX `_exit` — terminate the calling process immediately.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn _exit(status: c_int) -> ! {
     let (mode, decision) = runtime_policy::decide(ApiFamily::Process, 0, 0, false, false, 0);
 
@@ -76,7 +131,7 @@ pub unsafe extern "C" fn _exit(status: c_int) -> ! {
 // ---------------------------------------------------------------------------
 
 /// POSIX `execve` — execute a program.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn execve(
     pathname: *const c_char,
     argv: *const *const c_char,
@@ -108,8 +163,8 @@ pub unsafe extern "C" fn execve(
 
 /// POSIX `execvp` — execute a file, searching PATH.
 ///
-/// Delegates to libc execvp which handles PATH resolution.
-#[unsafe(no_mangle)]
+/// Performs PATH search and dispatches via raw `execve` syscalls.
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn execvp(file: *const c_char, argv: *const *const c_char) -> c_int {
     if file.is_null() || argv.is_null() {
         unsafe { set_abi_errno(libc::EFAULT) };
@@ -124,8 +179,7 @@ pub unsafe extern "C" fn execvp(file: *const c_char, argv: *const *const c_char)
         return -1;
     }
 
-    // Use libc's execvp for PATH search logic.
-    let rc = unsafe { libc::execvp(file, argv) };
+    let rc = unsafe { execvp_via_execve(file, argv) };
 
     // execvp only returns on failure.
     runtime_policy::observe(ApiFamily::Process, decision.profile, 40, true);
@@ -137,7 +191,7 @@ pub unsafe extern "C" fn execvp(file: *const c_char, argv: *const *const c_char)
 // ---------------------------------------------------------------------------
 
 /// POSIX `waitpid` — wait for a child process to change state.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn waitpid(
     pid: libc::pid_t,
     wstatus: *mut c_int,
@@ -186,7 +240,7 @@ pub unsafe extern "C" fn waitpid(
 // ---------------------------------------------------------------------------
 
 /// POSIX `wait` — equivalent to `waitpid(-1, wstatus, 0)`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn wait(wstatus: *mut c_int) -> libc::pid_t {
     unsafe { waitpid(-1, wstatus, 0) }
 }

@@ -38,7 +38,7 @@ fn clear_dlerror() {
 /// If `filename` is null, returns a handle to the main program. Otherwise
 /// loads the named shared object. `flags` must have exactly one of
 /// `RTLD_LAZY` or `RTLD_NOW` set; additional modifier flags are allowed.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn dlopen(filename: *const c_char, flags: c_int) -> *mut c_void {
     let (mode, decision) =
         runtime_policy::decide(ApiFamily::Loader, filename as usize, 0, false, true, 0);
@@ -85,7 +85,7 @@ pub unsafe extern "C" fn dlopen(filename: *const c_char, flags: c_int) -> *mut c
 ///
 /// `handle` may be a real handle from `dlopen`, or one of the pseudo-handles
 /// `RTLD_DEFAULT` / `RTLD_NEXT`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn dlsym(handle: *mut c_void, symbol: *const c_char) -> *mut c_void {
     let (_, decision) =
         runtime_policy::decide(ApiFamily::Loader, handle as usize, 0, false, true, 0);
@@ -118,7 +118,7 @@ pub unsafe extern "C" fn dlsym(handle: *mut c_void, symbol: *const c_char) -> *m
 /// Close a shared object handle.
 ///
 /// Returns 0 on success, non-zero on error.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn dlclose(handle: *mut c_void) -> c_int {
     let (_, decision) =
         runtime_policy::decide(ApiFamily::Loader, handle as usize, 0, false, true, 0);
@@ -151,7 +151,7 @@ pub unsafe extern "C" fn dlclose(handle: *mut c_void) -> c_int {
 /// Return a human-readable error message for the last `dlopen`, `dlsym`,
 /// or `dlclose` failure. Returns null if no error has occurred since the
 /// last call to `dlerror`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn dlerror() -> *const c_char {
     let msg = DLERROR_MSG.with(|cell| cell.get());
     // Per POSIX: calling dlerror() clears the error state.

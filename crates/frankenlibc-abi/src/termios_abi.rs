@@ -7,6 +7,7 @@
 use std::ffi::c_int;
 
 use frankenlibc_core::errno;
+use frankenlibc_core::syscall;
 use frankenlibc_core::termios as termios_core;
 use frankenlibc_membrane::runtime_math::{ApiFamily, MembraneAction};
 
@@ -22,7 +23,7 @@ unsafe fn set_abi_errno(val: c_int) {
 // tcgetattr
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn tcgetattr(fd: c_int, termios_p: *mut libc::termios) -> c_int {
     let (_, decision) = runtime_policy::decide(ApiFamily::Termios, fd as usize, 0, false, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -36,7 +37,13 @@ pub unsafe extern "C" fn tcgetattr(fd: c_int, termios_p: *mut libc::termios) -> 
         return -1;
     }
 
-    let rc = unsafe { libc::tcgetattr(fd, termios_p) };
+    let rc = match unsafe { syscall::sys_ioctl(fd, libc::TCGETS as usize, termios_p as usize) } {
+        Ok(_) => 0,
+        Err(e) => {
+            unsafe { set_abi_errno(e) };
+            -1
+        }
+    };
     let adverse = rc != 0;
     // libc sets errno on failure (EBADF, ENOTTY, etc.) — do not overwrite.
     runtime_policy::observe(ApiFamily::Termios, decision.profile, 10, adverse);
@@ -47,7 +54,7 @@ pub unsafe extern "C" fn tcgetattr(fd: c_int, termios_p: *mut libc::termios) -> 
 // tcsetattr
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn tcsetattr(
     fd: c_int,
     optional_actions: c_int,
@@ -78,7 +85,19 @@ pub unsafe extern "C" fn tcsetattr(
         optional_actions
     };
 
-    let rc = unsafe { libc::tcsetattr(fd, act, termios_p) };
+    let request = match act {
+        termios_core::TCSANOW => libc::TCSETS,
+        termios_core::TCSADRAIN => libc::TCSETSW,
+        termios_core::TCSAFLUSH => libc::TCSETSF,
+        _ => libc::TCSETS,
+    };
+    let rc = match unsafe { syscall::sys_ioctl(fd, request as usize, termios_p as usize) } {
+        Ok(_) => 0,
+        Err(e) => {
+            unsafe { set_abi_errno(e) };
+            -1
+        }
+    };
     let adverse = rc != 0;
     // libc sets errno on failure (EBADF, ENOTTY, EINTR, etc.) — do not overwrite.
     runtime_policy::observe(ApiFamily::Termios, decision.profile, 10, adverse);
@@ -89,62 +108,86 @@ pub unsafe extern "C" fn tcsetattr(
 // cfgetispeed
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn cfgetispeed(termios_p: *const libc::termios) -> u32 {
     if termios_p.is_null() {
         return 0;
     }
-    unsafe { libc::cfgetispeed(termios_p) as u32 }
+    unsafe { ((*termios_p).c_cflag as u32) & termios_core::CBAUD }
 }
 
 // ---------------------------------------------------------------------------
 // cfgetospeed
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn cfgetospeed(termios_p: *const libc::termios) -> u32 {
     if termios_p.is_null() {
         return 0;
     }
-    unsafe { libc::cfgetospeed(termios_p) as u32 }
+    unsafe { ((*termios_p).c_cflag as u32) & termios_core::CBAUD }
 }
 
 // ---------------------------------------------------------------------------
 // cfsetispeed
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn cfsetispeed(termios_p: *mut libc::termios, speed: u32) -> c_int {
     if termios_p.is_null() {
         return -1;
     }
-    unsafe { libc::cfsetispeed(termios_p, speed) }
+    if !termios_core::valid_baud_rate(speed) {
+        unsafe { set_abi_errno(errno::EINVAL) };
+        return -1;
+    }
+    unsafe {
+        let next =
+            (((*termios_p).c_cflag as u32) & !termios_core::CBAUD) | (speed & termios_core::CBAUD);
+        (*termios_p).c_cflag = next as libc::tcflag_t;
+    }
+    0
 }
 
 // ---------------------------------------------------------------------------
 // cfsetospeed
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn cfsetospeed(termios_p: *mut libc::termios, speed: u32) -> c_int {
     if termios_p.is_null() {
         return -1;
     }
-    unsafe { libc::cfsetospeed(termios_p, speed) }
+    if !termios_core::valid_baud_rate(speed) {
+        unsafe { set_abi_errno(errno::EINVAL) };
+        return -1;
+    }
+    unsafe {
+        let next =
+            (((*termios_p).c_cflag as u32) & !termios_core::CBAUD) | (speed & termios_core::CBAUD);
+        (*termios_p).c_cflag = next as libc::tcflag_t;
+    }
+    0
 }
 
 // ---------------------------------------------------------------------------
 // tcdrain
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn tcdrain(fd: c_int) -> c_int {
     let (_, decision) = runtime_policy::decide(ApiFamily::Termios, fd as usize, 0, true, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {
         runtime_policy::observe(ApiFamily::Termios, decision.profile, 5, true);
         return -1;
     }
-    let rc = unsafe { libc::tcdrain(fd) };
+    let rc = match unsafe { syscall::sys_ioctl(fd, libc::TCSBRK as usize, 1usize) } {
+        Ok(_) => 0,
+        Err(e) => {
+            unsafe { set_abi_errno(e) };
+            -1
+        }
+    };
     runtime_policy::observe(ApiFamily::Termios, decision.profile, 8, rc != 0);
     rc
 }
@@ -153,7 +196,7 @@ pub unsafe extern "C" fn tcdrain(fd: c_int) -> c_int {
 // tcflush
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn tcflush(fd: c_int, queue_selector: c_int) -> c_int {
     let (mode, decision) =
         runtime_policy::decide(ApiFamily::Termios, fd as usize, 0, true, true, 0);
@@ -174,7 +217,13 @@ pub unsafe extern "C" fn tcflush(fd: c_int, queue_selector: c_int) -> c_int {
         queue_selector
     };
 
-    let rc = unsafe { libc::tcflush(fd, sel) };
+    let rc = match unsafe { syscall::sys_ioctl(fd, libc::TCFLSH as usize, sel as usize) } {
+        Ok(_) => 0,
+        Err(e) => {
+            unsafe { set_abi_errno(e) };
+            -1
+        }
+    };
     runtime_policy::observe(ApiFamily::Termios, decision.profile, 8, rc != 0);
     rc
 }
@@ -183,7 +232,7 @@ pub unsafe extern "C" fn tcflush(fd: c_int, queue_selector: c_int) -> c_int {
 // tcflow
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn tcflow(fd: c_int, action: c_int) -> c_int {
     let (mode, decision) =
         runtime_policy::decide(ApiFamily::Termios, fd as usize, 0, true, true, 0);
@@ -202,7 +251,13 @@ pub unsafe extern "C" fn tcflow(fd: c_int, action: c_int) -> c_int {
         return -1;
     }
 
-    let rc = unsafe { libc::tcflow(fd, action) };
+    let rc = match unsafe { syscall::sys_ioctl(fd, libc::TCXONC as usize, action as usize) } {
+        Ok(_) => 0,
+        Err(e) => {
+            unsafe { set_abi_errno(e) };
+            -1
+        }
+    };
     runtime_policy::observe(ApiFamily::Termios, decision.profile, 8, rc != 0);
     rc
 }
@@ -211,14 +266,22 @@ pub unsafe extern "C" fn tcflow(fd: c_int, action: c_int) -> c_int {
 // tcsendbreak
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn tcsendbreak(fd: c_int, duration: c_int) -> c_int {
     let (_, decision) = runtime_policy::decide(ApiFamily::Termios, fd as usize, 0, false, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {
         runtime_policy::observe(ApiFamily::Termios, decision.profile, 5, true);
         return -1;
     }
-    let rc = unsafe { libc::tcsendbreak(fd, duration) };
+    let rc = match unsafe {
+        syscall::sys_ioctl(fd, libc::TCSBRK as usize, duration as libc::c_long as usize)
+    } {
+        Ok(_) => 0,
+        Err(e) => {
+            unsafe { set_abi_errno(e) };
+            -1
+        }
+    };
     runtime_policy::observe(ApiFamily::Termios, decision.profile, 8, rc != 0);
     rc
 }

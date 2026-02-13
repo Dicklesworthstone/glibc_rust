@@ -71,8 +71,8 @@ unsafe fn delegate_to_host_libc_start_main(
     stack_end: *mut c_void,
 ) -> Option<c_int> {
     let symbol = b"__libc_start_main\0";
-    // SAFETY: dlsym lookup by static NUL-terminated symbol name.
-    let ptr = unsafe { libc::dlsym(libc::RTLD_NEXT, symbol.as_ptr().cast::<c_char>()) };
+    // SAFETY: forwards to ABI dlsym wrapper with static NUL-terminated symbol name.
+    let ptr = unsafe { crate::dlfcn_abi::dlsym(libc::RTLD_NEXT, symbol.as_ptr().cast::<c_char>()) };
     if ptr.is_null() {
         return None;
     }
@@ -222,7 +222,7 @@ unsafe fn startup_phase0_impl(
 }
 
 /// libc-compatible startup symbol. Delegates to host libc unless phase-0 mode is explicitly enabled.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn __libc_start_main(
     main: Option<MainFn>,
     argc: c_int,
@@ -252,7 +252,7 @@ pub unsafe extern "C" fn __libc_start_main(
 }
 
 /// Test-hook alias that always executes the phase-0 startup path.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn __frankenlibc_startup_phase0(
     main: Option<MainFn>,
     argc: c_int,
@@ -267,7 +267,7 @@ pub unsafe extern "C" fn __frankenlibc_startup_phase0(
 }
 
 /// Returns the last captured startup invariants from `startup_phase0_impl`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn __frankenlibc_startup_snapshot(
     out: *mut StartupInvariantSnapshot,
 ) -> c_int {

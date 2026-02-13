@@ -21,7 +21,7 @@ unsafe fn set_abi_errno(val: c_int) {
 // dup
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn dup(oldfd: c_int) -> c_int {
     let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, oldfd as usize, 0, false, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -52,7 +52,7 @@ pub unsafe extern "C" fn dup(oldfd: c_int) -> c_int {
 // dup2
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn dup2(oldfd: c_int, newfd: c_int) -> c_int {
     let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, oldfd as usize, 0, false, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -83,7 +83,7 @@ pub unsafe extern "C" fn dup2(oldfd: c_int, newfd: c_int) -> c_int {
 // pipe
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pipe(pipefd: *mut c_int) -> c_int {
     let (mode, decision) = runtime_policy::decide(ApiFamily::IoFd, 0, 0, true, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -116,7 +116,7 @@ pub unsafe extern "C" fn pipe(pipefd: *mut c_int) -> c_int {
 // fcntl
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn fcntl(fd: c_int, cmd: c_int, arg: libc::c_long) -> c_int {
     let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, fd as usize, 0, false, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {

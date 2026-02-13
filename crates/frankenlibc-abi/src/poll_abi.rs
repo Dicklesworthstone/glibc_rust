@@ -24,7 +24,7 @@ unsafe fn set_abi_errno(val: c_int) {
 // ---------------------------------------------------------------------------
 
 /// POSIX `poll` — wait for events on file descriptors.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn poll(fds: *mut libc::pollfd, nfds: libc::nfds_t, timeout: c_int) -> c_int {
     let (mode, decision) =
         runtime_policy::decide(ApiFamily::Poll, fds as usize, nfds as usize, true, false, 0);
@@ -59,7 +59,7 @@ pub unsafe extern "C" fn poll(fds: *mut libc::pollfd, nfds: libc::nfds_t, timeou
 // ---------------------------------------------------------------------------
 
 /// POSIX `ppoll` — poll with signal mask and timespec timeout.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn ppoll(
     fds: *mut libc::pollfd,
     nfds: libc::nfds_t,
@@ -110,7 +110,7 @@ pub unsafe extern "C" fn ppoll(
 // ---------------------------------------------------------------------------
 
 /// POSIX `select` — synchronous I/O multiplexing.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn select(
     nfds: c_int,
     readfds: *mut libc::fd_set,
@@ -166,7 +166,7 @@ pub unsafe extern "C" fn select(
 // ---------------------------------------------------------------------------
 
 /// POSIX `pselect` — select with signal mask and timespec timeout.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pselect(
     nfds: c_int,
     readfds: *mut libc::fd_set,

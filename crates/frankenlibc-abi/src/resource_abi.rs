@@ -3,6 +3,7 @@
 //! Validates via `frankenlibc_core::resource` helpers, then calls `libc`.
 
 use std::ffi::c_int;
+use std::os::raw::c_long;
 
 use frankenlibc_core::errno;
 use frankenlibc_core::resource as res_core;
@@ -16,11 +17,28 @@ unsafe fn set_abi_errno(val: c_int) {
     unsafe { *p = val };
 }
 
+#[inline]
+unsafe fn raw_prlimit64(
+    resource: c_int,
+    new_limit: *const libc::rlimit,
+    old_limit: *mut libc::rlimit,
+) -> c_int {
+    unsafe {
+        libc::syscall(
+            libc::SYS_prlimit64 as c_long,
+            0 as libc::pid_t,
+            resource as libc::c_uint,
+            new_limit,
+            old_limit,
+        ) as c_int
+    }
+}
+
 // ---------------------------------------------------------------------------
 // getrlimit
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn getrlimit(resource: c_int, rlim: *mut libc::rlimit) -> c_int {
     let (_mode, decision) =
         runtime_policy::decide(ApiFamily::IoFd, resource as usize, 0, false, true, 0);
@@ -41,7 +59,7 @@ pub unsafe extern "C" fn getrlimit(resource: c_int, rlim: *mut libc::rlimit) -> 
         return -1;
     }
 
-    let rc = unsafe { libc::getrlimit(resource as libc::__rlimit_resource_t, rlim) };
+    let rc = unsafe { raw_prlimit64(resource, std::ptr::null(), rlim) };
     let adverse = rc != 0;
     if adverse {
         unsafe { set_abi_errno(errno::EINVAL) };
@@ -54,7 +72,7 @@ pub unsafe extern "C" fn getrlimit(resource: c_int, rlim: *mut libc::rlimit) -> 
 // setrlimit
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn setrlimit(resource: c_int, rlim: *const libc::rlimit) -> c_int {
     let (mode, decision) =
         runtime_policy::decide(ApiFamily::IoFd, resource as usize, 0, true, true, 0);
@@ -83,7 +101,7 @@ pub unsafe extern "C" fn setrlimit(resource: c_int, rlim: *const libc::rlimit) -
             clamped.rlim_cur = clamped.rlim_max;
             let boxed = Box::new(clamped);
             let ptr: *const libc::rlimit = &*boxed;
-            let rc = unsafe { libc::setrlimit(resource as libc::__rlimit_resource_t, ptr) };
+            let rc = unsafe { raw_prlimit64(resource, ptr, std::ptr::null_mut()) };
             let adverse = rc != 0;
             runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, adverse);
             return rc;
@@ -93,7 +111,7 @@ pub unsafe extern "C" fn setrlimit(resource: c_int, rlim: *const libc::rlimit) -
         rlim
     };
 
-    let rc = unsafe { libc::setrlimit(resource as libc::__rlimit_resource_t, effective_rlim) };
+    let rc = unsafe { raw_prlimit64(resource, effective_rlim, std::ptr::null_mut()) };
     let adverse = rc != 0;
     if adverse {
         unsafe { set_abi_errno(errno::EINVAL) };

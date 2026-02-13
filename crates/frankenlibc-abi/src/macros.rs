@@ -1,6 +1,6 @@
 //! Helper macros for ABI function generation.
 //!
-//! Provides the `abi_fn!` macro that generates `#[unsafe(no_mangle)] pub unsafe extern "C" fn`
+//! Provides the `abi_fn!` macro that generates `#[cfg_attr(not(debug_assertions), unsafe(no_mangle))] pub unsafe extern "C" fn`
 //! wrappers with membrane validation hookpoints.
 
 /// Generate an ABI-compatible extern "C" function with membrane validation hookpoint.
@@ -17,7 +17,7 @@
 /// }
 /// ```
 ///
-/// This expands to a `#[unsafe(no_mangle)] pub unsafe extern "C" fn` with the given
+/// This expands to a `#[cfg_attr(not(debug_assertions), unsafe(no_mangle))] pub unsafe extern "C" fn` with the given
 /// signature and body. The body should include membrane validation calls as needed.
 #[allow(unused_macros)]
 macro_rules! abi_fn {
@@ -27,7 +27,7 @@ macro_rules! abi_fn {
         $body:block
     ) => {
         $(#[$meta])*
-        #[unsafe(no_mangle)]
+        #[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
         pub unsafe extern "C" fn $name( $($arg : $argty),* ) -> $ret {
             // Membrane validation hookpoint: validation logic is inlined
             // in the body to allow per-function customization of pointer
@@ -43,7 +43,7 @@ macro_rules! abi_fn {
         $body:block
     ) => {
         $(#[$meta])*
-        #[unsafe(no_mangle)]
+        #[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
         pub unsafe extern "C" fn $name( $($arg : $argty),* ) {
             unsafe { $body }
         }

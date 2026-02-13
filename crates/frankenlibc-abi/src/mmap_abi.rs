@@ -24,7 +24,7 @@ unsafe fn set_abi_errno(val: c_int) {
 // ---------------------------------------------------------------------------
 
 /// POSIX `mmap` — map files or devices into memory.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn mmap(
     addr: *mut c_void,
     length: usize,
@@ -119,7 +119,7 @@ pub unsafe extern "C" fn mmap(
 // ---------------------------------------------------------------------------
 
 /// POSIX `munmap` — unmap a region of memory.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn munmap(addr: *mut c_void, length: usize) -> c_int {
     let (_, decision) = runtime_policy::decide(
         ApiFamily::VirtualMemory,
@@ -151,7 +151,7 @@ pub unsafe extern "C" fn munmap(addr: *mut c_void, length: usize) -> c_int {
 // ---------------------------------------------------------------------------
 
 /// POSIX `mprotect` — set protection on a region of memory.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn mprotect(addr: *mut c_void, length: usize, prot: c_int) -> c_int {
     let (mode, decision) = runtime_policy::decide(
         ApiFamily::VirtualMemory,
@@ -194,7 +194,7 @@ pub unsafe extern "C" fn mprotect(addr: *mut c_void, length: usize, prot: c_int)
 // ---------------------------------------------------------------------------
 
 /// POSIX `msync` — synchronize a file with a memory map.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn msync(addr: *mut c_void, length: usize, flags: c_int) -> c_int {
     let (mode, decision) = runtime_policy::decide(
         ApiFamily::VirtualMemory,
@@ -237,7 +237,7 @@ pub unsafe extern "C" fn msync(addr: *mut c_void, length: usize, flags: c_int) -
 // ---------------------------------------------------------------------------
 
 /// POSIX `madvise` — advise the kernel about memory usage patterns.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn madvise(addr: *mut c_void, length: usize, advice: c_int) -> c_int {
     let (mode, decision) = runtime_policy::decide(
         ApiFamily::VirtualMemory,

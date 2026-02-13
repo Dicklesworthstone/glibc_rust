@@ -18,6 +18,50 @@ unsafe fn set_abi_errno(val: c_int) {
     unsafe { *p = val };
 }
 
+unsafe extern "C" {
+    #[link_name = "setenv@GLIBC_2.2.5"]
+    fn native_setenv_sym(name: *const c_char, value: *const c_char, overwrite: c_int) -> c_int;
+    #[link_name = "unsetenv@GLIBC_2.2.5"]
+    fn native_unsetenv_sym(name: *const c_char) -> c_int;
+    #[link_name = "__environ"]
+    static mut HOST_ENVIRON: *mut *mut c_char;
+}
+
+#[inline]
+unsafe fn native_getenv(name_bytes: &[u8]) -> *mut c_char {
+    // SAFETY: HOST_ENVIRON is owned by libc; we only read pointers/bytes.
+    unsafe {
+        let mut cursor = HOST_ENVIRON;
+        if cursor.is_null() {
+            return ptr::null_mut();
+        }
+        while !(*cursor).is_null() {
+            let entry = *cursor as *const u8;
+            let mut i = 0usize;
+            while i < name_bytes.len() && *entry.add(i) == name_bytes[i] {
+                i += 1;
+            }
+            if i == name_bytes.len() && *entry.add(i) == b'=' {
+                return entry.add(i + 1) as *mut c_char;
+            }
+            cursor = cursor.add(1);
+        }
+        ptr::null_mut()
+    }
+}
+
+#[inline]
+unsafe fn native_setenv(name: *const c_char, value: *const c_char, overwrite: c_int) -> c_int {
+    // SAFETY: direct call to host libc symbol.
+    unsafe { native_setenv_sym(name, value, overwrite) }
+}
+
+#[inline]
+unsafe fn native_unsetenv(name: *const c_char) -> c_int {
+    // SAFETY: direct call to host libc symbol.
+    unsafe { native_unsetenv_sym(name) }
+}
+
 // Helper: Check if repair is enabled for this decision
 #[inline]
 fn repair_enabled(heals_enabled: bool, action: MembraneAction) -> bool {
@@ -49,7 +93,7 @@ unsafe fn scan_c_string(ptr: *const c_char, bound: Option<usize>) -> (usize, boo
 // atoi
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn atoi(nptr: *const c_char) -> c_int {
     if nptr.is_null() {
         return 0;
@@ -91,7 +135,7 @@ pub unsafe extern "C" fn atoi(nptr: *const c_char) -> c_int {
 // atol
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn atol(nptr: *const c_char) -> c_long {
     if nptr.is_null() {
         return 0;
@@ -133,7 +177,7 @@ pub unsafe extern "C" fn atol(nptr: *const c_char) -> c_long {
 // strtol
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn strtol(
     nptr: *const c_char,
     endptr: *mut *mut c_char,
@@ -201,7 +245,7 @@ pub unsafe extern "C" fn strtol(
 // strtoul
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn strtoul(
     nptr: *const c_char,
     endptr: *mut *mut c_char,
@@ -269,7 +313,7 @@ pub unsafe extern "C" fn strtoul(
 // exit
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn exit(status: c_int) -> ! {
     let (_, decision) = runtime_policy::decide(ApiFamily::Stdlib, 0, 0, false, true, 0);
     runtime_policy::observe(ApiFamily::Stdlib, decision.profile, 100, false);
@@ -280,7 +324,7 @@ pub unsafe extern "C" fn exit(status: c_int) -> ! {
 // atexit
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn atexit(func: Option<unsafe extern "C" fn()>) -> c_int {
     let (_, decision) = runtime_policy::decide(ApiFamily::Stdlib, 0, 0, false, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -304,7 +348,7 @@ pub unsafe extern "C" fn atexit(func: Option<unsafe extern "C" fn()>) -> c_int {
 // qsort
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn qsort(
     base: *mut c_void,
     nmemb: usize,
@@ -355,7 +399,7 @@ pub unsafe extern "C" fn qsort(
 // bsearch
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn bsearch(
     key: *const c_void,
     base: *const c_void,
@@ -427,7 +471,7 @@ pub unsafe extern "C" fn bsearch(
 ///
 /// Returns a pointer to the value string, or null if the variable is not set.
 /// The returned pointer belongs to the environment; callers must not free it.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn getenv(name: *const c_char) -> *mut c_char {
     if name.is_null() {
         return ptr::null_mut();
@@ -453,8 +497,8 @@ pub unsafe extern "C" fn getenv(name: *const c_char) -> *mut c_char {
     };
 
     let (len, terminated) = unsafe { scan_c_string(name, bound) };
-    if !terminated && mode.heals_enabled() {
-        // Unterminated name in hardened mode — refuse.
+    if !terminated {
+        // Unterminated names are always rejected to avoid passing non-C strings to libc.
         runtime_policy::observe(ApiFamily::Stdlib, decision.profile, 5, true);
         return ptr::null_mut();
     }
@@ -465,8 +509,8 @@ pub unsafe extern "C" fn getenv(name: *const c_char) -> *mut c_char {
         return ptr::null_mut();
     }
 
-    // Delegate to system libc.
-    let result = unsafe { libc::getenv(name) };
+    // SAFETY: we only read libc's environment table and return pointer to existing value storage.
+    let result = unsafe { native_getenv(name_slice) };
     let adverse = result.is_null();
     runtime_policy::observe(
         ApiFamily::Stdlib,
@@ -485,7 +529,7 @@ pub unsafe extern "C" fn getenv(name: *const c_char) -> *mut c_char {
 ///
 /// If `overwrite` is zero, an existing variable is not changed.
 /// Returns 0 on success, -1 on error (with errno set).
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn setenv(
     name: *const c_char,
     value: *const c_char,
@@ -517,7 +561,7 @@ pub unsafe extern "C" fn setenv(
     };
 
     let (name_len, name_terminated) = unsafe { scan_c_string(name, bound) };
-    if !name_terminated && mode.heals_enabled() {
+    if !name_terminated {
         runtime_policy::observe(ApiFamily::Stdlib, decision.profile, 5, true);
         unsafe { set_abi_errno(libc::EINVAL) };
         return -1;
@@ -537,8 +581,29 @@ pub unsafe extern "C" fn setenv(
         return -1;
     }
 
-    // Delegate to system libc.
-    let rc = unsafe { libc::setenv(name, value, overwrite) };
+    let value_bound = if repair_enabled(mode.heals_enabled(), decision.action) {
+        known_remaining(value as usize)
+    } else {
+        None
+    };
+    let (value_len, value_terminated) = unsafe { scan_c_string(value, value_bound) };
+    if !value_terminated {
+        runtime_policy::observe(ApiFamily::Stdlib, decision.profile, 5, true);
+        unsafe { set_abi_errno(libc::EINVAL) };
+        return -1;
+    }
+    let value_slice = unsafe { std::slice::from_raw_parts(value as *const u8, value_len) };
+    if !frankenlibc_core::stdlib::valid_env_value(value_slice) {
+        runtime_policy::observe(ApiFamily::Stdlib, decision.profile, 5, true);
+        unsafe { set_abi_errno(libc::EINVAL) };
+        return -1;
+    }
+
+    // SAFETY: validated NUL-terminated pointers.
+    let rc = unsafe { native_setenv(name, value, overwrite) };
+    if rc != 0 {
+        unsafe { set_abi_errno(libc::EINVAL) };
+    }
     let adverse = rc != 0;
     runtime_policy::observe(
         ApiFamily::Stdlib,
@@ -556,7 +621,7 @@ pub unsafe extern "C" fn setenv(
 /// POSIX `unsetenv` — remove an environment variable.
 ///
 /// Returns 0 on success, -1 on error (with errno set).
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn unsetenv(name: *const c_char) -> c_int {
     if name.is_null() {
         unsafe { set_abi_errno(libc::EINVAL) };
@@ -584,7 +649,7 @@ pub unsafe extern "C" fn unsetenv(name: *const c_char) -> c_int {
     };
 
     let (name_len, name_terminated) = unsafe { scan_c_string(name, bound) };
-    if !name_terminated && mode.heals_enabled() {
+    if !name_terminated {
         runtime_policy::observe(ApiFamily::Stdlib, decision.profile, 5, true);
         unsafe { set_abi_errno(libc::EINVAL) };
         return -1;
@@ -597,8 +662,11 @@ pub unsafe extern "C" fn unsetenv(name: *const c_char) -> c_int {
         return -1;
     }
 
-    // Delegate to system libc.
-    let rc = unsafe { libc::unsetenv(name) };
+    // SAFETY: validated NUL-terminated pointer.
+    let rc = unsafe { native_unsetenv(name) };
+    if rc != 0 {
+        unsafe { set_abi_errno(libc::EINVAL) };
+    }
     let adverse = rc != 0;
     runtime_policy::observe(
         ApiFamily::Stdlib,

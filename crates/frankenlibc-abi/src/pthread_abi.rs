@@ -5,6 +5,7 @@
 
 #![allow(clippy::missing_safety_doc)]
 
+use std::cell::Cell;
 use std::ffi::{c_int, c_void};
 use std::sync::atomic::{AtomicI32, AtomicU32, AtomicU64, Ordering};
 
@@ -24,6 +25,45 @@ static MUTEX_SPIN_BRANCHES: AtomicU64 = AtomicU64::new(0);
 static MUTEX_WAIT_BRANCHES: AtomicU64 = AtomicU64::new(0);
 static MUTEX_WAKE_BRANCHES: AtomicU64 = AtomicU64::new(0);
 const MANAGED_MUTEX_MAGIC: u32 = 0x474d_5854; // "GMXT"
+
+thread_local! {
+    static THREADING_POLICY_DEPTH: Cell<u32> = const { Cell::new(0) };
+}
+
+struct ThreadingPolicyGuard;
+
+impl Drop for ThreadingPolicyGuard {
+    fn drop(&mut self) {
+        THREADING_POLICY_DEPTH.with(|depth| {
+            let current = depth.get();
+            depth.set(current.saturating_sub(1));
+        });
+    }
+}
+
+fn enter_threading_policy_guard() -> Option<ThreadingPolicyGuard> {
+    THREADING_POLICY_DEPTH.with(|depth| {
+        let current = depth.get();
+        if current > 0 {
+            None
+        } else {
+            depth.set(current + 1);
+            Some(ThreadingPolicyGuard)
+        }
+    })
+}
+
+fn with_threading_policy_guard<T, Fallback, Work>(fallback: Fallback, work: Work) -> T
+where
+    Fallback: FnOnce() -> T,
+    Work: FnOnce() -> T,
+{
+    if let Some(_guard) = enter_threading_policy_guard() {
+        work()
+    } else {
+        fallback()
+    }
+}
 
 /// Treats the leading atomic word of `pthread_mutex_t` as our lock state.
 /// This avoids recursive dependence on libc's own pthread mutex internals.
@@ -78,39 +118,6 @@ fn clear_managed_mutex(mutex: *mut libc::pthread_mutex_t) {
         let magic = unsafe { &*magic_ptr };
         magic.store(0, Ordering::Release);
     }
-}
-
-fn promote_unmanaged_default_mutex(mutex: *mut libc::pthread_mutex_t) -> bool {
-    if mutex.is_null() || is_managed_mutex(mutex) {
-        return !mutex.is_null();
-    }
-
-    let Some(word_ptr) = mutex_word_ptr(mutex) else {
-        return false;
-    };
-    if mutex_magic_ptr(mutex).is_none() {
-        return false;
-    }
-
-    // SAFETY: `word_ptr` is alignment-checked and non-null.
-    let word = unsafe { &*word_ptr };
-    if word.load(Ordering::Acquire) != 0 {
-        return false;
-    }
-
-    let total = std::mem::size_of::<libc::pthread_mutex_t>();
-    let tail_offset = std::mem::size_of::<AtomicI32>() + std::mem::size_of::<AtomicU32>();
-    if tail_offset < total {
-        let base = mutex.cast::<u8>();
-        for idx in tail_offset..total {
-            // SAFETY: bounded in-object read over `pthread_mutex_t` storage.
-            if unsafe { *base.add(idx) } != 0 {
-                return false;
-            }
-        }
-    }
-
-    mark_managed_mutex(mutex)
 }
 
 unsafe extern "C" {
@@ -321,54 +328,70 @@ fn record_threading_stage_outcome(
 }
 
 /// POSIX `pthread_self`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_self() -> libc::pthread_t {
-    let (aligned, recent_page, ordering) = threading_stage_context(0, 0);
-    let (_, decision) = runtime_policy::decide(ApiFamily::Threading, 0, 0, false, false, 0);
-    if matches!(decision.action, MembraneAction::Deny) {
-        record_threading_stage_outcome(
-            &ordering,
-            aligned,
-            recent_page,
-            Some(stage_index(&ordering, CheckStage::Arena)),
-        );
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 4, true);
-        return 0;
-    }
-    // SAFETY: call-through to host glibc pthread runtime.
-    let id = unsafe { host_pthread_self() };
-    record_threading_stage_outcome(&ordering, aligned, recent_page, None);
-    runtime_policy::observe(ApiFamily::Threading, decision.profile, 4, false);
-    id
+    with_threading_policy_guard(
+        || {
+            // SAFETY: reentrant path bypasses runtime policy and delegates to host runtime.
+            unsafe { host_pthread_self() }
+        },
+        || {
+            let (aligned, recent_page, ordering) = threading_stage_context(0, 0);
+            let (_, decision) = runtime_policy::decide(ApiFamily::Threading, 0, 0, false, false, 0);
+            if matches!(decision.action, MembraneAction::Deny) {
+                record_threading_stage_outcome(
+                    &ordering,
+                    aligned,
+                    recent_page,
+                    Some(stage_index(&ordering, CheckStage::Arena)),
+                );
+                runtime_policy::observe(ApiFamily::Threading, decision.profile, 4, true);
+                return 0;
+            }
+            // SAFETY: call-through to host glibc pthread runtime.
+            let id = unsafe { host_pthread_self() };
+            record_threading_stage_outcome(&ordering, aligned, recent_page, None);
+            runtime_policy::observe(ApiFamily::Threading, decision.profile, 4, false);
+            id
+        },
+    )
 }
 
 /// POSIX `pthread_equal`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_equal(a: libc::pthread_t, b: libc::pthread_t) -> c_int {
-    let (aligned, recent_page, ordering) = threading_stage_context(a as usize, b as usize);
-    let (_, decision) =
-        runtime_policy::decide(ApiFamily::Threading, a as usize, 0, false, false, 0);
-    if matches!(decision.action, MembraneAction::Deny) {
-        record_threading_stage_outcome(
-            &ordering,
-            aligned,
-            recent_page,
-            Some(stage_index(&ordering, CheckStage::Arena)),
-        );
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 4, true);
-        return 0;
-    }
-    // SAFETY: call-through to host glibc pthread runtime.
-    let equal = unsafe { host_pthread_equal(a, b) };
-    record_threading_stage_outcome(&ordering, aligned, recent_page, None);
-    runtime_policy::observe(ApiFamily::Threading, decision.profile, 4, false);
-    equal
+    with_threading_policy_guard(
+        || {
+            // SAFETY: reentrant path bypasses runtime policy and delegates to host runtime.
+            unsafe { host_pthread_equal(a, b) }
+        },
+        || {
+            let (aligned, recent_page, ordering) = threading_stage_context(a as usize, b as usize);
+            let (_, decision) =
+                runtime_policy::decide(ApiFamily::Threading, a as usize, 0, false, false, 0);
+            if matches!(decision.action, MembraneAction::Deny) {
+                record_threading_stage_outcome(
+                    &ordering,
+                    aligned,
+                    recent_page,
+                    Some(stage_index(&ordering, CheckStage::Arena)),
+                );
+                runtime_policy::observe(ApiFamily::Threading, decision.profile, 4, true);
+                return 0;
+            }
+            // SAFETY: call-through to host glibc pthread runtime.
+            let equal = unsafe { host_pthread_equal(a, b) };
+            record_threading_stage_outcome(&ordering, aligned, recent_page, None);
+            runtime_policy::observe(ApiFamily::Threading, decision.profile, 4, false);
+            equal
+        },
+    )
 }
 
 /// POSIX `pthread_create`.
 ///
 /// Returns `0` on success, otherwise an errno-style integer.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_create(
     thread_out: *mut libc::pthread_t,
     _attr: *const libc::pthread_attr_t,
@@ -393,99 +416,126 @@ pub unsafe extern "C" fn pthread_create(
         );
         return libc::EINVAL;
     }
-    let (_, decision) =
-        runtime_policy::decide(ApiFamily::Threading, arg as usize, 0, true, false, 0);
-    if matches!(decision.action, MembraneAction::Deny) {
-        record_threading_stage_outcome(
-            &ordering,
-            aligned,
-            recent_page,
-            Some(stage_index(&ordering, CheckStage::Arena)),
-        );
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 16, true);
-        return libc::EAGAIN;
-    }
-
-    let start = start_routine.unwrap_or_else(|| unreachable!("start routine checked above"));
-    // SAFETY: call-through to host glibc pthread runtime (no recursive Rust std thread spawn).
-    let rc = unsafe { host_pthread_create(thread_out, _attr, start, arg) };
-    record_threading_stage_outcome(
-        &ordering,
-        aligned,
-        recent_page,
-        if rc == 0 {
-            None
-        } else {
-            Some(stage_index(&ordering, CheckStage::Arena))
+    with_threading_policy_guard(
+        || {
+            let start =
+                start_routine.unwrap_or_else(|| unreachable!("start routine checked above"));
+            // SAFETY: reentrant path bypasses runtime policy and delegates to host runtime.
+            unsafe { host_pthread_create(thread_out, _attr, start, arg) }
         },
-    );
-    runtime_policy::observe(ApiFamily::Threading, decision.profile, 40, rc != 0);
-    rc
+        || {
+            let (_, decision) =
+                runtime_policy::decide(ApiFamily::Threading, arg as usize, 0, true, false, 0);
+            if matches!(decision.action, MembraneAction::Deny) {
+                record_threading_stage_outcome(
+                    &ordering,
+                    aligned,
+                    recent_page,
+                    Some(stage_index(&ordering, CheckStage::Arena)),
+                );
+                runtime_policy::observe(ApiFamily::Threading, decision.profile, 16, true);
+                return libc::EAGAIN;
+            }
+
+            let start =
+                start_routine.unwrap_or_else(|| unreachable!("start routine checked above"));
+            // SAFETY: call-through to host glibc pthread runtime (no recursive Rust std thread spawn).
+            let rc = unsafe { host_pthread_create(thread_out, _attr, start, arg) };
+            record_threading_stage_outcome(
+                &ordering,
+                aligned,
+                recent_page,
+                if rc == 0 {
+                    None
+                } else {
+                    Some(stage_index(&ordering, CheckStage::Arena))
+                },
+            );
+            runtime_policy::observe(ApiFamily::Threading, decision.profile, 40, rc != 0);
+            rc
+        },
+    )
 }
 
 /// POSIX `pthread_join`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_join(thread: libc::pthread_t, retval: *mut *mut c_void) -> c_int {
-    let (aligned, recent_page, ordering) =
-        threading_stage_context(thread as usize, retval as usize);
-    let (_, decision) =
-        runtime_policy::decide(ApiFamily::Threading, thread as usize, 0, true, false, 0);
-    if matches!(decision.action, MembraneAction::Deny) {
-        record_threading_stage_outcome(
-            &ordering,
-            aligned,
-            recent_page,
-            Some(stage_index(&ordering, CheckStage::Arena)),
-        );
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 24, true);
-        return libc::EINVAL;
-    }
-    // SAFETY: call-through to host glibc pthread runtime.
-    let rc = unsafe { host_pthread_join(thread, retval) };
-    record_threading_stage_outcome(
-        &ordering,
-        aligned,
-        recent_page,
-        if rc == 0 {
-            None
-        } else {
-            Some(stage_index(&ordering, CheckStage::Arena))
+    with_threading_policy_guard(
+        || {
+            // SAFETY: reentrant path bypasses runtime policy and delegates to host runtime.
+            unsafe { host_pthread_join(thread, retval) }
         },
-    );
-    runtime_policy::observe(ApiFamily::Threading, decision.profile, 24, rc != 0);
-    rc
+        || {
+            let (aligned, recent_page, ordering) =
+                threading_stage_context(thread as usize, retval as usize);
+            let (_, decision) =
+                runtime_policy::decide(ApiFamily::Threading, thread as usize, 0, true, false, 0);
+            if matches!(decision.action, MembraneAction::Deny) {
+                record_threading_stage_outcome(
+                    &ordering,
+                    aligned,
+                    recent_page,
+                    Some(stage_index(&ordering, CheckStage::Arena)),
+                );
+                runtime_policy::observe(ApiFamily::Threading, decision.profile, 24, true);
+                return libc::EINVAL;
+            }
+            // SAFETY: call-through to host glibc pthread runtime.
+            let rc = unsafe { host_pthread_join(thread, retval) };
+            record_threading_stage_outcome(
+                &ordering,
+                aligned,
+                recent_page,
+                if rc == 0 {
+                    None
+                } else {
+                    Some(stage_index(&ordering, CheckStage::Arena))
+                },
+            );
+            runtime_policy::observe(ApiFamily::Threading, decision.profile, 24, rc != 0);
+            rc
+        },
+    )
 }
 
 /// POSIX `pthread_detach`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_detach(thread: libc::pthread_t) -> c_int {
-    let (aligned, recent_page, ordering) = threading_stage_context(thread as usize, 0);
-    let (_, decision) =
-        runtime_policy::decide(ApiFamily::Threading, thread as usize, 0, true, false, 0);
-    if matches!(decision.action, MembraneAction::Deny) {
-        record_threading_stage_outcome(
-            &ordering,
-            aligned,
-            recent_page,
-            Some(stage_index(&ordering, CheckStage::Arena)),
-        );
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, true);
-        return libc::EINVAL;
-    }
-    // SAFETY: call-through to host glibc pthread runtime.
-    let rc = unsafe { host_pthread_detach(thread) };
-    record_threading_stage_outcome(
-        &ordering,
-        aligned,
-        recent_page,
-        if rc == 0 {
-            None
-        } else {
-            Some(stage_index(&ordering, CheckStage::Arena))
+    with_threading_policy_guard(
+        || {
+            // SAFETY: reentrant path bypasses runtime policy and delegates to host runtime.
+            unsafe { host_pthread_detach(thread) }
         },
-    );
-    runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, rc != 0);
-    rc
+        || {
+            let (aligned, recent_page, ordering) = threading_stage_context(thread as usize, 0);
+            let (_, decision) =
+                runtime_policy::decide(ApiFamily::Threading, thread as usize, 0, true, false, 0);
+            if matches!(decision.action, MembraneAction::Deny) {
+                record_threading_stage_outcome(
+                    &ordering,
+                    aligned,
+                    recent_page,
+                    Some(stage_index(&ordering, CheckStage::Arena)),
+                );
+                runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, true);
+                return libc::EINVAL;
+            }
+            // SAFETY: call-through to host glibc pthread runtime.
+            let rc = unsafe { host_pthread_detach(thread) };
+            record_threading_stage_outcome(
+                &ordering,
+                aligned,
+                recent_page,
+                if rc == 0 {
+                    None
+                } else {
+                    Some(stage_index(&ordering, CheckStage::Arena))
+                },
+            );
+            runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, rc != 0);
+            rc
+        },
+    )
 }
 
 // ===========================================================================
@@ -493,7 +543,7 @@ pub unsafe extern "C" fn pthread_detach(thread: libc::pthread_t) -> c_int {
 // ===========================================================================
 
 /// POSIX `pthread_mutex_init`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_mutex_init(
     mutex: *mut libc::pthread_mutex_t,
     attr: *const libc::pthread_mutexattr_t,
@@ -502,36 +552,31 @@ pub unsafe extern "C" fn pthread_mutex_init(
         return libc::EINVAL;
     }
 
-    // Scope for bd-z84 replacement path: only default/null attributes are supported by
-    // the futex-managed mutex core.
     if !attr.is_null() {
         clear_managed_mutex(mutex);
         return libc::EINVAL;
     }
 
-    let Some(word_ptr) = mutex_word_ptr(mutex) else {
-        clear_managed_mutex(mutex);
-        return libc::EINVAL;
-    };
-    // SAFETY: `word_ptr` is alignment-checked and points to caller-owned mutex storage.
-    let word = unsafe { &*word_ptr };
-    word.store(0, Ordering::Release);
-
-    if mark_managed_mutex(mutex) {
-        return 0;
+    if let Some(word_ptr) = mutex_word_ptr(mutex) {
+        // SAFETY: `word_ptr` is alignment-checked and points to caller-owned mutex storage.
+        let word = unsafe { &*word_ptr };
+        word.store(0, Ordering::Release);
+        if mark_managed_mutex(mutex) {
+            return 0;
+        }
     }
     clear_managed_mutex(mutex);
     libc::EINVAL
 }
 
 /// POSIX `pthread_mutex_destroy`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_mutex_destroy(mutex: *mut libc::pthread_mutex_t) -> c_int {
     if mutex.is_null() {
         return libc::EINVAL;
     }
 
-    if !is_managed_mutex(mutex) && !promote_unmanaged_default_mutex(mutex) {
+    if !is_managed_mutex(mutex) {
         return libc::EINVAL;
     }
 
@@ -550,13 +595,13 @@ pub unsafe extern "C" fn pthread_mutex_destroy(mutex: *mut libc::pthread_mutex_t
 }
 
 /// POSIX `pthread_mutex_lock`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_mutex_lock(mutex: *mut libc::pthread_mutex_t) -> c_int {
     if mutex.is_null() {
         return libc::EINVAL;
     }
 
-    if !is_managed_mutex(mutex) && !promote_unmanaged_default_mutex(mutex) {
+    if !is_managed_mutex(mutex) {
         return libc::EINVAL;
     }
     let Some(word_ptr) = mutex_word_ptr(mutex) else {
@@ -568,13 +613,13 @@ pub unsafe extern "C" fn pthread_mutex_lock(mutex: *mut libc::pthread_mutex_t) -
 }
 
 /// POSIX `pthread_mutex_trylock`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_mutex_trylock(mutex: *mut libc::pthread_mutex_t) -> c_int {
     if mutex.is_null() {
         return libc::EINVAL;
     }
 
-    if !is_managed_mutex(mutex) && !promote_unmanaged_default_mutex(mutex) {
+    if !is_managed_mutex(mutex) {
         return libc::EINVAL;
     }
     let Some(word_ptr) = mutex_word_ptr(mutex) else {
@@ -586,13 +631,13 @@ pub unsafe extern "C" fn pthread_mutex_trylock(mutex: *mut libc::pthread_mutex_t
 }
 
 /// POSIX `pthread_mutex_unlock`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_mutex_unlock(mutex: *mut libc::pthread_mutex_t) -> c_int {
     if mutex.is_null() {
         return libc::EINVAL;
     }
 
-    if !is_managed_mutex(mutex) && !promote_unmanaged_default_mutex(mutex) {
+    if !is_managed_mutex(mutex) {
         return libc::EINVAL;
     }
     let Some(word_ptr) = mutex_word_ptr(mutex) else {
@@ -608,7 +653,7 @@ pub unsafe extern "C" fn pthread_mutex_unlock(mutex: *mut libc::pthread_mutex_t)
 // ===========================================================================
 
 /// POSIX `pthread_cond_init`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_cond_init(
     cond: *mut libc::pthread_cond_t,
     attr: *const libc::pthread_condattr_t,
@@ -616,38 +661,22 @@ pub unsafe extern "C" fn pthread_cond_init(
     if cond.is_null() {
         return libc::EINVAL;
     }
-    let (_, decision) =
-        runtime_policy::decide(ApiFamily::Threading, cond as usize, 0, true, false, 0);
-    if matches!(decision.action, MembraneAction::Deny) {
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 10, true);
-        return libc::EPERM;
-    }
-
-    let rc = unsafe { libc::pthread_cond_init(cond, attr) };
-    runtime_policy::observe(ApiFamily::Threading, decision.profile, 10, rc != 0);
-    rc
+    // SAFETY: direct passthrough to host libc with validated pointer.
+    unsafe { libc::pthread_cond_init(cond, attr) }
 }
 
 /// POSIX `pthread_cond_destroy`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_cond_destroy(cond: *mut libc::pthread_cond_t) -> c_int {
     if cond.is_null() {
         return libc::EINVAL;
     }
-    let (_, decision) =
-        runtime_policy::decide(ApiFamily::Threading, cond as usize, 0, true, false, 0);
-    if matches!(decision.action, MembraneAction::Deny) {
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 10, true);
-        return libc::EPERM;
-    }
-
-    let rc = unsafe { libc::pthread_cond_destroy(cond) };
-    runtime_policy::observe(ApiFamily::Threading, decision.profile, 10, rc != 0);
-    rc
+    // SAFETY: direct passthrough to host libc with validated pointer.
+    unsafe { libc::pthread_cond_destroy(cond) }
 }
 
 /// POSIX `pthread_cond_wait`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_cond_wait(
     cond: *mut libc::pthread_cond_t,
     mutex: *mut libc::pthread_mutex_t,
@@ -655,52 +684,28 @@ pub unsafe extern "C" fn pthread_cond_wait(
     if cond.is_null() || mutex.is_null() {
         return libc::EINVAL;
     }
-    let (_, decision) =
-        runtime_policy::decide(ApiFamily::Threading, cond as usize, 0, true, false, 0);
-    if matches!(decision.action, MembraneAction::Deny) {
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 20, true);
-        return libc::EPERM;
-    }
-
-    let rc = unsafe { libc::pthread_cond_wait(cond, mutex) };
-    runtime_policy::observe(ApiFamily::Threading, decision.profile, 20, rc != 0);
-    rc
+    // SAFETY: direct passthrough to host libc with validated pointers.
+    unsafe { libc::pthread_cond_wait(cond, mutex) }
 }
 
 /// POSIX `pthread_cond_signal`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_cond_signal(cond: *mut libc::pthread_cond_t) -> c_int {
     if cond.is_null() {
         return libc::EINVAL;
     }
-    let (_, decision) =
-        runtime_policy::decide(ApiFamily::Threading, cond as usize, 0, true, false, 0);
-    if matches!(decision.action, MembraneAction::Deny) {
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, true);
-        return libc::EPERM;
-    }
-
-    let rc = unsafe { libc::pthread_cond_signal(cond) };
-    runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, rc != 0);
-    rc
+    // SAFETY: direct passthrough to host libc with validated pointer.
+    unsafe { libc::pthread_cond_signal(cond) }
 }
 
 /// POSIX `pthread_cond_broadcast`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_cond_broadcast(cond: *mut libc::pthread_cond_t) -> c_int {
     if cond.is_null() {
         return libc::EINVAL;
     }
-    let (_, decision) =
-        runtime_policy::decide(ApiFamily::Threading, cond as usize, 0, true, false, 0);
-    if matches!(decision.action, MembraneAction::Deny) {
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 10, true);
-        return libc::EPERM;
-    }
-
-    let rc = unsafe { libc::pthread_cond_broadcast(cond) };
-    runtime_policy::observe(ApiFamily::Threading, decision.profile, 10, rc != 0);
-    rc
+    // SAFETY: direct passthrough to host libc with validated pointer.
+    unsafe { libc::pthread_cond_broadcast(cond) }
 }
 
 // ===========================================================================
@@ -708,7 +713,7 @@ pub unsafe extern "C" fn pthread_cond_broadcast(cond: *mut libc::pthread_cond_t)
 // ===========================================================================
 
 /// POSIX `pthread_rwlock_init`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_rwlock_init(
     rwlock: *mut libc::pthread_rwlock_t,
     attr: *const libc::pthread_rwlockattr_t,
@@ -716,88 +721,48 @@ pub unsafe extern "C" fn pthread_rwlock_init(
     if rwlock.is_null() {
         return libc::EINVAL;
     }
-    let (_, decision) =
-        runtime_policy::decide(ApiFamily::Threading, rwlock as usize, 0, true, false, 0);
-    if matches!(decision.action, MembraneAction::Deny) {
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 10, true);
-        return libc::EPERM;
-    }
-
-    let rc = unsafe { libc::pthread_rwlock_init(rwlock, attr) };
-    runtime_policy::observe(ApiFamily::Threading, decision.profile, 10, rc != 0);
-    rc
+    // SAFETY: direct passthrough to host libc with validated pointer.
+    unsafe { libc::pthread_rwlock_init(rwlock, attr) }
 }
 
 /// POSIX `pthread_rwlock_destroy`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_rwlock_destroy(rwlock: *mut libc::pthread_rwlock_t) -> c_int {
     if rwlock.is_null() {
         return libc::EINVAL;
     }
-    let (_, decision) =
-        runtime_policy::decide(ApiFamily::Threading, rwlock as usize, 0, true, false, 0);
-    if matches!(decision.action, MembraneAction::Deny) {
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 10, true);
-        return libc::EPERM;
-    }
-
-    let rc = unsafe { libc::pthread_rwlock_destroy(rwlock) };
-    runtime_policy::observe(ApiFamily::Threading, decision.profile, 10, rc != 0);
-    rc
+    // SAFETY: direct passthrough to host libc with validated pointer.
+    unsafe { libc::pthread_rwlock_destroy(rwlock) }
 }
 
 /// POSIX `pthread_rwlock_rdlock`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_rwlock_rdlock(rwlock: *mut libc::pthread_rwlock_t) -> c_int {
     if rwlock.is_null() {
         return libc::EINVAL;
     }
-    let (_, decision) =
-        runtime_policy::decide(ApiFamily::Threading, rwlock as usize, 0, true, false, 0);
-    if matches!(decision.action, MembraneAction::Deny) {
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 12, true);
-        return libc::EPERM;
-    }
-
-    let rc = unsafe { libc::pthread_rwlock_rdlock(rwlock) };
-    runtime_policy::observe(ApiFamily::Threading, decision.profile, 12, rc != 0);
-    rc
+    // SAFETY: direct passthrough to host libc with validated pointer.
+    unsafe { libc::pthread_rwlock_rdlock(rwlock) }
 }
 
 /// POSIX `pthread_rwlock_wrlock`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_rwlock_wrlock(rwlock: *mut libc::pthread_rwlock_t) -> c_int {
     if rwlock.is_null() {
         return libc::EINVAL;
     }
-    let (_, decision) =
-        runtime_policy::decide(ApiFamily::Threading, rwlock as usize, 0, true, false, 0);
-    if matches!(decision.action, MembraneAction::Deny) {
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 12, true);
-        return libc::EPERM;
-    }
-
-    let rc = unsafe { libc::pthread_rwlock_wrlock(rwlock) };
-    runtime_policy::observe(ApiFamily::Threading, decision.profile, 12, rc != 0);
-    rc
+    // SAFETY: direct passthrough to host libc with validated pointer.
+    unsafe { libc::pthread_rwlock_wrlock(rwlock) }
 }
 
 /// POSIX `pthread_rwlock_unlock`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_rwlock_unlock(rwlock: *mut libc::pthread_rwlock_t) -> c_int {
     if rwlock.is_null() {
         return libc::EINVAL;
     }
-    let (_, decision) =
-        runtime_policy::decide(ApiFamily::Threading, rwlock as usize, 0, true, false, 0);
-    if matches!(decision.action, MembraneAction::Deny) {
-        runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, true);
-        return libc::EPERM;
-    }
-
-    let rc = unsafe { libc::pthread_rwlock_unlock(rwlock) };
-    runtime_policy::observe(ApiFamily::Threading, decision.profile, 8, rc != 0);
-    rc
+    // SAFETY: direct passthrough to host libc with validated pointer.
+    unsafe { libc::pthread_rwlock_unlock(rwlock) }
 }
 
 #[cfg(test)]

@@ -42,57 +42,57 @@ fn convert(c: c_int, f: fn(u8) -> u8) -> c_int {
     result as c_int
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn isalpha(c: c_int) -> c_int {
     classify(c, frankenlibc_core::ctype::is_alpha)
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn isdigit(c: c_int) -> c_int {
     classify(c, frankenlibc_core::ctype::is_digit)
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn isalnum(c: c_int) -> c_int {
     classify(c, frankenlibc_core::ctype::is_alnum)
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn isspace(c: c_int) -> c_int {
     classify(c, frankenlibc_core::ctype::is_space)
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn isupper(c: c_int) -> c_int {
     classify(c, frankenlibc_core::ctype::is_upper)
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn islower(c: c_int) -> c_int {
     classify(c, frankenlibc_core::ctype::is_lower)
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn isprint(c: c_int) -> c_int {
     classify(c, frankenlibc_core::ctype::is_print)
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn ispunct(c: c_int) -> c_int {
     classify(c, frankenlibc_core::ctype::is_punct)
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn isxdigit(c: c_int) -> c_int {
     classify(c, frankenlibc_core::ctype::is_xdigit)
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn toupper(c: c_int) -> c_int {
     convert(c, frankenlibc_core::ctype::to_upper)
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn tolower(c: c_int) -> c_int {
     convert(c, frankenlibc_core::ctype::to_lower)
 }

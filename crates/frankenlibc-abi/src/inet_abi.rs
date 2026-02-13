@@ -22,7 +22,7 @@ unsafe fn set_abi_errno(val: c_int) {
 // htons
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn htons(hostshort: u16) -> u16 {
     hostshort.to_be()
 }
@@ -31,7 +31,7 @@ pub unsafe extern "C" fn htons(hostshort: u16) -> u16 {
 // htonl
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn htonl(hostlong: u32) -> u32 {
     hostlong.to_be()
 }
@@ -40,7 +40,7 @@ pub unsafe extern "C" fn htonl(hostlong: u32) -> u32 {
 // ntohs
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn ntohs(netshort: u16) -> u16 {
     u16::from_be(netshort)
 }
@@ -49,7 +49,7 @@ pub unsafe extern "C" fn ntohs(netshort: u16) -> u16 {
 // ntohl
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn ntohl(netlong: u32) -> u32 {
     u32::from_be(netlong)
 }
@@ -62,7 +62,7 @@ pub unsafe extern "C" fn ntohl(netlong: u32) -> u32 {
 ///
 /// Returns 1 on success, 0 if `src` is not a valid address for the given
 /// family, -1 if `af` is unsupported (sets errno to `EAFNOSUPPORT`).
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn inet_pton(af: c_int, src: *const c_char, dst: *mut c_void) -> c_int {
     let (_, decision) = runtime_policy::decide(ApiFamily::Inet, src as usize, 0, false, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -102,7 +102,7 @@ pub unsafe extern "C" fn inet_pton(af: c_int, src: *const c_char, dst: *mut c_vo
 /// Convert binary IP address to text form.
 ///
 /// Returns `dst` on success, null on failure (sets errno).
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn inet_ntop(
     af: c_int,
     src: *const c_void,
@@ -161,7 +161,7 @@ pub unsafe extern "C" fn inet_ntop(
 /// Parse dotted-quad IPv4 string to network-byte-order u32.
 ///
 /// Returns `INADDR_NONE` (0xFFFFFFFF) on error.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn inet_addr(cp: *const c_char) -> u32 {
     let (_, decision) = runtime_policy::decide(ApiFamily::Inet, cp as usize, 0, false, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {

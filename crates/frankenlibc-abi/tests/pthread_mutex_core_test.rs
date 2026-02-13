@@ -1,7 +1,7 @@
 #![cfg(target_os = "linux")]
 
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Barrier, Mutex};
+use std::sync::{Arc, Barrier};
 use std::time::Duration;
 
 use frankenlibc_abi::pthread_abi::{
@@ -10,7 +10,27 @@ use frankenlibc_abi::pthread_abi::{
     pthread_mutex_unlock,
 };
 
-static TEST_GUARD: Mutex<()> = Mutex::new(());
+static TEST_GUARD_HELD: AtomicBool = AtomicBool::new(false);
+
+struct TestGuard;
+
+impl Drop for TestGuard {
+    fn drop(&mut self) {
+        TEST_GUARD_HELD.store(false, Ordering::Release);
+    }
+}
+
+fn acquire_test_guard() -> TestGuard {
+    loop {
+        if TEST_GUARD_HELD
+            .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
+            .is_ok()
+        {
+            return TestGuard;
+        }
+        std::thread::yield_now();
+    }
+}
 
 fn alloc_mutex_ptr() -> *mut libc::pthread_mutex_t {
     let boxed: Box<libc::pthread_mutex_t> = Box::new(unsafe { std::mem::zeroed() });
@@ -44,7 +64,7 @@ fn wait_for_counter_increase(
 
 #[test]
 fn futex_mutex_roundtrip_and_trylock_busy() {
-    let _guard = TEST_GUARD.lock().unwrap();
+    let _guard = acquire_test_guard();
     pthread_mutex_reset_state_for_tests();
 
     let mutex = alloc_mutex_ptr();
@@ -60,7 +80,7 @@ fn futex_mutex_roundtrip_and_trylock_busy() {
 
 #[test]
 fn futex_mutex_contention_increments_wait_and_wake_counters() {
-    let _guard = TEST_GUARD.lock().unwrap();
+    let _guard = acquire_test_guard();
     pthread_mutex_reset_state_for_tests();
 
     let mutex = alloc_mutex_ptr();
@@ -92,10 +112,13 @@ fn futex_mutex_contention_increments_wait_and_wake_counters() {
     });
 
     barrier.wait();
-    assert!(
-        started.load(Ordering::Acquire),
-        "worker did not start lock attempt"
-    );
+    let started_wait_begin = std::time::Instant::now();
+    while !started.load(Ordering::Acquire) {
+        if started_wait_begin.elapsed() > Duration::from_millis(200) {
+            panic!("worker did not start lock attempt");
+        }
+        std::thread::yield_now();
+    }
 
     // Keep the mutex locked until we observe at least one counter increase, proving
     // the contended path executed. Avoid fixed sleeps for determinism.
@@ -128,7 +151,7 @@ fn futex_mutex_contention_increments_wait_and_wake_counters() {
 
 #[test]
 fn futex_mutex_destroy_while_locked_is_ebusy() {
-    let _guard = TEST_GUARD.lock().unwrap();
+    let _guard = acquire_test_guard();
     pthread_mutex_reset_state_for_tests();
 
     let mutex = alloc_mutex_ptr();
@@ -144,7 +167,7 @@ fn futex_mutex_destroy_while_locked_is_ebusy() {
 
 #[test]
 fn futex_mutex_unlock_without_lock_is_eperm() {
-    let _guard = TEST_GUARD.lock().unwrap();
+    let _guard = acquire_test_guard();
     pthread_mutex_reset_state_for_tests();
 
     let mutex = alloc_mutex_ptr();

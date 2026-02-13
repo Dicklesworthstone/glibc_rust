@@ -18,11 +18,38 @@ unsafe fn set_abi_errno(val: c_int) {
     unsafe { *p = val };
 }
 
+#[inline]
+fn last_host_errno(default_errno: c_int) -> c_int {
+    std::io::Error::last_os_error()
+        .raw_os_error()
+        .unwrap_or(default_errno)
+}
+
+#[inline]
+unsafe fn syscall_ret_int(ret: libc::c_long) -> c_int {
+    if ret < 0 {
+        unsafe { set_abi_errno(last_host_errno(errno::EINVAL)) };
+        -1
+    } else {
+        ret as c_int
+    }
+}
+
+#[inline]
+unsafe fn syscall_ret_size(ret: libc::c_long) -> isize {
+    if ret < 0 {
+        unsafe { set_abi_errno(last_host_errno(errno::EINVAL)) };
+        -1
+    } else {
+        ret as isize
+    }
+}
+
 // ---------------------------------------------------------------------------
 // socket
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn socket(domain: c_int, sock_type: c_int, protocol: c_int) -> c_int {
     let (mode, decision) =
         runtime_policy::decide(ApiFamily::Socket, domain as usize, 0, false, true, 0);
@@ -45,7 +72,8 @@ pub unsafe extern "C" fn socket(domain: c_int, sock_type: c_int, protocol: c_int
         return -1;
     }
 
-    let rc = unsafe { libc::socket(domain, sock_type, protocol) };
+    let rc =
+        unsafe { syscall_ret_int(libc::syscall(libc::SYS_socket, domain, sock_type, protocol)) };
     let adverse = rc < 0;
     runtime_policy::observe(ApiFamily::Socket, decision.profile, 10, adverse);
     rc
@@ -55,7 +83,7 @@ pub unsafe extern "C" fn socket(domain: c_int, sock_type: c_int, protocol: c_int
 // bind
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn bind(sockfd: c_int, addr: *const libc::sockaddr, addrlen: u32) -> c_int {
     let (_, decision) = runtime_policy::decide(
         ApiFamily::Socket,
@@ -76,7 +104,7 @@ pub unsafe extern "C" fn bind(sockfd: c_int, addr: *const libc::sockaddr, addrle
         return -1;
     }
 
-    let rc = unsafe { libc::bind(sockfd, addr, addrlen) };
+    let rc = unsafe { syscall_ret_int(libc::syscall(libc::SYS_bind, sockfd, addr, addrlen)) };
     let adverse = rc != 0;
     runtime_policy::observe(ApiFamily::Socket, decision.profile, 10, adverse);
     rc
@@ -86,7 +114,7 @@ pub unsafe extern "C" fn bind(sockfd: c_int, addr: *const libc::sockaddr, addrle
 // listen
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn listen(sockfd: c_int, backlog: c_int) -> c_int {
     let (_, decision) =
         runtime_policy::decide(ApiFamily::Socket, sockfd as usize, 0, false, true, 0);
@@ -96,7 +124,7 @@ pub unsafe extern "C" fn listen(sockfd: c_int, backlog: c_int) -> c_int {
     }
 
     let effective_backlog = socket_core::valid_backlog(backlog);
-    let rc = unsafe { libc::listen(sockfd, effective_backlog) };
+    let rc = unsafe { syscall_ret_int(libc::syscall(libc::SYS_listen, sockfd, effective_backlog)) };
     let adverse = rc != 0;
     runtime_policy::observe(ApiFamily::Socket, decision.profile, 8, adverse);
     rc
@@ -106,7 +134,7 @@ pub unsafe extern "C" fn listen(sockfd: c_int, backlog: c_int) -> c_int {
 // accept
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn accept(
     sockfd: c_int,
     addr: *mut libc::sockaddr,
@@ -119,7 +147,7 @@ pub unsafe extern "C" fn accept(
         return -1;
     }
 
-    let rc = unsafe { libc::accept(sockfd, addr, addrlen) };
+    let rc = unsafe { syscall_ret_int(libc::syscall(libc::SYS_accept, sockfd, addr, addrlen)) };
     let adverse = rc < 0;
     runtime_policy::observe(ApiFamily::Socket, decision.profile, 15, adverse);
     rc
@@ -129,7 +157,7 @@ pub unsafe extern "C" fn accept(
 // connect
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn connect(
     sockfd: c_int,
     addr: *const libc::sockaddr,
@@ -154,7 +182,7 @@ pub unsafe extern "C" fn connect(
         return -1;
     }
 
-    let rc = unsafe { libc::connect(sockfd, addr, addrlen) };
+    let rc = unsafe { syscall_ret_int(libc::syscall(libc::SYS_connect, sockfd, addr, addrlen)) };
     let adverse = rc != 0;
     runtime_policy::observe(ApiFamily::Socket, decision.profile, 15, adverse);
     rc
@@ -164,7 +192,7 @@ pub unsafe extern "C" fn connect(
 // send
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn send(
     sockfd: c_int,
     buf: *const c_void,
@@ -189,7 +217,17 @@ pub unsafe extern "C" fn send(
         return -1;
     }
 
-    let rc = unsafe { libc::send(sockfd, buf, len, flags) };
+    let rc = unsafe {
+        syscall_ret_size(libc::syscall(
+            libc::SYS_sendto,
+            sockfd,
+            buf,
+            len,
+            flags,
+            std::ptr::null::<libc::sockaddr>(),
+            0u32,
+        ))
+    };
     let adverse = rc < 0;
     runtime_policy::observe(
         ApiFamily::Socket,
@@ -204,7 +242,7 @@ pub unsafe extern "C" fn send(
 // recv
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn recv(sockfd: c_int, buf: *mut c_void, len: usize, flags: c_int) -> isize {
     let (_, decision) = runtime_policy::decide(ApiFamily::Socket, buf as usize, len, true, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -223,7 +261,17 @@ pub unsafe extern "C" fn recv(sockfd: c_int, buf: *mut c_void, len: usize, flags
         return -1;
     }
 
-    let rc = unsafe { libc::recv(sockfd, buf, len, flags) };
+    let rc = unsafe {
+        syscall_ret_size(libc::syscall(
+            libc::SYS_recvfrom,
+            sockfd,
+            buf,
+            len,
+            flags,
+            std::ptr::null_mut::<libc::sockaddr>(),
+            std::ptr::null_mut::<u32>(),
+        ))
+    };
     let adverse = rc < 0;
     runtime_policy::observe(
         ApiFamily::Socket,
@@ -238,7 +286,7 @@ pub unsafe extern "C" fn recv(sockfd: c_int, buf: *mut c_void, len: usize, flags
 // sendto
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn sendto(
     sockfd: c_int,
     buf: *const c_void,
@@ -265,7 +313,17 @@ pub unsafe extern "C" fn sendto(
         return -1;
     }
 
-    let rc = unsafe { libc::sendto(sockfd, buf, len, flags, dest_addr, addrlen) };
+    let rc = unsafe {
+        syscall_ret_size(libc::syscall(
+            libc::SYS_sendto,
+            sockfd,
+            buf,
+            len,
+            flags,
+            dest_addr,
+            addrlen,
+        ))
+    };
     let adverse = rc < 0;
     runtime_policy::observe(
         ApiFamily::Socket,
@@ -280,7 +338,7 @@ pub unsafe extern "C" fn sendto(
 // recvfrom
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn recvfrom(
     sockfd: c_int,
     buf: *mut c_void,
@@ -306,7 +364,17 @@ pub unsafe extern "C" fn recvfrom(
         return -1;
     }
 
-    let rc = unsafe { libc::recvfrom(sockfd, buf, len, flags, src_addr, addrlen) };
+    let rc = unsafe {
+        syscall_ret_size(libc::syscall(
+            libc::SYS_recvfrom,
+            sockfd,
+            buf,
+            len,
+            flags,
+            src_addr,
+            addrlen,
+        ))
+    };
     let adverse = rc < 0;
     runtime_policy::observe(
         ApiFamily::Socket,
@@ -321,7 +389,7 @@ pub unsafe extern "C" fn recvfrom(
 // shutdown
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn shutdown(sockfd: c_int, how: c_int) -> c_int {
     let (mode, decision) =
         runtime_policy::decide(ApiFamily::Socket, sockfd as usize, 0, true, true, 0);
@@ -342,7 +410,7 @@ pub unsafe extern "C" fn shutdown(sockfd: c_int, how: c_int) -> c_int {
         how
     };
 
-    let rc = unsafe { libc::shutdown(sockfd, effective_how) };
+    let rc = unsafe { syscall_ret_int(libc::syscall(libc::SYS_shutdown, sockfd, effective_how)) };
     let adverse = rc != 0;
     runtime_policy::observe(ApiFamily::Socket, decision.profile, 8, adverse);
     rc
@@ -352,7 +420,7 @@ pub unsafe extern "C" fn shutdown(sockfd: c_int, how: c_int) -> c_int {
 // setsockopt
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn setsockopt(
     sockfd: c_int,
     level: c_int,
@@ -373,7 +441,16 @@ pub unsafe extern "C" fn setsockopt(
         return -1;
     }
 
-    let rc = unsafe { libc::setsockopt(sockfd, level, optname, optval, optlen) };
+    let rc = unsafe {
+        syscall_ret_int(libc::syscall(
+            libc::SYS_setsockopt,
+            sockfd,
+            level,
+            optname,
+            optval,
+            optlen,
+        ))
+    };
     let adverse = rc != 0;
     runtime_policy::observe(ApiFamily::Socket, decision.profile, 10, adverse);
     rc
@@ -383,7 +460,7 @@ pub unsafe extern "C" fn setsockopt(
 // getsockopt
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn getsockopt(
     sockfd: c_int,
     level: c_int,
@@ -398,7 +475,16 @@ pub unsafe extern "C" fn getsockopt(
         return -1;
     }
 
-    let rc = unsafe { libc::getsockopt(sockfd, level, optname, optval, optlen) };
+    let rc = unsafe {
+        syscall_ret_int(libc::syscall(
+            libc::SYS_getsockopt,
+            sockfd,
+            level,
+            optname,
+            optval,
+            optlen,
+        ))
+    };
     let adverse = rc != 0;
     runtime_policy::observe(ApiFamily::Socket, decision.profile, 10, adverse);
     rc
@@ -408,7 +494,7 @@ pub unsafe extern "C" fn getsockopt(
 // getpeername
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn getpeername(
     sockfd: c_int,
     addr: *mut libc::sockaddr,
@@ -421,7 +507,8 @@ pub unsafe extern "C" fn getpeername(
         return -1;
     }
 
-    let rc = unsafe { libc::getpeername(sockfd, addr, addrlen) };
+    let rc =
+        unsafe { syscall_ret_int(libc::syscall(libc::SYS_getpeername, sockfd, addr, addrlen)) };
     let adverse = rc != 0;
     runtime_policy::observe(ApiFamily::Socket, decision.profile, 8, adverse);
     rc
@@ -431,7 +518,7 @@ pub unsafe extern "C" fn getpeername(
 // getsockname
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn getsockname(
     sockfd: c_int,
     addr: *mut libc::sockaddr,
@@ -444,7 +531,8 @@ pub unsafe extern "C" fn getsockname(
         return -1;
     }
 
-    let rc = unsafe { libc::getsockname(sockfd, addr, addrlen) };
+    let rc =
+        unsafe { syscall_ret_int(libc::syscall(libc::SYS_getsockname, sockfd, addr, addrlen)) };
     let adverse = rc != 0;
     runtime_policy::observe(ApiFamily::Socket, decision.profile, 8, adverse);
     rc

@@ -196,7 +196,7 @@ unsafe fn write_c_buffer(
 }
 
 /// POSIX `getaddrinfo` (numeric address bootstrap implementation).
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn getaddrinfo(
     node: *const c_char,
     service: *const c_char,
@@ -307,7 +307,7 @@ pub unsafe extern "C" fn getaddrinfo(
 }
 
 /// POSIX `freeaddrinfo`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn freeaddrinfo(mut res: *mut libc::addrinfo) {
     let (aligned, recent_page, ordering) = resolver_stage_context(res as usize, 0);
     let (_, decision) =
@@ -368,7 +368,7 @@ pub unsafe extern "C" fn freeaddrinfo(mut res: *mut libc::addrinfo) {
 }
 
 /// POSIX `getnameinfo` (numeric bootstrap implementation).
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn getnameinfo(
     sa: *const libc::sockaddr,
     salen: libc::socklen_t,
@@ -501,7 +501,7 @@ pub unsafe extern "C" fn getnameinfo(
 }
 
 /// POSIX `gai_strerror`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn gai_strerror(errcode: c_int) -> *const c_char {
     match errcode {
         0 => c"Success".as_ptr(),

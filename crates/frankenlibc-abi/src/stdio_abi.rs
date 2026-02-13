@@ -162,15 +162,15 @@ unsafe fn refill_stream(stream: &mut StdioStream) -> isize {
 // ---------------------------------------------------------------------------
 
 /// Global `stdin` pointer.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub static stdin: usize = STDIN_SENTINEL;
 
 /// Global `stdout` pointer.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub static stdout: usize = STDOUT_SENTINEL;
 
 /// Global `stderr` pointer.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub static stderr: usize = STDERR_SENTINEL;
 
 // ---------------------------------------------------------------------------
@@ -178,7 +178,7 @@ pub static stderr: usize = STDERR_SENTINEL;
 // ---------------------------------------------------------------------------
 
 /// POSIX `fopen`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn fopen(pathname: *const c_char, mode: *const c_char) -> *mut c_void {
     if pathname.is_null() || mode.is_null() {
         return std::ptr::null_mut();
@@ -229,7 +229,7 @@ pub unsafe extern "C" fn fopen(pathname: *const c_char, mode: *const c_char) -> 
 }
 
 /// POSIX `fclose`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn fclose(stream: *mut c_void) -> c_int {
     let id = stream as usize;
     if id == 0 {
@@ -278,7 +278,7 @@ pub unsafe extern "C" fn fclose(stream: *mut c_void) -> c_int {
 // ---------------------------------------------------------------------------
 
 /// POSIX `fflush`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn fflush(stream: *mut c_void) -> c_int {
     let (_, decision) =
         runtime_policy::decide(ApiFamily::Stdio, stream as usize, 0, true, false, 0);
@@ -320,7 +320,7 @@ pub unsafe extern "C" fn fflush(stream: *mut c_void) -> c_int {
 // ---------------------------------------------------------------------------
 
 /// POSIX `fgetc`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn fgetc(stream: *mut c_void) -> c_int {
     let id = stream as usize;
     let (_, decision) = runtime_policy::decide(ApiFamily::Stdio, id, 1, true, false, 0);
@@ -364,7 +364,7 @@ pub unsafe extern "C" fn fgetc(stream: *mut c_void) -> c_int {
 }
 
 /// POSIX `fputc`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn fputc(c: c_int, stream: *mut c_void) -> c_int {
     let id = stream as usize;
     let (_, decision) = runtime_policy::decide(ApiFamily::Stdio, id, 1, false, false, 0);
@@ -402,7 +402,7 @@ pub unsafe extern "C" fn fputc(c: c_int, stream: *mut c_void) -> c_int {
 // ---------------------------------------------------------------------------
 
 /// POSIX `fgets`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn fgets(buf: *mut c_char, size: c_int, stream: *mut c_void) -> *mut c_char {
     if buf.is_null() || size <= 0 {
         return std::ptr::null_mut();
@@ -472,7 +472,7 @@ pub unsafe extern "C" fn fgets(buf: *mut c_char, size: c_int, stream: *mut c_voi
 }
 
 /// POSIX `fputs`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn fputs(s: *const c_char, stream: *mut c_void) -> c_int {
     if s.is_null() {
         return libc::EOF;
@@ -546,7 +546,7 @@ pub unsafe extern "C" fn fputs(s: *const c_char, stream: *mut c_void) -> c_int {
 // ---------------------------------------------------------------------------
 
 /// POSIX `fread`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn fread(
     ptr: *mut c_void,
     size: usize,
@@ -601,7 +601,7 @@ pub unsafe extern "C" fn fread(
 }
 
 /// POSIX `fwrite`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn fwrite(
     ptr: *const c_void,
     size: usize,
@@ -660,7 +660,7 @@ pub unsafe extern "C" fn fwrite(
 // ---------------------------------------------------------------------------
 
 /// POSIX `fseek`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn fseek(stream: *mut c_void, offset: c_long, whence: c_int) -> c_int {
     let id = stream as usize;
     let (_, decision) = runtime_policy::decide(ApiFamily::Stdio, id, 0, true, false, 0);
@@ -701,7 +701,7 @@ pub unsafe extern "C" fn fseek(stream: *mut c_void, offset: c_long, whence: c_in
 }
 
 /// POSIX `ftell`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn ftell(stream: *mut c_void) -> c_long {
     let id = stream as usize;
     let (_, decision) = runtime_policy::decide(ApiFamily::Stdio, id, 0, false, false, 0);
@@ -723,7 +723,7 @@ pub unsafe extern "C" fn ftell(stream: *mut c_void) -> c_long {
 }
 
 /// POSIX `rewind`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn rewind(stream: *mut c_void) {
     // rewind is fseek(stream, 0, SEEK_SET) + clearerr.
     unsafe { fseek(stream, 0, libc::SEEK_SET) };
@@ -740,7 +740,7 @@ pub unsafe extern "C" fn rewind(stream: *mut c_void) {
 // ---------------------------------------------------------------------------
 
 /// POSIX `feof`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn feof(stream: *mut c_void) -> c_int {
     let id = stream as usize;
     let reg = registry().lock().unwrap_or_else(|e| e.into_inner());
@@ -752,7 +752,7 @@ pub unsafe extern "C" fn feof(stream: *mut c_void) -> c_int {
 }
 
 /// POSIX `ferror`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn ferror(stream: *mut c_void) -> c_int {
     let id = stream as usize;
     let reg = registry().lock().unwrap_or_else(|e| e.into_inner());
@@ -764,7 +764,7 @@ pub unsafe extern "C" fn ferror(stream: *mut c_void) -> c_int {
 }
 
 /// POSIX `clearerr`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn clearerr(stream: *mut c_void) {
     let id = stream as usize;
     let mut reg = registry().lock().unwrap_or_else(|e| e.into_inner());
@@ -774,7 +774,7 @@ pub unsafe extern "C" fn clearerr(stream: *mut c_void) {
 }
 
 /// POSIX `ungetc`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn ungetc(c: c_int, stream: *mut c_void) -> c_int {
     if c == libc::EOF {
         return libc::EOF;
@@ -789,7 +789,7 @@ pub unsafe extern "C" fn ungetc(c: c_int, stream: *mut c_void) -> c_int {
 }
 
 /// POSIX `fileno`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn fileno(stream: *mut c_void) -> c_int {
     let id = stream as usize;
     let reg = registry().lock().unwrap_or_else(|e| e.into_inner());
@@ -806,7 +806,7 @@ pub unsafe extern "C" fn fileno(stream: *mut c_void) -> c_int {
 // ---------------------------------------------------------------------------
 
 /// POSIX `setvbuf`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn setvbuf(
     stream: *mut c_void,
     _buf: *mut c_char,
@@ -832,7 +832,7 @@ pub unsafe extern "C" fn setvbuf(
 }
 
 /// POSIX `setbuf`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn setbuf(stream: *mut c_void, buf: *mut c_char) {
     if buf.is_null() {
         unsafe {
@@ -850,7 +850,7 @@ pub unsafe extern "C" fn setbuf(stream: *mut c_void, buf: *mut c_char) {
 // ---------------------------------------------------------------------------
 
 /// POSIX `putchar`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn putchar(c: c_int) -> c_int {
     let (_, decision) = runtime_policy::decide(ApiFamily::Stdio, 0, 1, false, false, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -865,7 +865,7 @@ pub unsafe extern "C" fn putchar(c: c_int) -> c_int {
 }
 
 /// POSIX `puts`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn puts(s: *const c_char) -> c_int {
     if s.is_null() {
         return libc::EOF;
@@ -917,7 +917,7 @@ pub unsafe extern "C" fn puts(s: *const c_char) -> c_int {
 }
 
 /// POSIX `getchar`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn getchar() -> c_int {
     let (_, decision) = runtime_policy::decide(ApiFamily::Stdio, 0, 1, true, false, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -937,7 +937,7 @@ pub unsafe extern "C" fn getchar() -> c_int {
 // ---------------------------------------------------------------------------
 
 /// POSIX `perror`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn perror(s: *const c_char) {
     let (_, decision) = runtime_policy::decide(ApiFamily::Stdio, 0, 0, false, false, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -1190,7 +1190,7 @@ unsafe fn render_printf(fmt: &[u8], args: *const u64, max_args: usize) -> Vec<u8
 }
 
 /// POSIX `snprintf` — format at most `size` bytes into `str`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn snprintf(
     str_buf: *mut c_char,
     size: usize,
@@ -1234,7 +1234,7 @@ pub unsafe extern "C" fn snprintf(
 }
 
 /// POSIX `sprintf`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn sprintf(
     str_buf: *mut c_char,
     format: *const c_char,
@@ -1274,7 +1274,7 @@ pub unsafe extern "C" fn sprintf(
 }
 
 /// POSIX `fprintf`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn fprintf(
     stream: *mut c_void,
     format: *const c_char,
@@ -1334,7 +1334,7 @@ pub unsafe extern "C" fn fprintf(
 }
 
 /// POSIX `printf`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn printf(format: *const c_char, mut args: ...) -> c_int {
     if format.is_null() {
         return -1;

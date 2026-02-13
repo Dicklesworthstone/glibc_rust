@@ -5,6 +5,7 @@
 //! 2. In hardened mode, applies healing (bounds clamping, null truncation)
 //! 3. Delegates to `frankenlibc-core` safe implementations or inline unsafe primitives
 
+use std::cell::Cell;
 use std::ffi::{c_char, c_int, c_void};
 
 use frankenlibc_membrane::check_oracle::CheckStage;
@@ -13,6 +14,79 @@ use frankenlibc_membrane::runtime_math::{ApiFamily, MembraneAction};
 
 use crate::malloc_abi::known_remaining;
 use crate::runtime_policy;
+
+thread_local! {
+    static STRING_MEMBRANE_DEPTH: Cell<u32> = const { Cell::new(0) };
+}
+
+struct StringMembraneGuard;
+
+impl Drop for StringMembraneGuard {
+    fn drop(&mut self) {
+        STRING_MEMBRANE_DEPTH.with(|depth| {
+            let current = depth.get();
+            depth.set(current.saturating_sub(1));
+        });
+    }
+}
+
+fn enter_string_membrane_guard() -> Option<StringMembraneGuard> {
+    STRING_MEMBRANE_DEPTH.with(|depth| {
+        let current = depth.get();
+        if current > 0 {
+            None
+        } else {
+            depth.set(current + 1);
+            Some(StringMembraneGuard)
+        }
+    })
+}
+
+#[inline(never)]
+unsafe fn raw_memcpy_bytes(dst: *mut u8, src: *const u8, n: usize) {
+    let mut i = 0usize;
+    while i < n {
+        // SAFETY: caller guarantees valid non-overlapping regions for `n` bytes.
+        unsafe {
+            let byte = std::ptr::read_volatile(src.add(i));
+            std::ptr::write_volatile(dst.add(i), byte);
+        }
+        i += 1;
+    }
+}
+
+#[inline(never)]
+unsafe fn raw_memmove_bytes(dst: *mut u8, src: *const u8, n: usize) {
+    let dst_addr = dst as usize;
+    let src_addr = src as usize;
+    if dst_addr <= src_addr || dst_addr >= src_addr.saturating_add(n) {
+        // SAFETY: forward copy is correct for non-overlap or forward-safe overlap.
+        unsafe { raw_memcpy_bytes(dst, src, n) };
+        return;
+    }
+
+    let mut i = n;
+    while i > 0 {
+        i -= 1;
+        // SAFETY: caller guarantees valid regions for `n` bytes; backward copy handles overlap.
+        unsafe {
+            let byte = std::ptr::read_volatile(src.add(i));
+            std::ptr::write_volatile(dst.add(i), byte);
+        }
+    }
+}
+
+#[inline(never)]
+unsafe fn raw_memset_bytes(dst: *mut u8, value: u8, n: usize) {
+    let mut i = 0usize;
+    while i < n {
+        // SAFETY: caller guarantees `dst` valid for `n` bytes.
+        unsafe {
+            std::ptr::write_volatile(dst.add(i), value);
+        }
+        i += 1;
+    }
+}
 
 fn maybe_clamp_copy_len(
     requested: usize,
@@ -129,8 +203,22 @@ unsafe fn scan_c_string(ptr: *const c_char, bound: Option<usize>) -> (usize, boo
 /// # Safety
 ///
 /// Caller must ensure `src` and `dst` are valid for `n` bytes and do not overlap.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn memcpy(dst: *mut c_void, src: *const c_void, n: usize) -> *mut c_void {
+    let Some(_membrane_guard) = enter_string_membrane_guard() else {
+        if n == 0 {
+            return dst;
+        }
+        if dst.is_null() || src.is_null() {
+            return std::ptr::null_mut();
+        }
+        // SAFETY: reentrant fallback avoids runtime-policy recursion and mirrors memcpy semantics.
+        unsafe {
+            raw_memcpy_bytes(dst.cast::<u8>(), src.cast::<u8>(), n);
+        }
+        return dst;
+    };
+
     let aligned = ((dst as usize) | (src as usize)) & 0x7 == 0;
     let recent_page = (!dst.is_null() && known_remaining(dst as usize).is_some())
         || (!src.is_null() && known_remaining(src as usize).is_some());
@@ -197,7 +285,7 @@ pub unsafe extern "C" fn memcpy(dst: *mut c_void, src: *const c_void, n: usize) 
 
     // SAFETY: `copy_len` is either original `n` (strict) or clamped to known bounds.
     unsafe {
-        std::ptr::copy_nonoverlapping(src.cast::<u8>(), dst.cast::<u8>(), copy_len);
+        raw_memcpy_bytes(dst.cast::<u8>(), src.cast::<u8>(), copy_len);
     }
     record_string_stage_outcome(&ordering, aligned, recent_page, None);
     runtime_policy::observe(
@@ -218,8 +306,22 @@ pub unsafe extern "C" fn memcpy(dst: *mut c_void, src: *const c_void, n: usize) 
 /// # Safety
 ///
 /// Caller must ensure `src` and `dst` are valid for `n` bytes.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn memmove(dst: *mut c_void, src: *const c_void, n: usize) -> *mut c_void {
+    let Some(_membrane_guard) = enter_string_membrane_guard() else {
+        if n == 0 {
+            return dst;
+        }
+        if dst.is_null() || src.is_null() {
+            return std::ptr::null_mut();
+        }
+        // SAFETY: reentrant fallback avoids runtime-policy recursion and mirrors memmove semantics.
+        unsafe {
+            raw_memmove_bytes(dst.cast::<u8>(), src.cast::<u8>(), n);
+        }
+        return dst;
+    };
+
     let aligned = ((dst as usize) | (src as usize)) & 0x7 == 0;
     let recent_page = (!dst.is_null() && known_remaining(dst as usize).is_some())
         || (!src.is_null() && known_remaining(src as usize).is_some());
@@ -286,7 +388,7 @@ pub unsafe extern "C" fn memmove(dst: *mut c_void, src: *const c_void, n: usize)
 
     // SAFETY: memmove handles overlap. `copy_len` may be clamped in hardened mode.
     unsafe {
-        std::ptr::copy(src.cast::<u8>(), dst.cast::<u8>(), copy_len);
+        raw_memmove_bytes(dst.cast::<u8>(), src.cast::<u8>(), copy_len);
     }
     record_string_stage_outcome(&ordering, aligned, recent_page, None);
     runtime_policy::observe(
@@ -307,8 +409,22 @@ pub unsafe extern "C" fn memmove(dst: *mut c_void, src: *const c_void, n: usize)
 /// # Safety
 ///
 /// Caller must ensure `dst` is valid for `n` bytes.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn memset(dst: *mut c_void, c: c_int, n: usize) -> *mut c_void {
+    let Some(_membrane_guard) = enter_string_membrane_guard() else {
+        if n == 0 {
+            return dst;
+        }
+        if dst.is_null() {
+            return std::ptr::null_mut();
+        }
+        // SAFETY: reentrant fallback avoids runtime-policy recursion and mirrors memset semantics.
+        unsafe {
+            raw_memset_bytes(dst.cast::<u8>(), c as u8, n);
+        }
+        return dst;
+    };
+
     let aligned = (dst as usize) & 0x7 == 0;
     let recent_page = !dst.is_null() && known_remaining(dst as usize).is_some();
     let ordering = runtime_policy::check_ordering(ApiFamily::StringMemory, aligned, recent_page);
@@ -373,10 +489,8 @@ pub unsafe extern "C" fn memset(dst: *mut c_void, c: c_int, n: usize) -> *mut c_
     }
 
     // SAFETY: `fill_len` is either original `n` (strict) or clamped to known bounds.
-    // We use `write_bytes` instead of delegating to core::memset because creating a
-    // &mut [u8] slice over potentially uninitialized memory is UB in Rust.
     unsafe {
-        std::ptr::write_bytes(dst.cast::<u8>(), c as u8, fill_len);
+        raw_memset_bytes(dst.cast::<u8>(), c as u8, fill_len);
     }
     record_string_stage_outcome(&ordering, aligned, recent_page, None);
     runtime_policy::observe(
@@ -399,7 +513,7 @@ pub unsafe extern "C" fn memset(dst: *mut c_void, c: c_int, n: usize) -> *mut c_
 /// # Safety
 ///
 /// Caller must ensure `s1` and `s2` are valid for `n` bytes.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn memcmp(s1: *const c_void, s2: *const c_void, n: usize) -> c_int {
     let (aligned, recent_page, ordering) = stage_context_two(s1 as usize, s2 as usize);
     if n == 0 {
@@ -498,7 +612,7 @@ pub unsafe extern "C" fn memcmp(s1: *const c_void, s2: *const c_void, n: usize) 
 /// # Safety
 ///
 /// Caller must ensure `s` is valid for `n` bytes.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn memchr(s: *const c_void, c: c_int, n: usize) -> *mut c_void {
     let (aligned, recent_page, ordering) = stage_context_one(s as usize);
     if n == 0 || s.is_null() {
@@ -604,7 +718,7 @@ pub unsafe extern "C" fn memchr(s: *const c_void, c: c_int, n: usize) -> *mut c_
 /// # Safety
 ///
 /// Caller must ensure `s` is valid for `n` bytes.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn memrchr(s: *const c_void, c: c_int, n: usize) -> *mut c_void {
     let (aligned, recent_page, ordering) = stage_context_one(s as usize);
     if n == 0 || s.is_null() {
@@ -708,7 +822,7 @@ pub unsafe extern "C" fn memrchr(s: *const c_void, c: c_int, n: usize) -> *mut c
 /// # Safety
 ///
 /// Caller must ensure `s` points to a valid null-terminated string.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn strlen(s: *const c_char) -> usize {
     let aligned = (s as usize) & 0x7 == 0;
     let recent_page = !s.is_null() && known_remaining(s as usize).is_some();
@@ -818,7 +932,7 @@ pub unsafe extern "C" fn strlen(s: *const c_char) -> usize {
 /// # Safety
 ///
 /// Caller must ensure both `s1` and `s2` point to valid null-terminated strings.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn strcmp(s1: *const c_char, s2: *const c_char) -> c_int {
     let (aligned, recent_page, ordering) = stage_context_two(s1 as usize, s2 as usize);
     if s1.is_null() || s2.is_null() {
@@ -918,7 +1032,7 @@ pub unsafe extern "C" fn strcmp(s1: *const c_char, s2: *const c_char) -> c_int {
 ///
 /// Caller must ensure `dst` is large enough to hold `src` including the null terminator,
 /// and that the buffers do not overlap.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn strcpy(dst: *mut c_char, src: *const c_char) -> *mut c_char {
     let (aligned, recent_page, ordering) = stage_context_two(dst as usize, src as usize);
     if dst.is_null() || src.is_null() {
@@ -976,7 +1090,7 @@ pub unsafe extern "C" fn strcpy(dst: *mut c_char, src: *const c_char) -> *mut c_
                     let max_payload = limit.saturating_sub(1);
                     let copy_payload = src_len.min(max_payload);
                     if copy_payload > 0 {
-                        std::ptr::copy_nonoverlapping(src, dst, copy_payload);
+                        raw_memcpy_bytes(dst.cast::<u8>(), src.cast::<u8>(), copy_payload);
                     }
                     *dst.add(copy_payload) = 0;
                     let truncated = !src_terminated || copy_payload < src_len;
@@ -1036,7 +1150,7 @@ pub unsafe extern "C" fn strcpy(dst: *mut c_char, src: *const c_char) -> *mut c_
 /// # Safety
 ///
 /// Caller must ensure `dst` is at least `n` bytes and `src` is a valid string.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn strncpy(dst: *mut c_char, src: *const c_char, n: usize) -> *mut c_char {
     let (aligned, recent_page, ordering) = stage_context_two(dst as usize, src as usize);
     if dst.is_null() || src.is_null() || n == 0 {
@@ -1138,7 +1252,7 @@ pub unsafe extern "C" fn strncpy(dst: *mut c_char, src: *const c_char, n: usize)
 ///
 /// Caller must ensure `dst` has enough space for the concatenated result
 /// including null terminator, and that the buffers do not overlap.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn strcat(dst: *mut c_char, src: *const c_char) -> *mut c_char {
     let (aligned, recent_page, ordering) = stage_context_two(dst as usize, src as usize);
     if dst.is_null() || src.is_null() {
@@ -1201,7 +1315,11 @@ pub unsafe extern "C" fn strcat(dst: *mut c_char, src: *const c_char) -> *mut c_
                         let available = limit.saturating_sub(dst_len.saturating_add(1));
                         let copy_payload = src_len.min(available);
                         if copy_payload > 0 {
-                            std::ptr::copy_nonoverlapping(src, dst.add(dst_len), copy_payload);
+                            raw_memcpy_bytes(
+                                dst.add(dst_len).cast::<u8>(),
+                                src.cast::<u8>(),
+                                copy_payload,
+                            );
                         }
                         *dst.add(dst_len.saturating_add(copy_payload)) = 0;
                         let truncated = !src_terminated || copy_payload < src_len;
@@ -1269,7 +1387,7 @@ pub unsafe extern "C" fn strcat(dst: *mut c_char, src: *const c_char) -> *mut c_
 ///
 /// Caller must ensure `dst` has enough space for the concatenated result
 /// (up to `strlen(dst) + n + 1` bytes).
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn strncat(dst: *mut c_char, src: *const c_char, n: usize) -> *mut c_char {
     let (aligned, recent_page, ordering) = stage_context_two(dst as usize, src as usize);
     if dst.is_null() || src.is_null() || n == 0 {
@@ -1340,7 +1458,11 @@ pub unsafe extern "C" fn strncat(dst: *mut c_char, src: *const c_char, n: usize)
                         let available = limit.saturating_sub(dst_len.saturating_add(1));
                         let copy_payload = src_len.min(available);
                         if copy_payload > 0 {
-                            std::ptr::copy_nonoverlapping(src, dst.add(dst_len), copy_payload);
+                            raw_memcpy_bytes(
+                                dst.add(dst_len).cast::<u8>(),
+                                src.cast::<u8>(),
+                                copy_payload,
+                            );
                         }
                         *dst.add(dst_len.saturating_add(copy_payload)) = 0;
                         let truncated = (!src_terminated && src_scan_bound == Some(src_len))
@@ -1410,7 +1532,7 @@ pub unsafe extern "C" fn strncat(dst: *mut c_char, src: *const c_char, n: usize)
 /// # Safety
 ///
 /// Caller must ensure `s` is a valid null-terminated string.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn strchr(s: *const c_char, c: c_int) -> *mut c_char {
     let (aligned, recent_page, ordering) = stage_context_one(s as usize);
     if s.is_null() {
@@ -1498,7 +1620,7 @@ pub unsafe extern "C" fn strchr(s: *const c_char, c: c_int) -> *mut c_char {
 /// # Safety
 ///
 /// Caller must ensure `s` is a valid null-terminated string.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn strrchr(s: *const c_char, c: c_int) -> *mut c_char {
     let (aligned, recent_page, ordering) = stage_context_one(s as usize);
     if s.is_null() {
@@ -1586,7 +1708,7 @@ pub unsafe extern "C" fn strrchr(s: *const c_char, c: c_int) -> *mut c_char {
 /// # Safety
 ///
 /// Caller must ensure both `haystack` and `needle` are valid null-terminated strings.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn strstr(haystack: *const c_char, needle: *const c_char) -> *mut c_char {
     let (aligned, recent_page, ordering) = stage_context_two(haystack as usize, needle as usize);
     if haystack.is_null() {
@@ -1717,7 +1839,7 @@ thread_local! {
 /// Caller must ensure `s` (if non-null) and `delim` are valid null-terminated strings.
 /// Note: `strtok` modifies the source string and is not reentrant. Use `strtok_r` for
 /// reentrant usage.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn strtok(s: *mut c_char, delim: *const c_char) -> *mut c_char {
     let (aligned, recent_page, ordering) = stage_context_two(s as usize, delim as usize);
     if delim.is_null() {
@@ -1862,7 +1984,7 @@ pub unsafe extern "C" fn strtok(s: *mut c_char, delim: *const c_char) -> *mut c_
 ///
 /// Caller must ensure `s` (if non-null) and `delim` are valid null-terminated strings.
 /// `saveptr` must be a valid pointer to a `char *`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn strtok_r(
     s: *mut c_char,
     delim: *const c_char,

@@ -73,7 +73,7 @@ unsafe impl Sync for LConv {}
 /// Bootstrap: only the "C" and "POSIX" locales are supported. Querying
 /// (null `locale` pointer) returns `"C"`. Setting to "C", "POSIX", or ""
 /// succeeds. All other locale names fail and return null.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn setlocale(category: c_int, locale: *const c_char) -> *const c_char {
     let (mode, decision) =
         runtime_policy::decide(ApiFamily::Locale, category as usize, 0, false, true, 0);
@@ -117,7 +117,7 @@ pub unsafe extern "C" fn setlocale(category: c_int, locale: *const c_char) -> *c
 /// POSIX `localeconv`.
 ///
 /// Returns a pointer to a static `struct lconv` with C-locale defaults.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn localeconv() -> *const LConv {
     let (_, decision) = runtime_policy::decide(ApiFamily::Locale, 0, 0, false, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {

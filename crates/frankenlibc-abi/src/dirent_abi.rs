@@ -4,11 +4,12 @@
 //! Parsing of raw kernel dirent buffers delegates to `frankenlibc_core::dirent`.
 
 use std::collections::HashMap;
-use std::ffi::{c_char, c_int, c_void};
+use std::ffi::{c_char, c_int};
 use std::sync::Mutex;
 
 use frankenlibc_core::dirent as dirent_core;
 use frankenlibc_core::errno;
+use frankenlibc_core::syscall;
 use frankenlibc_membrane::runtime_math::{ApiFamily, MembraneAction};
 
 use crate::runtime_policy;
@@ -50,7 +51,7 @@ const GETDENTS_BUF_SIZE: usize = 4096;
 // opendir
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn opendir(name: *const c_char) -> *mut DIR {
     let (mode, decision) = runtime_policy::decide(ApiFamily::IoFd, 0, 0, false, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -68,12 +69,21 @@ pub unsafe extern "C" fn opendir(name: *const c_char) -> *mut DIR {
         return std::ptr::null_mut();
     }
 
-    let fd = unsafe { libc::open(name, libc::O_RDONLY | libc::O_DIRECTORY | libc::O_CLOEXEC) };
-    if fd < 0 {
-        unsafe { set_abi_errno(errno::ENOENT) };
-        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 15, true);
-        return std::ptr::null_mut();
-    }
+    let fd = match unsafe {
+        syscall::sys_openat(
+            libc::AT_FDCWD,
+            name as *const u8,
+            libc::O_RDONLY | libc::O_DIRECTORY | libc::O_CLOEXEC,
+            0,
+        )
+    } {
+        Ok(fd) => fd,
+        Err(e) => {
+            unsafe { set_abi_errno(e) };
+            runtime_policy::observe(ApiFamily::IoFd, decision.profile, 15, true);
+            return std::ptr::null_mut();
+        }
+    };
 
     let handle = next_handle();
     let state = DirState {
@@ -99,7 +109,7 @@ pub unsafe extern "C" fn opendir(name: *const c_char) -> *mut DIR {
 /// POSIX `readdir` — returns a pointer to a static `dirent` struct.
 ///
 /// We use a thread-local buffer for the returned `dirent` to avoid lifetime issues.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn readdir(dirp: *mut DIR) -> *mut libc::dirent {
     thread_local! {
         static ENTRY_BUF: std::cell::UnsafeCell<libc::dirent> = const {
@@ -166,26 +176,23 @@ pub unsafe extern "C" fn readdir(dirp: *mut DIR) -> *mut libc::dirent {
     }
 
     // Refill buffer via SYS_getdents64
-    let nread = unsafe {
-        libc::syscall(
-            libc::SYS_getdents64,
-            state.fd,
-            state.buffer.as_mut_ptr() as *mut c_void,
-            state.buffer.len(),
-        )
+    let nread = match unsafe {
+        syscall::sys_getdents64(state.fd, state.buffer.as_mut_ptr(), state.buffer.len())
+    } {
+        Ok(n) => n,
+        Err(e) => {
+            unsafe { set_abi_errno(e) };
+            runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, true);
+            return std::ptr::null_mut();
+        }
     };
-
-    if nread < 0 {
-        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, true);
-        return std::ptr::null_mut();
-    }
     if nread == 0 {
         state.eof = true;
         runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, false);
         return std::ptr::null_mut();
     }
 
-    state.valid_bytes = nread as usize;
+    state.valid_bytes = nread;
     state.offset = 0;
 
     if let Some((entry, next_off)) =
@@ -217,7 +224,7 @@ pub unsafe extern "C" fn readdir(dirp: *mut DIR) -> *mut libc::dirent {
 // closedir
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn closedir(dirp: *mut DIR) -> c_int {
     let (mode, decision) =
         runtime_policy::decide(ApiFamily::IoFd, dirp as usize, 0, false, true, 0);
@@ -242,7 +249,13 @@ pub unsafe extern "C" fn closedir(dirp: *mut DIR) -> c_int {
 
     match state {
         Some(s) => {
-            let rc = unsafe { libc::close(s.fd) };
+            let rc = match syscall::sys_close(s.fd) {
+                Ok(()) => 0,
+                Err(e) => {
+                    unsafe { set_abi_errno(e) };
+                    -1
+                }
+            };
             let adverse = rc != 0;
             runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, adverse);
             rc

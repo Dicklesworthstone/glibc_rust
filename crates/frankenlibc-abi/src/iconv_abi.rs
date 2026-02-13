@@ -89,7 +89,7 @@ unsafe fn apply_progress(
 }
 
 /// `iconv_open(tocode, fromcode)` -> descriptor or `(iconv_t)-1` with errno.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn iconv_open(tocode: *const c_char, fromcode: *const c_char) -> *mut c_void {
     let (_, decision) = runtime_policy::decide(
         ApiFamily::Locale,
@@ -135,7 +135,7 @@ pub unsafe extern "C" fn iconv_open(tocode: *const c_char, fromcode: *const c_ch
 }
 
 /// `iconv(cd, inbuf, inbytesleft, outbuf, outbytesleft)` conversion entrypoint.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn iconv(
     cd: *mut c_void,
     inbuf: *mut *mut c_char,
@@ -277,7 +277,7 @@ pub unsafe extern "C" fn iconv(
 }
 
 /// `iconv_close(cd)` -> `0` on success, `-1` with errno on failure.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn iconv_close(cd: *mut c_void) -> c_int {
     let (_, decision) =
         runtime_policy::decide(ApiFamily::Locale, cd as usize, 0, false, cd.is_null(), 0);

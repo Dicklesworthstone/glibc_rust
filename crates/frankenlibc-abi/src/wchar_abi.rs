@@ -59,7 +59,7 @@ unsafe fn scan_w_string(ptr: *const u32, bound: Option<usize>) -> (usize, bool) 
 // wcslen
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn wcslen(s: *const u32) -> usize {
     if s.is_null() {
         return 0;
@@ -130,7 +130,7 @@ pub unsafe extern "C" fn wcslen(s: *const u32) -> usize {
 // wcscpy
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn wcscpy(dst: *mut u32, src: *const u32) -> *mut u32 {
     if dst.is_null() || src.is_null() {
         return dst;
@@ -222,7 +222,7 @@ pub unsafe extern "C" fn wcscpy(dst: *mut u32, src: *const u32) -> *mut u32 {
 // wcsncpy
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn wcsncpy(dst: *mut u32, src: *const u32, n: usize) -> *mut u32 {
     if dst.is_null() || src.is_null() || n == 0 {
         return dst;
@@ -305,7 +305,7 @@ pub unsafe extern "C" fn wcsncpy(dst: *mut u32, src: *const u32, n: usize) -> *m
 // wcscat
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn wcscat(dst: *mut u32, src: *const u32) -> *mut u32 {
     if dst.is_null() || src.is_null() {
         return dst;
@@ -409,7 +409,7 @@ pub unsafe extern "C" fn wcscat(dst: *mut u32, src: *const u32) -> *mut u32 {
 // wcscmp
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn wcscmp(s1: *const u32, s2: *const u32) -> c_int {
     if s1.is_null() || s2.is_null() {
         return 0;
@@ -485,7 +485,7 @@ pub unsafe extern "C" fn wcscmp(s1: *const u32, s2: *const u32) -> c_int {
 // wcsncmp
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn wcsncmp(s1: *const u32, s2: *const u32, n: usize) -> c_int {
     if s1.is_null() || s2.is_null() || n == 0 {
         return 0;
@@ -563,7 +563,7 @@ pub unsafe extern "C" fn wcsncmp(s1: *const u32, s2: *const u32, n: usize) -> c_
 // wcschr
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn wcschr(s: *const u32, c: u32) -> *mut u32 {
     if s.is_null() {
         return std::ptr::null_mut();
@@ -625,7 +625,7 @@ pub unsafe extern "C" fn wcschr(s: *const u32, c: u32) -> *mut u32 {
 // wcsrchr
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn wcsrchr(s: *const u32, c: u32) -> *mut u32 {
     if s.is_null() {
         return std::ptr::null_mut();
@@ -685,7 +685,7 @@ pub unsafe extern "C" fn wcsrchr(s: *const u32, c: u32) -> *mut u32 {
 // wcsstr
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn wcsstr(haystack: *const u32, needle: *const u32) -> *mut u32 {
     if haystack.is_null() {
         return std::ptr::null_mut();
@@ -775,7 +775,7 @@ pub unsafe extern "C" fn wcsstr(haystack: *const u32, needle: *const u32) -> *mu
 // wmemcpy
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn wmemcpy(dst: *mut u32, src: *const u32, n: usize) -> *mut u32 {
     if n == 0 {
         return dst;
@@ -847,7 +847,7 @@ pub unsafe extern "C" fn wmemcpy(dst: *mut u32, src: *const u32, n: usize) -> *m
 // wmemmove
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn wmemmove(dst: *mut u32, src: *const u32, n: usize) -> *mut u32 {
     if n == 0 {
         return dst;
@@ -912,7 +912,7 @@ pub unsafe extern "C" fn wmemmove(dst: *mut u32, src: *const u32, n: usize) -> *
 // wmemset
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn wmemset(dst: *mut u32, c: u32, n: usize) -> *mut u32 {
     if n == 0 {
         return dst;
@@ -974,7 +974,7 @@ pub unsafe extern "C" fn wmemset(dst: *mut u32, c: u32, n: usize) -> *mut u32 {
 // wmemcmp
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn wmemcmp(s1: *const u32, s2: *const u32, n: usize) -> c_int {
     if n == 0 {
         return 0;
@@ -1046,7 +1046,7 @@ pub unsafe extern "C" fn wmemcmp(s1: *const u32, s2: *const u32, n: usize) -> c_
 // wmemchr
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn wmemchr(s: *const u32, c: u32, n: usize) -> *mut u32 {
     if n == 0 || s.is_null() {
         return std::ptr::null_mut();

@@ -21,6 +21,33 @@ unsafe fn set_abi_errno(val: c_int) {
     unsafe { *p = val };
 }
 
+#[inline]
+fn last_host_errno(default_errno: c_int) -> c_int {
+    std::io::Error::last_os_error()
+        .raw_os_error()
+        .unwrap_or(default_errno)
+}
+
+#[inline]
+unsafe fn syscall_ret_int(ret: libc::c_long, default_errno: c_int) -> c_int {
+    if ret < 0 {
+        unsafe { set_abi_errno(last_host_errno(default_errno)) };
+        -1
+    } else {
+        ret as c_int
+    }
+}
+
+#[inline]
+unsafe fn syscall_ret_isize(ret: libc::c_long, default_errno: c_int) -> isize {
+    if ret < 0 {
+        unsafe { set_abi_errno(last_host_errno(default_errno)) };
+        -1
+    } else {
+        ret as isize
+    }
+}
+
 fn maybe_clamp_io_len(requested: usize, addr: usize, enable_repair: bool) -> (usize, bool) {
     if !enable_repair || requested == 0 || addr == 0 {
         return (requested, false);
@@ -66,7 +93,7 @@ pub(crate) unsafe fn sys_write_fd(fd: c_int, buf: *const c_void, count: usize) -
 /// # Safety
 ///
 /// `buf` must be valid for writes of up to `count` bytes.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn read(fd: c_int, buf: *mut c_void, count: usize) -> libc::ssize_t {
     if buf.is_null() && count > 0 {
         return -1;
@@ -111,7 +138,7 @@ pub unsafe extern "C" fn read(fd: c_int, buf: *mut c_void, count: usize) -> libc
 /// # Safety
 ///
 /// `buf` must be valid for reads of up to `count` bytes.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn write(fd: c_int, buf: *const c_void, count: usize) -> libc::ssize_t {
     if buf.is_null() && count > 0 {
         return -1;
@@ -156,7 +183,7 @@ pub unsafe extern "C" fn write(fd: c_int, buf: *const c_void, count: usize) -> l
 /// # Safety
 ///
 /// `fd` should be a live file descriptor owned by the caller process.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn close(fd: c_int) -> c_int {
     let (_, decision) = runtime_policy::decide(ApiFamily::Stdio, fd as usize, 0, true, false, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -179,7 +206,7 @@ pub unsafe extern "C" fn close(fd: c_int) -> c_int {
 /// # Safety
 ///
 /// C ABI entrypoint; no additional safety preconditions.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn getpid() -> libc::pid_t {
     let (_, decision) = runtime_policy::decide(ApiFamily::Stdio, 0, 0, false, false, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -196,7 +223,7 @@ pub unsafe extern "C" fn getpid() -> libc::pid_t {
 /// # Safety
 ///
 /// `fd` should be a file descriptor that may refer to a terminal device.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn isatty(fd: c_int) -> c_int {
     let (_, decision) = runtime_policy::decide(ApiFamily::Stdio, fd as usize, 0, false, false, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -216,7 +243,7 @@ pub unsafe extern "C" fn isatty(fd: c_int) -> c_int {
 // lseek
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn lseek(fd: c_int, offset: i64, whence: c_int) -> i64 {
     let (mode, decision) = runtime_policy::decide(ApiFamily::IoFd, fd as usize, 0, false, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -261,7 +288,7 @@ pub unsafe extern "C" fn lseek(fd: c_int, offset: i64, whence: c_int) -> i64 {
 // stat / fstat / lstat
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn stat(path: *const c_char, buf: *mut libc::stat) -> c_int {
     let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, path as usize, 0, false, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -275,12 +302,17 @@ pub unsafe extern "C" fn stat(path: *const c_char, buf: *mut libc::stat) -> c_in
         return -1;
     }
 
-    let rc = unsafe { libc::stat(path, buf) };
+    let rc = unsafe {
+        syscall_ret_int(
+            libc::syscall(libc::SYS_newfstatat, libc::AT_FDCWD, path, buf, 0),
+            errno::ENOENT,
+        )
+    };
     runtime_policy::observe(ApiFamily::IoFd, decision.profile, 15, rc != 0);
     rc
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn fstat(fd: c_int, buf: *mut libc::stat) -> c_int {
     let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, fd as usize, 0, false, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -294,12 +326,12 @@ pub unsafe extern "C" fn fstat(fd: c_int, buf: *mut libc::stat) -> c_int {
         return -1;
     }
 
-    let rc = unsafe { libc::fstat(fd, buf) };
+    let rc = unsafe { syscall_ret_int(libc::syscall(libc::SYS_fstat, fd, buf), errno::EBADF) };
     runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, rc != 0);
     rc
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn lstat(path: *const c_char, buf: *mut libc::stat) -> c_int {
     let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, path as usize, 0, false, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -313,7 +345,18 @@ pub unsafe extern "C" fn lstat(path: *const c_char, buf: *mut libc::stat) -> c_i
         return -1;
     }
 
-    let rc = unsafe { libc::lstat(path, buf) };
+    let rc = unsafe {
+        syscall_ret_int(
+            libc::syscall(
+                libc::SYS_newfstatat,
+                libc::AT_FDCWD,
+                path,
+                buf,
+                libc::AT_SYMLINK_NOFOLLOW,
+            ),
+            errno::ENOENT,
+        )
+    };
     runtime_policy::observe(ApiFamily::IoFd, decision.profile, 15, rc != 0);
     rc
 }
@@ -322,7 +365,7 @@ pub unsafe extern "C" fn lstat(path: *const c_char, buf: *mut libc::stat) -> c_i
 // access
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn access(path: *const c_char, amode: c_int) -> c_int {
     let (mode, decision) =
         runtime_policy::decide(ApiFamily::IoFd, path as usize, 0, false, true, 0);
@@ -340,7 +383,18 @@ pub unsafe extern "C" fn access(path: *const c_char, amode: c_int) -> c_int {
     if !unistd_core::valid_access_mode(amode) {
         if mode.heals_enabled() {
             // default to F_OK (existence check) in hardened mode
-            let rc = unsafe { libc::access(path, unistd_core::F_OK) };
+            let rc = unsafe {
+                syscall_ret_int(
+                    libc::syscall(
+                        libc::SYS_faccessat,
+                        libc::AT_FDCWD,
+                        path,
+                        unistd_core::F_OK,
+                        0,
+                    ),
+                    errno::EACCES,
+                )
+            };
             runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, rc != 0);
             return rc;
         }
@@ -349,7 +403,12 @@ pub unsafe extern "C" fn access(path: *const c_char, amode: c_int) -> c_int {
         return -1;
     }
 
-    let rc = unsafe { libc::access(path, amode) };
+    let rc = unsafe {
+        syscall_ret_int(
+            libc::syscall(libc::SYS_faccessat, libc::AT_FDCWD, path, amode, 0),
+            errno::EACCES,
+        )
+    };
     runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, rc != 0);
     rc
 }
@@ -358,7 +417,7 @@ pub unsafe extern "C" fn access(path: *const c_char, amode: c_int) -> c_int {
 // getcwd
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn getcwd(buf: *mut c_char, size: usize) -> *mut c_char {
     let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, buf as usize, size, true, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -372,17 +431,21 @@ pub unsafe extern "C" fn getcwd(buf: *mut c_char, size: usize) -> *mut c_char {
         return std::ptr::null_mut();
     }
 
-    let rc = unsafe { libc::getcwd(buf, size) };
-    let adverse = rc.is_null();
-    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 15, adverse);
-    rc
+    let rc = unsafe { libc::syscall(libc::SYS_getcwd, buf, size) };
+    if rc < 0 {
+        unsafe { set_abi_errno(last_host_errno(errno::EINVAL)) };
+        runtime_policy::observe(ApiFamily::IoFd, decision.profile, 15, true);
+        return std::ptr::null_mut();
+    }
+    runtime_policy::observe(ApiFamily::IoFd, decision.profile, 15, false);
+    buf
 }
 
 // ---------------------------------------------------------------------------
 // chdir / fchdir
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn chdir(path: *const c_char) -> c_int {
     let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, path as usize, 0, false, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -396,19 +459,19 @@ pub unsafe extern "C" fn chdir(path: *const c_char) -> c_int {
         return -1;
     }
 
-    let rc = unsafe { libc::chdir(path) };
+    let rc = unsafe { syscall_ret_int(libc::syscall(libc::SYS_chdir, path), errno::ENOENT) };
     runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, rc != 0);
     rc
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn fchdir(fd: c_int) -> c_int {
     let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, fd as usize, 0, false, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {
         runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
         return -1;
     }
-    let rc = unsafe { libc::fchdir(fd) };
+    let rc = unsafe { syscall_ret_int(libc::syscall(libc::SYS_fchdir, fd), errno::EBADF) };
     runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, rc != 0);
     rc
 }
@@ -417,36 +480,66 @@ pub unsafe extern "C" fn fchdir(fd: c_int) -> c_int {
 // Process identity: getppid, getuid, geteuid, getgid, getegid
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn getppid() -> libc::pid_t {
-    unsafe { libc::getppid() }
+    let rc = unsafe { libc::syscall(libc::SYS_getppid) };
+    if rc < 0 {
+        unsafe { set_abi_errno(last_host_errno(errno::EINVAL)) };
+        -1
+    } else {
+        rc as libc::pid_t
+    }
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn getuid() -> libc::uid_t {
-    unsafe { libc::getuid() }
+    let rc = unsafe { libc::syscall(libc::SYS_getuid) };
+    if rc < 0 {
+        unsafe { set_abi_errno(last_host_errno(errno::EINVAL)) };
+        libc::uid_t::MAX
+    } else {
+        rc as libc::uid_t
+    }
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn geteuid() -> libc::uid_t {
-    unsafe { libc::geteuid() }
+    let rc = unsafe { libc::syscall(libc::SYS_geteuid) };
+    if rc < 0 {
+        unsafe { set_abi_errno(last_host_errno(errno::EINVAL)) };
+        libc::uid_t::MAX
+    } else {
+        rc as libc::uid_t
+    }
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn getgid() -> libc::gid_t {
-    unsafe { libc::getgid() }
+    let rc = unsafe { libc::syscall(libc::SYS_getgid) };
+    if rc < 0 {
+        unsafe { set_abi_errno(last_host_errno(errno::EINVAL)) };
+        libc::gid_t::MAX
+    } else {
+        rc as libc::gid_t
+    }
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn getegid() -> libc::gid_t {
-    unsafe { libc::getegid() }
+    let rc = unsafe { libc::syscall(libc::SYS_getegid) };
+    if rc < 0 {
+        unsafe { set_abi_errno(last_host_errno(errno::EINVAL)) };
+        libc::gid_t::MAX
+    } else {
+        rc as libc::gid_t
+    }
 }
 
 // ---------------------------------------------------------------------------
 // Link operations: unlink, rmdir, link, symlink, readlink
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn unlink(path: *const c_char) -> c_int {
     let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, path as usize, 0, true, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -458,12 +551,17 @@ pub unsafe extern "C" fn unlink(path: *const c_char) -> c_int {
         runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
         return -1;
     }
-    let rc = unsafe { libc::unlink(path) };
+    let rc = unsafe {
+        syscall_ret_int(
+            libc::syscall(libc::SYS_unlinkat, libc::AT_FDCWD, path, 0),
+            errno::ENOENT,
+        )
+    };
     runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, rc != 0);
     rc
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn rmdir(path: *const c_char) -> c_int {
     let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, path as usize, 0, true, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -475,12 +573,17 @@ pub unsafe extern "C" fn rmdir(path: *const c_char) -> c_int {
         runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
         return -1;
     }
-    let rc = unsafe { libc::rmdir(path) };
+    let rc = unsafe {
+        syscall_ret_int(
+            libc::syscall(libc::SYS_unlinkat, libc::AT_FDCWD, path, libc::AT_REMOVEDIR),
+            errno::ENOENT,
+        )
+    };
     runtime_policy::observe(ApiFamily::IoFd, decision.profile, 10, rc != 0);
     rc
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn link(oldpath: *const c_char, newpath: *const c_char) -> c_int {
     let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, oldpath as usize, 0, true, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -492,12 +595,24 @@ pub unsafe extern "C" fn link(oldpath: *const c_char, newpath: *const c_char) ->
         runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
         return -1;
     }
-    let rc = unsafe { libc::link(oldpath, newpath) };
+    let rc = unsafe {
+        syscall_ret_int(
+            libc::syscall(
+                libc::SYS_linkat,
+                libc::AT_FDCWD,
+                oldpath,
+                libc::AT_FDCWD,
+                newpath,
+                0,
+            ),
+            errno::ENOENT,
+        )
+    };
     runtime_policy::observe(ApiFamily::IoFd, decision.profile, 12, rc != 0);
     rc
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn symlink(target: *const c_char, linkpath: *const c_char) -> c_int {
     let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, target as usize, 0, true, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -509,12 +624,17 @@ pub unsafe extern "C" fn symlink(target: *const c_char, linkpath: *const c_char)
         runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
         return -1;
     }
-    let rc = unsafe { libc::symlink(target, linkpath) };
+    let rc = unsafe {
+        syscall_ret_int(
+            libc::syscall(libc::SYS_symlinkat, target, libc::AT_FDCWD, linkpath),
+            errno::ENOENT,
+        )
+    };
     runtime_policy::observe(ApiFamily::IoFd, decision.profile, 12, rc != 0);
     rc
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn readlink(path: *const c_char, buf: *mut c_char, bufsiz: usize) -> isize {
     let (_, decision) =
         runtime_policy::decide(ApiFamily::IoFd, path as usize, bufsiz, false, true, 0);
@@ -527,7 +647,12 @@ pub unsafe extern "C" fn readlink(path: *const c_char, buf: *mut c_char, bufsiz:
         runtime_policy::observe(ApiFamily::IoFd, decision.profile, 5, true);
         return -1;
     }
-    let rc = unsafe { libc::readlink(path, buf, bufsiz) };
+    let rc = unsafe {
+        syscall_ret_isize(
+            libc::syscall(libc::SYS_readlinkat, libc::AT_FDCWD, path, buf, bufsiz),
+            errno::ENOENT,
+        )
+    };
     let adverse = rc < 0;
     runtime_policy::observe(ApiFamily::IoFd, decision.profile, 12, adverse);
     rc
@@ -537,7 +662,7 @@ pub unsafe extern "C" fn readlink(path: *const c_char, buf: *mut c_char, bufsiz:
 // Sync: fsync, fdatasync
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn fsync(fd: c_int) -> c_int {
     let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, fd as usize, 0, true, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -555,7 +680,7 @@ pub unsafe extern "C" fn fsync(fd: c_int) -> c_int {
     rc
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn fdatasync(fd: c_int) -> c_int {
     let (_, decision) = runtime_policy::decide(ApiFamily::IoFd, fd as usize, 0, true, true, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -577,12 +702,48 @@ pub unsafe extern "C" fn fdatasync(fd: c_int) -> c_int {
 // sleep / usleep
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn sleep(seconds: u32) -> u32 {
-    unsafe { libc::sleep(seconds) }
+    let req = libc::timespec {
+        tv_sec: seconds as libc::time_t,
+        tv_nsec: 0,
+    };
+    let mut rem = libc::timespec {
+        tv_sec: 0,
+        tv_nsec: 0,
+    };
+    let rc = unsafe { libc::syscall(libc::SYS_nanosleep, &req, &mut rem) };
+    if rc < 0 {
+        let e = last_host_errno(errno::EINTR);
+        unsafe { set_abi_errno(e) };
+        if e == errno::EINTR {
+            let mut remaining = rem.tv_sec.max(0) as u32;
+            if rem.tv_nsec > 0 {
+                remaining = remaining.saturating_add(1);
+            }
+            remaining
+        } else {
+            seconds
+        }
+    } else {
+        0
+    }
 }
 
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn usleep(usec: u32) -> c_int {
-    unsafe { libc::usleep(usec) }
+    let req = libc::timespec {
+        tv_sec: (usec / 1_000_000) as libc::time_t,
+        tv_nsec: ((usec % 1_000_000) * 1_000) as libc::c_long,
+    };
+    unsafe {
+        syscall_ret_int(
+            libc::syscall(
+                libc::SYS_nanosleep,
+                &req,
+                std::ptr::null_mut::<libc::timespec>(),
+            ),
+            errno::EINVAL,
+        )
+    }
 }

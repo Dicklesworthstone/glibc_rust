@@ -118,7 +118,7 @@ fn do_getgrgid(gid: u32) -> *mut libc::group {
 }
 
 /// POSIX `getgrnam` — look up group entry by name.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn getgrnam(name: *const c_char) -> *mut libc::group {
     if name.is_null() {
         return ptr::null_mut();
@@ -139,7 +139,7 @@ pub unsafe extern "C" fn getgrnam(name: *const c_char) -> *mut libc::group {
 }
 
 /// POSIX `getgrgid` — look up group entry by group ID.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn getgrgid(gid: libc::gid_t) -> *mut libc::group {
     let (_, decision) = runtime_policy::decide(ApiFamily::Resolver, 0, 0, false, false, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -153,7 +153,7 @@ pub unsafe extern "C" fn getgrgid(gid: libc::gid_t) -> *mut libc::group {
 }
 
 /// POSIX `setgrent` — rewind the group iteration cursor.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn setgrent() {
     GRP_TLS.with(|cell| {
         let mut storage = cell.borrow_mut();
@@ -165,7 +165,7 @@ pub unsafe extern "C" fn setgrent() {
 }
 
 /// POSIX `endgrent` — close group enumeration and free cached data.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn endgrent() {
     GRP_TLS.with(|cell| {
         let mut storage = cell.borrow_mut();
@@ -176,7 +176,7 @@ pub unsafe extern "C" fn endgrent() {
 }
 
 /// POSIX `getgrent` — return the next group entry in iteration order.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn getgrent() -> *mut libc::group {
     GRP_TLS.with(|cell| {
         let mut storage = cell.borrow_mut();
@@ -197,7 +197,7 @@ pub unsafe extern "C" fn getgrent() -> *mut libc::group {
 }
 
 /// POSIX `getgrnam_r` — reentrant version of `getgrnam`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn getgrnam_r(
     name: *const c_char,
     grp: *mut libc::group,
@@ -236,7 +236,7 @@ pub unsafe extern "C" fn getgrnam_r(
 }
 
 /// POSIX `getgrgid_r` — reentrant version of `getgrgid`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn getgrgid_r(
     gid: libc::gid_t,
     grp: *mut libc::group,

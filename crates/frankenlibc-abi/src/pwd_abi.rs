@@ -115,7 +115,7 @@ fn do_getpwuid(uid: u32) -> *mut libc::passwd {
 }
 
 /// POSIX `getpwnam` — look up passwd entry by username.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn getpwnam(name: *const c_char) -> *mut libc::passwd {
     if name.is_null() {
         return ptr::null_mut();
@@ -136,7 +136,7 @@ pub unsafe extern "C" fn getpwnam(name: *const c_char) -> *mut libc::passwd {
 }
 
 /// POSIX `getpwuid` — look up passwd entry by user ID.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn getpwuid(uid: libc::uid_t) -> *mut libc::passwd {
     let (_, decision) = runtime_policy::decide(ApiFamily::Resolver, 0, 0, false, false, 0);
     if matches!(decision.action, MembraneAction::Deny) {
@@ -150,7 +150,7 @@ pub unsafe extern "C" fn getpwuid(uid: libc::uid_t) -> *mut libc::passwd {
 }
 
 /// POSIX `setpwent` — rewind the passwd iteration cursor.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn setpwent() {
     PWD_TLS.with(|cell| {
         let mut storage = cell.borrow_mut();
@@ -162,7 +162,7 @@ pub unsafe extern "C" fn setpwent() {
 }
 
 /// POSIX `endpwent` — close the passwd enumeration and free cached data.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn endpwent() {
     PWD_TLS.with(|cell| {
         let mut storage = cell.borrow_mut();
@@ -173,7 +173,7 @@ pub unsafe extern "C" fn endpwent() {
 }
 
 /// POSIX `getpwent` — return the next passwd entry in iteration order.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn getpwent() -> *mut libc::passwd {
     PWD_TLS.with(|cell| {
         let mut storage = cell.borrow_mut();
@@ -198,7 +198,7 @@ pub unsafe extern "C" fn getpwent() -> *mut libc::passwd {
 ///
 /// Writes the result into caller-supplied `pwd` and `buf`, storing a pointer
 /// to the result in `*result` on success.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn getpwnam_r(
     name: *const c_char,
     pwd: *mut libc::passwd,
@@ -239,7 +239,7 @@ pub unsafe extern "C" fn getpwnam_r(
 }
 
 /// POSIX `getpwuid_r` — reentrant version of `getpwuid`.
-#[unsafe(no_mangle)]
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn getpwuid_r(
     uid: libc::uid_t,
     pwd: *mut libc::passwd,
