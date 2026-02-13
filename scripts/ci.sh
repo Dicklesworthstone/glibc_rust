@@ -115,6 +115,11 @@ if [[ "${FRANKENLIBC_EXTENDED_GATES:-0}" == "1" ]]; then
     echo "PASS"
     echo ""
 
+    echo "--- support matrix maintenance/classification gate ---"
+    scripts/check_support_matrix_maintenance.sh
+    echo "PASS"
+    echo ""
+
     echo "--- hard-parts docs/parity/support/reality truth drift check ---"
     scripts/check_hard_parts_truth.sh
     echo "PASS"

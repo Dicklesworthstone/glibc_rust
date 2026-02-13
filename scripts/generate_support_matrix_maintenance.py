@@ -16,6 +16,7 @@ import json
 import os
 import re
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -23,6 +24,7 @@ REPO_ROOT = SCRIPT_DIR.parent
 MATRIX_PATH = REPO_ROOT / "support_matrix.json"
 ABI_SRC = REPO_ROOT / "crates" / "frankenlibc-abi" / "src"
 FIXTURE_DIR = REPO_ROOT / "tests" / "conformance" / "fixtures"
+CONFORMANCE_MATRIX_PATH = REPO_ROOT / "tests" / "conformance" / "conformance_matrix.v1.json"
 
 # Patterns indicating host glibc calls
 LIBC_CALL_PATTERN = re.compile(r'\blibc::(\w+)\b')
@@ -72,6 +74,64 @@ def load_fixtures():
                     fixture_map.setdefault(func, []).append(entry)
 
     return fixture_map
+
+
+def load_previous_report(path: Path):
+    """Best-effort load of previous report for trend/comparison checks."""
+    if not path.is_file():
+        return None
+    try:
+        with path.open(encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, dict):
+            return None
+        return data
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def load_conformance_matrix(path: Path):
+    """Load symbol/mode conformance status map from conformance matrix artifact."""
+    if not path.is_file():
+        return {}
+    try:
+        with path.open(encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+    out = {}
+    for row in data.get("symbol_matrix", []):
+        symbol = str(row.get("symbol", ""))
+        mode = str(row.get("mode", ""))
+        if not symbol or not mode:
+            continue
+        out.setdefault(symbol, {})[mode] = {
+            "total": int(row.get("total", 0)),
+            "passed": int(row.get("passed", 0)),
+            "failed": int(row.get("failed", 0)),
+            "errors": int(row.get("errors", 0)),
+            "pass_rate_percent": float(row.get("pass_rate_percent", 0.0)),
+        }
+    return out
+
+
+def conformance_mode_passed(mode_entry):
+    """True when a conformance-mode row has non-zero coverage and zero failures/errors."""
+    if not isinstance(mode_entry, dict):
+        return False
+    return (
+        int(mode_entry.get("total", 0)) > 0
+        and int(mode_entry.get("failed", 0)) == 0
+        and int(mode_entry.get("errors", 0)) == 0
+    )
+
+
+def count_statuses_from_map(status_map):
+    counts = {}
+    for status in status_map.values():
+        counts[status] = counts.get(status, 0) + 1
+    return counts
 
 
 def read_module_source(module_name):
@@ -298,12 +358,25 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(description="Support matrix maintenance validator")
     parser.add_argument("--output", "-o", help="Output file (default: stdout)")
+    parser.add_argument(
+        "--previous-report",
+        default=str(REPO_ROOT / "tests" / "conformance" / "support_matrix_maintenance_report.v1.json"),
+        help="Path to previous maintenance report used for trend/reclassification checks",
+    )
+    parser.add_argument(
+        "--conformance-matrix",
+        default=str(CONFORMANCE_MATRIX_PATH),
+        help="Path to conformance_matrix artifact used for reclassification evidence checks",
+    )
     parser.add_argument("--self-test", action="store_true", help="Run self-test")
     args = parser.parse_args()
 
     if args.self_test:
         run_self_test()
         return
+
+    previous_report = load_previous_report(Path(args.previous_report))
+    conformance_by_symbol = load_conformance_matrix(Path(args.conformance_matrix))
 
     matrix = load_matrix()
     symbols = matrix.get("symbols", [])
@@ -314,7 +387,6 @@ def main():
 
     status_results = []
     linkage_results = []
-    errors = 0
     warnings = 0
 
     # --- Pass 1: Status Validation ---
@@ -386,11 +458,17 @@ def main():
     by_status = {}
     by_module = {}
     by_status_linked = {}
+    symbol_status_map = {}
+    linkage_by_symbol = {}
 
     for i, entry in enumerate(symbols):
-        st = entry.get("status", "unknown")
+        sym = str(entry.get("symbol", ""))
+        st = str(entry.get("status", "unknown"))
         module = entry.get("module", "unknown")
         has_fix = linkage_results[i]["has_fixture"]
+
+        symbol_status_map[sym] = st
+        linkage_by_symbol[sym] = linkage_results[i]
 
         by_status[st] = by_status.get(st, 0) + 1
         by_module.setdefault(module, {"total": 0, "linked": 0})
@@ -399,18 +477,124 @@ def main():
             by_module[module]["linked"] += 1
             by_status_linked[st] = by_status_linked.get(st, 0) + 1
 
-    coverage_pct = (linked / len(symbols) * 100) if symbols else 0
-    status_valid_pct = (status_valid / len(symbols) * 100) if symbols else 0
+    total_symbols = len(symbols)
+    coverage_pct = (linked / total_symbols * 100) if total_symbols else 0.0
+    status_valid_pct = (status_valid / total_symbols * 100) if total_symbols else 0.0
+
+    implemented_count = by_status.get("Implemented", 0)
+    raw_syscall_count = by_status.get("RawSyscall", 0)
+    callthrough_count = by_status.get("GlibcCallThrough", 0)
+    stub_count = by_status.get("Stub", 0)
+    native_count = implemented_count + raw_syscall_count
+    native_coverage_pct = (native_count / total_symbols * 100.0) if total_symbols else 0.0
+
+    previous_symbol_status_map = {}
+    previous_status_counts = {}
+    previous_native_coverage_pct = None
+    previous_stub_count = stub_count
+    baseline_loaded = False
+    baseline_symbol_map_loaded = False
+
+    if isinstance(previous_report, dict):
+        baseline_loaded = True
+        previous_symbol_status_map = previous_report.get("symbol_status_map", {})
+        if not isinstance(previous_symbol_status_map, dict):
+            previous_symbol_status_map = {}
+        baseline_symbol_map_loaded = bool(previous_symbol_status_map)
+
+        previous_status_counts = previous_report.get("coverage_dashboard", {}).get("status_counts", {})
+        if not isinstance(previous_status_counts, dict):
+            previous_status_counts = {}
+        if not previous_status_counts:
+            previous_status_distribution = previous_report.get("status_distribution", {})
+            if isinstance(previous_status_distribution, dict):
+                for status_name, info in previous_status_distribution.items():
+                    if isinstance(info, dict):
+                        previous_status_counts[status_name] = int(info.get("count", 0))
+        if not previous_status_counts and previous_symbol_status_map:
+            previous_status_counts = count_statuses_from_map(previous_symbol_status_map)
+
+        prev_native = previous_report.get("coverage_dashboard", {}).get("native_coverage_pct")
+        try:
+            previous_native_coverage_pct = float(prev_native) if prev_native is not None else None
+        except (TypeError, ValueError):
+            previous_native_coverage_pct = None
+
+        try:
+            previous_stub_count = int(previous_status_counts.get("Stub", previous_stub_count))
+        except (TypeError, ValueError):
+            previous_stub_count = stub_count
+
+    # Symbol reclassification analysis
+    reclassified_symbols = []
+    if baseline_symbol_map_loaded:
+        for symbol in sorted(set(previous_symbol_status_map.keys()) & set(symbol_status_map.keys())):
+            previous_status = previous_symbol_status_map.get(symbol)
+            current_status = symbol_status_map.get(symbol)
+            if previous_status == current_status:
+                continue
+
+            linkage = linkage_by_symbol.get(symbol, {})
+            strict_fixture = int(linkage.get("strict_count", 0)) > 0
+            hardened_fixture = int(linkage.get("hardened_count", 0)) > 0
+
+            mode_rows = conformance_by_symbol.get(symbol, {})
+            strict_row = mode_rows.get("strict")
+            hardened_row = mode_rows.get("hardened")
+            strict_pass = conformance_mode_passed(strict_row)
+            hardened_pass = conformance_mode_passed(hardened_row)
+
+            missing_evidence = []
+            if not strict_fixture:
+                missing_evidence.append("missing_strict_fixture")
+            if not hardened_fixture:
+                missing_evidence.append("missing_hardened_fixture")
+            if not strict_pass:
+                missing_evidence.append("strict_conformance_not_passing")
+            if not hardened_pass:
+                missing_evidence.append("hardened_conformance_not_passing")
+
+            reclassified_symbols.append({
+                "symbol": symbol,
+                "previous_status": previous_status,
+                "current_status": current_status,
+                "strict_fixture_count": int(linkage.get("strict_count", 0)),
+                "hardened_fixture_count": int(linkage.get("hardened_count", 0)),
+                "strict_conformance": strict_row,
+                "hardened_conformance": hardened_row,
+                "conformance_evidence_passed": len(missing_evidence) == 0,
+                "missing_evidence": missing_evidence,
+            })
+
+    reclassification_violations = [
+        row for row in reclassified_symbols if not row["conformance_evidence_passed"]
+    ]
+
+    status_count_delta = {}
+    for status_name in sorted(set(by_status.keys()) | set(previous_status_counts.keys())):
+        status_count_delta[status_name] = int(by_status.get(status_name, 0)) - int(
+            previous_status_counts.get(status_name, 0)
+        )
+
+    if baseline_symbol_map_loaded:
+        new_symbols = sorted(set(symbol_status_map.keys()) - set(previous_symbol_status_map.keys()))
+        removed_symbols = sorted(set(previous_symbol_status_map.keys()) - set(symbol_status_map.keys()))
+    else:
+        new_symbols = []
+        removed_symbols = []
+
+    no_new_stub_symbols = stub_count <= previous_stub_count
+    native_delta = None
+    if previous_native_coverage_pct is not None:
+        native_delta = round(native_coverage_pct - previous_native_coverage_pct, 2)
 
     # Build report
     report = {
         "schema_version": "v1",
         "bead": "bd-3g4p",
-        "generated_at": __import__("datetime").datetime.now(
-            __import__("datetime").timezone.utc
-        ).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "summary": {
-            "total_symbols": len(symbols),
+            "total_symbols": total_symbols,
             "status_validated": status_valid,
             "status_invalid": status_invalid,
             "status_skipped": status_skipped,
@@ -419,6 +603,48 @@ def main():
             "fixture_unlinked": unlinked,
             "fixture_coverage_pct": round(coverage_pct, 1),
             "total_warnings": warnings,
+        },
+        "coverage_dashboard": {
+            "total_symbols": total_symbols,
+            "status_counts": {
+                "Implemented": implemented_count,
+                "RawSyscall": raw_syscall_count,
+                "GlibcCallThrough": callthrough_count,
+                "Stub": stub_count,
+            },
+            "status_share_pct": {
+                "Implemented": round((implemented_count / total_symbols * 100.0), 1) if total_symbols else 0.0,
+                "RawSyscall": round((raw_syscall_count / total_symbols * 100.0), 1) if total_symbols else 0.0,
+                "GlibcCallThrough": round((callthrough_count / total_symbols * 100.0), 1) if total_symbols else 0.0,
+                "Stub": round((stub_count / total_symbols * 100.0), 1) if total_symbols else 0.0,
+            },
+            "native_coverage_pct": round(native_coverage_pct, 1),
+        },
+        "trend": {
+            "baseline_report_path": str(Path(args.previous_report)),
+            "baseline_loaded": baseline_loaded,
+            "baseline_symbol_map_loaded": baseline_symbol_map_loaded,
+            "status_count_delta": status_count_delta,
+            "native_coverage_pct_delta": native_delta,
+            "reclassified_symbol_count": len(reclassified_symbols),
+            "new_symbol_count": len(new_symbols),
+            "removed_symbol_count": len(removed_symbols),
+            "new_symbols": new_symbols,
+            "removed_symbols": removed_symbols,
+        },
+        "policy_checks": {
+            "no_new_stub_symbols": {
+                "status": "pass" if no_new_stub_symbols else "fail",
+                "previous_stub_count": previous_stub_count,
+                "current_stub_count": stub_count,
+                "delta": stub_count - previous_stub_count,
+            },
+            "reclassification_requires_conformance": {
+                "status": "pass" if not reclassification_violations else "fail",
+                "baseline_symbol_map_loaded": baseline_symbol_map_loaded,
+                "total_reclassified": len(reclassified_symbols),
+                "violations": reclassification_violations,
+            },
         },
         "status_distribution": {
             st: {
@@ -437,6 +663,8 @@ def main():
             }
             for mod_name, info in sorted(by_module.items())
         },
+        "symbol_status_map": dict(sorted(symbol_status_map.items())),
+        "reclassified_symbols": reclassified_symbols,
         "status_validation_issues": [
             r for r in status_results if r.get("findings")
         ],
@@ -450,11 +678,21 @@ def main():
     if args.output:
         Path(args.output).write_text(output, encoding="utf-8")
         # Print summary to stderr
-        print(f"Total symbols: {len(symbols)}", file=sys.stderr)
-        print(f"Status valid: {status_valid}/{len(symbols)} ({status_valid_pct:.1f}%)",
+        print(f"Total symbols: {total_symbols}", file=sys.stderr)
+        print(f"Status valid: {status_valid}/{total_symbols} ({status_valid_pct:.1f}%)",
               file=sys.stderr)
-        print(f"Fixture linked: {linked}/{len(symbols)} ({coverage_pct:.1f}%)",
+        print(f"Fixture linked: {linked}/{total_symbols} ({coverage_pct:.1f}%)",
               file=sys.stderr)
+        print(
+            f"Stub guard: previous={previous_stub_count} current={stub_count} "
+            f"({report['policy_checks']['no_new_stub_symbols']['status']})",
+            file=sys.stderr,
+        )
+        print(
+            f"Reclassification evidence: {len(reclassified_symbols)} changed, "
+            f"violations={len(reclassification_violations)}",
+            file=sys.stderr,
+        )
         print(f"Warnings: {warnings}", file=sys.stderr)
         print(f"Report written to {args.output}", file=sys.stderr)
     else:

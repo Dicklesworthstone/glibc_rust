@@ -19,13 +19,12 @@
         "test_gate": "cargo test --workspace passes"
       },
       "current_state": {
-        "implemented_pct": 57,
+        "implemented_pct": 59,
         "raw_syscall_pct": 33,
-        "callthrough_pct": 10,
+        "callthrough_pct": 8,
         "stub_pct": 0,
         "callthrough_modules": [
           "dlfcn_abi",
-          "pthread_abi",
           "stdio_abi"
         ],
         "stub_modules": []
@@ -59,8 +58,8 @@
     {
       "level": "L2",
       "name": "Partial Replacement",
-      "description": "Standalone for core subsystems. stdio/pthread still delegate to host glibc but all other modules use raw syscalls or native Rust. Suitable for containers and minimal environments.",
-      "deployment": "Direct link or LD_PRELOAD (host glibc for stdio/pthread only)",
+      "description": "Standalone for core subsystems. stdio/dlfcn still delegate to host glibc but all other modules use raw syscalls or native Rust. Suitable for containers and minimal environments.",
+      "deployment": "Direct link or LD_PRELOAD (host glibc for stdio/dlfcn only)",
       "host_glibc_required": true,
       "gate_criteria": {
         "max_callthrough_pct": 15,
@@ -107,7 +106,6 @@
         ]
       },
       "blockers": [
-        "pthread_abi: 5 call-throughs need futex-based implementation (bd-z84, bd-yos)",
         "stdio_abi: 16 call-throughs need native implementation",
         "CRT bootstrap (bd-qwm) not started",
         "rtld (bd-3rn) not started",
@@ -120,17 +118,16 @@
   "current_level": "L0",
   "current_assessment": {
     "total_symbols": 250,
-    "implemented": 142,
+    "implemented": 147,
     "raw_syscall": 83,
-    "callthrough": 25,
+    "callthrough": 20,
     "stub": 0,
-    "implemented_pct": 57,
+    "implemented_pct": 59,
     "raw_syscall_pct": 33,
-    "callthrough_pct": 10,
+    "callthrough_pct": 8,
     "stub_pct": 0,
     "callthrough_breakdown": {
       "dlfcn_abi": 4,
-      "pthread_abi": 5,
       "stdio_abi": 16
     },
     "stub_breakdown": {}
@@ -160,7 +157,6 @@
       "Replacement profile guard passes with only stdio/pthread exceptions"
     ],
     "L2_to_L3": [
-      "Implement futex-based pthread (5 symbols)",
       "Implement native stdio (16 symbols)",
       "Build custom CRT bootstrap",
       "Build minimal rtld",

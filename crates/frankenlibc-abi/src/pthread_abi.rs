@@ -35,6 +35,7 @@ static MUTEX_SPIN_BRANCHES: AtomicU64 = AtomicU64::new(0);
 static MUTEX_WAIT_BRANCHES: AtomicU64 = AtomicU64::new(0);
 static MUTEX_WAKE_BRANCHES: AtomicU64 = AtomicU64::new(0);
 const MANAGED_MUTEX_MAGIC: u32 = 0x474d_5854; // "GMXT"
+const MANAGED_RWLOCK_MAGIC: u32 = 0x4752_5758; // "GRWX"
 static THREAD_HANDLE_REGISTRY: LazyLock<Mutex<HashMap<usize, usize>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
@@ -127,6 +128,59 @@ fn mark_managed_mutex(mutex: *mut libc::pthread_mutex_t) -> bool {
 fn clear_managed_mutex(mutex: *mut libc::pthread_mutex_t) {
     if let Some(magic_ptr) = mutex_magic_ptr(mutex) {
         // SAFETY: alignment and non-null checked in `mutex_magic_ptr`.
+        let magic = unsafe { &*magic_ptr };
+        magic.store(0, Ordering::Release);
+    }
+}
+
+fn rwlock_word_ptr(rwlock: *mut libc::pthread_rwlock_t) -> Option<*mut AtomicI32> {
+    if rwlock.is_null() {
+        return None;
+    }
+    let align = std::mem::align_of::<AtomicI32>();
+    if !(rwlock as usize).is_multiple_of(align) {
+        return None;
+    }
+    Some(rwlock.cast::<AtomicI32>())
+}
+
+fn rwlock_magic_ptr(rwlock: *mut libc::pthread_rwlock_t) -> Option<*mut AtomicU32> {
+    if rwlock.is_null() {
+        return None;
+    }
+    let base = rwlock.cast::<u8>();
+    let offset = std::mem::size_of::<AtomicI32>();
+    // SAFETY: `base` comes from non-null `rwlock`; adding a small in-object offset.
+    let ptr = unsafe { base.add(offset) };
+    let align = std::mem::align_of::<AtomicU32>();
+    if !(ptr as usize).is_multiple_of(align) {
+        return None;
+    }
+    Some(ptr.cast::<AtomicU32>())
+}
+
+fn is_managed_rwlock(rwlock: *mut libc::pthread_rwlock_t) -> bool {
+    let Some(magic_ptr) = rwlock_magic_ptr(rwlock) else {
+        return false;
+    };
+    // SAFETY: alignment and non-null checked in `rwlock_magic_ptr`.
+    let magic = unsafe { &*magic_ptr };
+    magic.load(Ordering::Acquire) == MANAGED_RWLOCK_MAGIC
+}
+
+fn mark_managed_rwlock(rwlock: *mut libc::pthread_rwlock_t) -> bool {
+    let Some(magic_ptr) = rwlock_magic_ptr(rwlock) else {
+        return false;
+    };
+    // SAFETY: alignment and non-null checked in `rwlock_magic_ptr`.
+    let magic = unsafe { &*magic_ptr };
+    magic.store(MANAGED_RWLOCK_MAGIC, Ordering::Release);
+    true
+}
+
+fn clear_managed_rwlock(rwlock: *mut libc::pthread_rwlock_t) {
+    if let Some(magic_ptr) = rwlock_magic_ptr(rwlock) {
+        // SAFETY: alignment and non-null checked in `rwlock_magic_ptr`.
         let magic = unsafe { &*magic_ptr };
         magic.store(0, Ordering::Release);
     }
@@ -360,6 +414,111 @@ fn futex_unlock_normal(word: &AtomicI32) -> c_int {
             }
             0
         }
+    }
+}
+
+fn futex_rwlock_rdlock(word: &AtomicI32) -> c_int {
+    loop {
+        let state = word.load(Ordering::Acquire);
+        if state >= 0 {
+            if state == i32::MAX {
+                return libc::EAGAIN;
+            }
+            if word
+                .compare_exchange(state, state + 1, Ordering::Acquire, Ordering::Relaxed)
+                .is_ok()
+            {
+                return 0;
+            }
+            continue;
+        }
+
+        #[cfg(target_os = "linux")]
+        {
+            let rc = futex_wait_private(word, state);
+            if rc == 0 {
+                continue;
+            }
+            let errno = std::io::Error::last_os_error().raw_os_error().unwrap_or(0);
+            if errno == libc::EINTR || errno == libc::EAGAIN {
+                continue;
+            }
+            return if errno == 0 { libc::EAGAIN } else { errno };
+        }
+
+        #[cfg(not(target_os = "linux"))]
+        {
+            core::hint::spin_loop();
+        }
+    }
+}
+
+fn futex_rwlock_wrlock(word: &AtomicI32) -> c_int {
+    loop {
+        if word
+            .compare_exchange(0, -1, Ordering::Acquire, Ordering::Relaxed)
+            .is_ok()
+        {
+            return 0;
+        }
+
+        let state = word.load(Ordering::Relaxed);
+
+        #[cfg(target_os = "linux")]
+        {
+            let rc = futex_wait_private(word, state);
+            if rc == 0 {
+                continue;
+            }
+            let errno = std::io::Error::last_os_error().raw_os_error().unwrap_or(0);
+            if errno == libc::EINTR || errno == libc::EAGAIN {
+                continue;
+            }
+            return if errno == 0 { libc::EAGAIN } else { errno };
+        }
+
+        #[cfg(not(target_os = "linux"))]
+        {
+            core::hint::spin_loop();
+        }
+    }
+}
+
+fn futex_rwlock_unlock(word: &AtomicI32) -> c_int {
+    loop {
+        let state = word.load(Ordering::Acquire);
+        if state == 0 {
+            return libc::EPERM;
+        }
+        if state == -1 {
+            if word
+                .compare_exchange(-1, 0, Ordering::Release, Ordering::Relaxed)
+                .is_ok()
+            {
+                #[cfg(target_os = "linux")]
+                {
+                    let _ = futex_wake_private(word, i32::MAX);
+                }
+                return 0;
+            }
+            continue;
+        }
+        if state > 0 {
+            if word
+                .compare_exchange(state, state - 1, Ordering::Release, Ordering::Relaxed)
+                .is_ok()
+            {
+                if state == 1 {
+                    #[cfg(target_os = "linux")]
+                    {
+                        let _ = futex_wake_private(word, i32::MAX);
+                    }
+                }
+                return 0;
+            }
+            continue;
+        }
+        return libc::EINVAL;
     }
 }
 
@@ -818,8 +977,22 @@ pub unsafe extern "C" fn pthread_rwlock_init(
     if rwlock.is_null() {
         return libc::EINVAL;
     }
-    // SAFETY: direct passthrough to host libc with validated pointer.
-    unsafe { libc::pthread_rwlock_init(rwlock, attr) }
+    if !attr.is_null() {
+        clear_managed_rwlock(rwlock);
+        return libc::EINVAL;
+    }
+    let Some(word_ptr) = rwlock_word_ptr(rwlock) else {
+        clear_managed_rwlock(rwlock);
+        return libc::EINVAL;
+    };
+    // SAFETY: `word_ptr` is alignment-checked and points to caller-owned rwlock storage.
+    let word = unsafe { &*word_ptr };
+    word.store(0, Ordering::Release);
+    if mark_managed_rwlock(rwlock) {
+        0
+    } else {
+        libc::EINVAL
+    }
 }
 
 /// POSIX `pthread_rwlock_destroy`.
@@ -828,8 +1001,20 @@ pub unsafe extern "C" fn pthread_rwlock_destroy(rwlock: *mut libc::pthread_rwloc
     if rwlock.is_null() {
         return libc::EINVAL;
     }
-    // SAFETY: direct passthrough to host libc with validated pointer.
-    unsafe { libc::pthread_rwlock_destroy(rwlock) }
+    if !is_managed_rwlock(rwlock) {
+        return libc::EINVAL;
+    }
+    let Some(word_ptr) = rwlock_word_ptr(rwlock) else {
+        clear_managed_rwlock(rwlock);
+        return libc::EINVAL;
+    };
+    // SAFETY: `word_ptr` is alignment-checked and points to caller-owned rwlock storage.
+    let word = unsafe { &*word_ptr };
+    if word.load(Ordering::Acquire) != 0 {
+        return libc::EBUSY;
+    }
+    clear_managed_rwlock(rwlock);
+    0
 }
 
 /// POSIX `pthread_rwlock_rdlock`.
@@ -838,8 +1023,15 @@ pub unsafe extern "C" fn pthread_rwlock_rdlock(rwlock: *mut libc::pthread_rwlock
     if rwlock.is_null() {
         return libc::EINVAL;
     }
-    // SAFETY: direct passthrough to host libc with validated pointer.
-    unsafe { libc::pthread_rwlock_rdlock(rwlock) }
+    if !is_managed_rwlock(rwlock) {
+        return libc::EINVAL;
+    }
+    let Some(word_ptr) = rwlock_word_ptr(rwlock) else {
+        return libc::EINVAL;
+    };
+    // SAFETY: `word_ptr` is alignment-checked and points to caller-owned rwlock storage.
+    let word = unsafe { &*word_ptr };
+    futex_rwlock_rdlock(word)
 }
 
 /// POSIX `pthread_rwlock_wrlock`.
@@ -848,8 +1040,15 @@ pub unsafe extern "C" fn pthread_rwlock_wrlock(rwlock: *mut libc::pthread_rwlock
     if rwlock.is_null() {
         return libc::EINVAL;
     }
-    // SAFETY: direct passthrough to host libc with validated pointer.
-    unsafe { libc::pthread_rwlock_wrlock(rwlock) }
+    if !is_managed_rwlock(rwlock) {
+        return libc::EINVAL;
+    }
+    let Some(word_ptr) = rwlock_word_ptr(rwlock) else {
+        return libc::EINVAL;
+    };
+    // SAFETY: `word_ptr` is alignment-checked and points to caller-owned rwlock storage.
+    let word = unsafe { &*word_ptr };
+    futex_rwlock_wrlock(word)
 }
 
 /// POSIX `pthread_rwlock_unlock`.
@@ -858,8 +1057,15 @@ pub unsafe extern "C" fn pthread_rwlock_unlock(rwlock: *mut libc::pthread_rwlock
     if rwlock.is_null() {
         return libc::EINVAL;
     }
-    // SAFETY: direct passthrough to host libc with validated pointer.
-    unsafe { libc::pthread_rwlock_unlock(rwlock) }
+    if !is_managed_rwlock(rwlock) {
+        return libc::EINVAL;
+    }
+    let Some(word_ptr) = rwlock_word_ptr(rwlock) else {
+        return libc::EINVAL;
+    };
+    // SAFETY: `word_ptr` is alignment-checked and points to caller-owned rwlock storage.
+    let word = unsafe { &*word_ptr };
+    futex_rwlock_unlock(word)
 }
 
 #[cfg(test)]

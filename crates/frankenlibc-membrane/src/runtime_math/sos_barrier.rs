@@ -39,12 +39,220 @@
 //!   Applied Algebra and Geometry.
 //! - Design document: `sos_barrier_design.md` (bd-2pw).
 
+use sha2::{Digest, Sha256};
+
 // ---------------------------------------------------------------------------
 // Maximum variable count for static arrays.
 // ---------------------------------------------------------------------------
 
 /// Maximum number of variables per barrier certificate.
 const MAX_VARS: usize = 4;
+/// Fragmentation certificate dimensionality.
+const FRAGMENTATION_CERT_DIM: usize = 4;
+/// Fragmentation barrier budget in milli-units.
+const FRAGMENTATION_BARRIER_BUDGET_MILLI: i64 = 800_000;
+/// Allowed allocation/free imbalance before certificate penalties begin.
+const FRAGMENTATION_IMBALANCE_BUDGET_PPM: u32 = 200_000;
+/// Allowed size-class dispersion budget before penalties begin.
+const FRAGMENTATION_SIZE_DISPERSION_BUDGET_PPM: u32 = 300_000;
+/// Allowed arena utilization budget before penalties begin.
+const FRAGMENTATION_ARENA_UTILIZATION_BUDGET_PPM: u32 = 700_000;
+/// Allowed churn budget before penalties begin.
+const FRAGMENTATION_CHURN_BUDGET_PPM: u32 = 500_000;
+/// Fixed-point score scale for fragmentation certificate basis values.
+const FRAGMENTATION_SCORE_SCALE: i64 = 1_000;
+
+// ---------------------------------------------------------------------------
+// Generic SOS certificate artifact.
+// ---------------------------------------------------------------------------
+
+/// Runtime polynomial certificate artifact produced by offline SDP synthesis.
+///
+/// The runtime path only evaluates deterministic quadratic forms and verifies a
+/// fixed proof hash. Heavy theorem machinery remains offline.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SosCertificate<const D: usize> {
+    /// Symmetric Gram matrix for z(x)^T Q z(x).
+    pub gram_matrix: [[i64; D]; D],
+    /// SHA-256 hash over (dimension, degree, budget, matrix bytes).
+    pub proof_hash: [u8; 32],
+    /// Maximum monomial degree of the offline polynomial.
+    pub monomial_degree: u32,
+    /// Barrier budget in milli-units; violation iff budget - score < 0.
+    pub barrier_budget_milli: i64,
+}
+
+impl<const D: usize> SosCertificate<D> {
+    /// Construct a static SOS certificate artifact.
+    #[must_use]
+    pub const fn new(
+        gram_matrix: [[i64; D]; D],
+        proof_hash: [u8; 32],
+        monomial_degree: u32,
+        barrier_budget_milli: i64,
+    ) -> Self {
+        Self {
+            gram_matrix,
+            proof_hash,
+            monomial_degree,
+            barrier_budget_milli,
+        }
+    }
+
+    /// Evaluate z(x)^T Q z(x) using fixed-point integer arithmetic.
+    ///
+    /// `scale` controls post-accumulation downscaling to keep values in
+    /// milli-units.
+    #[must_use]
+    pub fn evaluate_quadratic_form(&self, basis: &[i64; D], scale: i64) -> i64 {
+        let mut acc: i128 = 0;
+        for i in 0..D {
+            for j in 0..D {
+                let coeff = i128::from(self.gram_matrix[i][j]);
+                let bi = i128::from(basis[i]);
+                let bj = i128::from(basis[j]);
+                acc = acc.saturating_add(coeff.saturating_mul(bi).saturating_mul(bj));
+            }
+        }
+        let denom = i128::from(scale.max(1));
+        let scaled = acc / denom;
+        scaled.clamp(i128::from(i64::MIN), i128::from(i64::MAX)) as i64
+    }
+
+    /// Evaluate the barrier value in milli-units.
+    ///
+    /// Positive values are certified-safe headroom; negative values indicate
+    /// certificate violation.
+    #[must_use]
+    pub fn evaluate_barrier(&self, basis: &[i64; D], scale: i64) -> i64 {
+        self.barrier_budget_milli
+            .saturating_sub(self.evaluate_quadratic_form(basis, scale))
+    }
+
+    /// Verify artifact integrity via SHA-256 over certificate payload.
+    #[must_use]
+    pub fn verify_integrity(&self) -> bool {
+        compute_certificate_hash(
+            &self.gram_matrix,
+            self.monomial_degree,
+            self.barrier_budget_milli,
+        ) == self.proof_hash
+    }
+}
+
+/// Compute deterministic SHA-256 hash over certificate payload.
+#[must_use]
+pub fn compute_certificate_hash<const D: usize>(
+    gram_matrix: &[[i64; D]; D],
+    monomial_degree: u32,
+    barrier_budget_milli: i64,
+) -> [u8; 32] {
+    let mut hasher = Sha256::new();
+    hasher.update((D as u32).to_le_bytes());
+    hasher.update(monomial_degree.to_le_bytes());
+    hasher.update(barrier_budget_milli.to_le_bytes());
+    for row in gram_matrix {
+        for cell in row {
+            hasher.update(cell.to_le_bytes());
+        }
+    }
+    let digest = hasher.finalize();
+    let mut out = [0u8; 32];
+    out.copy_from_slice(&digest);
+    out
+}
+
+// ---------------------------------------------------------------------------
+// Allocator fragmentation SOS certificate (bd-2ste.1).
+// ---------------------------------------------------------------------------
+
+/// Fragmentation-certificate Gram matrix synthesized offline.
+///
+/// Basis variables represent excess-over-budget scores (0..1000):
+/// [allocation/free imbalance, size-class dispersion, arena utilization, churn].
+static FRAGMENTATION_GRAM_MATRIX: [[i64; FRAGMENTATION_CERT_DIM]; FRAGMENTATION_CERT_DIM] = [
+    [1100, 150, 120, 100],
+    [150, 900, 100, 80],
+    [120, 100, 1300, 200],
+    [100, 80, 200, 1000],
+];
+
+/// Offline proof hash for `FRAGMENTATION_GRAM_MATRIX`.
+const FRAGMENTATION_PROOF_HASH: [u8; 32] = [
+    0xae, 0x71, 0xa0, 0x74, 0x9e, 0xdf, 0x66, 0x01, 0x7e, 0xf3, 0xa8, 0x23, 0x2a, 0x5e, 0x47, 0xcb,
+    0x0e, 0x82, 0x4f, 0x6f, 0xce, 0x7c, 0x61, 0x9c, 0xb4, 0x22, 0xa1, 0x3d, 0xb6, 0x37, 0xc2, 0x45,
+];
+
+/// Monomial degree for the fragmentation quadratic form.
+const FRAGMENTATION_MONOMIAL_DEGREE: u32 = 2;
+
+/// Runtime fragmentation certificate artifact.
+pub static FRAGMENTATION_CERTIFICATE: SosCertificate<FRAGMENTATION_CERT_DIM> = SosCertificate::new(
+    FRAGMENTATION_GRAM_MATRIX,
+    FRAGMENTATION_PROOF_HASH,
+    FRAGMENTATION_MONOMIAL_DEGREE,
+    FRAGMENTATION_BARRIER_BUDGET_MILLI,
+);
+
+/// Convert `(value - budget)` excess into a fixed-point score in [0, 1000].
+#[inline]
+fn ppm_excess_to_score(value_ppm: u32, budget_ppm: u32) -> i64 {
+    let excess = u64::from(value_ppm.saturating_sub(budget_ppm));
+    let scaled = excess.saturating_mul(FRAGMENTATION_SCORE_SCALE as u64) / 1_000_000;
+    scaled as i64
+}
+
+/// Map quarantine-depth proxy to arena-utilization ppm.
+///
+/// Depth is clamped to [64, 65536], then linearly normalized to [0, 1_000_000].
+#[must_use]
+pub fn depth_to_arena_utilization_ppm(depth: u32) -> u32 {
+    let clamped = depth.clamp(64, 65_536);
+    let numer = u64::from(clamped.saturating_sub(64)).saturating_mul(1_000_000);
+    let denom = u64::from(65_536u32 - 64u32);
+    (numer / denom) as u32
+}
+
+/// Evaluate allocator-fragmentation barrier certificate.
+///
+/// Inputs:
+/// - `allocation_count`: observed allocator alloc-like events.
+/// - `free_count`: observed allocator free-like events.
+/// - `size_class_dispersion_ppm`: normalized size-class dispersion (0..1e6).
+/// - `arena_utilization_ppm`: normalized arena utilization (0..1e6).
+///
+/// Output:
+/// - positive => certified-safe headroom,
+/// - negative => certificate violation.
+#[must_use]
+pub fn evaluate_fragmentation_barrier(
+    allocation_count: u32,
+    free_count: u32,
+    size_class_dispersion_ppm: u32,
+    arena_utilization_ppm: u32,
+) -> i64 {
+    let alloc = u64::from(allocation_count);
+    let free = u64::from(free_count);
+    let total = alloc.saturating_add(free).max(1);
+    let imbalance_ppm =
+        (u64::from(allocation_count.abs_diff(free_count)).saturating_mul(1_000_000) / total) as u32;
+    let churn_ppm = (alloc.min(free).saturating_mul(1_000_000) / total) as u32;
+
+    let basis = [
+        ppm_excess_to_score(imbalance_ppm, FRAGMENTATION_IMBALANCE_BUDGET_PPM),
+        ppm_excess_to_score(
+            size_class_dispersion_ppm,
+            FRAGMENTATION_SIZE_DISPERSION_BUDGET_PPM,
+        ),
+        ppm_excess_to_score(
+            arena_utilization_ppm,
+            FRAGMENTATION_ARENA_UTILIZATION_BUDGET_PPM,
+        ),
+        ppm_excess_to_score(churn_ppm, FRAGMENTATION_CHURN_BUDGET_PPM),
+    ];
+
+    FRAGMENTATION_CERTIFICATE.evaluate_barrier(&basis, FRAGMENTATION_SCORE_SCALE)
+}
 
 // ---------------------------------------------------------------------------
 // Invariant B: Pointer Provenance Admissibility (hot-path).
@@ -316,6 +524,8 @@ const fn fixed_power(base: i64, exp: u32) -> i64 {
 
 /// Barrier evaluation cadence for Invariant A.
 const CADENCE_A: u64 = 256;
+/// Barrier evaluation cadence for allocator-fragmentation certificate.
+const CADENCE_FRAGMENTATION: u64 = 64;
 
 /// Warmup observations before evaluating barriers.
 const WARMUP: u64 = 64;
@@ -342,12 +552,18 @@ pub struct SosBarrierSummary {
     pub provenance_value: i64,
     /// Most recent Invariant A (quarantine) value in milli-units.
     pub quarantine_value: i64,
+    /// Most recent fragmentation barrier value in milli-units.
+    pub fragmentation_value: i64,
     /// Total observations.
     pub total_observations: u64,
     /// Count of provenance barrier violations.
     pub provenance_violations: u64,
     /// Count of quarantine barrier violations.
     pub quarantine_violations: u64,
+    /// Count of fragmentation barrier violations.
+    pub fragmentation_violations: u64,
+    /// Whether certificate hash verification passed at controller init.
+    pub fragmentation_hash_valid: bool,
 }
 
 /// SOS Barrier Certificate Runtime Controller.
@@ -357,10 +573,16 @@ pub struct SosBarrierSummary {
 /// - Invariant A (quarantine): every CADENCE_A observations, cadence-gated.
 pub struct SosBarrierController {
     observations: u64,
+    allocator_observations: u64,
+    allocator_free_like_observations: u64,
+    last_allocator_depth: u32,
     last_provenance_value: i64,
     last_quarantine_value: i64,
+    last_fragmentation_value: i64,
     provenance_violations: u64,
     quarantine_violations: u64,
+    fragmentation_violations: u64,
+    fragmentation_hash_valid: bool,
 }
 
 impl Default for SosBarrierController {
@@ -374,10 +596,16 @@ impl SosBarrierController {
     pub fn new() -> Self {
         Self {
             observations: 0,
+            allocator_observations: 0,
+            allocator_free_like_observations: 0,
+            last_allocator_depth: 64,
             last_provenance_value: PROVENANCE_RISK_BUDGET_PPM, // starts safe
             last_quarantine_value: 200,                        // starts at baseline safe
+            last_fragmentation_value: FRAGMENTATION_BARRIER_BUDGET_MILLI,
             provenance_violations: 0,
             quarantine_violations: 0,
+            fragmentation_violations: 0,
+            fragmentation_hash_valid: FRAGMENTATION_CERTIFICATE.verify_integrity(),
         }
     }
 
@@ -427,6 +655,61 @@ impl SosBarrierController {
         }
     }
 
+    /// Track allocator-family observations to drive fragmentation checks.
+    ///
+    /// `adverse` events and decreasing quarantine depth are treated as
+    /// free-like pressure updates.
+    pub fn note_allocator_observation(&mut self, adverse: bool, depth: u32) {
+        self.allocator_observations = self.allocator_observations.saturating_add(1);
+        if adverse || depth <= self.last_allocator_depth {
+            self.allocator_free_like_observations =
+                self.allocator_free_like_observations.saturating_add(1);
+        }
+        self.last_allocator_depth = depth;
+    }
+
+    /// Whether allocator-fragmentation barrier should run on this observation.
+    #[must_use]
+    pub fn is_fragmentation_cadence(&self) -> bool {
+        self.allocator_observations > 0
+            && self
+                .allocator_observations
+                .is_multiple_of(CADENCE_FRAGMENTATION)
+    }
+
+    /// Evaluate allocator-fragmentation SOS certificate.
+    ///
+    /// Returns true when the barrier certifies safety.
+    pub fn evaluate_fragmentation(
+        &mut self,
+        size_class_dispersion_ppm: u32,
+        arena_utilization_ppm: u32,
+    ) -> bool {
+        if !self.fragmentation_hash_valid {
+            self.last_fragmentation_value = -FRAGMENTATION_BARRIER_BUDGET_MILLI;
+            self.fragmentation_violations = self.fragmentation_violations.saturating_add(1);
+            return false;
+        }
+
+        let alloc_count = self.allocator_observations.min(u64::from(u32::MAX)) as u32;
+        let free_count = self
+            .allocator_free_like_observations
+            .min(u64::from(u32::MAX)) as u32;
+        let val = evaluate_fragmentation_barrier(
+            alloc_count,
+            free_count,
+            size_class_dispersion_ppm,
+            arena_utilization_ppm,
+        );
+        self.last_fragmentation_value = val;
+        if val < 0 {
+            self.fragmentation_violations = self.fragmentation_violations.saturating_add(1);
+            false
+        } else {
+            true
+        }
+    }
+
     /// Whether this observation is on the Invariant A cadence.
     #[must_use]
     pub fn is_quarantine_cadence(&self) -> bool {
@@ -440,18 +723,30 @@ impl SosBarrierController {
             return SosBarrierState::Calibrating;
         }
 
+        if !self.fragmentation_hash_valid {
+            return SosBarrierState::Violated;
+        }
+
         // Violation: either barrier negative.
-        if self.last_provenance_value < 0 || self.last_quarantine_value < 0 {
+        if self.last_provenance_value < 0
+            || self.last_quarantine_value < 0
+            || self.last_fragmentation_value < 0
+        {
             return SosBarrierState::Violated;
         }
 
         // Warning: either barrier within 20% of threshold.
         let prov_headroom = self.last_provenance_value;
         let quar_headroom = self.last_quarantine_value;
+        let frag_headroom = self.last_fragmentation_value;
         let prov_warning = PROVENANCE_RISK_BUDGET_PPM / 5; // 20% of budget
         let quar_warning = 40; // 20% of baseline 200
+        let frag_warning = FRAGMENTATION_BARRIER_BUDGET_MILLI / 5;
 
-        if prov_headroom < prov_warning || quar_headroom < quar_warning {
+        if prov_headroom < prov_warning
+            || quar_headroom < quar_warning
+            || frag_headroom < frag_warning
+        {
             return SosBarrierState::Warning;
         }
 
@@ -465,16 +760,23 @@ impl SosBarrierController {
             state: self.state(),
             provenance_value: self.last_provenance_value,
             quarantine_value: self.last_quarantine_value,
+            fragmentation_value: self.last_fragmentation_value,
             total_observations: self.observations,
             provenance_violations: self.provenance_violations,
             quarantine_violations: self.quarantine_violations,
+            fragmentation_violations: self.fragmentation_violations,
+            fragmentation_hash_valid: self.fragmentation_hash_valid,
         }
     }
 
     /// Total violation count across both barriers.
     #[must_use]
     pub fn total_violations(&self) -> u64 {
-        self.provenance_violations + self.quarantine_violations
+        let hash_invalid = if self.fragmentation_hash_valid { 0 } else { 1 };
+        self.provenance_violations
+            .saturating_add(self.quarantine_violations)
+            .saturating_add(self.fragmentation_violations)
+            .saturating_add(hash_invalid)
     }
 }
 
@@ -485,6 +787,79 @@ impl SosBarrierController {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn certificate_hash_matches_static_fragmentation_artifact() {
+        assert!(
+            FRAGMENTATION_CERTIFICATE.verify_integrity(),
+            "static fragmentation certificate hash must verify"
+        );
+    }
+
+    #[test]
+    fn certificate_tamper_is_detected() {
+        let mut tampered = FRAGMENTATION_GRAM_MATRIX;
+        tampered[0][0] += 1;
+        let cert = SosCertificate::new(
+            tampered,
+            FRAGMENTATION_PROOF_HASH,
+            FRAGMENTATION_MONOMIAL_DEGREE,
+            FRAGMENTATION_BARRIER_BUDGET_MILLI,
+        );
+        assert!(
+            !cert.verify_integrity(),
+            "tampered Gram matrix must fail hash verification"
+        );
+    }
+
+    #[test]
+    fn sos_certificate_const_generic_supports_16d() {
+        const D: usize = 16;
+        let mut gram = [[0i64; D]; D];
+        for (i, row) in gram.iter_mut().enumerate().take(D) {
+            row[i] = 1;
+        }
+        let hash = compute_certificate_hash(&gram, 2, 1_000);
+        let cert = SosCertificate::<D>::new(gram, hash, 2, 1_000);
+        assert!(cert.verify_integrity());
+        let mut basis = [0i64; D];
+        basis[0] = 10;
+        basis[5] = 3;
+        let barrier = cert.evaluate_barrier(&basis, 1);
+        assert_eq!(barrier, 1_000 - 109);
+    }
+
+    #[test]
+    fn fragmentation_barrier_safe_balanced_profile() {
+        let val = evaluate_fragmentation_barrier(
+            50_000, 49_000, 120_000, // below dispersion budget
+            450_000, // below arena-utilization budget
+        );
+        assert!(
+            val > 0,
+            "balanced allocator profile should be certified safe, got {val}"
+        );
+    }
+
+    #[test]
+    fn fragmentation_barrier_violates_under_extreme_fragmentation() {
+        let val = evaluate_fragmentation_barrier(
+            90_000, 10_000, 900_000, // high size-class dispersion
+            980_000, // extreme arena utilization
+        );
+        assert!(
+            val < 0,
+            "extreme fragmentation profile should violate certificate, got {val}"
+        );
+    }
+
+    #[test]
+    fn depth_to_arena_utilization_bounds() {
+        assert_eq!(depth_to_arena_utilization_ppm(0), 0);
+        assert_eq!(depth_to_arena_utilization_ppm(64), 0);
+        assert_eq!(depth_to_arena_utilization_ppm(65_536), 1_000_000);
+        assert_eq!(depth_to_arena_utilization_ppm(100_000), 1_000_000);
+    }
 
     // ---- Invariant B (Provenance) Tests ----
 
@@ -705,14 +1080,49 @@ mod tests {
             ctrl.evaluate_provenance(10_000, 1_000_000, 10_000, 50_000);
         }
         ctrl.evaluate_quarantine(4096, 4, 1_000, 0);
+        ctrl.note_allocator_observation(false, 4096);
+        ctrl.evaluate_fragmentation(100_000, 400_000);
 
         let s = ctrl.summary();
         assert_eq!(s.state, ctrl.state());
         assert_eq!(s.total_observations, 100);
         assert_eq!(s.provenance_violations, ctrl.provenance_violations);
         assert_eq!(s.quarantine_violations, ctrl.quarantine_violations);
+        assert_eq!(s.fragmentation_violations, ctrl.fragmentation_violations);
+        assert_eq!(s.fragmentation_hash_valid, ctrl.fragmentation_hash_valid);
         assert_eq!(s.provenance_value, ctrl.last_provenance_value);
         assert_eq!(s.quarantine_value, ctrl.last_quarantine_value);
+        assert_eq!(s.fragmentation_value, ctrl.last_fragmentation_value);
+    }
+
+    #[test]
+    fn controller_fragmentation_cadence_and_violation_tracking() {
+        let mut benign = SosBarrierController::new();
+        for _ in 0..WARMUP {
+            benign.evaluate_provenance(10_000, 1_000_000, 10_000, 50_000);
+        }
+        for _ in 0..CADENCE_FRAGMENTATION {
+            benign.note_allocator_observation(false, 4096);
+        }
+        assert!(benign.is_fragmentation_cadence());
+        assert!(benign.evaluate_fragmentation(100_000, 450_000));
+
+        // Build an alloc-heavy stream by strictly increasing depth with no
+        // adverse events so free-like observations stay near zero.
+        let mut skewed = SosBarrierController::new();
+        for _ in 0..WARMUP {
+            skewed.evaluate_provenance(10_000, 1_000_000, 10_000, 50_000);
+        }
+        for i in 0..CADENCE_FRAGMENTATION {
+            skewed.note_allocator_observation(false, 1024 + i as u32);
+        }
+        assert!(skewed.is_fragmentation_cadence());
+        let base_violations = skewed.fragmentation_violations;
+        assert!(!skewed.evaluate_fragmentation(900_000, 980_000));
+        assert!(
+            skewed.fragmentation_violations > base_violations,
+            "fragmentation violation counter should increase"
+        );
     }
 
     // ---- Fixed-Point Arithmetic Tests ----

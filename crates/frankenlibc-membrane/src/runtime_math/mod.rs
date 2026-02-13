@@ -178,7 +178,7 @@ use self::serre_spectral::{
     InvariantClass, LayerPair, SerreSpectralController, SpectralSequenceState,
 };
 use self::sobol::SobolGenerator;
-use self::sos_barrier::{SosBarrierController, SosBarrierState};
+use self::sos_barrier::{SosBarrierController, SosBarrierState, depth_to_arena_utilization_ppm};
 use self::sos_invariant::{SosInvariantController, SosState};
 use self::sparse::{SparseRecoveryController, SparseState};
 use self::spectral_gap::{SpectralGapMonitor, SpectralGapState};
@@ -2981,7 +2981,7 @@ impl RuntimeMathKernel {
             }
 
             // Feed SOS barrier certificate evaluator (cadence-gated).
-            // Evaluates provenance + quarantine barriers using cached signals.
+            // Evaluates provenance + quarantine + fragmentation barriers using cached signals.
             {
                 let barrier_code = {
                     let mut barrier = self.sos_barrier.lock();
@@ -2993,10 +2993,22 @@ impl RuntimeMathKernel {
                         0u32
                     };
                     barrier.evaluate_provenance(risk_ppm, depth_ppm, 0, 0);
+                    let depth = current_depth() as u32;
+                    if matches!(family, ApiFamily::Allocator) {
+                        barrier.note_allocator_observation(adverse, depth);
+                    }
                     // Quarantine barrier: evaluate on cadence.
                     if barrier.is_quarantine_cadence() {
-                        let depth = current_depth() as u32;
                         barrier.evaluate_quarantine(depth, 0, risk_ppm, 0);
+                    }
+                    // Fragmentation barrier: allocator-family cadence check.
+                    if matches!(family, ApiFamily::Allocator) && barrier.is_fragmentation_cadence()
+                    {
+                        let sparse_state =
+                            u32::from(self.cached_sparse_state.load(Ordering::Relaxed)).min(4);
+                        let size_dispersion_ppm = sparse_state.saturating_mul(250_000);
+                        let arena_utilization_ppm = depth_to_arena_utilization_ppm(depth);
+                        barrier.evaluate_fragmentation(size_dispersion_ppm, arena_utilization_ppm);
                     }
                     match barrier.state() {
                         SosBarrierState::Calibrating => 0u8,
@@ -3924,7 +3936,13 @@ impl RuntimeMathKernel {
             sos_barrier_provenance_value: sos_barrier_summary.provenance_value,
             sos_barrier_quarantine_value: sos_barrier_summary.quarantine_value,
             sos_barrier_violations: sos_barrier_summary.provenance_violations
-                + sos_barrier_summary.quarantine_violations,
+                + sos_barrier_summary.quarantine_violations
+                + sos_barrier_summary.fragmentation_violations
+                + if sos_barrier_summary.fragmentation_hash_valid {
+                    0
+                } else {
+                    1
+                },
             admm_primal_dual_gap: admm_summary.primal_dual_gap,
             admm_violation_count: admm_summary.violation_count,
             obstruction_norm: obstruction_summary.obstruction_norm,

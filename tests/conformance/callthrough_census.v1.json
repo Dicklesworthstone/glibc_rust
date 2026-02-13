@@ -4,10 +4,10 @@
   "description": "Current glibc callthrough census from support_matrix plus dependency-aware decommission sequencing.",
   "source": {
     "support_matrix_path": "support_matrix.json",
-    "support_matrix_sha256": "e847c5d1f809ddb380bf5f569c130cace1e60664836f173fb3f0a0962be0e28f",
+    "support_matrix_sha256": "2fbd45131d2a6eb097f0201cbff8ccd1ac7a4b014edd98ac811ce432727119c5",
     "total_exported": 250,
-    "status_summary_callthrough": 25,
-    "derived_callthrough_symbols": 25,
+    "status_summary_callthrough": 20,
+    "derived_callthrough_symbols": 20,
     "summary_delta": 0
   },
   "ranking_policy": {
@@ -25,21 +25,6 @@
   },
   "module_census": [
     {
-      "module": "pthread_abi",
-      "count": 5,
-      "strict_hotpath_count": 5,
-      "hardened_hotpath_count": 0,
-      "coldpath_count": 0,
-      "runtime_impact_weight": 25,
-      "avg_complexity_weight": 2.0,
-      "complexity_mix": {
-        "low": 0,
-        "medium": 5,
-        "high": 0
-      },
-      "runtime_impact_rank": 1
-    },
-    {
       "module": "stdio_abi",
       "count": 16,
       "strict_hotpath_count": 0,
@@ -52,7 +37,7 @@
         "medium": 0,
         "high": 16
       },
-      "runtime_impact_rank": 2
+      "runtime_impact_rank": 1
     },
     {
       "module": "dlfcn_abi",
@@ -67,50 +52,10 @@
         "medium": 4,
         "high": 0
       },
-      "runtime_impact_rank": 3
+      "runtime_impact_rank": 2
     }
   ],
   "symbol_census": [
-    {
-      "symbol": "pthread_rwlock_destroy",
-      "module": "pthread_abi",
-      "perf_class": "strict_hotpath",
-      "runtime_impact": "high",
-      "replacement_complexity": "medium",
-      "priority_score": 480
-    },
-    {
-      "symbol": "pthread_rwlock_init",
-      "module": "pthread_abi",
-      "perf_class": "strict_hotpath",
-      "runtime_impact": "high",
-      "replacement_complexity": "medium",
-      "priority_score": 480
-    },
-    {
-      "symbol": "pthread_rwlock_rdlock",
-      "module": "pthread_abi",
-      "perf_class": "strict_hotpath",
-      "runtime_impact": "high",
-      "replacement_complexity": "medium",
-      "priority_score": 480
-    },
-    {
-      "symbol": "pthread_rwlock_unlock",
-      "module": "pthread_abi",
-      "perf_class": "strict_hotpath",
-      "runtime_impact": "high",
-      "replacement_complexity": "medium",
-      "priority_score": 480
-    },
-    {
-      "symbol": "pthread_rwlock_wrlock",
-      "module": "pthread_abi",
-      "perf_class": "strict_hotpath",
-      "runtime_impact": "high",
-      "replacement_complexity": "medium",
-      "priority_score": 480
-    },
     {
       "symbol": "dlclose",
       "module": "dlfcn_abi",
@@ -275,21 +220,6 @@
   "decommission_waves": [
     {
       "wave": 1,
-      "wave_id": "pthread-synchronization",
-      "title": "Pthread condvar/rwlock synchronization surface",
-      "depends_on": [],
-      "symbols": [
-        "pthread_rwlock_destroy",
-        "pthread_rwlock_init",
-        "pthread_rwlock_rdlock",
-        "pthread_rwlock_unlock",
-        "pthread_rwlock_wrlock"
-      ],
-      "rationale": "Synchronization primitives carry strict-hotpath impact with bounded state-machine scope.",
-      "rollback_strategy": "Rollback to host-backed cond/rwlock while retaining foundation replacements."
-    },
-    {
-      "wave": 2,
       "wave_id": "loader-boundary",
       "title": "dlfcn boundary migration",
       "depends_on": [],
@@ -303,7 +233,7 @@
       "rollback_strategy": "Re-enable host dlfcn call-through via module-scoped routing switch."
     },
     {
-      "wave": 3,
+      "wave": 2,
       "wave_id": "stdio-surface",
       "title": "stdio callthrough surface consolidation",
       "depends_on": [
@@ -332,10 +262,10 @@
     }
   ],
   "summary": {
-    "module_count": 3,
-    "symbol_count": 25,
-    "strict_hotpath_count": 5,
+    "module_count": 2,
+    "symbol_count": 20,
+    "strict_hotpath_count": 0,
     "coldpath_count": 20,
-    "wave_count": 3
+    "wave_count": 2
   }
 }

@@ -142,6 +142,7 @@ def build_plan(
         entry = dict(row)
         entry["rank"] = rank
         top_symbol_rows.append(entry)
+    effective_top_n = len(top_symbol_rows)
 
     module_scores: dict[str, dict[str, Any]] = {}
     for row in symbol_rows:
@@ -239,14 +240,14 @@ def build_plan(
         "wave_plan": wave_plan,
         "integration_hooks": INTEGRATION_HOOKS,
         "summary": {
-            "top_n": top_n,
+            "top_n": effective_top_n,
             "candidate_symbols": len(symbol_rows),
             "module_count": len(module_ranking),
             "wave_count": len(wave_plan),
             "top_blocker_module": top_blocker,
             "top_symbol": top_symbol_rows[0]["symbol"] if top_symbol_rows else None,
             "baseline_unresolved_symbols": len(symbol_rows),
-            "remaining_after_top_n": max(len(symbol_rows) - top_n, 0),
+            "remaining_after_top_n": max(len(symbol_rows) - effective_top_n, 0),
         },
     }
 

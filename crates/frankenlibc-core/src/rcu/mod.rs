@@ -79,8 +79,8 @@ impl ReaderSlot {
 static GLOBAL_EPOCH: AtomicU64 = AtomicU64::new(1);
 
 /// Reader slot table. Fixed-size, allocation-free.
+#[allow(clippy::declare_interior_mutable_const)]
 static READER_SLOTS: [ReaderSlot; MAX_RCU_THREADS] = {
-    // const array initialization
     const EMPTY: ReaderSlot = ReaderSlot::new();
     [EMPTY; MAX_RCU_THREADS]
 };
@@ -112,6 +112,7 @@ impl DeferredCallback {
 }
 
 /// Deferred callback queue (circular buffer).
+#[allow(clippy::declare_interior_mutable_const)]
 static CALLBACK_QUEUE: [DeferredCallback; CALLBACK_QUEUE_CAP] = {
     const EMPTY: DeferredCallback = DeferredCallback::new();
     [EMPTY; CALLBACK_QUEUE_CAP]
@@ -279,13 +280,13 @@ pub fn synchronize_rcu() {
     let new_epoch = GLOBAL_EPOCH.fetch_add(1, Ordering::AcqRel) + 1;
 
     // Wait for all registered readers to catch up.
-    for idx in 0..MAX_RCU_THREADS {
+    for slot in &READER_SLOTS {
         loop {
-            let slot_tid = READER_SLOTS[idx].tid.load(Ordering::Acquire);
+            let slot_tid = slot.tid.load(Ordering::Acquire);
             if slot_tid == SLOT_EMPTY {
                 break; // Empty slot, skip.
             }
-            let reader_epoch = READER_SLOTS[idx].epoch.load(Ordering::Acquire);
+            let reader_epoch = slot.epoch.load(Ordering::Acquire);
             if reader_epoch == EPOCH_OFFLINE || reader_epoch >= new_epoch {
                 break; // Reader has passed through a quiescent state or is offline.
             }
@@ -393,12 +394,12 @@ pub fn process_rcu_callbacks() {
 /// Returns `u64::MAX` if no readers are registered.
 fn min_reader_epoch() -> u64 {
     let mut min = u64::MAX;
-    for idx in 0..MAX_RCU_THREADS {
-        let slot_tid = READER_SLOTS[idx].tid.load(Ordering::Acquire);
+    for slot in &READER_SLOTS {
+        let slot_tid = slot.tid.load(Ordering::Acquire);
         if slot_tid == SLOT_EMPTY {
             continue;
         }
-        let epoch = READER_SLOTS[idx].epoch.load(Ordering::Acquire);
+        let epoch = slot.epoch.load(Ordering::Acquire);
         if epoch != EPOCH_OFFLINE && epoch < min {
             min = epoch;
         }
@@ -447,6 +448,12 @@ pub struct RcuDomain<T> {
 unsafe impl<T: Send + Sync> Send for RcuDomain<T> {}
 #[allow(unsafe_code)]
 unsafe impl<T: Send + Sync> Sync for RcuDomain<T> {}
+
+impl<T> Default for RcuDomain<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl<T> RcuDomain<T> {
     /// Create a new empty RCU domain (null pointer).

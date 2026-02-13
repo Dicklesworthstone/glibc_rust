@@ -8,7 +8,7 @@ use super::large::LargeAllocator;
 use super::size_class::{self, NUM_SIZE_CLASSES};
 use super::thread_cache::ThreadCache;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// Tracks an individual allocation made through the core allocator.
 #[derive(Debug, Clone)]
@@ -17,6 +17,55 @@ struct AllocationRecord {
     user_size: usize,
     /// Size class index (NUM_SIZE_CLASSES for large).
     bin: usize,
+}
+
+/// Allocator lifecycle log level.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AllocatorLogLevel {
+    Trace,
+    Debug,
+    Info,
+    Warn,
+    Error,
+}
+
+/// Structured allocator lifecycle record.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AllocatorLogRecord {
+    /// Monotonic decision/event id.
+    pub decision_id: u64,
+    /// Correlation id for this lifecycle record.
+    pub trace_id: String,
+    /// Severity level.
+    pub level: AllocatorLogLevel,
+    /// API symbol (`malloc`, `free`, `calloc`, `realloc`).
+    pub symbol: &'static str,
+    /// Event kind (`alloc`, `free`, `allocator_stats`, ...).
+    pub event: &'static str,
+    /// Pointer offset involved in the event.
+    pub ptr: Option<usize>,
+    /// Size value involved in the event.
+    pub size: Option<usize>,
+    /// Size-class bin (`NUM_SIZE_CLASSES` for large allocations).
+    pub bin: Option<usize>,
+    /// Machine-readable outcome label.
+    pub outcome: &'static str,
+    /// Free-form details for debugging.
+    pub details: String,
+    /// Snapshot: currently active allocation count.
+    pub active_count: usize,
+    /// Snapshot: currently allocated user bytes.
+    pub total_allocated: usize,
+    /// Snapshot: thread-cache hit counter.
+    pub thread_cache_hits: u64,
+    /// Snapshot: thread-cache miss counter.
+    pub thread_cache_misses: u64,
+    /// Snapshot: central-bin hit counter.
+    pub central_bin_hits: u64,
+    /// Snapshot: spill-to-central counter.
+    pub spills_to_central: u64,
+    /// Snapshot: thread-cache hit rate in permille.
+    pub cache_hit_rate_permille: u16,
 }
 
 /// Global allocator state.
@@ -34,6 +83,20 @@ pub struct MallocState {
     active: HashMap<usize, AllocationRecord>,
     /// Next offset for new slab allocations.
     next_offset: usize,
+    /// Recently freed pointers used to distinguish double-free from unknown free.
+    recently_freed: HashSet<usize>,
+    /// Monotonic lifecycle decision id.
+    next_decision_id: u64,
+    /// Structured allocator lifecycle records.
+    lifecycle_logs: Vec<AllocatorLogRecord>,
+    /// Thread-cache hit counter.
+    thread_cache_hits: u64,
+    /// Thread-cache miss counter.
+    thread_cache_misses: u64,
+    /// Central-bin hit counter.
+    central_bin_hits: u64,
+    /// Spill-to-central counter when magazine is full.
+    spills_to_central: u64,
     /// Whether the allocator has been initialized.
     initialized: bool,
     /// Total bytes allocated (user-requested).
@@ -52,10 +115,83 @@ impl MallocState {
             thread_cache: ThreadCache::new(),
             active: HashMap::new(),
             next_offset: 0x1000, // Start above zero page
+            recently_freed: HashSet::new(),
+            next_decision_id: 1,
+            lifecycle_logs: Vec::new(),
+            thread_cache_hits: 0,
+            thread_cache_misses: 0,
+            central_bin_hits: 0,
+            spills_to_central: 0,
             initialized: true,
             total_allocated: 0,
             active_count: 0,
         }
+    }
+
+    fn next_log_decision_id(&mut self) -> u64 {
+        let id = self.next_decision_id;
+        self.next_decision_id = self.next_decision_id.wrapping_add(1);
+        id
+    }
+
+    fn cache_hit_rate_permille(&self) -> u16 {
+        let total = self.thread_cache_hits + self.thread_cache_misses;
+        if total == 0 {
+            return 0;
+        }
+        ((self.thread_cache_hits.saturating_mul(1000)) / total) as u16
+    }
+
+    fn record_lifecycle(
+        &mut self,
+        level: AllocatorLogLevel,
+        symbol: &'static str,
+        event: &'static str,
+        ptr: Option<usize>,
+        size: Option<usize>,
+        bin: Option<usize>,
+        outcome: &'static str,
+        details: impl Into<String>,
+    ) {
+        let decision_id = self.next_log_decision_id();
+        let trace_id = format!("core::malloc::{}::{:016x}", symbol, decision_id);
+        self.lifecycle_logs.push(AllocatorLogRecord {
+            decision_id,
+            trace_id,
+            level,
+            symbol,
+            event,
+            ptr,
+            size,
+            bin,
+            outcome,
+            details: details.into(),
+            active_count: self.active_count,
+            total_allocated: self.total_allocated,
+            thread_cache_hits: self.thread_cache_hits,
+            thread_cache_misses: self.thread_cache_misses,
+            central_bin_hits: self.central_bin_hits,
+            spills_to_central: self.spills_to_central,
+            cache_hit_rate_permille: self.cache_hit_rate_permille(),
+        });
+    }
+
+    fn record_allocator_stats(&mut self, symbol: &'static str) {
+        let central_free_total: usize = self.central_bins.iter().map(Vec::len).sum();
+        self.record_lifecycle(
+            AllocatorLogLevel::Debug,
+            symbol,
+            "allocator_stats",
+            None,
+            None,
+            None,
+            "snapshot",
+            format!(
+                "cache_total={};central_free_total={}",
+                self.thread_cache.total_cached(),
+                central_free_total
+            ),
+        );
     }
 
     /// Allocates `size` bytes of memory.
@@ -69,7 +205,20 @@ impl MallocState {
 
         if bin >= NUM_SIZE_CLASSES {
             // Large allocation path
-            let alloc = self.large_allocator.alloc(size)?;
+            let Some(alloc) = self.large_allocator.alloc(size) else {
+                self.record_lifecycle(
+                    AllocatorLogLevel::Warn,
+                    "malloc",
+                    "alloc",
+                    None,
+                    Some(size),
+                    Some(NUM_SIZE_CLASSES),
+                    "oom",
+                    "large_allocator_alloc_failed",
+                );
+                self.record_allocator_stats("malloc");
+                return None;
+            };
             let offset = alloc.base;
             self.active.insert(
                 offset,
@@ -78,13 +227,26 @@ impl MallocState {
                     bin: NUM_SIZE_CLASSES,
                 },
             );
+            self.recently_freed.remove(&offset);
             self.total_allocated += size;
             self.active_count += 1;
+            self.record_lifecycle(
+                AllocatorLogLevel::Trace,
+                "malloc",
+                "alloc",
+                Some(offset),
+                Some(size),
+                Some(NUM_SIZE_CLASSES),
+                "success",
+                "path=large_allocator",
+            );
+            self.record_allocator_stats("malloc");
             return Some(offset);
         }
 
         // Try thread cache first
         if let Some(offset) = self.thread_cache.alloc(bin) {
+            self.thread_cache_hits += 1;
             self.active.insert(
                 offset,
                 AllocationRecord {
@@ -92,13 +254,27 @@ impl MallocState {
                     bin,
                 },
             );
+            self.recently_freed.remove(&offset);
             self.total_allocated += size;
             self.active_count += 1;
+            self.record_lifecycle(
+                AllocatorLogLevel::Trace,
+                "malloc",
+                "alloc",
+                Some(offset),
+                Some(size),
+                Some(bin),
+                "success",
+                "path=thread_cache_hit",
+            );
+            self.record_allocator_stats("malloc");
             return Some(offset);
         }
+        self.thread_cache_misses += 1;
 
         // Try central bin freelist
         if let Some(offset) = self.central_bins[bin].pop() {
+            self.central_bin_hits += 1;
             self.active.insert(
                 offset,
                 AllocationRecord {
@@ -106,15 +282,41 @@ impl MallocState {
                     bin,
                 },
             );
+            self.recently_freed.remove(&offset);
             self.total_allocated += size;
             self.active_count += 1;
+            self.record_lifecycle(
+                AllocatorLogLevel::Trace,
+                "malloc",
+                "alloc",
+                Some(offset),
+                Some(size),
+                Some(bin),
+                "success",
+                "path=central_bin_hit",
+            );
+            self.record_allocator_stats("malloc");
             return Some(offset);
         }
 
         // Allocate fresh from slab region
         let class_size = size_class::bin_size(bin);
         let offset = self.next_offset;
-        self.next_offset += class_size;
+        let Some(next_offset) = self.next_offset.checked_add(class_size) else {
+            self.record_lifecycle(
+                AllocatorLogLevel::Info,
+                "malloc",
+                "generation_overflow",
+                None,
+                Some(class_size),
+                Some(bin),
+                "denied",
+                format!("next_offset={} class_size={}", self.next_offset, class_size),
+            );
+            self.record_allocator_stats("malloc");
+            return None;
+        };
+        self.next_offset = next_offset;
         self.active.insert(
             offset,
             AllocationRecord {
@@ -124,6 +326,17 @@ impl MallocState {
         );
         self.total_allocated += size;
         self.active_count += 1;
+        self.record_lifecycle(
+            AllocatorLogLevel::Trace,
+            "malloc",
+            "alloc",
+            Some(offset),
+            Some(size),
+            Some(bin),
+            "success",
+            format!("path=fresh_slab class_size={}", class_size),
+        );
+        self.record_allocator_stats("malloc");
         Some(offset)
     }
 
@@ -132,20 +345,102 @@ impl MallocState {
     /// No-op if `ptr` is 0 (null equivalent).
     pub fn free(&mut self, ptr: usize) {
         if ptr == 0 {
+            self.record_lifecycle(
+                AllocatorLogLevel::Trace,
+                "free",
+                "free_null",
+                Some(ptr),
+                None,
+                None,
+                "noop",
+                "null_pointer",
+            );
             return;
         }
 
         let record = match self.active.remove(&ptr) {
             Some(r) => r,
-            None => return, // Unknown pointer - ignore
+            None => {
+                if self.recently_freed.contains(&ptr) {
+                    self.record_lifecycle(
+                        AllocatorLogLevel::Warn,
+                        "free",
+                        "double_free_detected",
+                        Some(ptr),
+                        None,
+                        None,
+                        "ignored",
+                        "pointer_observed_in_recently_freed_set",
+                    );
+                } else {
+                    self.record_lifecycle(
+                        AllocatorLogLevel::Warn,
+                        "free",
+                        "unknown_free_pointer",
+                        Some(ptr),
+                        None,
+                        None,
+                        "ignored",
+                        "pointer_not_present_in_active_map",
+                    );
+                }
+                self.record_allocator_stats("free");
+                return; // Unknown pointer - ignore
+            }
         };
 
-        self.total_allocated -= record.user_size;
-        self.active_count -= 1;
+        match self.total_allocated.checked_sub(record.user_size) {
+            Some(next) => {
+                self.total_allocated = next;
+            }
+            None => {
+                self.total_allocated = 0;
+                self.record_lifecycle(
+                    AllocatorLogLevel::Error,
+                    "free",
+                    "invariant_total_allocated_underflow",
+                    Some(ptr),
+                    Some(record.user_size),
+                    Some(record.bin),
+                    "recovered",
+                    "checked_sub_failed",
+                );
+            }
+        }
+        match self.active_count.checked_sub(1) {
+            Some(next) => {
+                self.active_count = next;
+            }
+            None => {
+                self.active_count = 0;
+                self.record_lifecycle(
+                    AllocatorLogLevel::Error,
+                    "free",
+                    "invariant_active_count_underflow",
+                    Some(ptr),
+                    Some(record.user_size),
+                    Some(record.bin),
+                    "recovered",
+                    "checked_sub_failed",
+                );
+            }
+        }
 
         if record.bin >= NUM_SIZE_CLASSES {
             // Large allocation
             self.large_allocator.free(ptr);
+            self.recently_freed.insert(ptr);
+            self.record_lifecycle(
+                AllocatorLogLevel::Trace,
+                "free",
+                "free",
+                Some(ptr),
+                Some(record.user_size),
+                Some(NUM_SIZE_CLASSES),
+                "success",
+                "path=large_allocator",
+            );
+            self.record_allocator_stats("free");
             return;
         }
 
@@ -153,7 +448,31 @@ impl MallocState {
         if !self.thread_cache.dealloc(record.bin, ptr) {
             // Magazine full - put in central bin
             self.central_bins[record.bin].push(ptr);
+            self.spills_to_central += 1;
+            self.record_lifecycle(
+                AllocatorLogLevel::Info,
+                "free",
+                "cache_spill_to_central",
+                Some(ptr),
+                Some(record.user_size),
+                Some(record.bin),
+                "spilled",
+                format!("central_bin_len={}", self.central_bins[record.bin].len()),
+            );
+        } else {
+            self.record_lifecycle(
+                AllocatorLogLevel::Trace,
+                "free",
+                "free",
+                Some(ptr),
+                Some(record.user_size),
+                Some(record.bin),
+                "success",
+                "path=thread_cache_store",
+            );
         }
+        self.recently_freed.insert(ptr);
+        self.record_allocator_stats("free");
     }
 
     /// Allocates memory for `count` objects of `size` bytes each, zeroed.
@@ -161,8 +480,34 @@ impl MallocState {
     /// Returns a logical offset or `None` on failure. Checks for
     /// multiplication overflow.
     pub fn calloc(&mut self, count: usize, size: usize) -> Option<usize> {
-        let total = count.checked_mul(size)?;
-        self.malloc(total)
+        let Some(total) = count.checked_mul(size) else {
+            self.record_lifecycle(
+                AllocatorLogLevel::Warn,
+                "calloc",
+                "calloc_overflow",
+                None,
+                None,
+                None,
+                "denied",
+                format!("count={} size={}", count, size),
+            );
+            self.record_allocator_stats("calloc");
+            return None;
+        };
+
+        let out = self.malloc(total);
+        self.record_lifecycle(
+            AllocatorLogLevel::Trace,
+            "calloc",
+            "calloc_result",
+            out,
+            Some(total),
+            Some(size_class::bin_index(total)),
+            if out.is_some() { "success" } else { "oom" },
+            format!("count={} elem_size={}", count, size),
+        );
+        self.record_allocator_stats("calloc");
+        out
         // Note: in this logical model, memory is not actually backed by real
         // bytes, so zeroing is implicit. The ABI layer handles real zeroing.
     }
@@ -173,37 +518,107 @@ impl MallocState {
     /// If `new_size` is 0, equivalent to `free(ptr)`.
     pub fn realloc(&mut self, ptr: usize, new_size: usize) -> Option<usize> {
         if ptr == 0 {
-            return self.malloc(new_size);
+            let out = self.malloc(new_size);
+            self.record_lifecycle(
+                AllocatorLogLevel::Trace,
+                "realloc",
+                "realloc_null_as_malloc",
+                out,
+                Some(new_size),
+                Some(size_class::bin_index(new_size.max(1))),
+                if out.is_some() { "success" } else { "oom" },
+                "ptr_was_null",
+            );
+            self.record_allocator_stats("realloc");
+            return out;
         }
         if new_size == 0 {
             self.free(ptr);
+            self.record_lifecycle(
+                AllocatorLogLevel::Trace,
+                "realloc",
+                "realloc_zero_as_free",
+                Some(ptr),
+                Some(new_size),
+                None,
+                "freed",
+                "new_size_was_zero",
+            );
+            self.record_allocator_stats("realloc");
             return None;
         }
 
         let old_record = self.active.get(&ptr).cloned();
         let old_size = old_record.as_ref().map_or(0, |r| r.user_size);
         let old_bin = old_record.as_ref().map_or(NUM_SIZE_CLASSES, |r| r.bin);
+        if old_record.is_none() {
+            self.record_lifecycle(
+                AllocatorLogLevel::Warn,
+                "realloc",
+                "realloc_unknown_pointer",
+                Some(ptr),
+                Some(new_size),
+                Some(size_class::bin_index(new_size)),
+                "fallback_alloc",
+                "source_pointer_not_active",
+            );
+        }
 
         // If new size fits in the same size class, keep the same block
         let new_bin = size_class::bin_index(new_size);
         if new_bin == old_bin && new_bin < NUM_SIZE_CLASSES {
             // Update record in place
             if let Some(record) = self.active.get_mut(&ptr) {
-                self.total_allocated -= record.user_size;
+                self.total_allocated = self.total_allocated.saturating_sub(record.user_size);
                 record.user_size = new_size;
                 self.total_allocated += new_size;
             }
+            self.record_lifecycle(
+                AllocatorLogLevel::Trace,
+                "realloc",
+                "realloc_in_place",
+                Some(ptr),
+                Some(new_size),
+                Some(new_bin),
+                "success",
+                format!("old_size={} old_bin={}", old_size, old_bin),
+            );
+            self.record_allocator_stats("realloc");
             return Some(ptr);
         }
 
         // Allocate new, copy metadata, free old
-        let new_ptr = self.malloc(new_size)?;
+        let Some(new_ptr) = self.malloc(new_size) else {
+            self.record_lifecycle(
+                AllocatorLogLevel::Warn,
+                "realloc",
+                "realloc_allocate_new_failed",
+                Some(ptr),
+                Some(new_size),
+                Some(new_bin),
+                "oom",
+                format!("old_size={} old_bin={}", old_size, old_bin),
+            );
+            self.record_allocator_stats("realloc");
+            return None;
+        };
 
         // In the logical model, we don't copy actual bytes.
         // The ABI layer handles the real memcpy.
         let _ = old_size; // Suppress unused warning
 
         self.free(ptr);
+        self.record_lifecycle(
+            AllocatorLogLevel::Trace,
+            "realloc",
+            "realloc_move",
+            Some(new_ptr),
+            Some(new_size),
+            Some(new_bin),
+            "success",
+            format!("old_ptr={} old_size={} old_bin={}", ptr, old_size, old_bin),
+        );
+        self.record_allocator_stats("realloc");
         Some(new_ptr)
     }
 
@@ -225,6 +640,16 @@ impl MallocState {
     /// Looks up an allocation by offset.
     pub fn lookup(&self, ptr: usize) -> Option<usize> {
         self.active.get(&ptr).map(|r| r.user_size)
+    }
+
+    /// Returns a view of allocator lifecycle log records.
+    pub fn lifecycle_logs(&self) -> &[AllocatorLogRecord] {
+        &self.lifecycle_logs
+    }
+
+    /// Drains allocator lifecycle log records.
+    pub fn drain_lifecycle_logs(&mut self) -> Vec<AllocatorLogRecord> {
+        std::mem::take(&mut self.lifecycle_logs)
     }
 }
 
@@ -436,6 +861,110 @@ mod tests {
         let ptr = state.malloc(42).unwrap();
         assert_eq!(state.lookup(ptr), Some(42));
         assert_eq!(state.lookup(0xBEEF), None);
+    }
+
+    #[test]
+    fn test_lifecycle_logs_include_trace_and_decision_ids() {
+        let mut state = MallocState::new();
+        let ptr = state.malloc(64).unwrap();
+        state.free(ptr);
+
+        let logs = state.drain_lifecycle_logs();
+        assert!(!logs.is_empty());
+        assert!(logs.iter().all(|entry| entry.decision_id > 0));
+        assert!(
+            logs.iter()
+                .all(|entry| entry.trace_id.starts_with("core::malloc::"))
+        );
+        assert!(
+            logs.iter()
+                .any(|entry| entry.level == AllocatorLogLevel::Trace && entry.symbol == "malloc")
+        );
+        assert!(logs.iter().any(
+            |entry| entry.level == AllocatorLogLevel::Debug && entry.event == "allocator_stats"
+        ));
+    }
+
+    #[test]
+    fn test_lifecycle_logs_warn_on_double_free_and_unknown_realloc() {
+        let mut state = MallocState::new();
+        let ptr = state.malloc(16).unwrap();
+        state.free(ptr);
+        state.free(ptr); // Double free
+        let _ = state.realloc(0xDEAD, 32); // Unknown source pointer
+
+        let logs = state.drain_lifecycle_logs();
+        assert!(
+            logs.iter().any(|entry| {
+                entry.level == AllocatorLogLevel::Warn && entry.event == "double_free_detected"
+            }),
+            "expected WARN double_free_detected entry"
+        );
+        assert!(
+            logs.iter().any(|entry| {
+                entry.level == AllocatorLogLevel::Warn && entry.event == "realloc_unknown_pointer"
+            }),
+            "expected WARN realloc_unknown_pointer entry"
+        );
+    }
+
+    #[test]
+    fn test_lifecycle_logs_info_for_spill_and_generation_overflow() {
+        use crate::malloc::thread_cache::MAGAZINE_CAPACITY;
+
+        let mut state = MallocState::new();
+        let ptrs: Vec<usize> = (0..(MAGAZINE_CAPACITY + 1))
+            .map(|_| state.malloc(32).unwrap())
+            .collect();
+        for ptr in ptrs {
+            state.free(ptr);
+        }
+        let logs = state.drain_lifecycle_logs();
+        assert!(
+            logs.iter().any(|entry| {
+                entry.level == AllocatorLogLevel::Info && entry.event == "cache_spill_to_central"
+            }),
+            "expected INFO cache_spill_to_central entry"
+        );
+
+        // Force generation overflow on a fresh state to avoid cache/central reuse.
+        let mut overflow_state = MallocState::new();
+        overflow_state.next_offset = usize::MAX;
+        assert!(overflow_state.malloc(32).is_none());
+        let overflow_logs = overflow_state.drain_lifecycle_logs();
+        assert!(
+            overflow_logs.iter().any(|entry| {
+                entry.level == AllocatorLogLevel::Info && entry.event == "generation_overflow"
+            }),
+            "expected INFO generation_overflow entry"
+        );
+    }
+
+    #[test]
+    fn test_lifecycle_logs_error_on_invariant_violation_recovery() {
+        let mut state = MallocState::new();
+        let ptr = state.malloc(128).unwrap();
+
+        // Inject impossible accounting state and verify ERROR logging recovery.
+        state.total_allocated = 0;
+        state.active_count = 0;
+        state.free(ptr);
+
+        let logs = state.drain_lifecycle_logs();
+        assert!(
+            logs.iter().any(|entry| {
+                entry.level == AllocatorLogLevel::Error
+                    && entry.event == "invariant_total_allocated_underflow"
+            }),
+            "expected ERROR invariant_total_allocated_underflow entry"
+        );
+        assert!(
+            logs.iter().any(|entry| {
+                entry.level == AllocatorLogLevel::Error
+                    && entry.event == "invariant_active_count_underflow"
+            }),
+            "expected ERROR invariant_active_count_underflow entry"
+        );
     }
 
     #[test]

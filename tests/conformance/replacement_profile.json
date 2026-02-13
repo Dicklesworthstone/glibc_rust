@@ -112,7 +112,6 @@
     "source": "support_matrix.json",
     "modules": [
       "stdio_abi",
-      "pthread_abi",
       "dlfcn_abi"
     ],
     "require_fixture_coverage": true
@@ -148,20 +147,10 @@
   "call_through_census": {
     "description": "Current census of host glibc function calls by module. Updated by CI gate.",
     "modules": {
-      "pthread_abi": {"count": 5, "functions": ["pthread_rwlock_init", "pthread_rwlock_destroy", "pthread_rwlock_rdlock", "pthread_rwlock_wrlock", "pthread_rwlock_unlock"]},
-      "socket_abi": {"count": 14, "functions": ["socket", "bind", "listen", "accept", "connect", "send", "recv", "sendto", "recvfrom", "shutdown", "setsockopt", "getsockopt", "getpeername", "getsockname"]},
-      "unistd_abi": {"count": 21, "functions": ["lseek", "stat", "fstat", "lstat", "access", "getcwd", "chdir", "fchdir", "getppid", "getuid", "geteuid", "getgid", "getegid", "unlink", "rmdir", "link", "symlink", "readlink", "fsync", "fdatasync", "sleep", "usleep"]},
       "dlfcn_abi": {"count": 4, "functions": ["dlopen", "dlsym", "dlclose"]},
-      "signal_abi": {"count": 4, "functions": ["signal", "raise", "kill", "sigaction"]},
-      "termios_abi": {"count": 10, "functions": ["tcgetattr", "tcsetattr", "cfgetispeed", "cfgetospeed", "cfsetispeed", "cfsetospeed", "tcdrain", "tcflush", "tcflow", "tcsendbreak"]},
-      "io_abi": {"count": 0, "functions": []},
-      "stdlib_abi": {"count": 3, "functions": ["getenv", "setenv", "unsetenv"]},
-      "time_abi": {"count": 3, "functions": ["clock_gettime"]},
-      "resource_abi": {"count": 3, "functions": ["getrlimit", "setrlimit"]},
-      "dirent_abi": {"count": 2, "functions": ["open", "close"]},
-      "process_abi": {"count": 1, "functions": ["execvp"]}
+      "stdio_abi": {"count": 0, "functions": []}
     },
-    "total_call_throughs": 70,
-    "note": "process_abi.rs has 1 call-through (execvp) plus raw syscalls. dirent_abi uses libc::open/close which are technically call-throughs."
+    "total_call_throughs": 4,
+    "note": "Census tracks direct host call-through scan patterns used by scripts/check_replacement_guard.sh."
   }
 }

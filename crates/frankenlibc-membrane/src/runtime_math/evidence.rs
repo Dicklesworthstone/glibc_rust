@@ -846,6 +846,7 @@ pub struct SystematicEvidenceLog<const CAP: usize> {
     ring: EvidenceRingBuffer<CAP>,
     decision_cards: DecisionCardRingBuffer<CAP>,
     monotonic_start: Instant,
+    last_timestamp_ns: AtomicU64,
     boot_nonce: u64,
     streams: [Mutex<EpochStreamState>; ApiFamily::COUNT * 2],
 }
@@ -877,6 +878,7 @@ impl<const CAP: usize> SystematicEvidenceLog<CAP> {
             ring: EvidenceRingBuffer::new(),
             decision_cards: DecisionCardRingBuffer::new(),
             monotonic_start: Instant::now(),
+            last_timestamp_ns: AtomicU64::new(0),
             boot_nonce,
             streams: core::array::from_fn(|_| Mutex::new(EpochStreamState::new())),
         }
@@ -957,7 +959,10 @@ impl<const CAP: usize> SystematicEvidenceLog<CAP> {
             decision_type: classify_decision_type(mode, ctx, decision),
             thread_id: current_thread_id_u64(),
             symbol_id: decision.policy_id,
-            timestamp_mono_ns: monotonic_elapsed_ns(self.monotonic_start),
+            timestamp_mono_ns: next_strict_timestamp_ns(
+                self.monotonic_start,
+                &self.last_timestamp_ns,
+            ),
             epoch_id,
             evidence_seqno: seqno,
             context: ctx,
@@ -1018,7 +1023,7 @@ impl<const CAP: usize> SystematicEvidenceLog<CAP> {
                 card.epoch_id,
                 card.evidence_seqno,
                 card.context.family as u8,
-                mode_code(mode_from_code(mode_code_from_safety(card.context, card.decision, card.reasoning_flags))),
+                decision_mode_code(card.reasoning_flags),
                 profile_code(card.decision.profile),
                 action_code(card.decision.action),
                 action_code(card.counterfactual_action),
@@ -1144,21 +1149,30 @@ fn monotonic_elapsed_ns(start: Instant) -> u64 {
 }
 
 #[inline]
-fn mode_code_from_safety(
-    _ctx: RuntimeContext,
-    _decision: RuntimeDecision,
-    flags: u32,
-) -> SafetyLevel {
-    if (flags & (1 << 3)) != 0 {
-        SafetyLevel::Hardened
-    } else {
-        SafetyLevel::Strict
+fn next_strict_timestamp_ns(start: Instant, last_timestamp_ns: &AtomicU64) -> u64 {
+    let now_ns = monotonic_elapsed_ns(start);
+    let mut observed = last_timestamp_ns.load(Ordering::Relaxed);
+    loop {
+        let candidate = if now_ns > observed {
+            now_ns
+        } else {
+            observed.saturating_add(1)
+        };
+        match last_timestamp_ns.compare_exchange_weak(
+            observed,
+            candidate,
+            Ordering::Relaxed,
+            Ordering::Relaxed,
+        ) {
+            Ok(_) => return candidate,
+            Err(actual) => observed = actual,
+        }
     }
 }
 
 #[inline]
-const fn mode_from_code(mode: SafetyLevel) -> SafetyLevel {
-    mode
+const fn decision_mode_code(flags: u32) -> u8 {
+    if (flags & (1 << 3)) != 0 { 1 } else { 0 }
 }
 
 /// Overwrite-on-full decision-card ring buffer.
@@ -1448,6 +1462,7 @@ fn chain_hash64(
 mod tests {
     use super::*;
     use core::mem::size_of;
+    use serde_json::Value;
 
     #[test]
     fn record_layout_is_stable_v1() {
@@ -1770,16 +1785,8 @@ mod tests {
             risk_upper_bound_ppm: 120,
             evidence_seqno: 0,
         };
-        let seq_allow = log.record_decision(
-            SafetyLevel::Strict,
-            ctx,
-            allow,
-            9,
-            false,
-            None,
-            0,
-            None,
-        );
+        let seq_allow =
+            log.record_decision(SafetyLevel::Strict, ctx, allow, 9, false, None, 0, None);
 
         let repair = RuntimeDecision {
             profile: ValidationProfile::Full,
@@ -1829,7 +1836,10 @@ mod tests {
             ..DecisionCardFilter::any()
         });
         assert_eq!(symbol_41.len(), 1);
-        assert_eq!(symbol_41[0].decision_type, DecisionType::CertificateEvaluation);
+        assert_eq!(
+            symbol_41[0].decision_type,
+            DecisionType::CertificateEvaluation
+        );
 
         let thread_cards = log.query_decision_cards(DecisionCardFilter {
             thread_id: Some(current_thread_id_u64()),
@@ -1842,5 +1852,113 @@ mod tests {
         assert!(export.contains("\"count\":2"));
         assert!(export.contains("\"decision_id\":1"));
         assert!(export.contains("\"decision_id\":2"));
+    }
+
+    #[test]
+    fn decision_card_timestamps_are_strictly_monotone() {
+        let log: SystematicEvidenceLog<64> = SystematicEvidenceLog::new(0xCAFE_BABE);
+        let ctx = RuntimeContext::pointer_validation(0x1000, false);
+        let decision = RuntimeDecision {
+            profile: ValidationProfile::Fast,
+            action: MembraneAction::Allow,
+            policy_id: 7,
+            risk_upper_bound_ppm: 10,
+            evidence_seqno: 0,
+        };
+
+        for _ in 0..32 {
+            let _ =
+                log.record_decision(SafetyLevel::Strict, ctx, decision, 0, false, None, 0, None);
+        }
+
+        let cards = log.decision_cards_snapshot_sorted();
+        assert_eq!(cards.len(), 32);
+        for pair in cards.windows(2) {
+            assert!(
+                pair[1].timestamp_mono_ns > pair[0].timestamp_mono_ns,
+                "timestamps must be strictly increasing: {} -> {}",
+                pair[0].timestamp_mono_ns,
+                pair[1].timestamp_mono_ns
+            );
+        }
+    }
+
+    #[test]
+    fn decision_card_query_supports_exact_time_window() {
+        let log: SystematicEvidenceLog<16> = SystematicEvidenceLog::new(0x1234_5678);
+        let ctx = RuntimeContext::pointer_validation(0x2000, false);
+        let decision = RuntimeDecision {
+            profile: ValidationProfile::Fast,
+            action: MembraneAction::Allow,
+            policy_id: 88,
+            risk_upper_bound_ppm: 100,
+            evidence_seqno: 0,
+        };
+
+        for _ in 0..5 {
+            let _ =
+                log.record_decision(SafetyLevel::Strict, ctx, decision, 1, false, None, 0, None);
+        }
+
+        let cards = log.decision_cards_snapshot_sorted();
+        assert_eq!(cards.len(), 5);
+        let target_ts = cards[2].timestamp_mono_ns;
+        let filtered = log.query_decision_cards(DecisionCardFilter {
+            min_timestamp_mono_ns: Some(target_ts),
+            max_timestamp_mono_ns: Some(target_ts),
+            ..DecisionCardFilter::any()
+        });
+        assert_eq!(filtered.len(), 1);
+        assert_eq!(filtered[0].timestamp_mono_ns, target_ts);
+    }
+
+    #[test]
+    fn decision_card_export_is_valid_json() {
+        let log: SystematicEvidenceLog<8> = SystematicEvidenceLog::new(0x1020_3040);
+        let ctx = RuntimeContext::pointer_validation(0x3000, false);
+        let decision = RuntimeDecision {
+            profile: ValidationProfile::Fast,
+            action: MembraneAction::Allow,
+            policy_id: 5,
+            risk_upper_bound_ppm: 50,
+            evidence_seqno: 0,
+        };
+        let _ = log.record_decision(SafetyLevel::Strict, ctx, decision, 3, false, None, 0, None);
+        let _ = log.record_decision(SafetyLevel::Strict, ctx, decision, 3, false, None, 0, None);
+
+        let export = log.export_decision_cards_json();
+        let parsed: Value = serde_json::from_str(&export).expect("export must be parseable JSON");
+        assert_eq!(
+            parsed["schema"].as_str(),
+            Some("decision_cards.v1"),
+            "schema field mismatch"
+        );
+        assert_eq!(parsed["count"].as_u64(), Some(2));
+        assert!(parsed["cards"].is_array());
+        assert_eq!(parsed["cards"].as_array().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn decision_card_ring_sustains_large_append_volume() {
+        const N: u64 = 1_000_000;
+        let log: SystematicEvidenceLog<512> = SystematicEvidenceLog::new(0xAA55_AA55);
+        let ctx = RuntimeContext::pointer_validation(0x4000, false);
+        let decision = RuntimeDecision {
+            profile: ValidationProfile::Fast,
+            action: MembraneAction::Allow,
+            policy_id: 99,
+            risk_upper_bound_ppm: 0,
+            evidence_seqno: 0,
+        };
+
+        for _ in 0..N {
+            let _ =
+                log.record_decision(SafetyLevel::Strict, ctx, decision, 0, false, None, 0, None);
+        }
+
+        let cards = log.decision_cards_snapshot_sorted();
+        assert!(!cards.is_empty());
+        assert!(cards.len() <= 512);
+        assert_eq!(cards.last().unwrap().decision_id, N);
     }
 }

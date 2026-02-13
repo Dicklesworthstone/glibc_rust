@@ -3,13 +3,13 @@
 ## Current Reality
 
 Source of truth for implementation parity is `tests/conformance/reality_report.v1.json` (generated `2026-02-13T18:07:59Z`).
-Reality snapshot: total_exported=250, implemented=142, raw_syscall=83, glibc_call_through=25, stub=0.
+Reality snapshot: total_exported=250, implemented=147, raw_syscall=83, glibc_call_through=20, stub=0.
 Counts below reflect that generated snapshot and will change as matrix drift fixes land.
 
 Current exported ABI surface is **250 symbols**, classified as:
-- `Implemented`: 142
+- `Implemented`: 147
 - `RawSyscall`: 83
-- `GlibcCallThrough`: 25
+- `GlibcCallThrough`: 20
 - `Stub`: 0
 
 This means the current artifact is a **hybrid interposition profile** (mixed Rust-owned behavior, raw syscalls, host-glibc delegation, and deterministic stubs), not a full replacement profile.
@@ -40,7 +40,7 @@ Legend:
 |---|---|
 | `Implemented` | `string_abi`, `wchar_abi`, `math_abi`, `stdlib_abi`, `malloc_abi`, `ctype_abi`, `inet_abi`, `errno_abi`, `resolv_abi`, `locale_abi`, `iconv_abi` |
 | `RawSyscall` | `unistd_abi`, `socket_abi`, `termios_abi`, `time_abi`, `dirent_abi`, `process_abi`, `poll_abi`, `io_abi`, `mmap_abi`, `resource_abi`, `signal_abi` |
-| `GlibcCallThrough` | `stdio_abi`, `pthread_abi`, `dlfcn_abi` |
+| `GlibcCallThrough` | `stdio_abi`, `dlfcn_abi` |
 | `Stub` | none (current exported surface) |
 
 ## Hard-Parts Truth Table
@@ -48,7 +48,7 @@ Legend:
 Source of truth: `tests/conformance/hard_parts_truth_table.v1.json` (generated `2026-02-13T08:48:00Z`).
 
 - `startup`: `IMPLEMENTED_PARTIAL` — implemented scope: phase-0 startup fixture path (`__libc_start_main`, `__frankenlibc_startup_phase0`, snapshot invariants). Deferred scope: full `csu`/TLS init-order hardening and secure-mode closure campaign.
-- `threading`: `IN_PROGRESS` — implemented scope: runtime-math threading routing and selected pthread semantics are live. Deferred scope: eliminate remaining `pthread_abi` call-through surface and close lifecycle/TLS stress beads.
+- `threading`: `IN_PROGRESS` — implemented scope: runtime-math threading routing and selected pthread semantics are live, including lifecycle and rwlock native routing. Deferred scope: close lifecycle/TLS stress beads.
 - `resolver`: `IMPLEMENTED_PARTIAL` — implemented scope: bootstrap numeric resolver ABI (`getaddrinfo`, `freeaddrinfo`, `getnameinfo`, `gai_strerror`). Deferred scope: full retry/cache/poisoning hardening campaign.
 - `nss`: `IMPLEMENTED_PARTIAL` — implemented scope: passwd/group APIs are exported as `Implemented` via `pwd_abi`/`grp_abi`. Deferred scope: hosts/backend breadth plus NSS concurrency/cache-coherence closure.
 - `locale`: `IMPLEMENTED_PARTIAL` — implemented scope: bootstrap `setlocale`/`localeconv` C/POSIX path. Deferred scope: catalog, collation, and transliteration parity expansion.

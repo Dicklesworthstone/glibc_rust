@@ -1493,47 +1493,47 @@
     },
     {
       "symbol": "pthread_rwlock_destroy",
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
-      "strict_semantics": "Delegates to host glibc pthread; preserves host semantics",
-      "hardened_semantics": "Host glibc pthread delegation; hardened membrane validates mutex/cond state",
+      "strict_semantics": "Native futex-backed rwlock destroy; returns EBUSY when reader/writer state is active and EINVAL for unmanaged storage",
+      "hardened_semantics": "Native futex-backed rwlock destroy with deterministic managed-state validation and explicit busy-state rejection",
       "default_stub": false
     },
     {
       "symbol": "pthread_rwlock_init",
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
-      "strict_semantics": "Delegates to host glibc pthread; preserves host semantics",
-      "hardened_semantics": "Host glibc pthread delegation; hardened membrane validates mutex/cond state",
+      "strict_semantics": "Native futex-backed rwlock init with deterministic managed magic tagging and null-attr requirement",
+      "hardened_semantics": "Native futex-backed rwlock init with deterministic pointer validation and explicit unsupported-attribute rejection",
       "default_stub": false
     },
     {
       "symbol": "pthread_rwlock_rdlock",
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
-      "strict_semantics": "Delegates to host glibc pthread; preserves host semantics",
-      "hardened_semantics": "Host glibc pthread delegation; hardened membrane validates mutex/cond state",
+      "strict_semantics": "Native futex-backed read lock with reader-count state machine and deterministic EINVAL for unmanaged storage",
+      "hardened_semantics": "Native futex-backed read lock with deterministic state validation and bounded wait behavior",
       "default_stub": false
     },
     {
       "symbol": "pthread_rwlock_unlock",
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
-      "strict_semantics": "Delegates to host glibc pthread; preserves host semantics",
-      "hardened_semantics": "Host glibc pthread delegation; hardened membrane validates mutex/cond state",
+      "strict_semantics": "Native futex-backed unlock for writer/reader holders; deterministic EPERM for unlocked state and EINVAL for unmanaged storage",
+      "hardened_semantics": "Native futex-backed unlock with deterministic holder-state checks and wake-on-last-release behavior",
       "default_stub": false
     },
     {
       "symbol": "pthread_rwlock_wrlock",
-      "status": "GlibcCallThrough",
+      "status": "Implemented",
       "module": "pthread_abi",
       "perf_class": "strict_hotpath",
-      "strict_semantics": "Delegates to host glibc pthread; preserves host semantics",
-      "hardened_semantics": "Host glibc pthread delegation; hardened membrane validates mutex/cond state",
+      "strict_semantics": "Native futex-backed write lock with exclusive writer state and deterministic EINVAL for unmanaged storage",
+      "hardened_semantics": "Native futex-backed write lock with deterministic state validation and bounded wait behavior",
       "default_stub": false
     },
     {
@@ -2285,9 +2285,9 @@
     }
   ],
   "summary": {
-    "Implemented": 142,
+    "Implemented": 147,
     "RawSyscall": 83,
-    "GlibcCallThrough": 25,
+    "GlibcCallThrough": 20,
     "Stub": 0,
     "DefaultStub": 0
   }

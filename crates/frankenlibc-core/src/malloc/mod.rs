@@ -9,7 +9,7 @@ pub mod large;
 pub mod size_class;
 pub mod thread_cache;
 
-pub use allocator::MallocState;
+pub use allocator::{AllocatorLogLevel, AllocatorLogRecord, MallocState};
 pub use large::{LargeAllocation, LargeAllocator};
 pub use size_class::SizeClass;
 pub use thread_cache::ThreadCache;

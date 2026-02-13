@@ -395,14 +395,10 @@ fn replacement_profile_has_both_modes() {
         .iter()
         .filter_map(|v| v.as_str().map(str::to_string))
         .collect();
-    let expected_families = HashSet::from([
-        "stdio_abi".to_string(),
-        "pthread_abi".to_string(),
-        "dlfcn_abi".to_string(),
-    ]);
+    let expected_families = HashSet::from(["stdio_abi".to_string(), "dlfcn_abi".to_string()]);
     assert_eq!(
         family_set, expected_families,
-        "callthrough_families.modules must track stdio/pthread/dlfcn"
+        "callthrough_families.modules must track current stdio/dlfcn callthrough families"
     );
 
     let fixture_pack = profile["zero_unapproved_fixture_pack"]["path"]
