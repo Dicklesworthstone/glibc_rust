@@ -28,32 +28,54 @@ Status keys:
 
 ## 1) P0 Correctness + Drift
 
-- [ ] `TODO-0101` Resolve support-matrix drift source of truth mismatch.
+- [x] `TODO-0101` Resolve support-matrix drift source of truth mismatch.
 - [ ] `TODO-0102` Define one canonical generator path for `support_matrix.json`.
-- [ ] `TODO-0103` Define one canonical generator path for `tests/conformance/reality_report.v1.json`.
+- [x] `TODO-0103` Define one canonical generator path for `tests/conformance/reality_report.v1.json`.
 - [ ] `TODO-0104` Add CI assertion that matrix and reality report are regenerated together in one step.
 - [ ] `TODO-0105` Add deterministic regeneration script wrapper (single command for both artifacts).
-- [ ] `TODO-0106` Update docs to state authoritative artifact ownership and regeneration flow.
+- [x] `TODO-0106` Update docs to state authoritative artifact ownership and regeneration flow.
 - [ ] `TODO-0107` Add a drift triage report artifact with per-symbol deltas.
 
 ## 2) P0 Replacement Readiness
 
-- [ ] `TODO-0201` Triage replacement guard report and enumerate all `GlibcCallThrough` blockers by module.
-- [ ] `TODO-0202` Prioritize blockers by workload impact (`tests/conformance/workload_matrix.json` mapping).
-- [ ] `TODO-0203` Eliminate highest-impact call-throughs first: allocator/threading/string families.
+- [x] `TODO-0201` Triage replacement guard report and enumerate all `GlibcCallThrough` blockers by module.
+- [~] `TODO-0202` Prioritize blockers by workload impact (`tests/conformance/workload_matrix.json` mapping).
+- [~] `TODO-0203` Eliminate highest-impact call-throughs first: allocator/threading/string families.
+  - [x] `TODO-0203a` Remove `termios_abi` host-libc call-throughs:
+    - `tcgetattr/tcsetattr/tcdrain/tcflush/tcflow/tcsendbreak` now routed through `sys_ioctl`.
+    - `cfgetispeed/cfgetospeed/cfsetispeed/cfsetospeed` now use direct `termios` flag math + validation.
+  - [x] `TODO-0203b` Remove `dirent_abi` host-libc call-throughs:
+    - `opendir` now uses `sys_openat`.
+    - `closedir` now uses `sys_close`.
+    - `readdir` `getdents64` path now uses `sys_getdents64`.
+  - [x] `TODO-0203c` Remove `signal_abi` host-libc call-throughs for signal delivery:
+    - `raise` now routes via `SYS_kill` to `sys_getpid()`.
+    - `kill` now routes via `SYS_kill`.
+  - [x] `TODO-0203d` Remove `socket_abi` host-libc call-throughs:
+    - `socket/bind/listen/accept/connect`
+    - `send/recv/sendto/recvfrom`
+    - `shutdown/setsockopt/getsockopt/getpeername/getsockname`
+    - all now route through raw `SYS_*` syscall entrypoints with explicit errno mapping.
+  - [x] `TODO-0203e` Remove `unistd_abi` host-libc call-throughs:
+    - metadata/navigation/identity/link path now route through raw `SYS_*` syscall entrypoints.
+    - `stat/lstat` use `newfstatat`, `access` uses `faccessat`, link ops use `*at` variants.
+    - `sleep/usleep` now route through `SYS_nanosleep`.
+  - [ ] `TODO-0203f` Remove remaining `signal_abi` call-throughs:
+    - `signal`
+    - `sigaction`
 - [ ] `TODO-0204` Eliminate remaining call-throughs in loader/resolver/locale families.
 - [ ] `TODO-0205` Re-run `scripts/check_replacement_guard.sh replacement` until zero forbidden call-throughs.
 - [ ] `TODO-0206` Add regression test to prevent reintroduction of replacement-mode call-throughs.
 
 ## 3) P0 Fixture Schema Stability
 
-- [ ] `TODO-0301` Fix fixture schema heterogeneity causing skip in verify flow:
-- [ ] `TODO-0302` `elf_loader.json` missing `expected_errno` for cases expected by `FixtureCase`.
-- [ ] `TODO-0303` `resolver.json` has non-string `expected_output` while harness expects string.
+- [x] `TODO-0301` Fix fixture schema heterogeneity causing skip in verify flow.
+- [x] `TODO-0302` `elf_loader.json` missing `expected_errno` for cases expected by `FixtureCase`.
+- [x] `TODO-0303` `resolver.json` has non-string `expected_output` while harness expects string.
 - [ ] `TODO-0304` Decide canonical schema for `expected_output` (string-only vs tagged value).
-- [ ] `TODO-0305` Implement schema adapter in loader if mixed typing remains necessary.
+- [x] `TODO-0305` Implement schema adapter in loader if mixed typing remains necessary.
 - [ ] `TODO-0306` Add schema validation script for all fixture files.
-- [ ] `TODO-0307` Add integration test to ensure `harness verify` processes all fixture files (no silent skips).
+- [x] `TODO-0307` Add integration test to ensure `harness verify` processes all fixture files (no silent skips).
 
 ## 4) P0 Harness/Conformance Migration (Phase B+)
 
@@ -109,6 +131,23 @@ Status keys:
 
 ## 11) Immediate Next Execution Queue
 
-- [~] `NEXT-0001` Regenerate/normalize fixture schemas so verify path stops skipping `elf_loader.json` and `resolver.json`.
-- [ ] `NEXT-0002` Close support-matrix vs reality-report drift with a single canonical generation pass.
-- [ ] `NEXT-0003` Burn down highest-impact replacement call-through blockers and re-run replacement guard.
+- [x] `NEXT-0001` Regenerate/normalize fixture schemas so verify path stops skipping `elf_loader.json` and `resolver.json`.
+- [x] `NEXT-0002` Close support-matrix vs reality-report drift with a single canonical generation pass.
+- [~] `NEXT-0003` Burn down highest-impact replacement call-through blockers and re-run replacement guard.
+  - Progress note (pass 1): replacement guard reduced from 80 -> 70 forbidden call-throughs by removing host-libc calls in `time_abi`, `resource_abi`, `process_abi`, and `stdlib_abi`.
+  - Progress note (pass 2): replacement guard reduced from 70 -> 56 forbidden call-throughs by removing host-libc calls in `termios_abi`, `dirent_abi`, and `signal_abi` (`raise`/`kill`).
+  - Progress note (pass 3): replacement guard reduced from 56 -> 22 forbidden call-throughs by removing host-libc calls in `socket_abi` and `unistd_abi`.
+  - Current blocker distribution (`replacement_guard.report.json`):
+    - `pthread_abi`: 15
+    - `dlfcn_abi`: 4
+    - `signal_abi`: 2
+    - `startup_abi`: 1
+  - Previously resolved distributions:
+    - resolved in this pass:
+      - `socket_abi`: 14 -> 0
+      - `unistd_abi`: 20 -> 0
+    - resolved in earlier pass:
+      - `termios_abi`: 10 -> 0
+      - `dirent_abi`: 2 -> 0
+    - resolved in earlier pass:
+      - `signal_abi`: 4 -> 2
