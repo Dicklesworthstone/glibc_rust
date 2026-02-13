@@ -4,6 +4,7 @@
 //! - `UTF-8`
 //! - `ISO-8859-1` / `LATIN1`
 //! - `UTF-16LE`
+//! - `UTF-32`
 //!
 //! This module provides deterministic error semantics (`E2BIG`, `EILSEQ`, `EINVAL`)
 //! and tracks descriptor validity to avoid invalid/double-close behavior.
@@ -327,12 +328,13 @@ mod tests {
     }
 
     #[test]
-    fn iconv_open_rejects_unsupported_encoding() {
+    fn iconv_open_accepts_utf32_encoding() {
         // SAFETY: static C strings.
         unsafe {
             let cd = iconv_open(c_ptr(b"UTF-32\0"), c_ptr(b"UTF-8\0"));
-            assert_eq!(cd, iconv_error_handle());
-            assert_eq!(abi_errno(), errno::EINVAL);
+            assert!(!cd.is_null());
+            assert_ne!(cd, iconv_error_handle());
+            assert_eq!(iconv_close(cd), 0);
         }
     }
 

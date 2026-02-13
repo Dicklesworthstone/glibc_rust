@@ -1,13 +1,13 @@
 //! Conformance and parity tooling for frankenlibc.
 
-use std::ffi::{CString, c_char, c_int, c_void};
+use std::ffi::{c_char, c_int, c_void, CString};
 
 use serde::{Deserialize, Serialize};
 
 unsafe extern "C" {
     fn wcscpy(dest: *mut libc::wchar_t, src: *const libc::wchar_t) -> *mut libc::wchar_t;
     fn wcsncpy(dest: *mut libc::wchar_t, src: *const libc::wchar_t, n: usize)
-    -> *mut libc::wchar_t;
+        -> *mut libc::wchar_t;
     fn wcscat(dest: *mut libc::wchar_t, src: *const libc::wchar_t) -> *mut libc::wchar_t;
     fn wcscmp(s1: *const libc::wchar_t, s2: *const libc::wchar_t) -> i32;
     fn wcsncmp(s1: *const libc::wchar_t, s2: *const libc::wchar_t, n: usize) -> i32;
@@ -15,7 +15,7 @@ unsafe extern "C" {
     fn wcsrchr(wcs: *const libc::wchar_t, wc: libc::wchar_t) -> *mut libc::wchar_t;
     fn wcsstr(haystack: *const libc::wchar_t, needle: *const libc::wchar_t) -> *mut libc::wchar_t;
     fn wmemcpy(dest: *mut libc::wchar_t, src: *const libc::wchar_t, n: usize)
-    -> *mut libc::wchar_t;
+        -> *mut libc::wchar_t;
     fn wmemmove(
         dest: *mut libc::wchar_t,
         src: *const libc::wchar_t,
@@ -2413,9 +2413,18 @@ fn run_host_wcschr(s: &[u32], c: u32) -> Result<Option<usize>, String> {
         if ptr.is_null() {
             Ok(None)
         } else {
-            Ok(Some(ptr as usize - s_wide.as_ptr() as usize))
+            pointer_offset_in_wchars(s_wide.as_ptr(), ptr).map(Some)
         }
     }
+}
+
+fn pointer_offset_in_wchars(
+    base: *const libc::wchar_t,
+    ptr: *const libc::wchar_t,
+) -> Result<usize, String> {
+    // SAFETY: caller guarantees both pointers come from the same allocation.
+    let delta = unsafe { ptr.offset_from(base) };
+    usize::try_from(delta).map_err(|_| format!("negative wchar_t pointer delta: {delta}"))
 }
 
 fn execute_wcschr_case(
@@ -2471,7 +2480,7 @@ fn run_host_wcsrchr(s: &[u32], c: u32) -> Result<Option<usize>, String> {
         if ptr.is_null() {
             Ok(None)
         } else {
-            Ok(Some(ptr as usize - s_wide.as_ptr() as usize))
+            pointer_offset_in_wchars(s_wide.as_ptr(), ptr).map(Some)
         }
     }
 }
@@ -2527,7 +2536,7 @@ fn run_host_wcsstr(hay: &[u32], needle: &[u32]) -> Result<Option<usize>, String>
         if ptr.is_null() {
             Ok(None)
         } else {
-            Ok(Some(ptr as usize - hay_wide.as_ptr() as usize))
+            pointer_offset_in_wchars(hay_wide.as_ptr(), ptr).map(Some)
         }
     }
 }
@@ -2731,7 +2740,7 @@ fn run_host_wmemchr(s: &[u32], c: u32, n: usize) -> Result<Option<usize>, String
         if ptr.is_null() {
             Ok(None)
         } else {
-            Ok(Some(ptr as usize - s_wide.as_ptr() as usize))
+            pointer_offset_in_wchars(s_wide.as_ptr(), ptr).map(Some)
         }
     }
 }
@@ -3297,6 +3306,63 @@ fn execute_iconv_case(
 #[cfg(test)]
 mod tests {
     use super::*;
+    const HARD_PARTS_TEST_SEED: u64 = 0x1FF3_C0DE_A11A_2026;
+
+    fn assert_differential_contract(
+        subsystem: &str,
+        clause: &str,
+        evidence_path: &str,
+        function: &str,
+        mode: &str,
+        inputs: serde_json::Value,
+        expected_impl_output: &str,
+        expected_host_output: Option<&str>,
+        expected_host_parity: bool,
+        expected_note_contains: Option<&str>,
+    ) {
+        let context = format!("[{subsystem}] {clause} ({evidence_path})");
+        let result = execute_fixture_case(function, &inputs, mode)
+            .unwrap_or_else(|err| panic!("{context} execution failed: {err}"));
+
+        assert_eq!(
+            result.impl_output, expected_impl_output,
+            "{context} impl output mismatch"
+        );
+        if let Some(expected_host) = expected_host_output {
+            assert_eq!(
+                result.host_output, expected_host,
+                "{context} host output mismatch"
+            );
+        }
+        assert_eq!(
+            result.host_parity, expected_host_parity,
+            "{context} host parity mismatch"
+        );
+        if let Some(note_fragment) = expected_note_contains {
+            let note = result.note.unwrap_or_default();
+            assert!(
+                note.contains(note_fragment),
+                "{context} note mismatch: expected fragment={note_fragment:?} actual={note:?}"
+            );
+        }
+    }
+
+    fn seeded_invalid_utf8_pair(seed: u64) -> [u8; 2] {
+        let lead = 0xC2 + ((seed as u8) & 0x01);
+        [lead, 0x28]
+    }
+
+    fn seeded_hosts_fixture(seed: u64) -> (String, String) {
+        let a = ((seed >> 8) as u8 % 250) + 1;
+        let b = ((seed >> 16) as u8 % 250) + 1;
+        let c = ((seed >> 24) as u8 % 250) + 1;
+        let d = ((seed >> 32) as u8 % 250) + 1;
+        let content = format!(
+            "# seed={seed:016x}\ninvalid-line-without-ip\n10.{a}.{b}.7 api api.internal # primary\n::1 localhost localhost6 # loopback\n10.{c}.{d}.8 API # uppercase alias\n"
+        );
+        let expected = format!("[\"10.{a}.{b}.7\",\"10.{c}.{d}.8\"]");
+        (content, expected)
+    }
 
     #[test]
     fn artifact_contains_content() {
@@ -3378,7 +3444,7 @@ mod tests {
     }
 
     #[test]
-    fn execute_iconv_case_unsupported_encoding() {
+    fn execute_iconv_case_utf32_conversion_matches_host_shape() {
         let inputs = serde_json::json!({
             "tocode": "UTF-32",
             "fromcode": "UTF-8",
@@ -3387,6 +3453,193 @@ mod tests {
         });
         let result = execute_fixture_case("iconv", &inputs, "strict")
             .expect("iconv execution should succeed");
-        assert_eq!(result.impl_output, "open_err errno=22");
+        assert_eq!(
+            result.impl_output,
+            "ok nonrev=0 in_left=0 out_left=0 out=[255, 254, 0, 0, 65, 0, 0, 0]"
+        );
+        assert!(result.host_parity);
+    }
+
+    #[test]
+    fn execute_iconv_case_hardened_success() {
+        assert_differential_contract(
+            "iconv",
+            "hardened-utf16le-to-utf8-success",
+            "tests/conformance/fixtures/iconv_phase1.json#/cases/hardened_utf16le_to_utf8",
+            "iconv",
+            "hardened",
+            serde_json::json!({
+            "tocode": "UTF-8",
+            "fromcode": "UTF-16LE",
+            "input": [172, 32],
+            "out_len": 4
+            }),
+            "ok nonrev=0 in_left=0 out_left=1 out=[226, 130, 172]",
+            Some("SKIP"),
+            true,
+            None,
+        );
+    }
+
+    #[test]
+    fn execute_iconv_case_hardened_unsupported_encoding_denied() {
+        assert_differential_contract(
+            "iconv",
+            "hardened-unsupported-encoding-denied",
+            "tests/conformance/fixtures/iconv_phase1.json#/cases/hardened_unsupported_encoding_denied",
+            "iconv",
+            "hardened",
+            serde_json::json!({
+                "tocode": "UTF-8",
+                "fromcode": "UTF-7",
+                "input": [65],
+                "out_len": 8
+            }),
+            "open_err errno=22",
+            Some("SKIP"),
+            true,
+            None,
+        );
+    }
+
+    #[test]
+    fn execute_lookup_hosts_case_handles_inline_comments_and_aliases() {
+        assert_differential_contract(
+            "nss",
+            "lookup-hosts-inline-comments-and-aliases",
+            "tests/conformance/fixtures/resolver.json#/cases/hosts_lookup_inline_comments_and_aliases",
+            "lookup_hosts",
+            "strict",
+            serde_json::json!({
+            "content": "# resolver fixture\n::1 localhost localhost6 # loopback\n10.0.0.7 api api.internal # primary\n10.0.0.8 API # duplicate in different case\n",
+            "name": "api"
+            }),
+            "[\"10.0.0.7\",\"10.0.0.8\"]",
+            Some("SKIP"),
+            true,
+            None,
+        );
+    }
+
+    #[test]
+    fn execute_iconv_case_strict_eilseq_seeded_adversarial() {
+        let invalid = seeded_invalid_utf8_pair(HARD_PARTS_TEST_SEED);
+        assert_differential_contract(
+            "iconv",
+            "strict-eilseq-invalid-utf8-adversarial",
+            "tests/conformance/fixtures/iconv_phase1.json#/cases/strict_eilseq_invalid_utf8",
+            "iconv",
+            "strict",
+            serde_json::json!({
+                "tocode": "UTF-16LE",
+                "fromcode": "UTF-8",
+                "input": [invalid[0], invalid[1]],
+                "out_len": 8
+            }),
+            "err errno=84 in_left=2 out_left=8 out=[]",
+            None,
+            true,
+            None,
+        );
+    }
+
+    #[test]
+    fn execute_iconv_case_strict_einval_incomplete_sequence_seeded() {
+        assert_differential_contract(
+            "iconv",
+            "strict-einval-incomplete-sequence-adversarial",
+            "tests/conformance/fixtures/iconv_phase1.json#/cases/strict_einval_incomplete_utf8",
+            "iconv",
+            "strict",
+            serde_json::json!({
+                "tocode": "UTF-16LE",
+                "fromcode": "UTF-8",
+                "input": [226, 130],
+                "out_len": 8
+            }),
+            "err errno=22 in_left=2 out_left=8 out=[]",
+            None,
+            true,
+            None,
+        );
+    }
+
+    #[test]
+    fn execute_lookup_hosts_case_seeded_adversarial_noise() {
+        let (content, expected) = seeded_hosts_fixture(HARD_PARTS_TEST_SEED);
+        assert_differential_contract(
+            "nss",
+            "lookup-hosts-ignores-malformed-and-comment-noise",
+            "tests/conformance/fixtures/resolver.json#/cases/hosts_lookup_inline_comments_and_aliases",
+            "lookup_hosts",
+            "strict",
+            serde_json::json!({
+                "content": content,
+                "name": "api"
+            }),
+            &expected,
+            Some("SKIP"),
+            true,
+            None,
+        );
+    }
+
+    #[test]
+    fn execute_lookup_hosts_case_unknown_name_returns_empty_set() {
+        assert_differential_contract(
+            "nss",
+            "lookup-hosts-unknown-name-empty-result",
+            "tests/conformance/fixtures/resolver.json#/cases/hosts_lookup_basic",
+            "lookup_hosts",
+            "strict",
+            serde_json::json!({
+                "content": "10.8.0.1 cache.local cache\n",
+                "name": "api"
+            }),
+            "[]",
+            Some("SKIP"),
+            true,
+            None,
+        );
+    }
+
+    #[test]
+    fn execute_wcschr_case_reports_wchar_index_for_host_diff() {
+        let inputs = serde_json::json!({
+            "s": [65, 66, 67, 0],
+            "c": 66
+        });
+        let result = execute_fixture_case("wcschr", &inputs, "strict")
+            .expect("wcschr execution should succeed");
+        assert_eq!(result.host_output, "Some(1)");
+        assert_eq!(result.impl_output, "Some(1)");
+        assert!(result.host_parity);
+    }
+
+    #[test]
+    fn execute_wcsstr_case_reports_wchar_index_for_host_diff() {
+        let inputs = serde_json::json!({
+            "haystack": [65, 66, 67, 0],
+            "needle": [66, 67, 0]
+        });
+        let result = execute_fixture_case("wcsstr", &inputs, "strict")
+            .expect("wcsstr execution should succeed");
+        assert_eq!(result.host_output, "Some(1)");
+        assert_eq!(result.impl_output, "Some(1)");
+        assert!(result.host_parity);
+    }
+
+    #[test]
+    fn execute_wmemchr_case_reports_wchar_index_for_host_diff() {
+        let inputs = serde_json::json!({
+            "s": [1, 2, 3, 4],
+            "c": 3,
+            "n": 4
+        });
+        let result = execute_fixture_case("wmemchr", &inputs, "strict")
+            .expect("wmemchr execution should succeed");
+        assert_eq!(result.host_output, "Some(2)");
+        assert_eq!(result.impl_output, "Some(2)");
+        assert!(result.host_parity);
     }
 }

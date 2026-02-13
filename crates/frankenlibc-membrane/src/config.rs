@@ -186,4 +186,24 @@ mod tests {
         assert!(SafetyLevel::Hardened.validation_enabled());
         assert!(!SafetyLevel::Off.validation_enabled());
     }
+
+    #[test]
+    fn cached_mode_is_process_sticky_until_cache_reset() {
+        let previous = CACHED_LEVEL.swap(LEVEL_STRICT, Ordering::SeqCst);
+        assert_eq!(safety_level(), SafetyLevel::Strict);
+        assert_eq!(safety_level(), SafetyLevel::Strict);
+
+        CACHED_LEVEL.store(LEVEL_HARDENED, Ordering::SeqCst);
+        assert_eq!(safety_level(), SafetyLevel::Hardened);
+        assert_eq!(safety_level(), SafetyLevel::Hardened);
+
+        CACHED_LEVEL.store(previous, Ordering::SeqCst);
+    }
+
+    #[test]
+    fn resolving_state_returns_strict_safe_default() {
+        let previous = CACHED_LEVEL.swap(LEVEL_RESOLVING, Ordering::SeqCst);
+        assert_eq!(safety_level(), SafetyLevel::Strict);
+        CACHED_LEVEL.store(previous, Ordering::SeqCst);
+    }
 }

@@ -14,6 +14,7 @@ enum Encoding {
     Utf8,
     Latin1,
     Utf16Le,
+    Utf32,
 }
 
 /// Opaque conversion descriptor.
@@ -21,6 +22,7 @@ enum Encoding {
 pub struct IconvDescriptor {
     from: Encoding,
     to: Encoding,
+    emit_bom: bool,
 }
 
 /// Conversion progress/result.
@@ -68,6 +70,7 @@ fn parse_encoding(raw: &[u8]) -> Option<Encoding> {
         b"UTF8" => Some(Encoding::Utf8),
         b"ISO88591" | b"LATIN1" => Some(Encoding::Latin1),
         b"UTF16LE" => Some(Encoding::Utf16Le),
+        b"UTF32" => Some(Encoding::Utf32),
         _ => None,
     }
 }
@@ -173,6 +176,18 @@ fn decode_utf16le(input: &[u8]) -> Result<(char, usize), DecodeError> {
     Err(DecodeError::Invalid)
 }
 
+fn decode_utf32(input: &[u8]) -> Result<(char, usize), DecodeError> {
+    if input.len() < 4 {
+        return Err(DecodeError::Incomplete);
+    }
+
+    let cp = u32::from_le_bytes([input[0], input[1], input[2], input[3]]);
+    if let Some(ch) = char::from_u32(cp) {
+        return Ok((ch, 4));
+    }
+    Err(DecodeError::Invalid)
+}
+
 fn decode_char(enc: Encoding, input: &[u8]) -> Result<(char, usize), DecodeError> {
     match enc {
         Encoding::Utf8 => decode_utf8(input),
@@ -184,6 +199,7 @@ fn decode_char(enc: Encoding, input: &[u8]) -> Result<(char, usize), DecodeError
             }
         }
         Encoding::Utf16Le => decode_utf16le(input),
+        Encoding::Utf32 => decode_utf32(input),
     }
 }
 
@@ -223,6 +239,14 @@ fn encode_char(enc: Encoding, ch: char, out: &mut [u8]) -> Result<usize, EncodeE
             }
             Ok(needed)
         }
+        Encoding::Utf32 => {
+            if out.len() < 4 {
+                return Err(EncodeError::NoSpace);
+            }
+            let bytes = (ch as u32).to_le_bytes();
+            out[..4].copy_from_slice(&bytes);
+            Ok(4)
+        }
     }
 }
 
@@ -233,7 +257,11 @@ fn encode_char(enc: Encoding, ch: char, out: &mut [u8]) -> Result<usize, EncodeE
 pub fn iconv_open(tocode: &[u8], fromcode: &[u8]) -> Option<IconvDescriptor> {
     let to = parse_encoding(tocode)?;
     let from = parse_encoding(fromcode)?;
-    Some(IconvDescriptor { from, to })
+    Some(IconvDescriptor {
+        from,
+        to,
+        emit_bom: matches!(to, Encoding::Utf32),
+    })
 }
 
 /// Performs character set conversion.
@@ -248,6 +276,19 @@ pub fn iconv(
     let mut in_pos = 0usize;
     let mut out_pos = 0usize;
     let non_reversible = 0usize;
+
+    if cd.emit_bom {
+        if outbuf.len() < 4 {
+            return Err(IconvError {
+                code: ICONV_E2BIG,
+                in_consumed: 0,
+                out_written: 0,
+            });
+        }
+        outbuf[..4].copy_from_slice(&[0xFF, 0xFE, 0x00, 0x00]);
+        out_pos = 4;
+        cd.emit_bom = false;
+    }
 
     while in_pos < inbuf.len() {
         let (ch, consumed) = match decode_char(cd.from, &inbuf[in_pos..]) {
@@ -313,7 +354,7 @@ mod tests {
         assert!(iconv_open(b"UTF-8", b"ISO-8859-1").is_some());
         assert!(iconv_open(b"utf8", b"latin1").is_some());
         assert!(iconv_open(b"UTF16LE", b"UTF-8").is_some());
-        assert!(iconv_open(b"UTF-32", b"UTF-8").is_none());
+        assert!(iconv_open(b"UTF-32", b"UTF-8").is_some());
     }
 
     #[test]
@@ -356,6 +397,26 @@ mod tests {
         assert_eq!(res.in_consumed, 4);
         assert_eq!(res.out_written, "A€".len());
         assert_eq!(&out[..res.out_written], "A€".as_bytes());
+    }
+
+    #[test]
+    fn utf8_to_utf32_conversion_emits_bom() {
+        let mut cd = iconv_open(b"UTF-32", b"UTF-8").unwrap();
+        let mut out = [0u8; 16];
+        let res = iconv(&mut cd, b"A", &mut out).unwrap();
+        assert_eq!(res.in_consumed, 1);
+        assert_eq!(res.out_written, 8);
+        assert_eq!(&out[..8], &[0xFF, 0xFE, 0x00, 0x00, 0x41, 0x00, 0x00, 0x00]);
+    }
+
+    #[test]
+    fn utf8_to_utf32_e2big_before_bom() {
+        let mut cd = iconv_open(b"UTF-32", b"UTF-8").unwrap();
+        let mut out = [0u8; 3];
+        let err = iconv(&mut cd, b"A", &mut out).unwrap_err();
+        assert_eq!(err.code, ICONV_E2BIG);
+        assert_eq!(err.in_consumed, 0);
+        assert_eq!(err.out_written, 0);
     }
 
     #[test]

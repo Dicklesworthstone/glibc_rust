@@ -2,11 +2,11 @@
 //!
 //! Implements `<pthread.h>` constants and validators for thread management,
 //! mutexes, condition variables, reader-writer locks, and thread-local storage.
-//! Actual synchronization primitives delegate to libc at the ABI layer.
 
 pub mod cond;
 pub mod mutex;
 pub mod rwlock;
+#[allow(unsafe_code)]
 pub mod thread;
 pub mod tls;
 
@@ -18,5 +18,8 @@ pub use rwlock::{
     PTHREAD_RWLOCK_DEFAULT_NP, PTHREAD_RWLOCK_PREFER_READER_NP,
     PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP, PTHREAD_RWLOCK_PREFER_WRITER_NP,
 };
-pub use thread::{pthread_create, pthread_detach, pthread_join};
+pub use thread::{
+    create_thread, detach_thread, join_thread, self_tid, ThreadHandle, THREAD_DETACHED,
+    THREAD_FINISHED, THREAD_JOINED, THREAD_RUNNING, THREAD_STARTING,
+};
 pub use tls::{pthread_getspecific, pthread_key_create, pthread_setspecific};

@@ -62,6 +62,8 @@ pub const SYS_EXIT_GROUP: usize = 231;
 pub const SYS_OPENAT: usize = 257;
 pub const SYS_PIPE2: usize = 293;
 pub const SYS_FUTEX: usize = 202;
+pub const SYS_SET_TID_ADDRESS: usize = 218;
+pub const SYS_GETTID: usize = 186;
 
 // -------------------------------------------------------------------------
 // Error handling
@@ -379,6 +381,79 @@ pub unsafe fn sys_madvise(addr: *mut u8, length: usize, advice: i32) -> Result<(
     // SAFETY: caller guarantees addr/length validity.
     let ret = unsafe { raw::syscall3(SYS_MADVISE, addr as usize, length, advice as usize) };
     syscall_result(ret).map(|_| ())
+}
+
+/// `gettid()` — get the caller's thread ID (kernel TID).
+#[inline]
+#[allow(unsafe_code)]
+pub fn sys_gettid() -> i32 {
+    // SAFETY: gettid has no preconditions.
+    let ret = unsafe { raw::syscall0(SYS_GETTID) };
+    ret as i32
+}
+
+/// `exit(status)` — terminate the calling thread (not the entire process).
+///
+/// Unlike `exit_group`, this only terminates the calling thread.
+#[inline]
+#[allow(unsafe_code)]
+pub fn sys_exit_thread(status: i32) -> ! {
+    // SAFETY: SYS_EXIT terminates only the calling thread.
+    unsafe { raw::syscall1(SYS_EXIT, status as usize) };
+    loop {
+        core::hint::spin_loop();
+    }
+}
+
+/// Create a new thread via `clone` syscall with a child trampoline.
+///
+/// The child stack must be pre-populated:
+/// - `[child_sp + 0]`: function pointer (`unsafe extern "C" fn(usize) -> usize`)
+/// - `[child_sp + 8]`: argument to pass as first parameter to the function
+///
+/// After clone, the child will:
+/// 1. Pop the function pointer from the stack
+/// 2. Pop the argument and pass it in `rdi` (first C ABI argument)
+/// 3. Call the function
+/// 4. Use the return value as the thread exit status
+///
+/// The parent receives the child's TID (or a negative errno).
+///
+/// # Safety
+///
+/// - `child_sp` must point to a properly prepared child stack as described above.
+/// - The stack region must be valid and have sufficient space.
+/// - `parent_tid` and `child_tid` must be valid pointers if the corresponding
+///   `CLONE_PARENT_SETTID` / `CLONE_CHILD_CLEARTID` flags are set.
+/// - The function pointer at `[child_sp]` must be a valid, callable function
+///   that accepts a `usize` argument and returns a `usize`.
+#[inline]
+#[allow(unsafe_code)]
+pub unsafe fn sys_clone_thread(
+    flags: usize,
+    child_sp: usize,
+    parent_tid: *mut i32,
+    child_tid: *mut i32,
+    tls: usize,
+) -> Result<i32, i32> {
+    // SAFETY: caller guarantees child_sp, parent_tid, child_tid validity
+    // and proper stack setup. The inline asm handles parent vs child paths.
+    let ret = unsafe {
+        raw::clone_thread_asm(
+            flags,
+            child_sp,
+            parent_tid as usize,
+            child_tid as usize,
+            tls,
+        )
+    };
+    // Negative returns (in unsigned two's complement) indicate -errno.
+    let signed = ret as isize;
+    if signed < 0 {
+        Err((-signed) as i32)
+    } else {
+        Ok(signed as i32)
+    }
 }
 
 /// `pread64(fd, buf, count, offset)` — read from a file descriptor at a given offset.
