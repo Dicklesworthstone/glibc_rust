@@ -35,3 +35,19 @@ a.out
 
 # bv graph output
 --graph-format.svg
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Temporary directories
+.tmp/
+
+# Symlinked target directories
+target_sym*/
+
+# FastEmbed model caches (downloaded at runtime)
+.fastembed_cache/
+
+# Agent coordination config
+.agent-mail.yaml
