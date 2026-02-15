@@ -241,6 +241,22 @@ thread_local! {
     static GRP_TLS: RefCell<GrpStorage> = RefCell::new(GrpStorage::new());
 }
 
+fn lookup_group_by_name(name: &[u8]) -> Option<frankenlibc_core::grp::Group> {
+    GRP_TLS.with(|cell| {
+        let mut storage = cell.borrow_mut();
+        storage.refresh_cache();
+        frankenlibc_core::grp::lookup_by_name(storage.current_content(), name)
+    })
+}
+
+fn lookup_group_by_gid(gid: u32) -> Option<frankenlibc_core::grp::Group> {
+    GRP_TLS.with(|cell| {
+        let mut storage = cell.borrow_mut();
+        storage.refresh_cache();
+        frankenlibc_core::grp::lookup_by_gid(storage.current_content(), gid)
+    })
+}
+
 fn do_getgrnam(name: &[u8]) -> *mut libc::group {
     GRP_TLS.with(|cell| {
         let mut storage = cell.borrow_mut();
@@ -373,8 +389,7 @@ pub unsafe extern "C" fn getgrnam_r(
 
     // SAFETY: name is non-null.
     let name_cstr = unsafe { std::ffi::CStr::from_ptr(name) };
-    let content = std::fs::read("/etc/group").unwrap_or_default();
-    let entry = match frankenlibc_core::grp::lookup_by_name(&content, name_cstr.to_bytes()) {
+    let entry = match lookup_group_by_name(name_cstr.to_bytes()) {
         Some(e) => e,
         None => {
             runtime_policy::observe(ApiFamily::Resolver, decision.profile, 15, false);
@@ -409,8 +424,7 @@ pub unsafe extern "C" fn getgrgid_r(
         return libc::EACCES;
     }
 
-    let content = std::fs::read("/etc/group").unwrap_or_default();
-    let entry = match frankenlibc_core::grp::lookup_by_gid(&content, gid) {
+    let entry = match lookup_group_by_gid(gid) {
         Some(e) => e,
         None => {
             runtime_policy::observe(ApiFamily::Resolver, decision.profile, 15, false);

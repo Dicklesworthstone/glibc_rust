@@ -235,6 +235,22 @@ thread_local! {
     static PWD_TLS: RefCell<PwdStorage> = RefCell::new(PwdStorage::new());
 }
 
+fn lookup_passwd_by_name(name: &[u8]) -> Option<frankenlibc_core::pwd::Passwd> {
+    PWD_TLS.with(|cell| {
+        let mut storage = cell.borrow_mut();
+        storage.refresh_cache();
+        frankenlibc_core::pwd::lookup_by_name(storage.current_content(), name)
+    })
+}
+
+fn lookup_passwd_by_uid(uid: u32) -> Option<frankenlibc_core::pwd::Passwd> {
+    PWD_TLS.with(|cell| {
+        let mut storage = cell.borrow_mut();
+        storage.refresh_cache();
+        frankenlibc_core::pwd::lookup_by_uid(storage.current_content(), uid)
+    })
+}
+
 /// Read /etc/passwd and look up by name, returning a pointer to thread-local storage.
 fn do_getpwnam(name: &[u8]) -> *mut libc::passwd {
     PWD_TLS.with(|cell| {
@@ -375,8 +391,7 @@ pub unsafe extern "C" fn getpwnam_r(
     let name_cstr = unsafe { std::ffi::CStr::from_ptr(name) };
     let name_bytes = name_cstr.to_bytes();
 
-    let content = std::fs::read("/etc/passwd").unwrap_or_default();
-    let entry = match frankenlibc_core::pwd::lookup_by_name(&content, name_bytes) {
+    let entry = match lookup_passwd_by_name(name_bytes) {
         Some(e) => e,
         None => {
             runtime_policy::observe(ApiFamily::Resolver, decision.profile, 15, false);
@@ -411,8 +426,7 @@ pub unsafe extern "C" fn getpwuid_r(
         return libc::EACCES;
     }
 
-    let content = std::fs::read("/etc/passwd").unwrap_or_default();
-    let entry = match frankenlibc_core::pwd::lookup_by_uid(&content, uid) {
+    let entry = match lookup_passwd_by_uid(uid) {
         Some(e) => e,
         None => {
             runtime_policy::observe(ApiFamily::Resolver, decision.profile, 15, false);
