@@ -16,6 +16,19 @@ pub struct Group {
     pub gr_mem: Vec<Vec<u8>>,
 }
 
+/// Aggregate parser accounting for group file scans.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct ParseStats {
+    /// Number of logical lines inspected.
+    pub total_lines: usize,
+    /// Number of valid group entries produced.
+    pub parsed_entries: usize,
+    /// Number of malformed non-comment lines.
+    pub malformed_lines: usize,
+    /// Number of comment/blank lines skipped.
+    pub skipped_lines: usize,
+}
+
 /// Parse a single line from `/etc/group`.
 ///
 /// Format: `name:passwd:gid:members`
@@ -88,10 +101,35 @@ pub fn lookup_by_gid(content: &[u8], gid: u32) -> Option<Group> {
 
 /// Parse all valid entries from group content.
 pub fn parse_all(content: &[u8]) -> Vec<Group> {
-    content
-        .split(|&b| b == b'\n')
-        .filter_map(parse_group_line)
-        .collect()
+    parse_all_with_stats(content).0
+}
+
+/// Parse all valid entries from group content with deterministic accounting.
+pub fn parse_all_with_stats(content: &[u8]) -> (Vec<Group>, ParseStats) {
+    let mut entries = Vec::new();
+    let mut stats = ParseStats::default();
+
+    for raw_line in content.split(|&b| b == b'\n') {
+        stats.total_lines += 1;
+
+        let line = raw_line.strip_suffix(b"\r").unwrap_or(raw_line);
+        if line.is_empty() || line.starts_with(b"#") {
+            stats.skipped_lines += 1;
+            continue;
+        }
+
+        match parse_group_line(raw_line) {
+            Some(entry) => {
+                stats.parsed_entries += 1;
+                entries.push(entry);
+            }
+            None => {
+                stats.malformed_lines += 1;
+            }
+        }
+    }
+
+    (entries, stats)
 }
 
 #[cfg(test)]
@@ -260,5 +298,29 @@ ubuntu:x:1000:
         let entry = parse_group_line(b"test:x:50:a,b,").unwrap();
         assert_eq!(entry.gr_mem.len(), 3);
         assert_eq!(entry.gr_mem[2], b"");
+    }
+
+    #[test]
+    fn parse_all_with_stats_counts_malformed_lines() {
+        let content = b"root:x:0:\n# comment\nmalformed\n\nsudo:x:27:ubuntu";
+        let (entries, stats) = parse_all_with_stats(content);
+
+        assert_eq!(entries.len(), 2);
+        assert_eq!(stats.total_lines, 5);
+        assert_eq!(stats.parsed_entries, 2);
+        assert_eq!(stats.malformed_lines, 1);
+        assert_eq!(stats.skipped_lines, 2);
+    }
+
+    #[test]
+    fn parse_all_with_stats_tracks_trailing_newline_segment() {
+        let content = b"root:x:0:\n";
+        let (entries, stats) = parse_all_with_stats(content);
+
+        assert_eq!(entries.len(), 1);
+        assert_eq!(stats.total_lines, 2);
+        assert_eq!(stats.parsed_entries, 1);
+        assert_eq!(stats.malformed_lines, 0);
+        assert_eq!(stats.skipped_lines, 1);
     }
 }

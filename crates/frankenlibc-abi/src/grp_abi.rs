@@ -8,11 +8,29 @@
 
 use std::cell::RefCell;
 use std::ffi::{c_char, c_int};
+use std::path::{Path, PathBuf};
 use std::ptr;
+use std::time::UNIX_EPOCH;
 
 use frankenlibc_membrane::runtime_math::{ApiFamily, MembraneAction};
 
 use crate::runtime_policy;
+
+const GROUP_PATH: &str = "/etc/group";
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct FileFingerprint {
+    len: u64,
+    modified_ns: u128,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+struct CacheMetrics {
+    hits: u64,
+    misses: u64,
+    reloads: u64,
+    invalidations: u64,
+}
 
 /// Thread-local storage for the most recent group result.
 struct GrpStorage {
@@ -21,30 +39,128 @@ struct GrpStorage {
     buf: Vec<u8>,
     /// Pointer array for gr_mem (NULL-terminated).
     mem_ptrs: Vec<*mut c_char>,
+    /// File path for group backend (defaults to /etc/group).
+    source_path: PathBuf,
     /// Cached file content.
     file_cache: Option<Vec<u8>>,
+    /// Fingerprint for the cached file snapshot.
+    cache_fingerprint: Option<FileFingerprint>,
+    /// Monotonic generation for cache reloads.
+    cache_generation: u64,
+    /// Generation used to build `entries`.
+    entries_generation: u64,
     /// Parsed entries for iteration.
     entries: Vec<frankenlibc_core::grp::Group>,
+    /// Parse accounting from the most recent `entries` build.
+    #[allow(dead_code)]
+    last_parse_stats: frankenlibc_core::grp::ParseStats,
     /// Current iteration index for getgrent.
     iter_idx: usize,
+    /// Cache hit/miss/reload/invalidation counters.
+    cache_metrics: CacheMetrics,
 }
 
 impl GrpStorage {
     fn new() -> Self {
+        Self::new_with_path(GROUP_PATH)
+    }
+
+    fn new_with_path(path: impl Into<PathBuf>) -> Self {
         Self {
             gr: unsafe { std::mem::zeroed() },
             buf: Vec::new(),
             mem_ptrs: Vec::new(),
+            source_path: path.into(),
             file_cache: None,
+            cache_fingerprint: None,
+            cache_generation: 0,
+            entries_generation: 0,
             entries: Vec::new(),
+            last_parse_stats: frankenlibc_core::grp::ParseStats::default(),
             iter_idx: 0,
+            cache_metrics: CacheMetrics::default(),
         }
     }
 
-    fn ensure_loaded(&mut self) {
-        if self.file_cache.is_none() {
-            self.file_cache = std::fs::read("/etc/group").ok();
+    fn file_fingerprint(path: &Path) -> Option<FileFingerprint> {
+        let metadata = std::fs::metadata(path).ok()?;
+        let modified_ns = metadata
+            .modified()
+            .ok()
+            .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
+            .map_or(0, |duration| duration.as_nanos());
+
+        Some(FileFingerprint {
+            len: metadata.len(),
+            modified_ns,
+        })
+    }
+
+    /// Refresh cache from disk when fingerprint changes.
+    ///
+    /// Invalidation policy:
+    /// - cache hit: retain parsed entries/cursor
+    /// - reload or read failure: drop parsed entries and reset cursor
+    fn refresh_cache(&mut self) {
+        let current_fp = Self::file_fingerprint(&self.source_path);
+
+        if let (Some(_), Some(cached_fp), Some(now_fp)) =
+            (&self.file_cache, self.cache_fingerprint, current_fp)
+            && cached_fp == now_fp
+        {
+            self.cache_metrics.hits += 1;
+            return;
         }
+
+        self.cache_metrics.misses += 1;
+
+        match std::fs::read(&self.source_path) {
+            Ok(bytes) => {
+                let next_fp = Self::file_fingerprint(&self.source_path).or(current_fp).unwrap_or(
+                    FileFingerprint {
+                        len: bytes.len() as u64,
+                        modified_ns: 0,
+                    },
+                );
+                let had_cache = self.file_cache.is_some();
+
+                self.file_cache = Some(bytes);
+                self.cache_fingerprint = Some(next_fp);
+                self.cache_generation = self.cache_generation.wrapping_add(1);
+                self.cache_metrics.reloads += 1;
+
+                if had_cache {
+                    self.entries.clear();
+                    self.iter_idx = 0;
+                    self.entries_generation = 0;
+                    self.last_parse_stats = frankenlibc_core::grp::ParseStats::default();
+                    self.cache_metrics.invalidations += 1;
+                }
+            }
+            Err(_) => {
+                if self.file_cache.is_some() || !self.entries.is_empty() {
+                    self.cache_metrics.invalidations += 1;
+                }
+                self.file_cache = None;
+                self.cache_fingerprint = None;
+                self.entries.clear();
+                self.iter_idx = 0;
+                self.entries_generation = 0;
+                self.last_parse_stats = frankenlibc_core::grp::ParseStats::default();
+            }
+        }
+    }
+
+    fn current_content(&self) -> &[u8] {
+        self.file_cache.as_deref().unwrap_or_default()
+    }
+
+    fn rebuild_entries(&mut self) {
+        let (entries, stats) = frankenlibc_core::grp::parse_all_with_stats(self.current_content());
+        self.entries = entries;
+        self.last_parse_stats = stats;
+        self.iter_idx = 0;
+        self.entries_generation = self.cache_generation;
     }
 
     /// Populate the C struct from a parsed entry.
@@ -87,6 +203,11 @@ impl GrpStorage {
 
         &mut self.gr as *mut libc::group
     }
+
+    #[cfg(test)]
+    fn cache_metrics(&self) -> CacheMetrics {
+        self.cache_metrics
+    }
 }
 
 thread_local! {
@@ -96,9 +217,8 @@ thread_local! {
 fn do_getgrnam(name: &[u8]) -> *mut libc::group {
     GRP_TLS.with(|cell| {
         let mut storage = cell.borrow_mut();
-        storage.ensure_loaded();
-        let content = storage.file_cache.clone().unwrap_or_default();
-        match frankenlibc_core::grp::lookup_by_name(&content, name) {
+        storage.refresh_cache();
+        match frankenlibc_core::grp::lookup_by_name(storage.current_content(), name) {
             Some(entry) => storage.fill_from(&entry),
             None => ptr::null_mut(),
         }
@@ -108,9 +228,8 @@ fn do_getgrnam(name: &[u8]) -> *mut libc::group {
 fn do_getgrgid(gid: u32) -> *mut libc::group {
     GRP_TLS.with(|cell| {
         let mut storage = cell.borrow_mut();
-        storage.ensure_loaded();
-        let content = storage.file_cache.clone().unwrap_or_default();
-        match frankenlibc_core::grp::lookup_by_gid(&content, gid) {
+        storage.refresh_cache();
+        match frankenlibc_core::grp::lookup_by_gid(storage.current_content(), gid) {
             Some(entry) => storage.fill_from(&entry),
             None => ptr::null_mut(),
         }
@@ -157,10 +276,8 @@ pub unsafe extern "C" fn getgrgid(gid: libc::gid_t) -> *mut libc::group {
 pub unsafe extern "C" fn setgrent() {
     GRP_TLS.with(|cell| {
         let mut storage = cell.borrow_mut();
-        storage.ensure_loaded();
-        let content = storage.file_cache.clone().unwrap_or_default();
-        storage.entries = frankenlibc_core::grp::parse_all(&content);
-        storage.iter_idx = 0;
+        storage.refresh_cache();
+        storage.rebuild_entries();
     });
 }
 
@@ -169,9 +286,15 @@ pub unsafe extern "C" fn setgrent() {
 pub unsafe extern "C" fn endgrent() {
     GRP_TLS.with(|cell| {
         let mut storage = cell.borrow_mut();
+        if storage.file_cache.is_some() || !storage.entries.is_empty() {
+            storage.cache_metrics.invalidations += 1;
+        }
         storage.entries.clear();
         storage.iter_idx = 0;
         storage.file_cache = None;
+        storage.cache_fingerprint = None;
+        storage.entries_generation = 0;
+        storage.last_parse_stats = frankenlibc_core::grp::ParseStats::default();
     });
 }
 
@@ -180,10 +303,12 @@ pub unsafe extern "C" fn endgrent() {
 pub unsafe extern "C" fn getgrent() -> *mut libc::group {
     GRP_TLS.with(|cell| {
         let mut storage = cell.borrow_mut();
-        if storage.entries.is_empty() && storage.iter_idx == 0 {
-            storage.ensure_loaded();
-            let content = storage.file_cache.clone().unwrap_or_default();
-            storage.entries = frankenlibc_core::grp::parse_all(&content);
+        storage.refresh_cache();
+
+        if (storage.entries.is_empty() && storage.iter_idx == 0)
+            || storage.entries_generation != storage.cache_generation
+        {
+            storage.rebuild_entries();
         }
 
         if storage.iter_idx >= storage.entries.len() {
@@ -355,4 +480,94 @@ unsafe fn fill_group_r(
     }
 
     0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    static TEST_SEQ: AtomicU64 = AtomicU64::new(0);
+
+    fn temp_path(prefix: &str) -> PathBuf {
+        let seq = TEST_SEQ.fetch_add(1, Ordering::Relaxed);
+        std::env::temp_dir().join(format!(
+            "frankenlibc-{prefix}-{}-{seq}.txt",
+            std::process::id()
+        ))
+    }
+
+    fn write_file(path: &Path, content: &[u8]) {
+        fs::write(path, content).expect("temporary group file should be writable");
+    }
+
+    #[test]
+    fn grp_cache_refresh_tracks_hits_and_reloads() {
+        let path = temp_path("grp-cache");
+        write_file(&path, b"root:x:0:\nusers:x:100:alice\n");
+
+        let mut storage = GrpStorage::new_with_path(&path);
+        storage.refresh_cache();
+        let metrics = storage.cache_metrics();
+        assert_eq!(metrics.misses, 1);
+        assert_eq!(metrics.hits, 0);
+        assert_eq!(metrics.reloads, 1);
+        assert_eq!(metrics.invalidations, 0);
+
+        storage.refresh_cache();
+        let metrics = storage.cache_metrics();
+        assert_eq!(metrics.hits, 1);
+        assert_eq!(metrics.misses, 1);
+        assert_eq!(metrics.reloads, 1);
+
+        write_file(&path, b"root:x:0:\nusers:x:101:alice,bob\n");
+        storage.refresh_cache();
+        let metrics = storage.cache_metrics();
+        assert_eq!(metrics.misses, 2);
+        assert_eq!(metrics.reloads, 2);
+        assert_eq!(metrics.invalidations, 1);
+        assert_eq!(storage.iter_idx, 0);
+        assert!(
+            frankenlibc_core::grp::lookup_by_gid(storage.current_content(), 101).is_some(),
+            "cache reload should expose updated group content"
+        );
+
+        let _ = fs::remove_file(&path);
+    }
+
+    #[test]
+    fn grp_rebuild_entries_records_parse_stats_after_invalidation() {
+        let path = temp_path("grp-parse-stats");
+        write_file(&path, b"root:x:0:\nmalformed\n#comment\n");
+
+        let mut storage = GrpStorage::new_with_path(&path);
+        storage.refresh_cache();
+        storage.rebuild_entries();
+
+        assert_eq!(storage.entries.len(), 1);
+        assert_eq!(storage.last_parse_stats.parsed_entries, 1);
+        assert_eq!(storage.last_parse_stats.malformed_lines, 1);
+        assert_eq!(storage.last_parse_stats.skipped_lines, 1);
+        assert_eq!(storage.entries_generation, storage.cache_generation);
+
+        storage.iter_idx = 1;
+        write_file(&path, b"root:x:0:\nusers:x:100:alice,bob\n");
+        storage.refresh_cache();
+
+        assert!(
+            storage.entries.is_empty(),
+            "cache invalidation should clear iteration entries"
+        );
+        assert_eq!(storage.iter_idx, 0);
+        assert_eq!(storage.entries_generation, 0);
+
+        storage.rebuild_entries();
+        assert_eq!(storage.entries.len(), 2);
+        assert_eq!(storage.last_parse_stats.parsed_entries, 2);
+        assert_eq!(storage.last_parse_stats.malformed_lines, 0);
+        assert_eq!(storage.entries_generation, storage.cache_generation);
+
+        let _ = fs::remove_file(&path);
+    }
 }
