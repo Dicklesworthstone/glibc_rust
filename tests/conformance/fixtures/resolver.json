@@ -136,6 +136,21 @@
       "mode": "strict"
     },
     {
+      "name": "getaddrinfo_hosts_file_subset",
+      "function": "getaddrinfo",
+      "spec_section": "/etc/hosts files backend subset",
+      "inputs": {
+        "node": "app",
+        "service": "8080",
+        "hosts_content": "127.0.0.1 localhost\n10.20.30.40 app app.internal\n"
+      },
+      "expected_output": {
+        "ai_family": 2,
+        "ai_addr": [10, 20, 30, 40]
+      },
+      "mode": "strict"
+    },
+    {
       "name": "getaddrinfo_numeric_ipv4",
       "function": "getaddrinfo",
       "spec_section": "POSIX getaddrinfo",
