@@ -54,3 +54,6 @@ target_sym*/
 
 # Compiler crash reports
 rustc-ice-*.txt
+
+# Ephemeral agent flag/lock files
+Safe
