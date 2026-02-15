@@ -4207,6 +4207,7 @@ mod tests {
     use super::*;
     const HARD_PARTS_TEST_SEED: u64 = 0x1FF3_C0DE_A11A_2026;
 
+    #[allow(clippy::too_many_arguments)]
     fn assert_differential_contract(
         subsystem: &str,
         clause: &str,
