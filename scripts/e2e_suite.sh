@@ -2,7 +2,7 @@
 # e2e_suite.sh — Comprehensive E2E test suite with structured logging (bd-2ez)
 #
 # Scenario classes:
-#   smoke      — Basic binary execution under LD_PRELOAD (coreutils, integration)
+#   smoke      — Basic binary execution plus shadow-diff comparisons against host runs
 #   stress     — Repeated/concurrent execution for stability
 #   fault      — Fault injection (invalid pointers, oversized allocs, signal delivery)
 #   stability  — Long-run replayable stability loops
@@ -754,6 +754,91 @@ run_e2e_case() {
 }
 
 # ---------------------------------------------------------------------------
+# Shadow-run helper: compare preloaded output against host baseline.
+# ---------------------------------------------------------------------------
+run_shadow_compare_case() {
+    local mode="$1"
+    local scenario="$2"
+    local label="$3"
+    shift 3
+
+    local case_dir="${OUT_DIR}/${scenario}/${mode}/${label}"
+    mkdir -p "${case_dir}"
+
+    local baseline_stdout="${case_dir}/baseline.stdout.txt"
+    local baseline_stderr="${case_dir}/baseline.stderr.txt"
+    local baseline_rc=0
+
+    set +e
+    timeout "${TIMEOUT_SECONDS}" "$@" > "${baseline_stdout}" 2> "${baseline_stderr}"
+    baseline_rc=$?
+    set -e
+    printf '%s\n' "${baseline_rc}" > "${case_dir}/baseline.exit_code"
+
+    local baseline_refs="[\"${scenario}/${mode}/${label}/baseline.stdout.txt\",\"${scenario}/${mode}/${label}/baseline.stderr.txt\",\"${scenario}/${mode}/${label}/baseline.exit_code\"]"
+    emit_log "info" "shadow_baseline" "${mode}" "" "${label}" "" "" "\"scenario_pack\":\"${scenario}\",\"retry_count\":0,\"flake_score\":0.0,\"artifact_refs\":${baseline_refs},\"verdict\":\"baseline_recorded\",\"details\":{\"baseline_exit_code\":${baseline_rc}}"
+
+    if [[ "${baseline_rc}" -ne 0 ]]; then
+        fails=$((fails + 1))
+        PACK_FAILS["${scenario}"]=$(( ${PACK_FAILS["${scenario}"]:-0} + 1 ))
+        CASE_RESULT_BY_SCENARIO_MODE["${scenario}.${label}|${mode}"]="fail|0|baseline_rc_${baseline_rc}|${label}"
+        CASE_SCENARIOS["${scenario}.${label}"]=1
+        emit_log "error" "shadow_baseline_fail" "${mode}" "" "${label}" "fail" "" "\"scenario_pack\":\"${scenario}\",\"retry_count\":0,\"flake_score\":0.0,\"artifact_refs\":${baseline_refs},\"verdict\":\"baseline_nonzero\",\"details\":{\"baseline_exit_code\":${baseline_rc}}"
+        echo "[FAIL] ${scenario}/${mode}/${label} (baseline exit ${baseline_rc})"
+        return 1
+    fi
+
+    if ! run_e2e_case "${mode}" "${scenario}" "${label}" "$@"; then
+        return 1
+    fi
+
+    local preloaded_stdout="${case_dir}/stdout.txt"
+    local preloaded_stderr="${case_dir}/stderr.txt"
+    local mismatch=0
+    cmp -s "${baseline_stdout}" "${preloaded_stdout}" || mismatch=1
+    cmp -s "${baseline_stderr}" "${preloaded_stderr}" || mismatch=1
+
+    if [[ "${mismatch}" -ne 0 ]]; then
+        passes=$((passes - 1))
+        fails=$((fails + 1))
+        PACK_FAILS["${scenario}"]=$(( ${PACK_FAILS["${scenario}"]:-0} + 1 ))
+        local scenario_key="${scenario}.${label}|${mode}"
+        local scenario_result="${CASE_RESULT_BY_SCENARIO_MODE["${scenario_key}"]:-}"
+        if [[ -n "${scenario_result}" ]]; then
+            IFS='|' read -r _ latency_ns replay_key saved_label <<<"${scenario_result}"
+            CASE_RESULT_BY_SCENARIO_MODE["${scenario_key}"]="fail|${latency_ns}|${replay_key}|${saved_label}"
+        else
+            CASE_RESULT_BY_SCENARIO_MODE["${scenario_key}"]="fail|0|shadow_mismatch|${label}"
+        fi
+        local diff_refs="[\"${scenario}/${mode}/${label}/baseline.stdout.txt\",\"${scenario}/${mode}/${label}/baseline.stderr.txt\",\"${scenario}/${mode}/${label}/stdout.txt\",\"${scenario}/${mode}/${label}/stderr.txt\"]"
+        emit_log "error" "shadow_diff_mismatch" "${mode}" "" "${label}" "fail" "" "\"scenario_pack\":\"${scenario}\",\"retry_count\":0,\"flake_score\":0.0,\"artifact_refs\":${diff_refs},\"verdict\":\"shadow_mismatch\",\"details\":{\"baseline_exit_code\":0}"
+        echo "[FAIL] ${scenario}/${mode}/${label} (shadow diff mismatch)"
+        return 1
+    fi
+
+    local diff_refs="[\"${scenario}/${mode}/${label}/baseline.stdout.txt\",\"${scenario}/${mode}/${label}/baseline.stderr.txt\",\"${scenario}/${mode}/${label}/stdout.txt\",\"${scenario}/${mode}/${label}/stderr.txt\"]"
+    emit_log "info" "shadow_diff_match" "${mode}" "" "${label}" "pass" "" "\"scenario_pack\":\"${scenario}\",\"retry_count\":0,\"flake_score\":0.0,\"artifact_refs\":${diff_refs},\"verdict\":\"shadow_match\""
+    return 0
+}
+
+run_optional_shadow_compare_case() {
+    local required_binary="$1"
+    local mode="$2"
+    local scenario="$3"
+    local label="$4"
+    shift 4
+
+    if ! command -v "${required_binary}" >/dev/null 2>&1; then
+        skips=$((skips + 1))
+        emit_log "warn" "case_skip_optional_binary_missing" "${mode}" "" "${label}" "skip" "" "\"scenario_pack\":\"${scenario}\",\"retry_count\":0,\"flake_score\":0.0,\"artifact_refs\":[],\"verdict\":\"optional_binary_missing\",\"details\":{\"required_binary\":\"${required_binary}\"}"
+        echo "[SKIP] ${scenario}/${mode}/${label} (missing optional binary: ${required_binary})"
+        return 0
+    fi
+
+    run_shadow_compare_case "${mode}" "${scenario}" "${label}" "$@"
+}
+
+# ---------------------------------------------------------------------------
 # Scenario: smoke (basic binary execution)
 # ---------------------------------------------------------------------------
 run_smoke() {
@@ -767,15 +852,33 @@ run_smoke() {
         cc -O2 "${ROOT}/tests/integration/link_test.c" -o "${integ_bin}"
     fi
 
+    local smoke_fixture="${OUT_DIR}/fixtures/smoke_shadow_input.txt"
+    mkdir -p "$(dirname "${smoke_fixture}")"
+    if [[ ! -f "${smoke_fixture}" ]]; then
+        cat > "${smoke_fixture}" <<'EOF'
+charlie
+alpha
+bravo
+alpha
+EOF
+    fi
+
     run_e2e_case "${mode}" "smoke" "coreutils_ls" /bin/ls -la /tmp || failed=1
     run_e2e_case "${mode}" "smoke" "coreutils_cat" /bin/cat /etc/hosts || failed=1
     run_e2e_case "${mode}" "smoke" "coreutils_echo" /bin/echo "frankenlibc_e2e_smoke" || failed=1
     run_e2e_case "${mode}" "smoke" "coreutils_env" /usr/bin/env || failed=1
     run_e2e_case "${mode}" "smoke" "integration_link" "${integ_bin}" || failed=1
+    run_shadow_compare_case "${mode}" "smoke" "coreutils_cat_shadow" /bin/cat "${smoke_fixture}" || failed=1
+    run_shadow_compare_case "${mode}" "smoke" "coreutils_sort" /usr/bin/env LC_ALL=C /bin/sort "${smoke_fixture}" || failed=1
+    run_shadow_compare_case "${mode}" "smoke" "coreutils_wc" /usr/bin/env LC_ALL=C /usr/bin/wc -l "${smoke_fixture}" || failed=1
 
     if command -v python3 >/dev/null 2>&1; then
         run_e2e_case "${mode}" "smoke" "nontrivial_python3" python3 -c "print('e2e_ok')" || failed=1
     fi
+
+    run_optional_shadow_compare_case "busybox" "${mode}" "smoke" "busybox_help" busybox --help || failed=1
+    run_optional_shadow_compare_case "sqlite3" "${mode}" "smoke" "sqlite_memory_select" sqlite3 :memory: "select 41 + 1;" || failed=1
+    run_optional_shadow_compare_case "redis-cli" "${mode}" "smoke" "redis_cli_version" redis-cli --version || failed=1
 
     return "${failed}"
 }
