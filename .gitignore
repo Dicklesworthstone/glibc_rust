@@ -57,3 +57,8 @@ rustc-ice-*.txt
 
 # Ephemeral agent flag/lock files
 Safe
+
+# Ephemeral files (agent-generated, build artifacts, test detritus)
+ci-artifacts/
+proptest-regressions/
+test_meminfo
