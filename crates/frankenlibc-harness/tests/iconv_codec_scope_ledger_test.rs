@@ -134,9 +134,9 @@ fn iconv_scope_ledger_aligns_with_support_matrix_semantics() {
     let root = repo_root();
     let ledger = load_json(&root.join("tests/conformance/iconv_codec_scope_ledger.v1.json"));
     let support = load_json(&root.join("support_matrix.json"));
-    let entries = support
+    let entries = support["symbols"]
         .as_array()
-        .expect("support_matrix.json must contain a top-level array");
+        .expect("support_matrix.json must contain a top-level symbols array");
 
     let iconv_entries: Vec<&serde_json::Value> = entries
         .iter()
