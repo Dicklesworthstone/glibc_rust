@@ -75,6 +75,8 @@ static LAST_SECURE_MODE_STATE: AtomicU8 = AtomicU8::new(SecureModeState::Unknown
 static LAST_DAG_VALID: AtomicU8 = AtomicU8::new(0);
 static LAST_PHASE: AtomicU8 = AtomicU8::new(StartupCheckpoint::Entry as u8);
 static LAST_POLICY_LATENCY_NS: AtomicUsize = AtomicUsize::new(0);
+#[cfg(debug_assertions)]
+static HOST_START_MAIN_OVERRIDE: AtomicUsize = AtomicUsize::new(0);
 
 #[repr(C)]
 pub struct StartupInvariantSnapshot {
@@ -223,6 +225,17 @@ fn saturating_nanos(started: Instant) -> usize {
     nanos.min(usize::MAX as u128) as usize
 }
 
+#[inline]
+const fn startup_failure_allows_host_fallback(reason: StartupFailureReason) -> bool {
+    matches!(
+        reason,
+        StartupFailureReason::MembraneDenied
+            | StartupFailureReason::UnterminatedArgv
+            | StartupFailureReason::UnterminatedEnvp
+            | StartupFailureReason::UnterminatedAuxv
+    )
+}
+
 fn record_phase0_outcome(
     path: &[StartupCheckpoint],
     decision: StartupPolicyDecision,
@@ -311,6 +324,21 @@ unsafe fn delegate_to_host_libc_start_main(
     rtld_fini: Option<HookFn>,
     stack_end: *mut c_void,
 ) -> Option<c_int> {
+    #[cfg(debug_assertions)]
+    {
+        let override_ptr = HOST_START_MAIN_OVERRIDE.load(Ordering::Relaxed);
+        if override_ptr != 0 {
+            // SAFETY: debug-test override stores a valid HostStartMainFn pointer.
+            let host_fn: HostStartMainFn = unsafe {
+                std::mem::transmute::<*const c_void, HostStartMainFn>(
+                    override_ptr as *const c_void,
+                )
+            };
+            // SAFETY: forwards startup ABI arguments to deterministic test delegate.
+            return Some(unsafe { host_fn(main, argc, ubp_av, init, fini, rtld_fini, stack_end) });
+        }
+    }
+
     let symbol = b"__libc_start_main\0";
     let glibc_v34 = b"GLIBC_2.34\0";
     let glibc_v225 = b"GLIBC_2.2.5\0";
@@ -341,6 +369,17 @@ unsafe fn delegate_to_host_libc_start_main(
     let host_fn: HostStartMainFn = unsafe { std::mem::transmute(ptr) };
     // SAFETY: forwards original startup ABI arguments to host libc.
     Some(unsafe { host_fn(main, argc, ubp_av, init, fini, rtld_fini, stack_end) })
+}
+
+/// Test-only hook for overriding host `__libc_start_main` delegation.
+#[cfg(debug_assertions)]
+#[cfg_attr(not(debug_assertions), allow(dead_code))]
+#[cfg_attr(not(debug_assertions), allow(improper_ctypes_definitions))]
+pub unsafe extern "C" fn __frankenlibc_set_startup_host_delegate_for_tests(
+    delegate: Option<HostStartMainFn>,
+) {
+    let raw = delegate.map_or(0usize, |f| f as usize);
+    HOST_START_MAIN_OVERRIDE.store(raw, Ordering::Relaxed);
 }
 
 unsafe fn count_c_string_vector(base: *mut *mut c_char, max_entries: usize) -> Option<usize> {
@@ -406,6 +445,21 @@ unsafe fn startup_phase0_impl(
     );
 
     let membrane_denied = matches!(decision.action, MembraneAction::Deny);
+    if membrane_denied {
+        path.push(StartupCheckpoint::Deny);
+        // SAFETY: writes TLS errno.
+        unsafe { set_abi_errno(libc::EACCES) };
+        runtime_policy::observe(ApiFamily::Process, decision.profile, 20, true);
+        record_phase0_outcome(
+            &path,
+            StartupPolicyDecision::Deny,
+            StartupInvariantStatus::Invalid,
+            StartupFailureReason::MembraneDenied,
+            SecureModeState::Unknown,
+            started,
+        );
+        return -1;
+    }
 
     path.push(StartupCheckpoint::ValidateMainPointer);
     let Some(main_fn) = main else {
@@ -577,9 +631,47 @@ pub unsafe extern "C" fn __libc_start_main(
 ) -> c_int {
     if startup_phase0_env_enabled() {
         // SAFETY: explicit phase-0 opt-in path.
-        return unsafe {
+        let phase0_rc = unsafe {
             startup_phase0_impl(main, argc, ubp_av, init, fini, rtld_fini, stack_end)
         };
+        if phase0_rc >= 0 {
+            return phase0_rc;
+        }
+
+        let phase0 = startup_policy_snapshot_for_tests();
+        if startup_failure_allows_host_fallback(phase0.failure_reason)
+            && let Some(host_rc) = unsafe {
+                delegate_to_host_libc_start_main(main, argc, ubp_av, init, fini, rtld_fini, stack_end)
+            }
+        {
+            store_policy_snapshot(
+                StartupPolicyDecision::FallbackHost,
+                phase0.invariant_status,
+                phase0.failure_reason,
+                phase0.secure_mode_state,
+                true,
+                StartupCheckpoint::FallbackHost,
+                phase0.latency_ns,
+            );
+            return host_rc;
+        }
+
+        if startup_failure_allows_host_fallback(phase0.failure_reason) {
+            // SAFETY: writes TLS errno.
+            unsafe { set_abi_errno(libc::ENOSYS) };
+            store_policy_snapshot(
+                StartupPolicyDecision::Deny,
+                StartupInvariantStatus::Invalid,
+                StartupFailureReason::HostDelegateUnavailable,
+                phase0.secure_mode_state,
+                true,
+                StartupCheckpoint::FallbackHost,
+                phase0.latency_ns,
+            );
+            return -1;
+        }
+
+        return phase0_rc;
     }
 
     // SAFETY: forwards to host libc startup for normal LD_PRELOAD operation.

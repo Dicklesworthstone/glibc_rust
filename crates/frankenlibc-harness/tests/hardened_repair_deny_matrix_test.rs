@@ -183,3 +183,52 @@ fn gate_script_is_executable_and_passes() {
         String::from_utf8_lossy(&output.stderr)
     );
 }
+
+#[test]
+fn policy_mapping_is_deterministic_across_reloads() {
+    let root = workspace_root();
+    let matrix_path = root.join("tests/conformance/hardened_repair_deny_matrix.v1.json");
+
+    let canonical_mapping = |matrix: &serde_json::Value| -> Vec<String> {
+        let mut rows = matrix["entries"]
+            .as_array()
+            .expect("entries must be array")
+            .iter()
+            .map(|entry| {
+                format!(
+                    "{}|{}|{}|{}|{}|{}",
+                    entry["policy_id"]
+                        .as_str()
+                        .expect("policy_id must be string"),
+                    entry["decision_path"]
+                        .as_str()
+                        .expect("decision_path must be string"),
+                    entry["healing_action"]
+                        .as_str()
+                        .expect("healing_action must be string"),
+                    entry["api_family"]
+                        .as_str()
+                        .expect("api_family must be string"),
+                    entry["symbol"].as_str().expect("symbol must be string"),
+                    entry["invalid_input_class"]
+                        .as_str()
+                        .expect("invalid_input_class must be string")
+                )
+            })
+            .collect::<Vec<_>>();
+        rows.sort();
+        rows
+    };
+
+    let baseline = canonical_mapping(&load_json(&matrix_path));
+    assert!(!baseline.is_empty(), "matrix entries should not be empty");
+
+    for _ in 0..1000 {
+        let matrix = load_json(&matrix_path);
+        let observed = canonical_mapping(&matrix);
+        assert_eq!(
+            observed, baseline,
+            "policy/action mapping changed between reloads"
+        );
+    }
+}

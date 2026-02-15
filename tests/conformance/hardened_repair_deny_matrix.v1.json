@@ -25,6 +25,38 @@
     {
       "api_family": "Iconv",
       "symbols": ["iconv_open", "iconv"]
+    },
+    {
+      "api_family": "Poll",
+      "symbols": ["poll"]
+    },
+    {
+      "api_family": "Locale",
+      "symbols": ["setlocale"]
+    },
+    {
+      "api_family": "VirtualMemory",
+      "symbols": ["mmap"]
+    },
+    {
+      "api_family": "Startup",
+      "symbols": ["__frankenlibc_startup_phase0"]
+    },
+    {
+      "api_family": "Socket",
+      "symbols": ["socket"]
+    },
+    {
+      "api_family": "Signal",
+      "symbols": ["kill"]
+    },
+    {
+      "api_family": "Resource",
+      "symbols": ["getrlimit"]
+    },
+    {
+      "api_family": "Termios",
+      "symbols": ["tcgetattr"]
     }
   ],
   "invalid_input_classes": [
@@ -51,6 +83,42 @@
     {
       "id": "iconv_unsupported_encoding",
       "description": "Requested encoding pair is unsupported and cannot be repaired."
+    },
+    {
+      "id": "poll_oversized_nfds",
+      "description": "nfds exceeds acceptable hardened limit and must be clamped."
+    },
+    {
+      "id": "locale_unsupported_fallback",
+      "description": "Requested locale is unsupported and hardened mode falls back to safe default locale."
+    },
+    {
+      "id": "mmap_invalid_protection",
+      "description": "mmap protection flags are invalid and repaired to admissible defaults."
+    },
+    {
+      "id": "mmap_missing_visibility",
+      "description": "mmap visibility bits are missing and repaired to an explicit visibility mode."
+    },
+    {
+      "id": "startup_unterminated_auxv",
+      "description": "Startup context has unterminated auxv and must be denied."
+    },
+    {
+      "id": "socket_invalid_domain",
+      "description": "Socket domain is invalid for the requested operation."
+    },
+    {
+      "id": "invalid_signal_number",
+      "description": "Signal number is outside admissible range."
+    },
+    {
+      "id": "invalid_resource_query",
+      "description": "Resource selector is invalid and must return deterministic error."
+    },
+    {
+      "id": "invalid_terminal_fd",
+      "description": "Terminal API invoked with an invalid file descriptor."
     }
   ],
   "entries": [
@@ -125,13 +193,121 @@
       "fixture_case_refs": [
         "tests/conformance/fixtures/iconv_phase1.json#/cases/hardened_unsupported_encoding_denied"
       ]
+    },
+    {
+      "entry_id": "poll_oversized_nfds_repair",
+      "api_family": "Poll",
+      "symbol": "poll",
+      "invalid_input_class": "poll_oversized_nfds",
+      "decision_path": "Repair",
+      "healing_action": "ClampSize",
+      "policy_id": "tsm.repair.poll.poll_oversized_nfds.v1",
+      "fixture_case_refs": [
+        "tests/conformance/fixtures/poll_ops.json#/cases/poll_oversized_nfds_hardened"
+      ]
+    },
+    {
+      "entry_id": "locale_unsupported_fallback_repair",
+      "api_family": "Locale",
+      "symbol": "setlocale",
+      "invalid_input_class": "locale_unsupported_fallback",
+      "decision_path": "Repair",
+      "healing_action": "ReturnSafeDefault",
+      "policy_id": "tsm.repair.locale.locale_unsupported_fallback.v1",
+      "fixture_case_refs": [
+        "tests/conformance/fixtures/locale_ops.json#/cases/setlocale_unsupported_hardened"
+      ]
+    },
+    {
+      "entry_id": "virtual_memory_invalid_protection_repair",
+      "api_family": "VirtualMemory",
+      "symbol": "mmap",
+      "invalid_input_class": "mmap_invalid_protection",
+      "decision_path": "Repair",
+      "healing_action": "UpgradeToSafeVariant",
+      "policy_id": "tsm.repair.virtual_memory.mmap_invalid_protection.v1",
+      "fixture_case_refs": [
+        "tests/conformance/fixtures/virtual_memory_ops.json#/cases/mmap_invalid_prot_hardened"
+      ]
+    },
+    {
+      "entry_id": "virtual_memory_missing_visibility_repair",
+      "api_family": "VirtualMemory",
+      "symbol": "mmap",
+      "invalid_input_class": "mmap_missing_visibility",
+      "decision_path": "Repair",
+      "healing_action": "UpgradeToSafeVariant",
+      "policy_id": "tsm.repair.virtual_memory.mmap_missing_visibility.v1",
+      "fixture_case_refs": [
+        "tests/conformance/fixtures/virtual_memory_ops.json#/cases/mmap_missing_visibility_hardened"
+      ]
+    },
+    {
+      "entry_id": "startup_unterminated_auxv_deny",
+      "api_family": "Startup",
+      "symbol": "__frankenlibc_startup_phase0",
+      "invalid_input_class": "startup_unterminated_auxv",
+      "decision_path": "Deny",
+      "healing_action": "None",
+      "policy_id": "tsm.deny.startup.startup_unterminated_auxv.v1",
+      "fixture_case_refs": [
+        "tests/conformance/fixtures/startup_ops.json#/cases/startup_phase0_rejects_unterminated_auxv_hardened"
+      ]
+    },
+    {
+      "entry_id": "socket_invalid_domain_deny",
+      "api_family": "Socket",
+      "symbol": "socket",
+      "invalid_input_class": "socket_invalid_domain",
+      "decision_path": "Deny",
+      "healing_action": "None",
+      "policy_id": "tsm.deny.socket.socket_invalid_domain.v1",
+      "fixture_case_refs": [
+        "tests/conformance/fixtures/socket_ops.json#/cases/socket_invalid_domain_hardened"
+      ]
+    },
+    {
+      "entry_id": "signal_invalid_signal_number_deny",
+      "api_family": "Signal",
+      "symbol": "kill",
+      "invalid_input_class": "invalid_signal_number",
+      "decision_path": "Deny",
+      "healing_action": "None",
+      "policy_id": "tsm.deny.signal.invalid_signal_number.v1",
+      "fixture_case_refs": [
+        "tests/conformance/fixtures/signal_ops.json#/cases/kill_invalid_signal_hardened"
+      ]
+    },
+    {
+      "entry_id": "resource_invalid_resource_query_deny",
+      "api_family": "Resource",
+      "symbol": "getrlimit",
+      "invalid_input_class": "invalid_resource_query",
+      "decision_path": "Deny",
+      "healing_action": "None",
+      "policy_id": "tsm.deny.resource.invalid_resource_query.v1",
+      "fixture_case_refs": [
+        "tests/conformance/fixtures/resource_ops.json#/cases/getrlimit_invalid_hardened"
+      ]
+    },
+    {
+      "entry_id": "termios_invalid_terminal_fd_deny",
+      "api_family": "Termios",
+      "symbol": "tcgetattr",
+      "invalid_input_class": "invalid_terminal_fd",
+      "decision_path": "Deny",
+      "healing_action": "None",
+      "policy_id": "tsm.deny.termios.invalid_terminal_fd.v1",
+      "fixture_case_refs": [
+        "tests/conformance/fixtures/termios_ops.json#/cases/tcgetattr_invalid_fd_hardened"
+      ]
     }
   ],
   "summary": {
-    "total_invalid_input_classes": 6,
-    "covered_invalid_input_classes": 6,
-    "entry_count": 6,
-    "repair_entries": 5,
-    "deny_entries": 1
+    "total_invalid_input_classes": 15,
+    "covered_invalid_input_classes": 15,
+    "entry_count": 15,
+    "repair_entries": 9,
+    "deny_entries": 6
   }
 }

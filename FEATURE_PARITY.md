@@ -34,6 +34,13 @@ Legend:
 | Conformance harness | Fixture-driven validation + drift gates | IN_PROGRESS |
 | Benchmark gates | Regression-blocking + budget evidence | IN_PROGRESS |
 
+### Hardened Safety Evidence (In Progress)
+
+- Deterministic matrix artifact: `tests/conformance/hardened_repair_deny_matrix.v1.json`
+- Gate script + harness integration: `scripts/check_hardened_repair_deny_matrix.sh` and `crates/frankenlibc-harness/tests/hardened_repair_deny_matrix_test.rs`
+- Proof narrative + mapping: `docs/proofs/hardened_mode_safety.md` and `docs/proofs/repair_posix_mapping.md`
+- Current matrix coverage is expanded but still bounded to currently fixture-backed invalid-input classes/families; additional membrane-gated families continue to be onboarded as hardened fixtures land.
+
 ## Symbol Coverage by ABI Module (Taxonomy)
 
 | Taxonomy | Primary modules |
@@ -206,7 +213,7 @@ Current stubbed symbols (explicit deterministic contracts):
 | Obligation | Evidence Artifact | Status |
 |---|---|---|
 | strict refinement theorem | SMT/proof notes + differential fixtures | PLANNED |
-| hardened safety theorem | invariant checks + policy proof notes | PLANNED |
+| hardened safety theorem | invariant checks + policy proof notes | IN_PROGRESS |
 | deterministic replay theorem | reproducibility campaign logs | PLANNED |
 | sequential regression control | e-process monitoring reports | PLANNED |
 | drift detection reliability | change-point validation reports | PLANNED |
