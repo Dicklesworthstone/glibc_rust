@@ -50,6 +50,12 @@ type HostPthreadMutexUnlockFn = unsafe extern "C" fn(*mut libc::pthread_mutex_t)
 static MUTEX_SPIN_BRANCHES: AtomicU64 = AtomicU64::new(0);
 static MUTEX_WAIT_BRANCHES: AtomicU64 = AtomicU64::new(0);
 static MUTEX_WAKE_BRANCHES: AtomicU64 = AtomicU64::new(0);
+
+/// When true, mutex operations skip host delegation and use the native futex
+/// implementation directly. Set by [`pthread_mutex_reset_state_for_tests`] so
+/// that tests can exercise the futex state machine without glibc intercepting.
+static FORCE_NATIVE_MUTEX: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
 const MANAGED_MUTEX_MAGIC: u32 = 0x474d_5854; // "GMXT"
 const MANAGED_RWLOCK_MAGIC: u32 = 0x4752_5758; // "GRWX"
 static THREAD_HANDLE_REGISTRY: LazyLock<Mutex<HashMap<usize, usize>>> =
@@ -708,6 +714,7 @@ fn reset_mutex_registry_for_tests() {
     MUTEX_SPIN_BRANCHES.store(0, Ordering::Relaxed);
     MUTEX_WAIT_BRANCHES.store(0, Ordering::Relaxed);
     MUTEX_WAKE_BRANCHES.store(0, Ordering::Relaxed);
+    FORCE_NATIVE_MUTEX.store(true, Ordering::Release);
 }
 
 fn mutex_branch_counters() -> (u64, u64, u64) {
@@ -818,10 +825,12 @@ pub unsafe extern "C" fn pthread_mutex_init(
     mutex: *mut libc::pthread_mutex_t,
     attr: *const libc::pthread_mutexattr_t,
 ) -> c_int {
-    // SAFETY: host symbol lookup/transmute guarantees ABI if present.
-    if let Some(host_init) = unsafe { host_pthread_mutex_init_fn() } {
-        // SAFETY: direct call through resolved host symbol.
-        return unsafe { host_init(mutex, attr) };
+    if !FORCE_NATIVE_MUTEX.load(Ordering::Acquire) {
+        // SAFETY: host symbol lookup/transmute guarantees ABI if present.
+        if let Some(host_init) = unsafe { host_pthread_mutex_init_fn() } {
+            // SAFETY: direct call through resolved host symbol.
+            return unsafe { host_init(mutex, attr) };
+        }
     }
 
     if mutex.is_null() {
@@ -848,10 +857,12 @@ pub unsafe extern "C" fn pthread_mutex_init(
 /// POSIX `pthread_mutex_destroy`.
 #[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_mutex_destroy(mutex: *mut libc::pthread_mutex_t) -> c_int {
-    // SAFETY: host symbol lookup/transmute guarantees ABI if present.
-    if let Some(host_destroy) = unsafe { host_pthread_mutex_destroy_fn() } {
-        // SAFETY: direct call through resolved host symbol.
-        return unsafe { host_destroy(mutex) };
+    if !FORCE_NATIVE_MUTEX.load(Ordering::Acquire) {
+        // SAFETY: host symbol lookup/transmute guarantees ABI if present.
+        if let Some(host_destroy) = unsafe { host_pthread_mutex_destroy_fn() } {
+            // SAFETY: direct call through resolved host symbol.
+            return unsafe { host_destroy(mutex) };
+        }
     }
 
     if mutex.is_null() {
@@ -875,10 +886,12 @@ pub unsafe extern "C" fn pthread_mutex_destroy(mutex: *mut libc::pthread_mutex_t
 /// POSIX `pthread_mutex_lock`.
 #[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_mutex_lock(mutex: *mut libc::pthread_mutex_t) -> c_int {
-    // SAFETY: host symbol lookup/transmute guarantees ABI if present.
-    if let Some(host_lock) = unsafe { host_pthread_mutex_lock_fn() } {
-        // SAFETY: direct call through resolved host symbol.
-        return unsafe { host_lock(mutex) };
+    if !FORCE_NATIVE_MUTEX.load(Ordering::Acquire) {
+        // SAFETY: host symbol lookup/transmute guarantees ABI if present.
+        if let Some(host_lock) = unsafe { host_pthread_mutex_lock_fn() } {
+            // SAFETY: direct call through resolved host symbol.
+            return unsafe { host_lock(mutex) };
+        }
     }
 
     if mutex.is_null() {
@@ -897,10 +910,12 @@ pub unsafe extern "C" fn pthread_mutex_lock(mutex: *mut libc::pthread_mutex_t) -
 /// POSIX `pthread_mutex_trylock`.
 #[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_mutex_trylock(mutex: *mut libc::pthread_mutex_t) -> c_int {
-    // SAFETY: host symbol lookup/transmute guarantees ABI if present.
-    if let Some(host_trylock) = unsafe { host_pthread_mutex_trylock_fn() } {
-        // SAFETY: direct call through resolved host symbol.
-        return unsafe { host_trylock(mutex) };
+    if !FORCE_NATIVE_MUTEX.load(Ordering::Acquire) {
+        // SAFETY: host symbol lookup/transmute guarantees ABI if present.
+        if let Some(host_trylock) = unsafe { host_pthread_mutex_trylock_fn() } {
+            // SAFETY: direct call through resolved host symbol.
+            return unsafe { host_trylock(mutex) };
+        }
     }
 
     if mutex.is_null() {
@@ -919,10 +934,12 @@ pub unsafe extern "C" fn pthread_mutex_trylock(mutex: *mut libc::pthread_mutex_t
 /// POSIX `pthread_mutex_unlock`.
 #[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
 pub unsafe extern "C" fn pthread_mutex_unlock(mutex: *mut libc::pthread_mutex_t) -> c_int {
-    // SAFETY: host symbol lookup/transmute guarantees ABI if present.
-    if let Some(host_unlock) = unsafe { host_pthread_mutex_unlock_fn() } {
-        // SAFETY: direct call through resolved host symbol.
-        return unsafe { host_unlock(mutex) };
+    if !FORCE_NATIVE_MUTEX.load(Ordering::Acquire) {
+        // SAFETY: host symbol lookup/transmute guarantees ABI if present.
+        if let Some(host_unlock) = unsafe { host_pthread_mutex_unlock_fn() } {
+            // SAFETY: direct call through resolved host symbol.
+            return unsafe { host_unlock(mutex) };
+        }
     }
 
     if mutex.is_null() {
