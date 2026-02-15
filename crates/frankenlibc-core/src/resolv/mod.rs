@@ -155,14 +155,49 @@ pub fn lookup_service(content: &[u8], name: &[u8], protocol: Option<&[u8]>) -> O
     None
 }
 
+fn addrinfo_from_text_address(
+    text_addr: &[u8],
+    family: i32,
+    socktype: i32,
+    protocol: i32,
+) -> Option<AddrInfo> {
+    let text = core::str::from_utf8(text_addr).ok()?;
+    if (family == AF_UNSPEC || family == AF_INET)
+        && let Ok(v4) = text.parse::<Ipv4Addr>()
+    {
+        return Some(AddrInfo {
+            ai_family: AF_INET,
+            ai_socktype: socktype,
+            ai_protocol: protocol,
+            ai_addr: v4.octets().to_vec(),
+            ai_canonname: None,
+        });
+    }
+    if (family == AF_UNSPEC || family == AF_INET6)
+        && let Ok(v6) = text.parse::<Ipv6Addr>()
+    {
+        return Some(AddrInfo {
+            ai_family: AF_INET6,
+            ai_socktype: socktype,
+            ai_protocol: protocol,
+            ai_addr: v6.octets().to_vec(),
+            ai_canonname: None,
+        });
+    }
+    None
+}
+
 /// Resolves a hostname and/or service name to a list of addresses.
 ///
-/// Supports numeric addresses and /etc/hosts file lookups.
-/// Returns a list of matching addresses, or an error code.
-pub fn getaddrinfo(
+/// Scope boundaries:
+/// - Numeric addresses are always supported.
+/// - Hosts-file lookups are supported only when `hosts_content` is provided.
+/// - Networked DNS/NSS backends are intentionally out-of-scope in this core path.
+pub fn getaddrinfo_with_hosts(
     node: Option<&[u8]>,
     service: Option<&[u8]>,
     hints: Option<&AddrInfo>,
+    hosts_content: Option<&[u8]>,
 ) -> Result<Vec<AddrInfo>, i32> {
     let family = hints.map(|h| h.ai_family).unwrap_or(AF_UNSPEC);
     let socktype = hints.map(|h| h.ai_socktype).unwrap_or(0);
@@ -217,7 +252,20 @@ pub fn getaddrinfo(
                 return Ok(results);
             }
 
-            // Not numeric — would need /etc/hosts lookup at ABI layer
+            if let Some(hosts) = hosts_content {
+                for addr in lookup_hosts(hosts, name) {
+                    if let Some(info) =
+                        addrinfo_from_text_address(&addr, family, socktype, protocol)
+                    {
+                        results.push(info);
+                    }
+                }
+                if !results.is_empty() {
+                    return Ok(results);
+                }
+            }
+
+            // Explicitly no DNS/NSS network fallback in this core implementation path.
             Err(EAI_NONAME)
         }
         None => {
@@ -245,6 +293,19 @@ pub fn getaddrinfo(
             Ok(results)
         }
     }
+}
+
+/// Resolves a hostname and/or service name to a list of addresses.
+///
+/// Compatibility wrapper that preserves the historic core signature.
+/// This path intentionally has no hosts-file input and therefore only supports
+/// numeric/wildcard resolution.
+pub fn getaddrinfo(
+    node: Option<&[u8]>,
+    service: Option<&[u8]>,
+    hints: Option<&AddrInfo>,
+) -> Result<Vec<AddrInfo>, i32> {
+    getaddrinfo_with_hosts(node, service, hints, None)
 }
 
 /// Converts a socket address to a hostname and service name.
@@ -505,6 +566,51 @@ mod tests {
     #[test]
     fn getaddrinfo_unknown_hostname() {
         let err = getaddrinfo(Some(b"unknown.host"), None, None).unwrap_err();
+        assert_eq!(err, EAI_NONAME);
+    }
+
+    #[test]
+    fn getaddrinfo_with_hosts_ipv4_lookup() {
+        let hosts = b"127.0.0.1 localhost\n10.20.30.40 app.internal app\n";
+        let result =
+            getaddrinfo_with_hosts(Some(b"app"), Some(b"8080"), None, Some(hosts)).unwrap();
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].ai_family, AF_INET);
+        assert_eq!(result[0].ai_addr, [10, 20, 30, 40]);
+    }
+
+    #[test]
+    fn getaddrinfo_with_hosts_respects_family_filter() {
+        let hosts = b"2001:db8::1 appv6\n10.20.30.40 appv4\n";
+        let hints = AddrInfo {
+            ai_family: AF_INET6,
+            ai_socktype: 0,
+            ai_protocol: 0,
+            ai_addr: vec![],
+            ai_canonname: None,
+        };
+        let result = getaddrinfo_with_hosts(Some(b"appv6"), None, Some(&hints), Some(hosts))
+            .expect("hosts lookup should resolve v6 entry");
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].ai_family, AF_INET6);
+        assert_eq!(result[0].ai_addr.len(), 16);
+    }
+
+    #[test]
+    fn getaddrinfo_with_hosts_case_insensitive_alias() {
+        let hosts = b"10.8.0.7 API gateway\n";
+        let result = getaddrinfo_with_hosts(Some(b"api"), None, None, Some(hosts))
+            .expect("case-insensitive host alias should resolve");
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].ai_family, AF_INET);
+        assert_eq!(result[0].ai_addr, [10, 8, 0, 7]);
+    }
+
+    #[test]
+    fn getaddrinfo_with_hosts_no_network_fallback() {
+        let hosts = b"127.0.0.1 localhost\n";
+        let err = getaddrinfo_with_hosts(Some(b"missing.example"), None, None, Some(hosts))
+            .expect_err("unknown host should not fall back to DNS in core path");
         assert_eq!(err, EAI_NONAME);
     }
 

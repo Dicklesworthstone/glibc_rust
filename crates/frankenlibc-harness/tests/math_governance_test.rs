@@ -37,6 +37,21 @@ fn load_manifest() -> serde_json::Value {
     serde_json::from_str(&content).expect("production_kernel_manifest.v1.json should be valid JSON")
 }
 
+fn manifest_union_modules(manifest: &serde_json::Value) -> HashSet<String> {
+    manifest["production_modules"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .chain(
+            manifest["research_only_modules"]
+                .as_array()
+                .into_iter()
+                .flatten(),
+        )
+        .filter_map(|v| v.as_str().map(String::from))
+        .collect()
+}
+
 #[test]
 fn governance_exists_and_valid() {
     let gov = load_governance();
@@ -75,13 +90,7 @@ fn all_tiers_defined() {
 fn classified_modules_exist_in_manifest() {
     let gov = load_governance();
     let manifest = load_manifest();
-
-    let manifest_modules: HashSet<String> = manifest["production_modules"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .filter_map(|v| v.as_str().map(String::from))
-        .collect();
+    let manifest_modules = manifest_union_modules(&manifest);
 
     let classifications = gov["classifications"].as_object().unwrap();
     let mut missing = Vec::new();
@@ -106,13 +115,7 @@ fn classified_modules_exist_in_manifest() {
 fn all_manifest_modules_classified() {
     let gov = load_governance();
     let manifest = load_manifest();
-
-    let manifest_modules: HashSet<String> = manifest["production_modules"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .filter_map(|v| v.as_str().map(String::from))
-        .collect();
+    let manifest_modules = manifest_union_modules(&manifest);
 
     let classifications = gov["classifications"].as_object().unwrap();
     let mut classified = HashSet::new();

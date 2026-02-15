@@ -710,8 +710,23 @@ fn execute_getaddrinfo_case(
                 .to_vec(),
         ),
     };
+    let hosts_content = match inputs.get("hosts_content") {
+        Some(serde_json::Value::Null) | None => None,
+        Some(value) => Some(
+            value
+                .as_str()
+                .ok_or_else(|| String::from("hosts_content must be string or null"))?
+                .as_bytes()
+                .to_vec(),
+        ),
+    };
 
-    let result = frankenlibc_core::resolv::getaddrinfo(node.as_deref(), service.as_deref(), None);
+    let result = frankenlibc_core::resolv::getaddrinfo_with_hosts(
+        node.as_deref(),
+        service.as_deref(),
+        None,
+        hosts_content.as_deref(),
+    );
     let impl_output = match result {
         Ok(addrs) => {
             let first = addrs
@@ -4571,6 +4586,26 @@ mod tests {
                 "name": "api"
             }),
             "[]",
+            Some("SKIP"),
+            true,
+            None,
+        );
+    }
+
+    #[test]
+    fn execute_getaddrinfo_case_uses_hosts_subset_when_provided() {
+        assert_differential_contract(
+            "nss",
+            "getaddrinfo-hosts-subset-lookup",
+            "tests/conformance/fixtures/resolver.json#/cases/getaddrinfo_hosts_file_subset",
+            "getaddrinfo",
+            "strict",
+            serde_json::json!({
+                "node": "app",
+                "service": "8080",
+                "hosts_content": "127.0.0.1 localhost\n10.20.30.40 app app.internal\n"
+            }),
+            "{\"ai_addr\":[10,20,30,40],\"ai_family\":2}",
             Some("SKIP"),
             true,
             None,

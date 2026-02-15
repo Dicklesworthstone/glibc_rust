@@ -64,6 +64,32 @@ unsafe fn opt_cstr<'a>(ptr: *const c_char) -> Option<&'a CStr> {
     Some(unsafe { CStr::from_ptr(ptr) })
 }
 
+enum HostsAddress {
+    V4(Ipv4Addr),
+    V6(Ipv6Addr),
+}
+
+fn resolve_hosts_subset(node: &str, family: c_int) -> Option<HostsAddress> {
+    // Scope boundary: only deterministic files-backend lookup (`/etc/hosts`).
+    // Network DNS/NSS backends are intentionally out-of-scope here.
+    let content = std::fs::read("/etc/hosts").ok()?;
+    let candidates = frankenlibc_core::resolv::lookup_hosts(&content, node.as_bytes());
+    for candidate in candidates {
+        let text = core::str::from_utf8(&candidate).ok()?;
+        if (family == libc::AF_UNSPEC || family == libc::AF_INET)
+            && let Ok(v4) = text.parse::<Ipv4Addr>()
+        {
+            return Some(HostsAddress::V4(v4));
+        }
+        if (family == libc::AF_UNSPEC || family == libc::AF_INET6)
+            && let Ok(v6) = text.parse::<Ipv6Addr>()
+        {
+            return Some(HostsAddress::V6(v6));
+        }
+    }
+    None
+}
+
 fn parse_port(service: Option<&CStr>, repair: bool) -> Result<u16, c_int> {
     let Some(service) = service else {
         return Ok(0);
@@ -272,6 +298,13 @@ pub unsafe extern "C" fn getaddrinfo(
             } else if let Ok(v6) = text.parse::<Ipv6Addr>() {
                 // SAFETY: allocation helper returns ownership pointer.
                 unsafe { build_addrinfo_v6(v6, port, hints_ref) }
+            } else if let Some(hosts_addr) = resolve_hosts_subset(text, family) {
+                match hosts_addr {
+                    // SAFETY: allocation helper returns ownership pointer.
+                    HostsAddress::V4(v4) => unsafe { build_addrinfo_v4(v4, port, hints_ref) },
+                    // SAFETY: allocation helper returns ownership pointer.
+                    HostsAddress::V6(v6) => unsafe { build_addrinfo_v6(v6, port, hints_ref) },
+                }
             } else if repair {
                 global_healing_policy().record(&HealingAction::ReturnSafeDefault);
                 // SAFETY: allocation helper returns ownership pointer.

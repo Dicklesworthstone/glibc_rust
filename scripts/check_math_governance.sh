@@ -3,8 +3,9 @@
 #
 # Validates that:
 #   1. Math governance classification exists and is valid.
-#   2. Every classified module exists in the production manifest.
-#   3. No module is unclassified (manifest coverage).
+#   2. Every classified module exists in the manifest union
+#      (production_modules U research_only_modules).
+#   3. No manifest-union module is unclassified (coverage).
 #   4. No module appears in multiple tiers.
 #   5. Summary statistics are consistent.
 #
@@ -64,9 +65,9 @@ fi
 echo ""
 
 # ---------------------------------------------------------------------------
-# Check 2: All classified modules exist in manifest
+# Check 2: All classified modules exist in manifest union
 # ---------------------------------------------------------------------------
-echo "--- Check 2: Classified modules exist in manifest ---"
+echo "--- Check 2: Classified modules exist in manifest union ---"
 
 manifest_check=$(python3 -c "
 import json
@@ -76,7 +77,7 @@ with open('${GOVERNANCE}') as f:
 with open('${MANIFEST}') as f:
     manifest = json.load(f)
 
-manifest_modules = set(manifest.get('production_modules', []))
+manifest_modules = set(manifest.get('production_modules', [])) | set(manifest.get('research_only_modules', []))
 classifications = gov.get('classifications', {})
 errors = []
 
@@ -84,7 +85,7 @@ for tier, entries in classifications.items():
     for entry in entries:
         module = entry.get('module', '')
         if module not in manifest_modules:
-            errors.append(f'{module} (tier={tier}): not in production manifest')
+            errors.append(f'{module} (tier={tier}): not in manifest union')
 
 print(f'MANIFEST_ERRORS={len(errors)}')
 for e in errors:
@@ -94,11 +95,11 @@ for e in errors:
 manifest_errs=$(echo "${manifest_check}" | grep '^MANIFEST_ERRORS=' | cut -d= -f2)
 
 if [[ "${manifest_errs}" -gt 0 ]]; then
-    echo "FAIL: ${manifest_errs} classified module(s) not in manifest:"
+    echo "FAIL: ${manifest_errs} classified module(s) not in manifest union:"
     echo "${manifest_check}" | grep '  '
     failures=$((failures + 1))
 else
-    echo "PASS: All classified modules exist in manifest"
+    echo "PASS: All classified modules exist in manifest union"
 fi
 echo ""
 
@@ -115,7 +116,7 @@ with open('${GOVERNANCE}') as f:
 with open('${MANIFEST}') as f:
     manifest = json.load(f)
 
-manifest_modules = set(manifest.get('production_modules', []))
+manifest_modules = set(manifest.get('production_modules', [])) | set(manifest.get('research_only_modules', []))
 classifications = gov.get('classifications', {})
 
 classified = set()
