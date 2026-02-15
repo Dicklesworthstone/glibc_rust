@@ -7,9 +7,23 @@
       "id": "PO-01",
       "statement": "Strict Refinement Theorem: strict mode matches reference glibc on defined inputs.",
       "scope": {"modes": ["strict"], "families": ["all"], "input_domain": "POSIX-defined"},
-      "evidence_artifacts": ["tests/conformance/golden/fixture_verify_strict_hardened.v1.json"],
-      "gates": ["scripts/conformance_golden_gate.sh"],
-      "join_keys": ["mode=strict", "gate=conformance_golden"],
+      "evidence_artifacts": [
+        "tests/conformance/golden/fixture_verify_strict_hardened.v1.json",
+        "docs/proofs/strict_mode_refinement.md",
+        "tests/conformance/proof_traceability_check.json"
+      ],
+      "gates": ["scripts/conformance_golden_gate.sh", "scripts/check_proof_binder.sh"],
+      "join_keys": ["mode=strict", "gate=conformance_golden", "gate=proof_binder"],
+      "source_refs": [
+        "crates/frankenlibc-membrane/src/config.rs:99",
+        "crates/frankenlibc-membrane/src/ptr_validator.rs:325",
+        "crates/frankenlibc-membrane/src/decision_contract.rs:214",
+        "crates/frankenlibc-abi/src/runtime_policy.rs:861",
+        "crates/frankenlibc-abi/src/errno_abi.rs:10",
+        "crates/frankenlibc-core/src/errno/mod.rs:69",
+        "crates/frankenlibc-abi/src/math_abi.rs:33",
+        "crates/frankenlibc-core/src/math/float.rs:19"
+      ],
       "category": "core_safety"
     },
     {

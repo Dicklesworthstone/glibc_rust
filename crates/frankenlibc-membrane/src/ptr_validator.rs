@@ -101,6 +101,12 @@ impl ValidationPipeline {
     }
 
     /// Run a pointer through the validation pipeline.
+    ///
+    /// @separation-pre: `Owns(TsmMeta) * Readable(addr)`; caller memory outside membrane
+    /// metadata is represented as frame `F`.
+    /// @separation-post: `Owns(TsmMeta') * Outcome(addr)` and frame `F` is preserved.
+    /// @separation-frame: `F` (caller-owned heap and non-membrane regions remain untouched).
+    /// @separation-alias: `validate_pointer`.
     pub fn validate(&self, addr: usize) -> ValidationOutcome {
         let metrics = global_metrics();
         MembraneMetrics::inc(&metrics.validations);

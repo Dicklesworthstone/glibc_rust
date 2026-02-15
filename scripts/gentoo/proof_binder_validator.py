@@ -18,7 +18,7 @@ import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Set
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_BINDER = (
@@ -37,6 +37,22 @@ def file_sha256(path: Path) -> Optional[str]:
     h = hashlib.sha256()
     h.update(path.read_bytes())
     return h.hexdigest()
+
+
+def parse_source_ref(ref: str) -> Optional[Tuple[str, int]]:
+    """Parse a `path:line` source reference."""
+    if ":" not in ref:
+        return None
+
+    path_part, line_part = ref.rsplit(":", 1)
+    if not path_part or not line_part.isdigit():
+        return None
+
+    line_number = int(line_part)
+    if line_number <= 0:
+        return None
+
+    return path_part, line_number
 
 
 @dataclass
@@ -69,8 +85,12 @@ class ObligationStatus:
     evidence_missing: int = 0
     gates_found: int = 0
     gates_missing: int = 0
+    source_refs_total: int = 0
+    source_refs_valid: int = 0
+    source_refs_invalid: int = 0
     violations: List[ObligationViolation] = field(default_factory=list)
     evidence_hashes: Dict[str, Optional[str]] = field(default_factory=dict)
+    source_ref_results: Dict[str, str] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -82,8 +102,12 @@ class ObligationStatus:
             "evidence_missing": self.evidence_missing,
             "gates_found": self.gates_found,
             "gates_missing": self.gates_missing,
+            "source_refs_total": self.source_refs_total,
+            "source_refs_valid": self.source_refs_valid,
+            "source_refs_invalid": self.source_refs_invalid,
             "violations": [v.to_dict() for v in self.violations],
             "evidence_hashes": self.evidence_hashes,
+            "source_ref_results": self.source_ref_results,
         }
 
 
@@ -227,6 +251,52 @@ def validate_obligation(
         ))
         status.valid = False
 
+    # Optional source traceability references (path:line).
+    for source_ref in obligation.get("source_refs", []):
+        status.source_refs_total += 1
+        parsed = parse_source_ref(source_ref)
+        if parsed is None:
+            status.source_refs_invalid += 1
+            status.valid = False
+            status.source_ref_results[source_ref] = "invalid_format"
+            status.violations.append(ObligationViolation(
+                obligation_id=oid,
+                violation_code="SOURCE_REF_INVALID_FORMAT",
+                message=f"Invalid source ref format (expected path:line): {source_ref}",
+                remediation_hint="Use repo-relative references like crates/foo.rs:42",
+            ))
+            continue
+
+        rel_path, line_number = parsed
+        full_path = repo_root / rel_path
+        if not full_path.exists():
+            status.source_refs_invalid += 1
+            status.valid = False
+            status.source_ref_results[source_ref] = "missing_file"
+            status.violations.append(ObligationViolation(
+                obligation_id=oid,
+                violation_code="SOURCE_REF_MISSING_FILE",
+                message=f"Source ref path not found: {rel_path}",
+                remediation_hint=f"Ensure file exists or update ref: {source_ref}",
+            ))
+            continue
+
+        line_count = len(full_path.read_text(encoding="utf-8", errors="replace").splitlines())
+        if line_number > line_count:
+            status.source_refs_invalid += 1
+            status.valid = False
+            status.source_ref_results[source_ref] = "line_out_of_range"
+            status.violations.append(ObligationViolation(
+                obligation_id=oid,
+                violation_code="SOURCE_REF_BAD_LINE",
+                message=f"Source ref line {line_number} exceeds {line_count}: {source_ref}",
+                remediation_hint="Update line anchors to current file positions",
+            ))
+            continue
+
+        status.source_refs_valid += 1
+        status.source_ref_results[source_ref] = "valid"
+
     return status
 
 
@@ -317,7 +387,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     print(f"Violations: {report.total_violations}")
     for o in report.obligations:
         icon = "+" if o.valid else "!"
-        print(f"  [{icon}] {o.obligation_id}: evidence={o.evidence_found}/{o.evidence_found + o.evidence_missing} gates={o.gates_found}/{o.gates_found + o.gates_missing}")
+        refs = (
+            f" refs={o.source_refs_valid}/{o.source_refs_total}"
+            if o.source_refs_total > 0
+            else ""
+        )
+        print(
+            f"  [{icon}] {o.obligation_id}: "
+            f"evidence={o.evidence_found}/{o.evidence_found + o.evidence_missing} "
+            f"gates={o.gates_found}/{o.gates_found + o.gates_missing}{refs}"
+        )
 
     return 0 if report.binder_valid else 1
 

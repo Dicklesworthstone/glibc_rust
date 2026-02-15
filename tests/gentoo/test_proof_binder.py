@@ -36,6 +36,7 @@ BinderValidationReport = pbv_mod.BinderValidationReport
 validate_obligation = pbv_mod.validate_obligation
 validate_binder = pbv_mod.validate_binder
 file_sha256 = pbv_mod.file_sha256
+parse_source_ref = pbv_mod.parse_source_ref
 
 
 class TestObligationViolation(unittest.TestCase):
@@ -172,6 +173,74 @@ class TestValidateObligation(unittest.TestCase):
         self.assertIsNotNone(h)
         self.assertEqual(len(h), 64)  # SHA-256 hex digest
 
+    def test_valid_source_ref(self) -> None:
+        ob = {
+            "id": "PO-SRC",
+            "statement": "Source refs",
+            "category": "core",
+            "evidence_artifacts": ["tests/conformance/proof_obligations_binder.v1.json"],
+            "gates": ["scripts/gentoo/proof_binder_validator.py"],
+            "join_keys": ["gate=test"],
+            "scope": {"modes": ["strict"]},
+            "source_refs": ["tests/conformance/proof_obligations_binder.v1.json:1"],
+        }
+        status = validate_obligation(ob, REPO_ROOT, check_hashes=False)
+        self.assertTrue(status.valid)
+        self.assertEqual(status.source_refs_total, 1)
+        self.assertEqual(status.source_refs_valid, 1)
+        self.assertEqual(status.source_refs_invalid, 0)
+
+    def test_missing_source_ref_file(self) -> None:
+        ob = {
+            "id": "PO-SRC",
+            "statement": "Source refs",
+            "category": "core",
+            "evidence_artifacts": ["tests/conformance/proof_obligations_binder.v1.json"],
+            "gates": ["scripts/gentoo/proof_binder_validator.py"],
+            "join_keys": ["gate=test"],
+            "scope": {"modes": ["strict"]},
+            "source_refs": ["does/not/exist.rs:10"],
+        }
+        status = validate_obligation(ob, REPO_ROOT, check_hashes=False)
+        self.assertFalse(status.valid)
+        self.assertEqual(status.source_refs_total, 1)
+        self.assertEqual(status.source_refs_valid, 0)
+        self.assertEqual(status.source_refs_invalid, 1)
+        codes = [v.violation_code for v in status.violations]
+        self.assertIn("SOURCE_REF_MISSING_FILE", codes)
+
+    def test_source_ref_line_out_of_range(self) -> None:
+        ob = {
+            "id": "PO-SRC",
+            "statement": "Source refs",
+            "category": "core",
+            "evidence_artifacts": ["tests/conformance/proof_obligations_binder.v1.json"],
+            "gates": ["scripts/gentoo/proof_binder_validator.py"],
+            "join_keys": ["gate=test"],
+            "scope": {"modes": ["strict"]},
+            "source_refs": ["tests/conformance/proof_obligations_binder.v1.json:999999"],
+        }
+        status = validate_obligation(ob, REPO_ROOT, check_hashes=False)
+        self.assertFalse(status.valid)
+        codes = [v.violation_code for v in status.violations]
+        self.assertIn("SOURCE_REF_BAD_LINE", codes)
+
+    def test_source_ref_invalid_format(self) -> None:
+        ob = {
+            "id": "PO-SRC",
+            "statement": "Source refs",
+            "category": "core",
+            "evidence_artifacts": ["tests/conformance/proof_obligations_binder.v1.json"],
+            "gates": ["scripts/gentoo/proof_binder_validator.py"],
+            "join_keys": ["gate=test"],
+            "scope": {"modes": ["strict"]},
+            "source_refs": ["bad-format-without-line"],
+        }
+        status = validate_obligation(ob, REPO_ROOT, check_hashes=False)
+        self.assertFalse(status.valid)
+        codes = [v.violation_code for v in status.violations]
+        self.assertIn("SOURCE_REF_INVALID_FORMAT", codes)
+
 
 class TestValidateBinder(unittest.TestCase):
     def test_real_binder(self) -> None:
@@ -285,6 +354,17 @@ class TestFileSha256(unittest.TestCase):
     def test_missing_file(self) -> None:
         h = file_sha256(Path("/nonexistent"))
         self.assertIsNone(h)
+
+
+class TestParseSourceRef(unittest.TestCase):
+    def test_parse_valid(self) -> None:
+        parsed = parse_source_ref("crates/frankenlibc-core/src/errno/mod.rs:69")
+        self.assertEqual(parsed, ("crates/frankenlibc-core/src/errno/mod.rs", 69))
+
+    def test_parse_invalid(self) -> None:
+        self.assertIsNone(parse_source_ref("missing-line"))
+        self.assertIsNone(parse_source_ref("bad-line:abc"))
+        self.assertIsNone(parse_source_ref("bad-line:0"))
 
 
 class TestCLI(unittest.TestCase):

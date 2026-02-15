@@ -73,6 +73,12 @@ impl HealingPolicy {
     }
 
     /// Record a healing action.
+    ///
+    /// @separation-pre: `Owns(HealingCounters) * Action(action)` with frame `F`.
+    /// @separation-post: `Owns(HealingCounters')` where only relevant counters advance;
+    /// frame `F` is preserved.
+    /// @separation-frame: `F` (non-counter memory is untouched).
+    /// @separation-alias: `repair_apply`.
     pub fn record(&self, action: &HealingAction) {
         if action.is_heal() {
             self.total_heals.fetch_add(1, Ordering::Relaxed);

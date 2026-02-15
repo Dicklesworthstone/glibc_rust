@@ -187,6 +187,13 @@ impl AllocationArena {
     /// Free a membrane-managed allocation.
     ///
     /// Returns the action taken and any drained quarantine entries.
+    ///
+    /// @separation-pre: `Owns(slot(ptr)) * Owns(ArenaMeta)` where `ptr` is a candidate
+    /// user pointer and non-arena memory is frame `F`.
+    /// @separation-post: slot transitions to `Quarantined`/`Freed` variants with
+    /// generation advanced; frame `F` is preserved.
+    /// @separation-frame: `F` (memory outside arena slot/quarantine metadata).
+    /// @separation-alias: `quarantine_enter`.
     pub fn free(&self, user_ptr: *mut u8) -> (FreeResult, Vec<QuarantineEntry>) {
         let user_base = user_ptr as usize;
         let shard_idx = self.shard_for(user_base);
@@ -246,6 +253,12 @@ impl AllocationArena {
     }
 
     /// Look up an allocation by user pointer address.
+    ///
+    /// @separation-pre: `Owns(ArenaIndex) * Readable(user_ptr)` with frame `F`.
+    /// @separation-post: returns immutable slot snapshot (including generation/state)
+    /// without mutating caller-visible memory; frame `F` is preserved.
+    /// @separation-frame: `F` (all non-index memory).
+    /// @separation-alias: `generation_check`.
     #[must_use]
     pub fn lookup(&self, user_ptr: usize) -> Option<ArenaSlot> {
         let shard_idx = self.shard_for(user_ptr);
@@ -270,6 +283,12 @@ impl AllocationArena {
     }
 
     /// Look up and return remaining bytes from the given address.
+    ///
+    /// @separation-pre: `Owns(ArenaIndex) * Readable(addr)` with frame `F`.
+    /// @separation-post: yields bounds witness `(slot, remaining)` when `addr` is in-range;
+    /// frame `F` is preserved.
+    /// @separation-frame: `F` (memory outside arena metadata and queried slot).
+    /// @separation-alias: `check_bounds`.
     #[must_use]
     pub fn remaining_from(&self, addr: usize) -> Option<(ArenaSlot, usize)> {
         let slot = self.lookup(addr)?;
