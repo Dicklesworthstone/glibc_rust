@@ -71,6 +71,110 @@
       "expected_errno": 7,
       "mode": "hardened",
       "note": "Hardened mode keeps startup deny policy deterministic for invalid auxv contexts"
+    },
+    {
+      "name": "startup_phase0_rejects_unterminated_argv_strict",
+      "function": "__frankenlibc_startup_phase0",
+      "spec_section": "FrankenLibC startup",
+      "inputs": { "argv": "unterminated_ptrs_max_scan", "argc": 1, "auxv": "terminated_nonsecure" },
+      "expected_output": "DENY_INVALID_STARTUP_CONTEXT",
+      "expected_errno": 7,
+      "mode": "strict",
+      "note": "Argv scan without NULL terminator must deny with E2BIG"
+    },
+    {
+      "name": "startup_phase0_rejects_unterminated_argv_hardened",
+      "function": "__frankenlibc_startup_phase0",
+      "spec_section": "FrankenLibC startup",
+      "inputs": { "argv": "unterminated_ptrs_max_scan", "argc": 1, "auxv": "terminated_nonsecure" },
+      "expected_output": "DENY_INVALID_STARTUP_CONTEXT",
+      "expected_errno": 7,
+      "mode": "hardened"
+    },
+    {
+      "name": "startup_phase0_rejects_unterminated_envp_strict",
+      "function": "__frankenlibc_startup_phase0",
+      "spec_section": "FrankenLibC startup",
+      "inputs": {
+        "argv": "valid_ptr",
+        "envp": "unterminated_ptrs_max_scan",
+        "argc": 1,
+        "auxv": "terminated_nonsecure"
+      },
+      "expected_output": "DENY_INVALID_STARTUP_CONTEXT",
+      "expected_errno": 7,
+      "mode": "strict",
+      "note": "Envp scan without NULL terminator must deny with E2BIG"
+    },
+    {
+      "name": "startup_phase0_rejects_unterminated_envp_hardened",
+      "function": "__frankenlibc_startup_phase0",
+      "spec_section": "FrankenLibC startup",
+      "inputs": {
+        "argv": "valid_ptr",
+        "envp": "unterminated_ptrs_max_scan",
+        "argc": 1,
+        "auxv": "terminated_nonsecure"
+      },
+      "expected_output": "DENY_INVALID_STARTUP_CONTEXT",
+      "expected_errno": 7,
+      "mode": "hardened"
+    },
+    {
+      "name": "startup_snapshot_secure_mode_nonsecure_strict",
+      "function": "__frankenlibc_startup_snapshot",
+      "spec_section": "FrankenLibC startup",
+      "inputs": { "auxv": "at_secure_zero_then_null", "argc": 1, "argv": "valid_ptr" },
+      "expected_output": "SNAPSHOT_VALID_SECURE0",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "AT_SECURE=0 classifies as non-secure mode"
+    },
+    {
+      "name": "startup_snapshot_secure_mode_secure_hardened",
+      "function": "__frankenlibc_startup_snapshot",
+      "spec_section": "FrankenLibC startup",
+      "inputs": { "auxv": "at_secure_one_then_null", "argc": 1, "argv": "valid_ptr" },
+      "expected_output": "SNAPSHOT_VALID_SECURE1",
+      "expected_errno": 0,
+      "mode": "hardened",
+      "note": "AT_SECURE=1 must persist secure-mode invariant in hardened mode"
+    },
+    {
+      "name": "libc_start_main_phase0_disabled_fallback_host_strict",
+      "function": "__libc_start_main",
+      "spec_section": "glibc __libc_start_main",
+      "inputs": { "phase0_env": "0", "main": "valid_fn_ptr", "argc": 1, "argv": "valid_ptr" },
+      "expected_output": "FALLBACK_HOST_DELEGATE",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "When phase-0 is disabled, startup must delegate directly to host"
+    },
+    {
+      "name": "libc_start_main_phase0_unsafe_envp_fallback_host_strict",
+      "function": "__libc_start_main",
+      "spec_section": "glibc __libc_start_main",
+      "inputs": {
+        "phase0_env": "1",
+        "main": "valid_fn_ptr",
+        "argc": 1,
+        "argv": "valid_ptr",
+        "envp": "unterminated_ptrs_max_scan"
+      },
+      "expected_output": "PHASE0_DENY_THEN_FALLBACK_HOST",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "Unsafe phase-0 envp context must fallback to host when delegation is available"
+    },
+    {
+      "name": "libc_start_main_phase0_missing_main_no_fallback_strict",
+      "function": "__libc_start_main",
+      "spec_section": "glibc __libc_start_main",
+      "inputs": { "phase0_env": "1", "main": "null", "argc": 1, "argv": "valid_ptr" },
+      "expected_output": "DENY_MISSING_MAIN_NO_FALLBACK",
+      "expected_errno": 22,
+      "mode": "strict",
+      "note": "Missing main pointer is a hard deny and must not fallback to host"
     }
   ]
 }

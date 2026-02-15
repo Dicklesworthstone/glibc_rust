@@ -12,6 +12,14 @@ use crate::runtime_policy;
 
 /// Static C-locale name string.
 static C_LOCALE_NAME: &[u8] = b"C\0";
+/// POSIX C-locale character encoding string.
+static C_LOCALE_CODESET: &[u8] = b"ANSI_X3.4-1968\0";
+/// POSIX C-locale radix character.
+static C_LOCALE_RADIX: &[u8] = b".\0";
+/// POSIX C-locale thousands separator (empty string).
+static C_LOCALE_THOUSEP: &[u8] = b"\0";
+/// Generic empty locale string result.
+static EMPTY_LOCALE_STR: &[u8] = b"\0";
 
 /// Static `struct lconv` for the C locale.
 ///
@@ -126,4 +134,36 @@ pub unsafe extern "C" fn localeconv() -> *const LConv {
     }
     runtime_policy::observe(ApiFamily::Locale, decision.profile, 4, false);
     &LCONV
+}
+
+// ---------------------------------------------------------------------------
+// nl_langinfo
+// ---------------------------------------------------------------------------
+
+/// POSIX `nl_langinfo`.
+///
+/// Bootstrap supports a minimal C-locale subset:
+/// - `CODESET` -> `"ANSI_X3.4-1968"`
+/// - `RADIXCHAR` -> `"."`
+/// - `THOUSEP` -> `""`
+/// Unsupported items return `""`.
+#[cfg_attr(not(debug_assertions), unsafe(no_mangle))]
+pub unsafe extern "C" fn nl_langinfo(item: libc::nl_item) -> *const c_char {
+    let (_, decision) = runtime_policy::decide(ApiFamily::Locale, item as usize, 0, false, true, 0);
+    if matches!(decision.action, MembraneAction::Deny) {
+        runtime_policy::observe(ApiFamily::Locale, decision.profile, 6, true);
+        return std::ptr::null();
+    }
+
+    let value = if item == libc::CODESET {
+        C_LOCALE_CODESET
+    } else if item == libc::RADIXCHAR {
+        C_LOCALE_RADIX
+    } else if item == libc::THOUSEP {
+        C_LOCALE_THOUSEP
+    } else {
+        EMPTY_LOCALE_STR
+    };
+    runtime_policy::observe(ApiFamily::Locale, decision.profile, 6, false);
+    value.as_ptr() as *const c_char
 }

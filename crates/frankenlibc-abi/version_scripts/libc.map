@@ -28,6 +28,11 @@ GLIBC_2.2.5 {
         iconv;
         iconv_close;
 
+        /* locale */
+        setlocale;
+        localeconv;
+        nl_langinfo;
+
         /* startup */
         __frankenlibc_startup_phase0;
         __frankenlibc_startup_snapshot;

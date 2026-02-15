@@ -2,7 +2,7 @@
   "version": "v1",
   "family": "locale_ops",
   "captured_at": "2026-02-13T00:00:00Z",
-  "description": "Mode-specific parity fixtures for locale operations (setlocale, localeconv). Implemented. Strict: host-glibc parity. Hardened: unsupported locale fallback to C.",
+  "description": "Mode-specific parity fixtures for locale operations (setlocale, localeconv, nl_langinfo). Strict: host-glibc parity. Hardened: deterministic safe fallback semantics.",
   "cases": [
     {
       "name": "setlocale_query_strict",
@@ -45,6 +45,26 @@
       "note": "Returns pointer to lconv struct"
     },
     {
+      "name": "nl_langinfo_codeset_strict",
+      "function": "nl_langinfo",
+      "spec_section": "POSIX nl_langinfo (CODESET)",
+      "inputs": { "item_name": "CODESET" },
+      "expected_output": "ANSI_X3.4-1968",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "C locale codeset is ANSI_X3.4-1968"
+    },
+    {
+      "name": "nl_langinfo_radixchar_strict",
+      "function": "nl_langinfo",
+      "spec_section": "POSIX nl_langinfo (RADIXCHAR)",
+      "inputs": { "item_name": "RADIXCHAR" },
+      "expected_output": ".",
+      "expected_errno": 0,
+      "mode": "strict",
+      "note": "C locale radix separator is dot"
+    },
+    {
       "name": "setlocale_c_locale_hardened",
       "function": "setlocale",
       "spec_section": "C11 7.11.1.1 setlocale",
@@ -52,6 +72,16 @@
       "expected_output": "C",
       "expected_errno": 0,
       "mode": "hardened"
+    },
+    {
+      "name": "nl_langinfo_unknown_hardened",
+      "function": "nl_langinfo",
+      "spec_section": "POSIX nl_langinfo (unsupported item hardened fallback)",
+      "inputs": { "item": -1 },
+      "expected_output": "",
+      "expected_errno": 0,
+      "mode": "hardened",
+      "note": "Unsupported item returns safe empty string in hardened mode"
     },
     {
       "name": "setlocale_unsupported_hardened",

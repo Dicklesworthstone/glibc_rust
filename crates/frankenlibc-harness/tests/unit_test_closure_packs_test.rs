@@ -2,7 +2,7 @@
 // Validates unit test closure packs for weak/complex families.
 // Ensures required families have fixtures with strict/hardened cases.
 
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 use std::path::Path;
 
 fn fixture_dir() -> std::path::PathBuf {
@@ -19,6 +19,15 @@ fn load_fixture(path: &Path) -> serde_json::Value {
         .unwrap_or_else(|e| panic!("Failed to read {}: {}", path.display(), e));
     serde_json::from_str(&content)
         .unwrap_or_else(|e| panic!("Invalid JSON in {}: {}", path.display(), e))
+}
+
+fn startup_report_path() -> std::path::PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("target/conformance/bd-320s_startup_fixture_report.v1.json")
 }
 
 #[test]
@@ -144,6 +153,108 @@ fn closure_packs_have_strict_and_hardened_cases() {
         assert!(strict_count > 0, "{} has no strict-mode cases", name);
         assert!(hardened_count > 0, "{} has no hardened-mode cases", name);
     }
+}
+
+#[test]
+fn startup_fixture_expansion_covers_invariant_matrix() {
+    let fixture_path = fixture_dir().join("startup_ops.json");
+    let data = load_fixture(&fixture_path);
+    let cases = data["cases"]
+        .as_array()
+        .expect("startup_ops.json must contain a cases array");
+
+    let case_names: HashSet<&str> = cases
+        .iter()
+        .filter_map(|case| case["name"].as_str())
+        .collect();
+    let required_names = [
+        "startup_phase0_rejects_unterminated_argv_strict",
+        "startup_phase0_rejects_unterminated_argv_hardened",
+        "startup_phase0_rejects_unterminated_envp_strict",
+        "startup_phase0_rejects_unterminated_envp_hardened",
+        "startup_phase0_rejects_unterminated_auxv_strict",
+        "startup_phase0_rejects_unterminated_auxv_hardened",
+        "startup_snapshot_secure_mode_nonsecure_strict",
+        "startup_snapshot_secure_mode_secure_hardened",
+        "libc_start_main_phase0_disabled_fallback_host_strict",
+        "libc_start_main_phase0_unsafe_envp_fallback_host_strict",
+        "libc_start_main_phase0_missing_main_no_fallback_strict",
+    ];
+
+    let missing: Vec<&str> = required_names
+        .iter()
+        .copied()
+        .filter(|name| !case_names.contains(name))
+        .collect();
+    assert!(
+        missing.is_empty(),
+        "startup fixture expansion missing required cases: {missing:?}"
+    );
+
+    let strict_count = cases
+        .iter()
+        .filter(|c| c["mode"].as_str() == Some("strict"))
+        .count();
+    let hardened_count = cases
+        .iter()
+        .filter(|c| c["mode"].as_str() == Some("hardened"))
+        .count();
+    assert!(
+        strict_count >= 5 && hardened_count >= 5,
+        "startup fixture coverage should include rich strict+hardened sets; strict={strict_count}, hardened={hardened_count}"
+    );
+
+    let mut invariant_ids = BTreeSet::new();
+    for case in &required_names {
+        if case.contains("argv") {
+            invariant_ids.insert("argv");
+        }
+        if case.contains("envp") {
+            invariant_ids.insert("envp");
+        }
+        if case.contains("auxv") {
+            invariant_ids.insert("auxv");
+        }
+        if case.contains("secure_mode") {
+            invariant_ids.insert("secure_mode");
+        }
+        if case.contains("fallback") {
+            invariant_ids.insert("host_fallback_boundary");
+        }
+    }
+
+    let report = serde_json::json!({
+        "schema_version": "v1",
+        "bead_id": "bd-320s",
+        "fixture_file": "tests/conformance/fixtures/startup_ops.json",
+        "trace_id": "bd-320s::startup-fixture-report::001",
+        "summary": {
+            "strict_cases": strict_count,
+            "hardened_cases": hardened_count,
+            "required_case_count": required_names.len(),
+            "missing_case_count": missing.len()
+        },
+        "invariant_ids": invariant_ids,
+        "artifact_refs": [
+            "tests/conformance/fixtures/startup_ops.json",
+            "crates/frankenlibc-harness/tests/unit_test_closure_packs_test.rs"
+        ]
+    });
+
+    let report_path = startup_report_path();
+    if let Some(parent) = report_path.parent() {
+        std::fs::create_dir_all(parent)
+            .expect("startup fixture report directory must be creatable");
+    }
+    std::fs::write(
+        &report_path,
+        serde_json::to_string_pretty(&report).expect("report serialization should succeed"),
+    )
+    .expect("startup fixture report should be written");
+    assert!(
+        report_path.exists(),
+        "startup fixture report artifact was not created"
+    );
 }
 
 #[test]
