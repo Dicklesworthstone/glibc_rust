@@ -51,3 +51,6 @@ target_sym*/
 
 # Agent coordination config
 .agent-mail.yaml
+
+# Compiler crash reports
+rustc-ice-*.txt
